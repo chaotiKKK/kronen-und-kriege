@@ -22,13 +22,15 @@ Der Save ist migrationfest: Schema 1 wird beim Laden auf Schema 4 gehoben; Gebä
 
 ## Downloads
 
+Die veröffentlichten Testversionen liegen auf GitHub: [Kronen und Kriege 1.2](https://github.com/chaotiKKK/kronen-und-kriege/releases/tag/v1.2).
+
 ### Android
 
 | | |
 |---|---|
 | Datei | `F:\ck3-kronen-kriege.apk` |
-| Größe | 179.739.313 Bytes (ca. 171 MiB) |
-| SHA-256 | `a1bf2bd383206027316c38e80366932f560e6d4a3ac4a42f7efb952483f1782b` |
+| Größe | 179.750.931 Bytes (ca. 171 MiB) |
+| SHA-256 | `8cd6d9b733fc1c62bf63801e4615e0329c62f00f16d2ee440dbe6c409dc8d7d8` |
 | Paket | `org.example.kronen`, versionCode 3, versionName 1.2 |
 | SDK | minSdk 24, targetSdk 35 (compileSdk 35) |
 | ABIs | `arm64-v8a`, `armeabi-v7a` (keine x86-Bibliotheken) |
@@ -47,8 +49,8 @@ adb install -r "F:\ck3-kronen-kriege.apk"
 | | |
 |---|---|
 | Datei | `F:\ck3-kronen-kriege.exe` |
-| Größe | 112.723.088 Bytes (ca. 108 MiB) |
-| SHA-256 | `b17e0bb45ffd5ac7235f15d4405825a2de877f906932ac08f42aa5e7dbee2393` |
+| Größe | 112.734.400 Bytes (ca. 108 MiB) |
+| SHA-256 | `a37ae5ea8557ec5c276bdced83c2a8e7e9a391308fd1a06daa98e2eebcf0fcf9` |
 | Version | 1.2.0.0, Produkt „Kronen und Kriege“ |
 | Format | einzelne x86_64-EXE mit eingebetteter PCK, eigenem Icon und Versionsressourcen |
 | Start | Doppelklick auf die EXE; `F11` schaltet Vollbild |
@@ -180,6 +182,18 @@ Wichtig für den Nachbau:
 - `gradle_build/use_gradle_build` steht in `export_presets.cfg` auf `true`; die Versionsmarke `android/.build_version` enthält `4.5.stable`.
 - Windows benötigt `windows_release_x86_64.exe` in `.tools/appdata/Godot/export_templates/4.5.stable/` und `rcedit-x64.exe` in `.tools/`.
 
+## GitHub-Release
+
+Die Testversionen werden als GitHub-Release veröffentlicht. Nach einem Versionssprung in `project.godot` und beiden Exporten:
+
+```bash
+bash export_android.sh
+bash export_windows.sh
+bash tools/publish_github_release.sh
+```
+
+Das Skript liest `config/version`, verlangt einen sauberen `main`-Arbeitsbaum, prüft die APK-Signatur, pusht den Commit und den Tag `v<version>` und lädt APK, EXE und `SHA256SUMS.txt` als Pre-Release hoch. Es ist idempotent: Ein vorhandener Release wird mit den neuen Assets aktualisiert, sofern der Tag auf dem aktuellen Commit liegt. `GH_REPO` kann ein abweichendes Ziel-Repository setzen; `--skip-verify` überspringt nur die APK-Signaturprüfung.
+
 ## Tests
 
 Alle Tests liegen unter `tests/` und werden nicht in die Builds exportiert; `build/` ist ebenfalls aus beiden Exporten ausgeschlossen.
@@ -197,6 +211,7 @@ APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/SaveMigratio
 APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/SystemicDepthTest.tscn
 APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/FullDepthTest.tscn
 APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/StoryTest.tscn
+APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/UiKernelTest.tscn
 APPDATA="$PWD/appdata" ./godot.exe --path .. res://tests/TouchTest.tscn --resolution 1280x720
 APPDATA="$PWD/appdata" ./godot.exe --path .. res://tests/ShotTest.tscn --resolution 1280x720
 ```
@@ -251,13 +266,14 @@ export_windows.sh         Windows-Build
 - `SystemicDepthTest`: H1, H2, H5 (Kaserne), D5 und AI1 positiv; alle fünf Negativkontrollen ohne Zieländerung; D5→H1-Kreislauf belegt.
 - `FullDepthTest`: 56 positive/negative Prüfungen für H3–H8 (inkl. Mauern), D1–D4, D6–D8, K1–K7 und AI2–AI5.
 - `StoryTest`: 120 Monate, 104 Entscheidungen, 24 Kanten, 3 Save/Load-Roundtrips ohne Diff; 7 dynastische, 6 Krieg-/Diplomatie- und 5 KI-Kanten.
+- `UiKernelTest`: 35 Prüfungen für Auswahl, Modalstapel, blockierte und gültige Kommandos, Save-Grenze und View-Model-Strings.
 - `PortraitTest`: 48 HD-Porträts, Auswahlbereiche und Speichern/Laden grün.
 - `CustomizeTest`: Porträt-Klick, Wappen, Hausfarbe, Name, Hausname, Geschlecht, Alter und Werte; Speichern/Laden und Abbrechen grün.
 - `TouchTest`: Auswahl per `InputEventScreenTouch` und Ausbau per Touch.
 - `ShotTest`: fünf gerenderte Bilder, inklusive Herrscher-Werkstatt.
-- Headless-Läufe: alle elf Suiten Exit 0; die Main-basierten Tests laufen ohne Audio- und Ressourcen-Leak-Warnungen.
-- Android: Schema-4-Export erfolgreich (Exit 0), 179.739.313 Bytes, SHA-256 `a1bf2bd383206027316c38e80366932f560e6d4a3ac4a42f7efb952483f1782b`; `apksigner` bestätigt v2, einen Signer und das Debug-Zertifikat; `zipalign` ok; Badging: `org.example.kronen`, versionCode 3/versionName 1.2, minSdk 24, targetSdk 35, Activity `com.godot.game.GodotApp`, ABIs `arm64-v8a`/`armeabi-v7a`. Kein ADB-Gerät angeschlossen, daher keine physische Installation in diesem Lauf.
-- Windows: Schema-4-Export erfolgreich (Exit 0), 112.723.088 Bytes, SHA-256 `b17e0bb45ffd5ac7235f15d4405825a2de877f906932ac08f42aa5e7dbee2393`, eingebettete PCK, Audio und Versionsressourcen vorhanden. Drei automatisierte Startläufe: Fenster `1298x765`, Titel „Kronen und Kriege“, Startmenü, `MAIN_READY`, Exit 0, keine `ERROR`-/Exception-Zeilen.
+- Headless-Läufe: alle zwölf Suiten (elf bestehende plus `UiKernelTest`) Exit 0; die Main-basierten Tests laufen ohne Audio- und Ressourcen-Leak-Warnungen.
+- Android: Schema-4-Export erfolgreich (Exit 0), 179.750.931 Bytes, SHA-256 `8cd6d9b733fc1c62bf63801e4615e0329c62f00f16d2ee440dbe6c409dc8d7d8`; `apksigner` bestätigt v2, einen Signer und das Debug-Zertifikat; `zipalign` ok; Badging: `org.example.kronen`, versionCode 3/versionName 1.2, minSdk 24, targetSdk 35, Activity `com.godot.game.GodotApp`, ABIs `arm64-v8a`/`armeabi-v7a`. Kein ADB-Gerät angeschlossen, daher keine physische Installation in diesem Lauf.
+- Windows: Schema-4-Export erfolgreich (Exit 0), 112.734.400 Bytes, SHA-256 `a37ae5ea8557ec5c276bdced83c2a8e7e9a391308fd1a06daa98e2eebcf0fcf9`, eingebettete PCK, Audio und Versionsressourcen vorhanden. Drei automatisierte Startläufe: Fenster `1298x765`, Titel „Kronen und Kriege“, Startmenü, `MAIN_READY`, Exit 0, keine `ERROR`-/Exception-Zeilen.
 
 ## Offene manuelle Abnahme
 

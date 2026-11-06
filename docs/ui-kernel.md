@@ -155,4 +155,4 @@ Regressionslauf vom 2026-11-06 (Godot 4.5.stable, Logs unter `build/verify/uiker
 - Mit Fenster/Rendering: `TouchTest` (echter `InputEventScreenTouch`) und `ShotTest` (fünf Bilder, 1280×720) — beide grün.
 - `UiKernelTest` — 35 Prüfungen, grün.
 
-Die Release-Artefakte APK und EXE wurden für diese Extraktion nicht neu gebaut. `repo-compare/` blieb unverändert; es wurde kein Remote gesetzt, nichts gepusht und kein PR erstellt.
+Die Testversion 1.2 wird aus dem aktuellen Stand gebaut und über GitHub Releases verteilt: <https://github.com/chaotiKKK/kronen-und-kriege/releases/tag/v1.2>. Die Artefakt-Hashes stehen im README; `repo-compare/` blieb unverändert. Der Quellstand liegt auf `main`.
