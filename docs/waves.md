@@ -15,7 +15,7 @@ Der Plan legt die Reihenfolge fest, in der aus dem Prototyp eine verzahnte Bronz
 - Save-Änderungen sind additiv, versioniert und haben Migration plus Test.
 - `Game.gd` bleibt die einzige Regel- und Zustandsinstanz. UI und KI rufen dieselben Kommandos auf.
 - Jede Welle liefert einen spielbaren Schnitt, nicht nur ein Datenmodell.
-- `Main.gd` bleibt vorerst Composition Root; die UiKernel-Extraktion ist dokumentiert, aber nicht Voraussetzung für die Systemtiefe.
+- `Main.gd` bleibt Composition Root; die UiKernel-Extraktion ist in `docs/ui-kernel.md` dokumentiert und abgeschlossen.
 
 ## Wellen
 

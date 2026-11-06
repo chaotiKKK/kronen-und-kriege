@@ -1,44 +1,40 @@
 # UiKernel-Zuschnitt
 
-> Dokumentversion: 1.2
+> Dokumentversion: 1.3
 > Stand: 2026-11-06
-> Status: Herrschaftsmodal erweitert; UiKernel-Extraktion noch offen
+> Status: UiKernel-Extraktion abgeschlossen
 > Gültig für Save-Schema: 4
 
 ## Problem
 
-`Main.gd` ist derzeit gleichzeitig Composition Root, Layout-Bauer, Zustandsleser, Event-Modal, Picker, Stammbaum-Steuerung, Customizer und Zeitlauf. Das ist für den Prototyp tragbar, aber jede neue systemische Entscheidung würde weitere direkte Zugriffe auf `game` hinzufügen. `Game.gd` ist bereits die Regelinstanz; die UI darf nicht zu einer zweiten werden.
+`Main.gd` war gleichzeitig Composition Root, Layout-Bauer, Zustandsleser, Event-Modal, Picker, Stammbaum-Steuerung, Customizer und Zeitlauf. Jede neue systemische Entscheidung hätte weitere direkte Zugriffe auf `game` hinzugefügt. `Game.gd` ist die Regelinstanz; die UI darf nicht zu einer zweiten werden.
 
 Der UiKernel ist **keine zweite Spielschicht**. Er besitzt nur flüchtigen UI-Zustand und übersetzt Nutzerabsichten in Kommandos an `Game.gd`.
 
-## Zielbild
+## Ist-Aufbau nach der Extraktion
 
 ```text
-Main.gd (Composition Root)
+Main.gd (Composition Root + Renderer)
   ├─ UiKernel.gd
-  │    ├─ SelectionState
-  │    ├─ ModalStack
-  │    ├─ CommandRouter
-  │    └─ ViewModelBuilder
-  ├─ Panels/ (reine Darstellung)
-  │    ├─ TopBar
-  │    ├─ ProvincePanel
-  │    ├─ EventModal
-  │    ├─ PickerModal
-  │    └─ FamilyTreeOverlay
-  ├─ MapView.gd / FamilyTree.gd (Projektionen)
+  │    ├─ SelectionState  (selection)
+  │    ├─ ModalStack      (modal_stack, push/pop/top)
+  │    └─ CommandRouter   (dispatch/_route, Handler für save/load)
+  ├─ ViewModelBuilder.gd  (reine Anzeigezeichenketten und Flags)
+  ├─ MapView.gd / FamilyTree.gd (Projektionen; erhalten weiterhin game)
   ├─ Game.gd (Regeln, autoritativer Zustand)
   └─ SaveGame.gd (Schema, Migration, Diff)
 ```
+
+Die Panels sind weiterhin in `Main.gd` aufgebaut. Die in einer früheren Ausbaustufe angedachte Auslagerung einzelner Panel-Klassen ist **nicht** Teil dieser Extraktion; die sichtbare Oberfläche und ihre Signale bleiben unverändert.
 
 ## Zuständigkeiten
 
 | Modul | Darf | Darf nicht | Test |
 |---|---|---|---|
-| `Main.gd` | Szene aufbauen, `Game` erzeugen, Panels verdrahten, Signalverbindungen lösen | Regeln auswerten, Spielzustand direkt mutieren, Dateien lesen/schreiben | `HousePlayTest`, `CustomizeTest` |
-| `UiKernel.gd` | Auswahl, Modalstapel, Kommando-Routing, Ergebnisweitergabe, UI-Signale | `houses`, `provinces`, `gold` oder `opinion` direkt schreiben; `FileAccess` benutzen | neuer `UiKernelTest` |
+| `Main.gd` | Szene aufbauen, `Game` erzeugen, Panels rendern, Signale verdrahten, Save/Load als Randkommando ausführen, Customizer-Snapshot übernehmen | Regeln auswerten, Spielzustand aus Button-Callbacks direkt mutieren | `HousePlayTest`, `CustomizeTest` |
+| `UiKernel.gd` | Auswahl, Modalstapel, Kommando-Routing, Ergebnisweitergabe, `game.speed` als UI-Zeitlauf setzen | `houses`, `provinces`, `gold` oder `opinion` direkt schreiben; `FileAccess` benutzen | `UiKernelTest` |
 | `ViewModelBuilder` | Snapshot in Anzeigezeichenketten, Flags und deaktivierte Buttons übersetzen | Spielzustand verändern oder Zufall ziehen | `UiKernelTest` mit goldenen Strings |
-| Panels | Signale senden, gerenderte Werte anzeigen | `game` halten, `Game`-Methoden aufrufen, Speichern auslösen | Panel-Smoke |
+| `MapView.gd`, `FamilyTree.gd` | Den aktuellen Spielstand lesen und projizieren | Regeln verändern | `MapTest`, `ShotTest` |
 | `Game.gd` | Regeln, Kosten, Abklingzeiten, Zustandsübergänge, `snapshot()`/`restore()` | UI-Typen, `Control`, `FileAccess`, konkrete Button-Texte | `HouseTest`, `IntrigueTest`, `SaveMigrationTest` |
 | `SaveGame.gd` | Schema, Migration, Validierung, kanonischer Diff | UI oder Regeln | `SaveMigrationTest` |
 
@@ -47,12 +43,12 @@ Main.gd (Composition Root)
 Jede Nutzerabsicht wird als ein Kommando mit stabiler ID geroutet. Die UI ruft nie `game.attack()` direkt aus einem Button-Callback auf.
 
 ```gdscript
-# UiKernel.gd, Zielvertrag (Welle 1)
+# UiKernel.gd
 func dispatch(command: Dictionary) -> Dictionary:
     # command = {"id": "attack", "target": "alba", "source": "province_panel"}
-    var result: Dictionary = _route(command)
+    var result: Dictionary = _route(...)
     if bool(result.get("ok", false)):
-        emit_signal("state_changed", result.get("refresh", []))
+        state_changed.emit(result.get("refresh", []))
     return result
 ```
 
@@ -75,46 +71,48 @@ Regeln:
 3. Ein blockiertes Kommando verändert keinen Spielzustand und erzeugt keinen Log-Eintrag im Spiel, nur optional einen UI-Hinweis.
 4. `refresh` ist eine Liste von Panel-IDs, keine direkte Control-Referenz.
 5. Der UiKernel darf einen Snapshot lesen, aber niemals einen eigenen Spielzustand daraus ableiten, der gespeichert wird.
+6. `save` und `load` werden an Handler in `Main.gd` delegiert; der Kernel öffnet selbst keine Datei.
 
-## Kommando-IDs (Ist und Ziel)
+## Kommando-IDs (umgesetzt)
 
-| ID | Heute in `Main.gd` | Ziel | persistiert |
+| ID | Aufruf nach der Extraktion | Autoritative Methode | persistiert |
 |---|---|---|---|
-| `develop` | `game.develop(selected)` | `command.develop` | `provinces[].dev`, `gold` |
-| `recruit` | `game.recruit(selected)` | `command.recruit` | `provinces[].levy`, `gold` |
-| `attack` | `game.attack(selected)` | `command.attack` | `provinces[].owner`, `levy`, `prestige` |
-| `court` | `game.court()` | `command.court` | `gold`, `prestige` |
-| `marry` | `_pick("marry", target)` | `command.marry` | `spouse`, `opinion`, `gold` |
-| `bed` | `game.bed()` | `command.bed` | `pregnant`, `cooldowns` |
-| `seduce` | `game.seduce(target)` | `command.seduce` | `lover_house`, `opinion`, `scandal` |
-| `murder` | `game.murder(target)` | `command.murder` | `ruler`, `opinion`, `prestige` |
-| `kidnap` | `game.kidnap(target)` | `command.kidnap` | `captive`, `opinion` |
-| `ransom` | `game.ransom_captive()` | `command.ransom` | `gold`, `captive`, `opinion` |
-| `force_marry` | `game.force_marry_captive()` | `command.force_marry` | `spouse`, `captive`, `opinion` |
-| `apply_event` | `_choose(index)` | `command.apply_event` | Ereigniswirkungen |
-| `set_speed` | `_set_speed(value)` | `command.set_speed` | nur UI/`speed` |
-| `save` | `_save()` | `command.save` | Datei |
-| `load` | `_load()` | `command.load` | Datei |
-| `council_assign` | `game.assign_council(office, index)` | `command.council_assign` | `council`, indirekt `levy` über H1 |
-| `law_succession` | `game.set_law("succession", value)` | `command.law_succession` | `laws.succession`, `heir` über H2 |
-| `build` | `game.build(id, key)` | `command.build` | `buildings`, `gold`, `levy`/`defense` über H5 |
-| `set_tax` | `game.set_law("tax", value)` | `command.set_tax` | `laws.tax`, indirekt `gold` über H3 |
-| `fabricate_claim` | `game.fabricate_claim(id)` | `command.claim` | `claims`, `gold` |
-| `raise_army` | `game.raise_army(id)` | `command.army` | `armies`, `gold` |
-| `advance_siege` | `game.advance_siege(id)` | `command.siege` | `siege`, `owner`, `dev`, `buildings` |
-| `make_peace` | `game.make_peace(house)` | `command.peace` | `truces`, `opinion`, ggf. `spouse` |
-| `discover_secret` | `game.discover_secret(house)` | `command.secret_discover` | `secrets` |
-| `expose_secret` | `game.expose_secret(house)` | `command.secret_expose` | `scandal`, `opinion`, `claims` |
+| `develop` | `kernel.dispatch({"id":"develop"})` | `game.develop(selection)` | `provinces[].dev`, `gold` |
+| `recruit` | `kernel.dispatch({"id":"recruit"})` | `game.recruit(selection)` | `provinces[].levy`, `gold` |
+| `attack` | `kernel.dispatch({"id":"attack"})` | `game.attack(selection)` | `provinces[].owner`, `levy`, `prestige` |
+| `court` | `kernel.dispatch({"id":"court"})` | `game.court()` | `gold`, `prestige` |
+| `marry` | `_pick("marry", target)` → `kernel.dispatch` | `game.do_action("marry", target)` | `spouse`, `opinion`, `gold` |
+| `bed` | `kernel.dispatch({"id":"bed"})` | `game.bed()` | `pregnant`, `cooldowns` |
+| `seduce` | `_pick("seduce", target)` → `kernel.dispatch` | `game.do_action("seduce", target)` | `lover_house`, `opinion`, `scandal` |
+| `murder` | `_pick("murder", target)` → `kernel.dispatch` | `game.do_action("murder", target)` | `ruler`, `opinion`, `prestige` |
+| `kidnap` | `_pick("kidnap", target)` → `kernel.dispatch` | `game.do_action("kidnap", target)` | `captive`, `opinion` |
+| `ransom` | `kernel.dispatch({"id":"ransom"})` | `game.ransom_captive()` | `gold`, `captive`, `opinion` |
+| `force_marry` | `kernel.dispatch({"id":"force_marry"})` | `game.force_marry_captive()` | `spouse`, `captive`, `opinion` |
+| `apply_event` | `_choose(index)` → `kernel.dispatch` | `game.apply_event(option)` | Ereigniswirkungen |
+| `set_speed` | `_set_speed(value)` → `kernel.dispatch` | `game.speed = value` | nur UI/`speed` |
+| `save` | `kernel.dispatch({"id":"save"})` | `Main._save()` über Handler | Datei |
+| `load` | `kernel.dispatch({"id":"load"})` | `Main._load()` über Handler | Datei |
+| `council_assign` | `_cycle_council(office)` → `kernel.dispatch` | `game.assign_council(office, index)` | `council`, indirekt `levy` über H1 |
+| `law_succession` | `_toggle_succession()` → `kernel.dispatch` | `game.set_law("succession", value)` | `laws.succession`, `heir` über H2 |
+| `build` | `_build_system(key)` → `kernel.dispatch` | `game.build(selection, key)` | `buildings`, `gold`, `levy`/`defense` über H5 |
+| `set_tax` | `_toggle_tax()` → `kernel.dispatch` | `game.set_law("tax", value)` | `laws.tax`, indirekt `gold` über H3 |
+| `claim` | `_fabricate_claim()` → `kernel.dispatch` | `game.fabricate_claim(selection)` | `claims`, `gold` |
+| `army` | `_raise_army()` → `kernel.dispatch` | `game.raise_army(selection)` | `armies`, `gold` |
+| `siege` | `_advance_siege()` → `kernel.dispatch` | `game.advance_siege(selection)` | `siege`, `owner`, `dev`, `buildings` |
+| `peace` | `_make_peace()` → `kernel.dispatch` | `game.make_peace(target_house)` | `truces`, `opinion`, ggf. `spouse` |
+| `secret_discover` | `_discover_secret()` → `kernel.dispatch` | `game.discover_secret(target_house)` | `secrets` |
+| `secret_expose` | `_expose_secret()` → `kernel.dispatch` | `game.expose_secret(target_house)` | `scandal`, `opinion`, `claims` |
 
 `save` und `load` sind Randkommandos: Sie dürfen `Game.snapshot()` und `Game.restore()` benutzen, aber nie eigenes JSON schreiben. Das Schema bleibt in `SaveGame.gd`.
 
 ## Modalstapel
 
-Es gibt genau einen sichtbaren Modalzustand. `Escape` schließt den obersten Eintrag, danach wird der darunterliegende Zustand wiederhergestellt.
+Der Kernel führt den Stapel als flüchtigen UI-Zustand. `set_base_modal()` setzt `start` oder `game`; `push_modal()` und `pop_modal(expected)` verwalten die darüberliegenden Ebenen. Ein doppeltes Öffnen desselben obersten Zustands wird ignoriert; ein `pop_modal()` mit falscher Erwartung lässt den Stapel unverändert.
 
 | Zustand | Öffner | Schließer | Darf Spielzustand ändern |
 |---|---|---|---|
 | `start` | `_show_start()` | Spielstart | nein |
+| `game` | `_start()` / `_create_begin()` / `_load()` | Spielende | nein |
 | `new_game` | `_show_newgame()` | Zurück | nein |
 | `create` | `_show_create()` | Zurück/Start | ja, nur beim Start |
 | `customizer` | Porträt/Wappen | Abbrechen/Übernehmen | ja, nur nach Bestätigung |
@@ -122,21 +120,22 @@ Es gibt genau einen sichtbaren Modalzustand. `Escape` schließt den obersten Ein
 | `event` | offenes Ereignis | Optionsknopf | ja, genau eine Option |
 | `family_tree` | Stammbaum | Schließen | nein |
 | `herrschaft` | Herrschaftsbutton | Schließen | ja, Rat, Gesetz und Bau über `Game`-Kommandos |
-| `game_over` | Tod ohne Erben | Neues Spiel | nein |
 
-Der Modalstapel ist UI-Zustand und wird **nicht** gespeichert. Nach `load` wird er auf `start`/`game` zurückgesetzt.
+`game_over` ist ein eigenes Overlay (`over_layer`) und wird aus dem autoritativen `game.game_over` gerendert; es ist kein Eintrag im Stapel. „Neues Spiel“ ruft `_show_start()` auf und setzt den Stapel auf `start` zurück.
 
-## Schrittweise Extraktion
+`Escape` schließt den obersten Eintrag für `herrschaft`, `customizer`, `create` und `new_game`. `picker`, `family_tree` und `event` haben sichtbare Schließen- beziehungsweise Wahlknöpfe; das Ereignis muss über eine Option aufgelöst werden. Nach `load` wird der Stapel auf `game` zurückgesetzt. Der Stapel wird **nicht** gespeichert.
 
-| Schritt | Verschiebung | Verhaltensänderung | Gate |
+## Umgesetzte Extraktion
+
+| Schritt | Umsetzung | Verhaltensänderung | Gate |
 |---|---|---|---|
-| 1 | Kommando-IDs und `dispatch()`-Gerüst aus `Main.gd` herausziehen; bestehende Buttons rufen nur noch `dispatch` | keine | `HousePlayTest`, `IntrigueTest`, `CustomizeTest` |
-| 2 | `EventModal` und `PickerModal` aus `_show_event`/`_open_picker` lösen | keine | dieselben Tests plus `SaveMigrationTest` |
-| 3 | `ProvincePanel` und `TopBar` aus `refresh()` lösen; `ViewModelBuilder` liefert nur Strings/Flags | keine | `TouchTest`, `ShotTest` |
-| 4 | `MapView` und `FamilyTree` erhalten Projektionen statt `game` | keine | `MapTest`, `ShotTest` |
-| 5 | `UiKernelTest` prüft blockierte Kommandos, Modalstapel und Save-Grenze | keine | alle Suiten |
+| 1 | Kommando-IDs und `dispatch()` aus `Main.gd` herausgezogen; Buttons rufen nur noch `_dispatch()` | keine | `HousePlayTest`, `IntrigueTest`, `CustomizeTest` |
+| 2 | Event- und Picker-Anzeige über `ViewModelBuilder` und Modalstapel gelöst | keine | dieselben Tests plus `SaveMigrationTest` |
+| 3 | `refresh()` und `_refresh_rule()` beziehen Strings/Flags aus `ViewModelBuilder`; Rendering bleibt in `Main` | keine | `TouchTest`, `ShotTest` |
+| 4 | `MapView`/`FamilyTree` behalten ihre bestehende `game`-Projektion; keine Änderung an der Karten- oder Baumdarstellung | keine | `MapTest`, `ShotTest` |
+| 5 | `UiKernelTest` prüft Auswahl, Modalstapel, blockierte und gültige Kommandos, Save-Grenze und goldene View-Model-Strings | keine | `UiKernelTest` |
 
-Nach jedem Schritt gilt: `Game.gd` bleibt autoritativ, `snapshot()`/`restore()` bleiben unverändert, und der Save-Test läuft.
+Die weitergehende Aufteilung der in `Main.gd` aufgebauten Panels in eigene Klassen ist eine mögliche Folgestufe, aber **kein Bestandteil und keine Voraussetzung** der abgeschlossenen UiKernel-Extraktion.
 
 ## Anti-Ziele
 
@@ -146,8 +145,14 @@ Nach jedem Schritt gilt: `Game.gd` bleibt autoritativ, `snapshot()`/`restore()` 
 - Kein direktes `game.houses[...] = ...` aus einem Panel. Ausnahmen sind nur Leseoperationen.
 - Keine vorzeitige Aufteilung von `Game.gd` in viele Manager, solange die Kanten nicht durch Tests belegt sind.
 
-## Status Welle 1–3
+## Abnahme
 
-Die Grenze ist dokumentiert und `SaveGame.gd` ist ausgelagert. Das Modal „Herrschaft“ ruft für Rat, Erbfolge, Steuern, Markt, Kaserne, Mauern, Ansprüche, Armee, Belagerung, Frieden und Geheimnisse ausschließlich `Game`-Methoden auf; der Spielzustand bleibt dort autoritativ. Die formale `UiKernel`-Klasse mit `dispatch()` existiert noch nicht, deshalb bleiben die Aufrufe in `Main.gd`. `Main._load()` prüft weiterhin den Rückgabewert von `Game.restore()` und bricht bei einem ungültigen Stand sichtbar ab.
+Die UiKernel-Extraktion ist abgeschlossen. `Main.gd` bleibt Composition Root und Renderer; `UiKernel.gd` hält Auswahl und Modalstapel und routet alle Spielkommandos; `ViewModelBuilder.gd` liefert ausschließlich Anzeigezeichenketten und Flags. `Game.gd` bleibt autoritativ, `SaveGame.gd` bleibt für das Schema zuständig. Die Dateioperationen für Speichern und Laden bleiben in `Main.gd` und werden vom Kernel nur über Handler aufgerufen.
 
-`TouchTest` prüft die Kartenauswahl und den Ausbau per echtem `InputEventScreenTouch`; `ShotTest` rendert Start, Erstellung, Spiel, Stammbaum und Customizer. Das erweiterte Herrschaftsmodal ist durch Script-Parse, Touch-Smoke und Windows-Export abgedeckt, aber noch nicht mit einem eigenen Button-für-Button-Test.
+Regressionslauf vom 2026-11-06 (Godot 4.5.stable, Logs unter `build/verify/uikernel/`):
+
+- Headless: `MapDataTest`, `MapTest`, `HouseTest`, `HousePlayTest`, `IntrigueTest`, `CustomizeTest`, `PortraitTest`, `SaveMigrationTest`, `SystemicDepthTest`, `FullDepthTest`, `StoryTest` — alle grün.
+- Mit Fenster/Rendering: `TouchTest` (echter `InputEventScreenTouch`) und `ShotTest` (fünf Bilder, 1280×720) — beide grün.
+- `UiKernelTest` — 35 Prüfungen, grün.
+
+Die Release-Artefakte APK und EXE wurden für diese Extraktion nicht neu gebaut. `repo-compare/` blieb unverändert; es wurde kein Remote gesetzt, nichts gepusht und kein PR erstellt.

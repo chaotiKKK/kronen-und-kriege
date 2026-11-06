@@ -1145,6 +1145,9 @@ func expose_secret(target_house: int, house_index: int = -1) -> Dictionary:
 				"before": 0, "after": 1, "delta": 1, "reason": "Geheimnis als Anspruch"})
 	return _res(true, "Das Geheimnis wird ausgenutzt.")
 
+func is_border_province(house_index: int, province_id: String) -> bool:
+	return _is_border_province(house_index, province_id)
+
 func _is_border_province(house_index: int, province_id: String) -> bool:
 	for p in provinces:
 		if int(p["owner"]) == house_index and neighbours(str(p["id"])).has(province_id):

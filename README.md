@@ -13,7 +13,7 @@ Bronzezeit-Grand-Strategy für **Android und Windows**, gebaut mit Godot 4.5. Ke
 Die systemische Tiefe ist in versionierten Dokumenten festgehalten:
 
 - [`docs/waves.md`](docs/waves.md) — Wellenplan und Exit-Gates
-- [`docs/ui-kernel.md`](docs/ui-kernel.md) — UiKernel-Zuschnitt und schrittweise Extraktion
+- [`docs/ui-kernel.md`](docs/ui-kernel.md) — UiKernel-Zuschnitt und abgeschlossene Extraktion
 - [`docs/depth-contract.md`](docs/depth-contract.md) — Depth Contract und 30-Minuten-Messlatte
 - [`docs/interaction-matrix.md`](docs/interaction-matrix.md) — Kanten der vier Säulen mit Quelle, Ziel und Zustandsgröße
 - [`docs/save-schema.md`](docs/save-schema.md) — Schema 4, Migration und Nachweis
