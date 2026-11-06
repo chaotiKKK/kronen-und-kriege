@@ -27,12 +27,13 @@ Der Save ist migrationfest: Schema 1 wird beim Laden auf Schema 4 gehoben; Gebä
 | | |
 |---|---|
 | Datei | `F:\ck3-kronen-kriege.apk` |
-| Größe | 196.754.057 Bytes (ca. 188 MiB) |
-| SHA-256 | `d5429a1c9aa5ea6bb5b6543675b53834012acc3cd5cce389be603452421cc71b` |
+| Größe | 179.739.313 Bytes (ca. 171 MiB) |
+| SHA-256 | `a1bf2bd383206027316c38e80366932f560e6d4a3ac4a42f7efb952483f1782b` |
 | Paket | `org.example.kronen`, versionCode 3, versionName 1.2 |
 | SDK | minSdk 24, targetSdk 35 (compileSdk 35) |
 | ABIs | `arm64-v8a`, `armeabi-v7a` (keine x86-Bibliotheken) |
-| Signatur | Debug-Keystore; Signatur in diesem Lauf nicht erneut geprüft |
+| Signatur | APK Signature Scheme v2 gültig (`apksigner`); Debug-Zertifikat `CN=Android Debug`, RSA 2048; Zertifikat-SHA-256 `da3c6296edd521ad9f67d6d52d1cfe71fa5115e8d7ee0dfbca0a5c2c663802ac`; `zipalign -c 4` ok |
+| Einstieg | Launchable Activity `com.godot.game.GodotApp` |
 | Inhalt | APK mit Wappen, Porträts, Icons, Karten- und Audiodaten |
 
 Installation: Datei aufs Gerät kopieren und dort öffnen (Installation aus unbekannten Quellen erlauben) oder
@@ -46,11 +47,23 @@ adb install -r "F:\ck3-kronen-kriege.apk"
 | | |
 |---|---|
 | Datei | `F:\ck3-kronen-kriege.exe` |
-| Größe | 129.913.240 Bytes (ca. 124 MiB) |
-| SHA-256 | `dc2361df86f86eb6a7b7d104f47a5ea0b1c6d724f8b17b5599447045f9e5666b` |
+| Größe | 112.723.088 Bytes (ca. 108 MiB) |
+| SHA-256 | `b17e0bb45ffd5ac7235f15d4405825a2de877f906932ac08f42aa5e7dbee2393` |
 | Version | 1.2.0.0, Produkt „Kronen und Kriege“ |
 | Format | einzelne x86_64-EXE mit eingebetteter PCK, eigenem Icon und Versionsressourcen |
 | Start | Doppelklick auf die EXE; `F11` schaltet Vollbild |
+| Geprüft | Fenster `1298x765`, Titel „Kronen und Kriege“, Startmenü, `MAIN_READY`, Exit 0; drei aufeinanderfolgende Läufe grün |
+
+### Release-Verifikation
+
+Die beiden automatischen Abnahmen sind reproduzierbar:
+
+```
+bash tools/verify_android_apk.sh "F:/ck3-kronen-kriege.apk"
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/verify_windows_start.ps1
+```
+
+Die APK-Prüfung bestätigt mit `apksigner` `Verifies`, APK Signature Scheme v2, genau einen Signer und das Debug-Zertifikat. `aapt dump badging` weist Paket, Version, minSdk/targetSdk, Launchable Activity und beide ABIs aus; `zipalign -c -v 4` bestätigt die Ausrichtung. Die Windows-Prüfung startet die EXE ohne erzwingenden `--quit-after`, wartet auf `MAIN_READY`, prüft Fenster, Sichtbarkeit und einen nichtleeren Render-Frame, schließt per `WM_CLOSE` und verlangt Exit 0 sowie keine `ERROR`-/Exception-Zeilen. Der Screenshot liegt unter `build/verify/windows-start.png`. Drei Läufe hintereinander waren grün. Die einzige Log-Warnung ist die umgebungsbedingte Godot-Meldung zu Windows-Common-Controls; sie ist keine Fehlerzeile.
 
 ## Spielinhalt
 
@@ -169,7 +182,7 @@ Wichtig für den Nachbau:
 
 ## Tests
 
-Alle Tests liegen unter `tests/` und werden nicht in die Builds exportiert.
+Alle Tests liegen unter `tests/` und werden nicht in die Builds exportiert; `build/` ist ebenfalls aus beiden Exporten ausgeschlossen.
 
 ```
 cd mobile-godot/.tools
@@ -201,6 +214,8 @@ APPDATA="$PWD/appdata" ./godot.exe --path .. res://tests/ShotTest.tscn --resolut
 | `.tools/keystores/debug.keystore` | Debug-Key (Alias `androiddebugkey`) |
 | `.tools/rcedit-x64.exe` | Icon- und Versionsressourcen der Windows-EXE |
 | `android/build/` | Android-Buildvorlage aus `android_source.zip` |
+| `tools/verify_android_apk.sh` | Signatur-, Zertifikats-, Zipalign- und Badging-Prüfung der APK |
+| `tools/verify_windows_start.ps1` | Start-, Fenster-, Render-Frame- und Shutdown-Prüfung der EXE |
 
 Android SDK: `C:\Users\HP\AppData\Local\Android\Sdk` (build-tools 36.1.0, Platform 35).
 
@@ -218,7 +233,7 @@ scripts/MapView.gd        texturierte Karte, Wappen, Touch- und Mausauswahl
 scripts/FamilyTree.gd     zeichnet Stammbaum, Ehe-Linie und Erbfolge
 scripts/Main.gd           Startmenü, Erstellung, Hofpanel, Herrscher-Werkstatt, Stammbaum, Zeitlauf
 assets/                   eigene Wappen, Porträts, Icons, Karten-, UI- und Audiodaten
-tools/                    Asset-, Audio- und Icon-Generatoren
+tools/                    Asset-, Audio-, Icon- und Release-Verifikationswerkzeuge
 tests/                    Karten-, Haus-, Intrigen-, Anpassungs-, Touch- und Bildtests
 android/build/            Android-Buildvorlage (nicht Teil des Exports)
 export_android.sh         Android-Build
@@ -240,8 +255,24 @@ export_windows.sh         Windows-Build
 - `CustomizeTest`: Porträt-Klick, Wappen, Hausfarbe, Name, Hausname, Geschlecht, Alter und Werte; Speichern/Laden und Abbrechen grün.
 - `TouchTest`: Auswahl per `InputEventScreenTouch` und Ausbau per Touch.
 - `ShotTest`: fünf gerenderte Bilder, inklusive Herrscher-Werkstatt.
-- Android: Schema-4-Export erfolgreich (Exit 0), 196.754.057 Bytes, SHA-256 `d5429a1c9aa5ea6bb5b6543675b53834012acc3cd5cce389be603452421cc71b`. Signatur und Installation auf Hardware wurden in diesem Lauf nicht erneut geprüft; der vorhandene Touch-Smoke läuft lokal.
-- Windows: Schema-4-Export erfolgreich (Exit 0), 129.913.240 Bytes, SHA-256 `dc2361df86f86eb6a7b7d104f47a5ea0b1c6d724f8b17b5599447045f9e5666b`, eingebettete PCK, Audio und Versionsressourcen vorhanden. Ein visueller Windows-Start wurde nicht automatisiert geprüft.
+- Headless-Läufe: alle elf Suiten Exit 0; die Main-basierten Tests laufen ohne Audio- und Ressourcen-Leak-Warnungen.
+- Android: Schema-4-Export erfolgreich (Exit 0), 179.739.313 Bytes, SHA-256 `a1bf2bd383206027316c38e80366932f560e6d4a3ac4a42f7efb952483f1782b`; `apksigner` bestätigt v2, einen Signer und das Debug-Zertifikat; `zipalign` ok; Badging: `org.example.kronen`, versionCode 3/versionName 1.2, minSdk 24, targetSdk 35, Activity `com.godot.game.GodotApp`, ABIs `arm64-v8a`/`armeabi-v7a`. Kein ADB-Gerät angeschlossen, daher keine physische Installation in diesem Lauf.
+- Windows: Schema-4-Export erfolgreich (Exit 0), 112.723.088 Bytes, SHA-256 `b17e0bb45ffd5ac7235f15d4405825a2de877f906932ac08f42aa5e7dbee2393`, eingebettete PCK, Audio und Versionsressourcen vorhanden. Drei automatisierte Startläufe: Fenster `1298x765`, Titel „Kronen und Kriege“, Startmenü, `MAIN_READY`, Exit 0, keine `ERROR`-/Exception-Zeilen.
+
+## Offene manuelle Abnahme
+
+Automatisch nicht möglich sind nur diese Punkte:
+
+1. **Installation und Start auf einem realen Android-Gerät.** `adb devices` zeigt aktuell kein Gerät. Auf einem Gerät mit aktiviertem USB-Debugging:
+
+   ```
+   adb install -r "F:\ck3-kronen-kriege.apk"
+   adb shell am start -n org.example.kronen/com.godot.game.GodotApp
+   ```
+
+   Danach „Neues Spiel“ wählen, Karte und Porträt antippen, einen Ausbau und Speichern/Laden auslösen und auf Abstürze prüfen.
+
+2. **Menschlicher 30-Minuten-Spielauf.** Eine vollständige Partie über 30 Minuten (Android oder Windows), inklusive mehrerer Entscheidungen, Speichern/Laden, Krieg/Diplomatie und einer Sichtprüfung der Darstellung, ist kein automatisierbarer Nachweis. Die automatischen Tests decken die Spiellogik, die Start-EXE und die Touch-/Bildpfade ab, aber nicht das Langzeitverhalten auf realer Hardware.
 
 ## Warum keine CK3-Assets
 

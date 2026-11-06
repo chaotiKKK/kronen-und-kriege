@@ -101,9 +101,31 @@ var ICONS: Dictionary = {}
 
 func _ready() -> void:
 	_load_assets()
-	_load_audio()
+	# Headless-Tests brauchen keinen Audio-Stream; die Wiedergabe kann beim
+	# harten Test-Quit eine Ressource offen halten.
+	if DisplayServer.get_name() != "headless":
+		_load_audio()
 	_build()
 	_show_start()
+	print("MAIN_READY version=1.2")
+
+func _stop_audio() -> void:
+	# Die laufende Ambient-Wiedergabe kann beim Engine-Shutdown eine Ressource
+	# offen halten; vor dem Quit sauber stoppen und loesen.
+	if ambient_player != null:
+		ambient_player.stop()
+		ambient_player.stream = null
+	if click_player != null:
+		click_player.stop()
+		click_player.stream = null
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		_stop_audio()
+		get_tree().quit()
+
+func _exit_tree() -> void:
+	_stop_audio()
 
 func _load_audio() -> void:
 	ambient_player = AudioStreamPlayer.new()

@@ -1,6 +1,6 @@
 extends Control
 ## Ladebildschirm: zeigt Titelart, Wortmarke, Fortschritt und Tipps, während
-## die Hauptszene in einem Thread geladen wird. Wechselt danach mit Fade.
+## die Hauptszene geladen wird. Wechselt danach mit Fade.
 
 const TEX_BG = preload("res://assets/ui/title_bg.png")
 const TEX_LOGO = preload("res://assets/ui/logo_title.png")
@@ -22,14 +22,26 @@ var shown: float = 0.0
 var tip_timer: float = 0.0
 var tip_index: int = 0
 var done: bool = false
-var packed: PackedScene
+var load_failed: bool = false
+var loaded_ok: bool = false
 
 func _ready() -> void:
 	_build()
-	ResourceLoader.load_threaded_request(MAIN_PATH, "PackedScene")
+	# Synchron laden: Der Threaded-Loader scheitert im exportierten Windows-Build
+	# reproduzierbar an der eingebetteten PCK. Der Ladebildschirm bleibt sichtbar,
+	# weil der Wechsel erst nach 2,4 s und dem Fade erfolgt.
+	call_deferred("_load_main")
 	modulate.a = 0.0
 	var tw := create_tween()
 	tw.tween_property(self, "modulate:a", 1.0, 0.7)
+
+func _load_main() -> void:
+	var main_scene := load(MAIN_PATH) as PackedScene
+	loaded_ok = main_scene != null
+	main_scene = null
+	if not loaded_ok:
+		load_failed = true
+		status.text = "Laden fehlgeschlagen. Bitte das Spiel neu starten."
 
 func _label(text: String, px: int, col: Color) -> Label:
 	var l := Label.new()
@@ -130,29 +142,17 @@ func _process(delta: float) -> void:
 		tip_index = (tip_index + 1) % TIPS.size()
 		tip.text = "TIPP · " + TIPS[tip_index]
 
-	var progress: Array = []
-	var state: int = ResourceLoader.load_threaded_get_status(MAIN_PATH, progress)
-	var real: float = 0.0
-	if progress.size() > 0:
-		real = float(progress[0]) * 100.0
-	if state == ResourceLoader.THREAD_LOAD_LOADED:
-		packed = ResourceLoader.load_threaded_get(MAIN_PATH) as PackedScene
-		real = 100.0
+	if load_failed:
+		return
 
-	var fake: float = 88.0 * clampf(elapsed / 1.9, 0.0, 1.0)
-	var target: float = maxf(real, fake)
-	if state == ResourceLoader.THREAD_LOAD_LOADED:
-		target = 100.0
+	var target: float = 100.0 if loaded_ok else 88.0 * clampf(elapsed / 1.9, 0.0, 1.0)
 	shown = lerpf(shown, target, 1.0 - pow(0.002, delta))
 	if target - shown < 0.6:
 		shown = target
 	bar.value = shown
 	percent.text = "%d %%" % int(round(shown))
 
-	if state == ResourceLoader.THREAD_LOAD_FAILED or state == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
-		status.text = "Laden fehlgeschlagen. Bitte das Spiel neu starten."
-		return
-	if state == ResourceLoader.THREAD_LOAD_LOADED and elapsed >= 2.4 and shown >= 96.0:
+	if loaded_ok and elapsed >= 2.4 and shown >= 96.0:
 		_finish()
 
 func _finish() -> void:
@@ -163,8 +163,5 @@ func _finish() -> void:
 	var tw := create_tween()
 	tw.tween_property(self, "modulate:a", 0.0, 0.45)
 	tw.tween_callback(func():
-		if packed != null:
-			get_tree().change_scene_to_packed(packed)
-		else:
-			get_tree().change_scene_to_file(MAIN_PATH)
+		get_tree().change_scene_to_file(MAIN_PATH)
 	)
