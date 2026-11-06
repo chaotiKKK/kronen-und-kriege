@@ -6,12 +6,17 @@ extends RefCounted
 ##   source   Quellsystem für den Beleg
 ##   target   Zieldomäne für den Beleg
 ##   state    konkrete Zustandsgröße, z. B. "provinces[alba].levy"
-##   kind     gold | prestige | legitimacy | levy | opinion | building | heir
+##   kind     gold | prestige | legitimacy | levy | opinion | building | heir |
+##            scandal | dev | defense | siege | faction_power | faction_loyalty |
+##            law | ruler_stat | truce
 ##   house    Hausindex (Default: Spieler)
-##   amount   ganze Zahl; building und heir ignorieren sie
-##   province Provinz-ID für levy/building
+##   amount   ganze Zahl; building, heir und law ignorieren sie
+##   province Provinz-ID für levy/building/dev/defense/siege
 ##   building market | barracks | walls
-##   index    Zielhaus für opinion
+##   index    Zielhaus für opinion oder Faktionsindex
+##   target_house  Zielhaus für truce
+##   law_key, law_value  Gesetzesfeld und neuer Wert
+##   stat     Charakterwert für ruler_stat
 ##
 ## Der Resolver liest den Wert, schreibt ihn, erzeugt einen Beleg und legt ihn
 ## über host.record_effect() ab. Wenn eine Kante per Testhook deaktiviert ist,
@@ -71,6 +76,24 @@ func _read(host, effect: Dictionary):
 			return int((province.get("buildings", {}) as Dictionary).get(key, 0))
 		"heir":
 			return str(host.houses[house_index].get("heir", ""))
+		"scandal":
+			return int(host.scandal)
+		"dev":
+			return int(host.province(str(effect.get("province", ""))).get("dev", 0))
+		"defense":
+			return int(host.province(str(effect.get("province", ""))).get("defense", 0))
+		"siege":
+			return int(host.province(str(effect.get("province", ""))).get("siege", 0))
+		"faction_power":
+			return _faction_value(host, house_index, effect, "power")
+		"faction_loyalty":
+			return _faction_value(host, house_index, effect, "loyalty")
+		"law":
+			return (host.houses[house_index].get("laws", {}) as Dictionary).get(str(effect.get("law_key", "tax")), 0)
+		"ruler_stat":
+			return int((host.houses[house_index].get("ruler", {}) as Dictionary).get(str(effect.get("stat", "martial")), 0))
+		"truce":
+			return int((host.houses[house_index].get("truces", {}) as Dictionary).get(str(int(effect.get("target_house", -1))), 0))
 	return null
 
 func _write(host, effect: Dictionary, before):
@@ -109,7 +132,69 @@ func _write(host, effect: Dictionary, before):
 			return int(buildings[key])
 		"heir":
 			return _write_heir(host, house_index)
+		"scandal":
+			host.scandal = maxi(0, int(before) + amount)
+			return int(host.scandal)
+		"dev":
+			var dev_province: Dictionary = host.province(str(effect.get("province", "")))
+			if dev_province.is_empty():
+				return before
+			dev_province["dev"] = clampi(int(before) + amount, 1, 10)
+			return int(dev_province["dev"])
+		"defense":
+			var defense_province: Dictionary = host.province(str(effect.get("province", "")))
+			if defense_province.is_empty():
+				return before
+			defense_province["defense"] = clampi(int(before) + amount, 0, 100)
+			return int(defense_province["defense"])
+		"siege":
+			var siege_province: Dictionary = host.province(str(effect.get("province", "")))
+			if siege_province.is_empty():
+				return before
+			siege_province["siege"] = clampi(int(before) + amount, 0, 100)
+			siege_province["siege_owner"] = int(effect.get("house", host.player))
+			return int(siege_province["siege"])
+		"faction_power":
+			return _write_faction(host, house_index, effect, "power", before)
+		"faction_loyalty":
+			return _write_faction(host, house_index, effect, "loyalty", before)
+		"law":
+			var laws: Dictionary = host.houses[house_index].get("laws", {})
+			laws[str(effect.get("law_key", "tax"))] = effect.get("law_value", before)
+			host.houses[house_index]["laws"] = laws
+			return laws[str(effect.get("law_key", "tax"))]
+		"ruler_stat":
+			var ruler: Dictionary = host.houses[house_index].get("ruler", {})
+			var stat: String = str(effect.get("stat", "martial"))
+			ruler[stat] = clampi(int(before) + amount, 1, 20)
+			return int(ruler[stat])
+		"truce":
+			var truces: Dictionary = host.houses[house_index].get("truces", {})
+			var target_house: int = int(effect.get("target_house", -1))
+			if target_house < 0:
+				return before
+			if amount <= 0:
+				truces.erase(str(target_house))
+				return 0
+			truces[str(target_house)] = amount
+			host.houses[house_index]["truces"] = truces
+			return amount
 	return before
+
+func _faction_value(host, house_index: int, effect: Dictionary, key: String) -> int:
+	var factions: Array = host.houses[house_index].get("factions", [])
+	var index: int = int(effect.get("index", 0))
+	if index < 0 or index >= factions.size():
+		return 0
+	return int(factions[index].get(key, 0))
+
+func _write_faction(host, house_index: int, effect: Dictionary, key: String, before) -> int:
+	var factions: Array = host.houses[house_index].get("factions", [])
+	var index: int = int(effect.get("index", 0))
+	if index < 0 or index >= factions.size():
+		return before
+	factions[index][key] = clampi(int(before) + int(effect.get("amount", 0)), 0, 100)
+	return int(factions[index][key])
 
 func _write_heir(host, house_index: int) -> String:
 	var house: Dictionary = host.houses[house_index]

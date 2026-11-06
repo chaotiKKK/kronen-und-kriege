@@ -1650,9 +1650,12 @@ func _refresh_rule() -> void:
 	_clear_rule_body()
 	var h: Dictionary = game.house()
 	rule_title.text = "Herrschaft — %s" % str(h["name"])
-	rule_body.add_child(_label("Legitimität %d/100 · Prestige %d · Gold %d" % [
-		int(h["legitimacy"]), int(h["prestige"]), int(h["gold"])
+	rule_body.add_child(_label("Legitimität %d/100 · Prestige %d · Gold %d · Steuersatz %d" % [
+		int(h["legitimacy"]), int(h["prestige"]), int(h["gold"]), int(h["laws"]["tax"])
 	], 13, INK_SOFT))
+	rule_body.add_child(_label("Faktionsdruck %d/100 · Ansprüche %d · Armeen %d" % [
+		game.faction_power(game.player), h["claims"].size(), h["armies"].size()
+	], 12, INK_SOFT))
 	rule_body.add_child(_label("Rat", 18, INK))
 	var offices := [["marshal", "Marschall", "martial"], ["chancellor", "Kanzler", "diplomacy"], ["steward", "Verwalter", "stewardship"]]
 	for office in offices:
@@ -1675,7 +1678,36 @@ func _refresh_rule() -> void:
 	var law: String = str(h["laws"]["succession"])
 	var law_button := _button("Erbfolge: %s" % ("Ältester" if law == "eldest" else "Jüngster"), _toggle_succession, "")
 	rule_body.add_child(law_button)
+	var tax_button := _button("Steuersatz: %d/2" % int(h["laws"]["tax"]), _toggle_tax, "")
+	rule_body.add_child(tax_button)
 	rule_body.add_child(_label("Erbe: %s" % (str(h["heir"]) if str(h["heir"]) != "" else "keiner"), 12, INK_SOFT))
+	rule_body.add_child(HSeparator.new())
+	rule_body.add_child(_label("Krieg und Diplomatie", 18, INK))
+	var target_house: int = _target_house()
+	if target_house >= 0:
+		rule_body.add_child(_label("Ziel: %s · Meinung %d · Waffenstillstand bis %d" % [
+			str(game.houses[target_house]["name"]), int(game.opinion[target_house]), game.truce_until(target_house)
+		], 12, INK_SOFT))
+	else:
+		rule_body.add_child(_label("Wähle eine fremde Provinz als Ziel.", 12, INK_SOFT))
+	var claim_button := _button("Anspruch schmieden (40 Gold)", _fabricate_claim, "")
+	claim_button.disabled = selected == "" or not game._is_border_province(game.player, selected) or int(h["gold"]) < 40
+	rule_body.add_child(claim_button)
+	var army_button := _button("Armee aufstellen (50 Gold)", _raise_army, "")
+	army_button.disabled = selected == "" or int(game.province(selected).get("owner", -1)) != game.player or int(h["gold"]) < 50
+	rule_body.add_child(army_button)
+	var siege_button := _button("Belagerung vorantreiben", _advance_siege, "")
+	siege_button.disabled = selected == "" or not game.has_claim(selected) or game.army_for(game.player).is_empty()
+	rule_body.add_child(siege_button)
+	var peace_button := _button("Frieden schließen (24 Monate)", _make_peace, "")
+	peace_button.disabled = target_house < 0
+	rule_body.add_child(peace_button)
+	var discover_button := _button("Geheimnis aufdecken", _discover_secret, "")
+	discover_button.disabled = target_house < 0
+	rule_body.add_child(discover_button)
+	var expose_button := _button("Geheimnis ausnutzen", _expose_secret, "")
+	expose_button.disabled = target_house < 0
+	rule_body.add_child(expose_button)
 	rule_body.add_child(HSeparator.new())
 	rule_body.add_child(_label("Bauen", 18, INK))
 	var p: Dictionary = {}
@@ -1685,13 +1717,14 @@ func _refresh_rule() -> void:
 		rule_body.add_child(_label("Wähle auf der Karte eine eigene Provinz.", 12, INK_SOFT))
 	else:
 		rule_body.add_child(_label("%s · Truppen %d" % [p["name"], int(p["levy"])], 12, INK_SOFT))
-		for entry in [["barracks", "Kaserne"], ["walls", "Mauern"]]:
+		for entry in [["market", "Markt"], ["barracks", "Kaserne"], ["walls", "Mauern"]]:
 			var key: String = str(entry[0])
 			var level: int = int((p.get("buildings", {}) as Dictionary).get(key, 0))
 			var cost: int = game.building_cost(key)
 			var button := _button("%s: Stufe %d/3 · %d Gold" % [entry[1], level, cost], Callable(self, "_build_system").bind(key), "")
 			button.disabled = not game.can_build(selected, key)
 			rule_body.add_child(button)
+		rule_body.add_child(_label("Verteidigung %d/100 · Belagerung %d%%" % [int(p.get("defense", 0)), int(p.get("siege", 0))], 12, INK_SOFT))
 
 func _cycle_council(office: String) -> void:
 	var h: Dictionary = game.house()
@@ -1713,6 +1746,66 @@ func _build_system(key: String) -> void:
 	if selected == "":
 		return
 	var result: Dictionary = game.build(selected, key)
+	game.note(str(result["msg"]))
+	refresh()
+
+func _toggle_tax() -> void:
+	var current: int = int(game.house()["laws"]["tax"])
+	var result: Dictionary = game.set_law("tax", str((current + 1) % 3))
+	game.note(str(result["msg"]))
+	refresh()
+
+func _target_house() -> int:
+	if selected == "":
+		return -1
+	var p: Dictionary = game.province(selected)
+	if p.is_empty():
+		return -1
+	var owner: int = int(p["owner"])
+	return owner if owner != game.player else -1
+
+func _fabricate_claim() -> void:
+	if selected == "":
+		return
+	var result: Dictionary = game.fabricate_claim(selected)
+	game.note(str(result["msg"]))
+	refresh()
+
+func _raise_army() -> void:
+	if selected == "":
+		return
+	var result: Dictionary = game.raise_army(selected)
+	game.note(str(result["msg"]))
+	refresh()
+
+func _advance_siege() -> void:
+	if selected == "":
+		return
+	var result: Dictionary = game.advance_siege(selected)
+	game.note(str(result["msg"]))
+	refresh()
+
+func _make_peace() -> void:
+	var target := _target_house()
+	if target < 0:
+		return
+	var result: Dictionary = game.make_peace(target)
+	game.note(str(result["msg"]))
+	refresh()
+
+func _discover_secret() -> void:
+	var target := _target_house()
+	if target < 0:
+		return
+	var result: Dictionary = game.discover_secret(target)
+	game.note(str(result["msg"]))
+	refresh()
+
+func _expose_secret() -> void:
+	var target := _target_house()
+	if target < 0:
+		return
+	var result: Dictionary = game.expose_secret(target)
 	game.note(str(result["msg"]))
 	refresh()
 

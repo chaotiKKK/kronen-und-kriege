@@ -96,6 +96,9 @@ func _normalize_province(p: Dictionary) -> void:
 		p["buildings"] = {}
 	for key in BUILDING_KEYS:
 		p["buildings"][key] = clampi(int(p["buildings"].get(key, 0)), 0, 3)
+	p["defense"] = clampi(int(p.get("defense", 0)), 0, 100)
+	p["siege"] = clampi(int(p.get("siege", 0)), 0, 100)
+	p["siege_owner"] = int(p.get("siege_owner", -1))
 
 func _make_courtier(i: int, n: int) -> Dictionary:
 	var g: String = "f" if (i + n) % 2 == 0 else "m"
@@ -140,6 +143,27 @@ func _normalize_house(i: int) -> void:
 		h["laws"]["succession"] = "eldest"
 	h["prestige"] = int(h.get("prestige", 0))
 	h["legitimacy"] = clampi(int(h.get("legitimacy", 50)), 0, 100)
+	if not h.has("factions") or not (h["factions"] is Array) or (h["factions"] as Array).is_empty():
+		h["factions"] = [
+			{"name": "Adel", "power": 20, "loyalty": 65},
+			{"name": "Krieger", "power": 20, "loyalty": 60},
+		]
+	else:
+		for faction in h["factions"]:
+			faction["name"] = str(faction.get("name", "Faktion"))
+			faction["power"] = clampi(int(faction.get("power", 20)), 0, 100)
+			faction["loyalty"] = clampi(int(faction.get("loyalty", 60)), 0, 100)
+	if not h.has("secrets") or not (h["secrets"] is Array):
+		h["secrets"] = []
+	if not h.has("claims") or not (h["claims"] is Array):
+		h["claims"] = []
+	if not h.has("armies") or not (h["armies"] is Array):
+		h["armies"] = []
+	if not h.has("truces") or not (h["truces"] is Dictionary):
+		h["truces"] = {}
+	else:
+		for key in h["truces"].keys():
+			h["truces"][str(key)] = int(h["truces"][key])
 	var crest_index := int(h.get("crest", i))
 	if not h.has("crest_file") or str(h.get("crest_file", "")) == "":
 		crest_index = posmod(crest_index, 9)
@@ -159,6 +183,20 @@ func _normalize_house(i: int) -> void:
 	r["health"] = int(r.get("health", 80))
 	r["age"] = int(r.get("age", 30))
 	r["portrait"] = int(r.get("portrait", i % 12))
+	if not r.has("traits") or not (r["traits"] is Array) or (r["traits"] as Array).is_empty():
+		if int(r["martial"]) >= 12:
+			r["traits"] = ["Kriegserprobt"]
+		elif int(r["stewardship"]) >= 12:
+			r["traits"] = ["Gelehrsam"]
+		else:
+			r["traits"] = ["Loyal"]
+	else:
+		var clean_traits: Array = []
+		for trait_value in r["traits"]:
+			var trait_text: String = str(trait_value)
+			if trait_text != "" and not clean_traits.has(trait_text):
+				clean_traits.append(trait_text)
+		r["traits"] = clean_traits
 	if not h["spouse"].is_empty():
 		var s: Dictionary = h["spouse"]
 		s["gender"] = str(s.get("gender", "f"))
@@ -175,6 +213,9 @@ func _normalize_house(i: int) -> void:
 				var cg: String = str(c.get("gender", "m"))
 				var hv: int = absi(str(c.get("name", "?")).hash())
 				c["portrait"] = (8 + hv % 40) if cg == "f" else (hv % 8)
+			var education: String = str(c.get("education", ""))
+			if education not in ["martial", "diplomacy", "stewardship", "intrigue"]:
+				c["education"] = ["martial", "diplomacy", "stewardship", "intrigue"][absi(int(c.get("age", 0))) % 4]
 		_recompute_heir(h)
 	else:
 		h["heir"] = ""
@@ -268,21 +309,21 @@ func _yearly() -> void:
 			for c in h["children"]:
 				c["age"] = int(c["age"]) + 1
 			_recompute_heir(h)
-		var income: int = 0
-		for p in provinces:
-			if int(p["owner"]) == i:
-				income += int(p["dev"]) * 4
-		h["gold"] = int(h["gold"]) + income + int(int(r["stewardship"]) / 4)
+		_apply_house_economy(i)
+		_apply_army_upkeep(i)
+		_apply_trait_effects(i)
 	for p in provinces:
 		p["levy"] = mini(4000, int(p["levy"]) + int(p["levy"] * 0.02) + 5)
 	for i in houses.size():
 		_apply_council_training(i)
+		_apply_legitimacy_effects(i)
+		_apply_faction_pressure(i)
 	for i in houses.size():
 		if i == player:
 			continue
 		var h: Dictionary = houses[i]
 		if h["spouse"].is_empty() and randf() < 0.25:
-			h["spouse"] = _make_spouse(i)
+			h["spouse"] = _make_spouse_for(i, i)
 		if not h["spouse"].is_empty() and int(h["pregnant"]) == 0 and randf() < 0.16:
 			h["pregnant"] = 9
 	if scandal > 0 and randf() < 0.35:
@@ -361,27 +402,30 @@ func _succession(i: int) -> void:
 	var h: Dictionary = houses[i]
 	var old: String = str(h["ruler"]["name"])
 	var new_ruler: Dictionary = {}
+	var education: String = "martial"
 	var candidate := _heir_candidate(h)
 	if not candidate.is_empty():
 		var best: Dictionary = candidate
+		education = str(best.get("education", "martial"))
 		h["children"].erase(best)
 		var g: String = str(best.get("gender", "m"))
 		var bp: int = int(best["portrait"]) if best.has("portrait") else _random_portrait(g)
-		new_ruler = _ruler_from(str(best["name"]), maxi(16, int(best["age"])), g, bp)
+		new_ruler = _ruler_from(str(best["name"]), maxi(16, int(best["age"])), g, bp, education)
 	elif str(h.get("heir", "")) != "":
 		var g2: String = str(h["ruler"].get("gender", "m"))
-		new_ruler = _ruler_from(str(h["heir"]), maxi(16, int(h.get("heir_age", 16))), g2, _random_portrait(g2))
+		new_ruler = _ruler_from(str(h["heir"]), maxi(16, int(h.get("heir_age", 16))), g2, _random_portrait(g2), education)
 	elif i == player:
 		game_over = true
 		note("%s stirbt ohne Erben. Das Haus ist erloschen." % old)
 		return
 	else:
 		var g3: String = "f" if randf() < 0.5 else "m"
-		new_ruler = _ruler_from(_random_name(), randi_range(18, 30), g3, _random_portrait(g3))
+		new_ruler = _ruler_from(_random_name(), randi_range(18, 30), g3, _random_portrait(g3), education)
 	h["ruler"] = new_ruler
 	h["heir"] = ""
 	h["heir_age"] = 0
 	h["prestige"] = int(h["prestige"]) + 10
+	_apply_education_succession(i, education)
 	if not h["children"].is_empty():
 		_recompute_heir(h)
 	note("%s folgt %s nach." % [new_ruler["name"], old])
@@ -396,12 +440,13 @@ func succession_order(i: int) -> Array:
 	)
 	return kids
 
-func _ruler_from(n: String, age: int, gender: String, portrait: int) -> Dictionary:
+func _ruler_from(n: String, age: int, gender: String, portrait: int, education: String = "martial") -> Dictionary:
 	return {
 		"name": n, "age": age, "gender": gender,
-		"martial": randi_range(5, 17), "diplomacy": randi_range(5, 17),
-		"stewardship": randi_range(5, 17), "intrigue": randi_range(5, 17),
+		"martial": randi_range(5, 12), "diplomacy": randi_range(5, 12),
+		"stewardship": randi_range(5, 12), "intrigue": randi_range(5, 12),
 		"health": randi_range(65, 95), "portrait": portrait,
+		"education": education, "traits": ["Loyal"],
 	}
 
 func _random_portrait(gender: String) -> int:
@@ -454,6 +499,13 @@ func can_attack(id: String) -> bool:
 		return false
 	if int(house()["gold"]) < 25:
 		return false
+	if not bool(disabled_edges.get("K2", false)) and not has_claim(id):
+		return false
+	var target_house: int = int(p["owner"])
+	if not bool(disabled_edges.get("D6", false)) and opinion[target_house] >= 60:
+		return false
+	if not bool(disabled_edges.get("K7", false)) and truce_until(target_house) > _now():
+		return false
 	var target_kingdom: String = str(p["kingdom"])
 	for q in owned():
 		if neighbours(str(q["id"])).has(id):
@@ -477,11 +529,15 @@ func attack(id: String) -> Dictionary:
 	var base_power: int = border_power if border_power > 0 else int(total_power * 0.5)
 	var attack_power: int = int(base_power * (1.0 + int(house()["ruler"]["martial"]) / 20.0))
 	var defender: Dictionary = houses[int(target["owner"])]
-	var defense: int = int(target["levy"] * (1.0 + int(target["dev"]) / 12.0) * (1.0 + int(defender["ruler"]["martial"]) / 25.0))
+	var defense: int = int(target["levy"] * (1.0 + int(target["dev"]) / 12.0) * (1.0 + int(defender["ruler"]["martial"]) / 25.0) * (1.0 + int(target.get("defense", 0)) / 100.0))
 	if attack_power * randf_range(0.85, 1.15) > defense:
+		var old_owner: int = int(target["owner"])
 		target["owner"] = player
 		target["levy"] = int(int(target["levy"]) * 0.6)
 		target["dev"] = maxi(1, int(target["dev"]) - 1)
+		target["siege"] = 0
+		target["siege_owner"] = -1
+		_remove_claim(id, player)
 		house()["prestige"] = int(house()["prestige"]) + 15
 		note("Sieg! %s gehört nun zu %s." % [target["name"], house()["name"]])
 		return _res(true, "Sieg bei %s." % target["name"])
@@ -603,19 +659,57 @@ func run_ai_turn() -> void:
 			var capital := province(str(h.get("capital", "")))
 			if not capital.is_empty() and int((capital.get("buildings", {}) as Dictionary).get("barracks", 0)) < 2:
 				build(str(capital["id"]), "barracks", i)
+		var desired_tax: int = 2 if int(h.get("gold", 0)) < 120 else 1
+		if int(h["laws"].get("tax", 1)) != desired_tax:
+			_resolve([{
+				"edge": "AI2", "source": "KI", "target": "Herrschaft",
+				"state": "houses[%d].laws.tax" % i, "kind": "law", "house": i,
+				"law_key": "tax", "law_value": desired_tax, "reason": "KI-Steuerpolitik",
+			}])
+		if h["spouse"].is_empty() and int(h.get("gold", 0)) >= 30:
+			for target in houses.size():
+				if target == i:
+					continue
+				if bool(disabled_edges.get("AI3", false)):
+					break
+				if _settle_marriage_for(i, target, "AI3")["ok"]:
+					h["gold"] = int(h["gold"]) - 30
+					break
+		if h["claims"].is_empty() and int(h.get("gold", 0)) >= 40:
+			var claim_target: String = _ai_claim_target(i)
+			if claim_target != "":
+				fabricate_claim(claim_target, i)
+		var capital2 := province(str(h.get("capital", "")))
+		if h["armies"].is_empty() and not capital2.is_empty() and int(h.get("gold", 0)) >= 50:
+			raise_army(str(capital2["id"]), i)
+		if not h["claims"].is_empty() and not h["armies"].is_empty():
+			var siege_target: String = str(h["claims"][0].get("province", ""))
+			if siege_target != "":
+				advance_siege(siege_target, i)
+		if not h["secrets"].is_empty():
+			var secret_target: int = int(h["secrets"][0].get("target", -1))
+			if secret_target >= 0:
+				expose_secret(secret_target, i)
+		elif int(h.get("gold", 0)) >= 120:
+			for target in houses.size():
+				if target != i:
+					discover_secret(target, i)
+					break
 
 func building_cost(key: String) -> int:
 	if key == "barracks":
 		return 70
 	if key == "walls":
 		return 80
+	if key == "market":
+		return 60
 	return 0
 
 func can_build(id: String, key: String, house_index: int = -1) -> bool:
 	var hi: int = player if house_index < 0 else house_index
 	if hi < 0 or hi >= houses.size():
 		return false
-	if not ["barracks", "walls"].has(key):
+	if not ["barracks", "walls", "market"].has(key):
 		return false
 	var p := province(id)
 	if p.is_empty() or int(p["owner"]) != hi:
@@ -643,29 +737,38 @@ func build(id: String, key: String, house_index: int = -1) -> Dictionary:
 		effects.append({"edge": "H5", "source": "Herrschaft", "target": "Krieg",
 			"state": "provinces[%s].levy" % id, "kind": "levy", "house": hi,
 			"province": id, "amount": 60 + level * 35, "reason": "Kaserne"})
-	else:
+	elif key == "walls":
 		effects.append({"edge": "H5", "source": "Herrschaft", "target": "Krieg",
-			"state": "provinces[%s].levy" % id, "kind": "levy", "house": hi,
-			"province": id, "amount": 30 + level * 20, "reason": "Mauern"})
+			"state": "provinces[%s].defense" % id, "kind": "defense", "house": hi,
+			"province": id, "amount": 10 + level * 5, "reason": "Mauern"})
 	var applied := _resolve(effects)
 	if hi == player:
 		var new_level: int = int((p.get("buildings", {}) as Dictionary).get(key, 0))
 		var gain: int = 0
 		for entry in applied:
-			if str(entry.get("edge", "")) == "H5" and str(entry.get("kind", "")) == "levy":
+			if str(entry.get("edge", "")) == "H5":
 				gain = int(entry.get("delta", 0))
-		note("%s in %s auf Stufe %d (+%d Truppen)." % ["Kaserne" if key == "barracks" else "Mauern", p["name"], new_level, gain])
+		var label: String = "Kaserne" if key == "barracks" else ("Mauern" if key == "walls" else "Markt")
+		note("%s in %s auf Stufe %d (+%d)." % [label, p["name"], new_level, gain])
 	return _res(true, "%s ausgebaut." % p["name"])
 
 func set_law(key: String, value: String, house_index: int = -1) -> Dictionary:
 	var hi: int = player if house_index < 0 else house_index
 	if hi < 0 or hi >= houses.size():
 		return _res(false, "Ungültiges Haus.")
+	var h: Dictionary = houses[hi]
+	if key == "tax":
+		var tax_value: int = clampi(int(value), 0, 2)
+		if int(h["laws"]["tax"]) == tax_value:
+			return _res(false, "Steuersatz unverändert.")
+		h["laws"]["tax"] = tax_value
+		if hi == player:
+			note("Steuersatz: %d." % tax_value)
+		return _res(true, "Steuersatz geändert.")
 	if key != "succession":
 		return _res(false, "Unbekanntes Gesetz.")
 	if not ["eldest", "youngest"].has(value):
 		return _res(false, "Unbekannte Erbfolge.")
-	var h: Dictionary = houses[hi]
 	h["laws"]["succession"] = value
 	_resolve([{
 		"edge": "H2", "source": "Herrschaft", "target": "Dynastie",
@@ -677,26 +780,386 @@ func set_law(key: String, value: String, house_index: int = -1) -> Dictionary:
 	return _res(true, "Erbfolge geändert.")
 
 func settle_marriage(target: int) -> Dictionary:
-	if target < 0 or target >= houses.size() or target == player:
+	return _settle_marriage_for(player, target, "D5")
+
+func _settle_marriage_for(hi: int, target: int, edge: String) -> Dictionary:
+	if hi < 0 or hi >= houses.size() or target < 0 or target >= houses.size() or target == hi:
 		return _res(false, "Ungültiges Heiratsziel.")
-	var h: Dictionary = house()
+	var h: Dictionary = houses[hi]
 	if not h["spouse"].is_empty():
 		return _res(false, "Bereits vermählt.")
-	h["spouse"] = _make_spouse(target)
+	h["spouse"] = _make_spouse_for(hi, target)
 	_resolve([
-		{"edge": "D5", "source": "Dynastie", "target": "Herrschaft",
-			"state": "houses[%d].legitimacy" % player, "kind": "legitimacy",
-			"house": player, "amount": 5, "reason": "Eheverbindung"},
-		{"edge": "D5", "source": "Dynastie", "target": "Herrschaft",
-			"state": "houses[%d].prestige" % player, "kind": "prestige",
-			"house": player, "amount": 10, "reason": "Eheverbindung"},
-		{"edge": "D5", "source": "Dynastie", "target": "Herrschaft",
+		{"edge": edge, "source": "Dynastie", "target": "Herrschaft",
+			"state": "houses[%d].legitimacy" % hi, "kind": "legitimacy",
+			"house": hi, "amount": 5, "reason": "Eheverbindung"},
+		{"edge": edge, "source": "Dynastie", "target": "Herrschaft",
+			"state": "houses[%d].prestige" % hi, "kind": "prestige",
+			"house": hi, "amount": 10, "reason": "Eheverbindung"},
+		{"edge": edge, "source": "Dynastie", "target": "Herrschaft",
 			"state": "opinion[%d]" % target, "kind": "opinion",
-			"house": player, "index": target, "amount": 20, "reason": "Eheverbindung"},
+			"house": hi, "index": target, "amount": 20, "reason": "Eheverbindung"},
 	])
-	var s: Dictionary = h["spouse"]
-	note("%s vermählt sich mit %s aus %s. Legitimität +5." % [h["ruler"]["name"], s["name"], houses[target]["name"]])
+	if hi == player:
+		var s: Dictionary = h["spouse"]
+		note("%s vermählt sich mit %s aus %s. Legitimität +5." % [h["ruler"]["name"], s["name"], houses[target]["name"]])
 	return _res(true, "Die Hochzeit wird gefeiert.")
+
+# --- Systemische Wellen 2/3 ---------------------------------------------
+
+func faction_power(house_index: int = -1) -> int:
+	var hi: int = player if house_index < 0 else house_index
+	if hi < 0 or hi >= houses.size():
+		return 0
+	var power: int = 0
+	for faction in houses[hi].get("factions", []):
+		power = maxi(power, int(faction.get("power", 0)))
+	return power
+
+func _apply_house_economy(i: int) -> void:
+	var h: Dictionary = houses[i]
+	var r: Dictionary = h["ruler"]
+	var base: int = int(int(r["stewardship"]) / 4)
+	for p in provinces:
+		if int(p["owner"]) == i:
+			base += int(p["dev"]) * 4
+	h["gold"] = int(h["gold"]) + base
+	_apply_tax_income(i, base)
+	_apply_market_income(i)
+
+func _apply_tax_income(i: int, base: int) -> void:
+	var tax: int = int(houses[i]["laws"].get("tax", 1))
+	var delta: int = int(round(base * (float(tax) - 1.0) * 0.15))
+	if delta == 0:
+		return
+	var edge: String = "H3" if i == player else "AI2"
+	_resolve([{
+		"edge": edge, "source": "Herrschaft", "target": "Herrschaft",
+		"state": "houses[%d].gold" % i, "kind": "gold", "house": i,
+		"amount": delta, "reason": "Steuersatz %d" % tax,
+	}])
+
+func _apply_market_income(i: int) -> void:
+	var amount: int = 0
+	for p in provinces:
+		if int(p["owner"]) != i:
+			continue
+		amount += int((p.get("buildings", {}) as Dictionary).get("market", 0)) * 4
+	if amount <= 0:
+		return
+	_resolve([{
+		"edge": "H4", "source": "Herrschaft", "target": "Herrschaft",
+		"state": "houses[%d].gold" % i, "kind": "gold", "house": i,
+		"amount": amount, "reason": "Marktsteuer",
+	}])
+
+func _apply_army_upkeep(i: int) -> void:
+	var total: int = 0
+	for army in houses[i].get("armies", []):
+		total += int(army.get("upkeep", 0))
+	if total <= 0:
+		return
+	_resolve([{
+		"edge": "K3", "source": "Krieg", "target": "Herrschaft",
+		"state": "houses[%d].gold" % i, "kind": "gold", "house": i,
+		"amount": -total, "reason": "Armeeunterhalt",
+	}])
+
+func _apply_trait_effects(i: int) -> void:
+	var h: Dictionary = houses[i]
+	var traits: Array = h["ruler"].get("traits", [])
+	if traits.has("Gelehrsam"):
+		_resolve([{
+			"edge": "D1", "source": "Dynastie", "target": "Herrschaft",
+			"state": "houses[%d].gold" % i, "kind": "gold", "house": i,
+			"amount": 2, "reason": "Trait Gelehrsam",
+		}])
+	if traits.has("Kriegserprobt"):
+		var capital: Dictionary = province(str(h.get("capital", "")))
+		if not capital.is_empty():
+			_resolve([{
+				"edge": "D2", "source": "Dynastie", "target": "Krieg",
+				"state": "provinces[%s].levy" % str(capital["id"]), "kind": "levy",
+				"province": str(capital["id"]), "house": i, "amount": 5,
+				"reason": "Trait Kriegserprobt",
+			}])
+
+func _apply_legitimacy_effects(i: int) -> void:
+	if i != player or int(houses[i]["legitimacy"]) >= 40:
+		return
+	for j in opinion.size():
+		if j == i:
+			continue
+		_resolve([{
+			"edge": "H6", "source": "Herrschaft", "target": "Herrschaft",
+			"state": "opinion[%d]" % j, "kind": "opinion", "house": i,
+			"index": j, "amount": -2, "reason": "niedrige Legitimität",
+		}])
+	_resolve([{
+		"edge": "H6", "source": "Herrschaft", "target": "Herrschaft",
+		"state": "houses[%d].factions[0].loyalty" % i, "kind": "faction_loyalty",
+		"house": i, "index": 0, "amount": -5, "reason": "niedrige Legitimität",
+	}])
+
+func _apply_faction_pressure(i: int) -> void:
+	if faction_power(i) < 60:
+		return
+	var h: Dictionary = houses[i]
+	if int(h["laws"].get("tax", 1)) != 2:
+		_resolve([{
+			"edge": "H7", "source": "Herrschaft", "target": "Herrschaft",
+			"state": "houses[%d].laws.tax" % i, "kind": "law", "house": i,
+			"law_key": "tax", "law_value": 2, "reason": "Faktionsdruck",
+		}])
+	var capital: Dictionary = province(str(h.get("capital", "")))
+	if not capital.is_empty():
+		_resolve([{
+			"edge": "H8", "source": "Herrschaft", "target": "Krieg",
+			"state": "provinces[%s].levy" % str(capital["id"]), "kind": "levy",
+			"house": i, "province": str(capital["id"]), "amount": -10,
+			"reason": "Faktionsunruhe",
+		}])
+
+func _apply_education_succession(i: int, education: String) -> void:
+	if education not in ["martial", "diplomacy", "stewardship", "intrigue"]:
+		return
+	_resolve([{
+		"edge": "D3", "source": "Dynastie", "target": "Herrschaft",
+		"state": "houses[%d].ruler.%s" % [i, education], "kind": "ruler_stat",
+		"house": i, "stat": education, "amount": 4, "reason": "Erziehung",
+	}])
+	if education != "martial":
+		return
+	var capital: Dictionary = province(str(houses[i].get("capital", "")))
+	if not capital.is_empty():
+		_resolve([{
+			"edge": "D4", "source": "Dynastie", "target": "Krieg",
+			"state": "provinces[%s].levy" % str(capital["id"]), "kind": "levy",
+			"house": i, "province": str(capital["id"]), "amount": 12,
+			"reason": "militärische Erziehung",
+		}])
+
+func has_claim(province_id: String, house_index: int = -1) -> bool:
+	var hi: int = player if house_index < 0 else house_index
+	if hi < 0 or hi >= houses.size():
+		return false
+	for claim in houses[hi].get("claims", []):
+		if str(claim.get("province", "")) == province_id:
+			return true
+	return false
+
+func _add_claim(house_index: int, province_id: String, strength: int = 1) -> bool:
+	if province(province_id).is_empty() or has_claim(province_id, house_index):
+		return false
+	var before: int = houses[house_index].get("claims", []).size()
+	houses[house_index]["claims"].append({
+		"province": province_id, "strength": clampi(strength, 1, 5),
+		"expires": _now() + 240,
+	})
+	if house_index == player:
+		record_effect({"edge": "K2", "source": "Krieg", "target": "Herrschaft",
+			"state": "houses[%d].claims" % house_index, "kind": "claim",
+			"house": house_index, "before": before, "after": before + 1,
+			"delta": 1, "reason": "Anspruch"})
+	return true
+
+func _remove_claim(province_id: String, house_index: int = -1) -> void:
+	var hi: int = player if house_index < 0 else house_index
+	if hi < 0 or hi >= houses.size():
+		return
+	var kept: Array = []
+	for claim in houses[hi].get("claims", []):
+		if str(claim.get("province", "")) != province_id:
+			kept.append(claim)
+	houses[hi]["claims"] = kept
+
+func fabricate_claim(province_id: String, house_index: int = -1) -> Dictionary:
+	var hi: int = player if house_index < 0 else house_index
+	if hi < 0 or hi >= houses.size():
+		return _res(false, "Ungültiges Haus.")
+	var p := province(province_id)
+	if p.is_empty() or int(p["owner"]) == hi:
+		return _res(false, "Anspruch nur auf fremdes Land.")
+	if int(houses[hi]["gold"]) < 40:
+		return _res(false, "Anspruch schmieden kostet 40 Gold.")
+	if not _is_border_province(hi, province_id):
+		return _res(false, "Nur an der eigenen Grenze.")
+	houses[hi]["gold"] = int(houses[hi]["gold"]) - 40
+	_add_claim(hi, province_id)
+	if hi == player:
+		note("Ein Anspruch auf %s wird geschmiedet." % p["name"])
+	return _res(true, "Anspruch auf %s." % p["name"])
+
+func press_claim(province_id: String, house_index: int = -1) -> Dictionary:
+	var hi: int = player if house_index < 0 else house_index
+	if not has_claim(province_id, hi):
+		return _res(false, "Kein Anspruch vorhanden.")
+	_resolve([
+		{"edge": "K1", "source": "Krieg", "target": "Herrschaft",
+			"state": "houses[%d].legitimacy" % hi, "kind": "legitimacy",
+			"house": hi, "amount": 3, "reason": "Anspruch erhoben"},
+		{"edge": "K1", "source": "Krieg", "target": "Herrschaft",
+			"state": "houses[%d].factions[0].power" % hi, "kind": "faction_power",
+			"house": hi, "index": 0, "amount": 5, "reason": "Anspruch erhoben"},
+	])
+	return _res(true, "Der Anspruch wird öffentlich erhoben.")
+
+func raise_army(province_id: String, house_index: int = -1) -> Dictionary:
+	var hi: int = player if house_index < 0 else house_index
+	var p := province(province_id)
+	if p.is_empty() or int(p["owner"]) != hi:
+		return _res(false, "Armee nur im eigenen Land.")
+	if int(houses[hi]["gold"]) < 50:
+		return _res(false, "Armeeaufstellung kostet 50 Gold.")
+	var strength: int = maxi(100, int(int(p["levy"]) / 2))
+	houses[hi]["gold"] = int(houses[hi]["gold"]) - 50
+	houses[hi]["armies"].append({
+		"id": houses[hi]["armies"].size() + 1, "province": province_id,
+		"strength": strength, "upkeep": maxi(1, int(strength / 250)), "morale": 100,
+	})
+	if hi == player:
+		note("In %s wird eine Armee von %d Mann aufgestellt." % [p["name"], strength])
+	return _res(true, "Armee aufgestellt.")
+
+func army_for(house_index: int = -1) -> Dictionary:
+	var hi: int = player if house_index < 0 else house_index
+	if hi < 0 or hi >= houses.size() or houses[hi]["armies"].is_empty():
+		return {}
+	return houses[hi]["armies"][0]
+
+func advance_siege(province_id: String, house_index: int = -1) -> Dictionary:
+	var hi: int = player if house_index < 0 else house_index
+	var p := province(province_id)
+	if p.is_empty() or int(p["owner"]) == hi:
+		return _res(false, "Kein fremdes Belagerungsziel.")
+	if not has_claim(province_id, hi):
+		return _res(false, "Belagerung braucht einen Anspruch.")
+	var army := army_for(hi)
+	if army.is_empty():
+		return _res(false, "Keine Armee verfügbar.")
+	if str(army.get("province", "")) != province_id:
+		army["province"] = province_id
+	var edge: String = "K4" if hi == player else "AI4"
+	var amount: int = 20 + int(int(army["strength"]) / 60) + int(int(houses[hi]["ruler"]["martial"]) / 4)
+	_resolve([{
+		"edge": edge, "source": "Krieg", "target": "Krieg",
+		"state": "provinces[%s].siege" % province_id, "kind": "siege",
+		"house": hi, "province": province_id, "amount": amount,
+		"reason": "Armeestärke %d" % int(army["strength"]),
+	}])
+	if int(p.get("siege", 0)) >= 100:
+		_capture_province(province_id, hi)
+		return _res(true, "%s fällt." % p["name"])
+	return _res(true, "Belagerung von %s: %d%%." % [p["name"], int(p.get("siege", 0))])
+
+func _capture_province(province_id: String, new_owner: int) -> void:
+	var p := province(province_id)
+	if p.is_empty():
+		return
+	p["owner"] = new_owner
+	p["levy"] = int(int(p["levy"]) * 0.6)
+	p["siege"] = 0
+	p["siege_owner"] = -1
+	_remove_claim(province_id, new_owner)
+	_resolve([{
+		"edge": "K5", "source": "Krieg", "target": "Welt",
+		"state": "provinces[%s].dev" % province_id, "kind": "dev",
+		"house": new_owner, "province": province_id, "amount": -1,
+		"reason": "Belagerungsschaden",
+	}])
+	for key in BUILDING_KEYS:
+		if int((p.get("buildings", {}) as Dictionary).get(key, 0)) > 0:
+			_resolve([{
+				"edge": "K5", "source": "Krieg", "target": "Welt",
+				"state": "provinces[%s].buildings.%s" % [province_id, key], "kind": "building",
+				"house": new_owner, "province": province_id, "building": key, "amount": -1,
+				"reason": "Belagerungsschaden",
+			}])
+			break
+	if new_owner == player:
+		note("Die Belagerung nimmt %s ein." % p["name"])
+
+func make_peace(target_house: int, house_index: int = -1) -> Dictionary:
+	var hi: int = player if house_index < 0 else house_index
+	if target_house < 0 or target_house >= houses.size() or target_house == hi:
+		return _res(false, "Ungültiger Friedenspartner.")
+	var h: Dictionary = houses[hi]
+	_resolve([
+		{"edge": "K6", "source": "Krieg", "target": "Diplomatie",
+			"state": "houses[%d].truces[%d]" % [hi, target_house], "kind": "truce",
+			"house": hi, "target_house": target_house, "amount": 24, "reason": "Frieden"},
+		{"edge": "K6", "source": "Krieg", "target": "Herrschaft",
+			"state": "opinion[%d]" % target_house, "kind": "opinion", "house": hi,
+			"index": target_house, "amount": 10, "reason": "Frieden"},
+	])
+	if h["spouse"].is_empty() and randf() < 0.5:
+		h["spouse"] = _make_spouse_for(hi, target_house)
+	if hi == player:
+		note("Frieden mit %s; die Grenzen beruhigen sich." % houses[target_house]["name"])
+	return _res(true, "Frieden geschlossen.")
+
+func truce_until(target_house: int, house_index: int = -1) -> int:
+	var hi: int = player if house_index < 0 else house_index
+	if hi < 0 or hi >= houses.size():
+		return 0
+	return int(houses[hi].get("truces", {}).get(str(target_house), 0))
+
+func discover_secret(target_house: int, house_index: int = -1) -> Dictionary:
+	var hi: int = player if house_index < 0 else house_index
+	if target_house < 0 or target_house >= houses.size() or target_house == hi:
+		return _res(false, "Ungültiges Ziel für ein Geheimnis.")
+	for secret in houses[hi]["secrets"]:
+		if int(secret.get("target", -1)) == target_house:
+			return _res(false, "Geheimnis bereits bekannt.")
+	houses[hi]["secrets"].append({
+		"id": "secret_%d_%d" % [hi, target_house], "target": target_house,
+		"kind": "scandal", "known": true,
+	})
+	return _res(true, "Ein Geheimnis wird aufgedeckt.")
+
+func expose_secret(target_house: int, house_index: int = -1) -> Dictionary:
+	var hi: int = player if house_index < 0 else house_index
+	var found: Dictionary = {}
+	for secret in houses[hi]["secrets"]:
+		if int(secret.get("target", -1)) == target_house:
+			found = secret
+			break
+	if found.is_empty():
+		return _res(false, "Kein Geheimnis vorhanden.")
+	houses[hi]["secrets"].erase(found)
+	var edge: String = "D7" if hi == player else "AI5"
+	_resolve([
+		{"edge": edge, "source": "Dynastie", "target": "Herrschaft",
+			"state": "scandal", "kind": "scandal", "house": hi,
+			"amount": 1, "reason": "Geheimnis veröffentlicht"},
+		{"edge": edge, "source": "Dynastie", "target": "Herrschaft",
+			"state": "opinion[%d]" % target_house, "kind": "opinion",
+			"house": hi, "index": target_house, "amount": -15,
+			"reason": "Geheimnis veröffentlicht"},
+	])
+	if not bool(disabled_edges.get("D8", false)):
+		var target_capital: String = str(houses[target_house].get("capital", ""))
+		if target_capital != "" and _add_claim(hi, target_capital):
+			record_effect({"edge": "D8", "source": "Dynastie", "target": "Krieg",
+				"state": "houses[%d].claims" % hi, "kind": "claim", "house": hi,
+				"before": 0, "after": 1, "delta": 1, "reason": "Geheimnis als Anspruch"})
+	return _res(true, "Das Geheimnis wird ausgenutzt.")
+
+func _is_border_province(house_index: int, province_id: String) -> bool:
+	for p in provinces:
+		if int(p["owner"]) == house_index and neighbours(str(p["id"])).has(province_id):
+			return true
+	return false
+
+func _ai_claim_target(house_index: int) -> String:
+	for p in provinces:
+		if int(p["owner"]) != house_index or not _is_border_province(house_index, str(p["id"])):
+			continue
+		for n in neighbours(str(p["id"])):
+			var q := province(str(n))
+			if not q.is_empty() and int(q["owner"]) != house_index and not has_claim(str(n), house_index):
+				return str(n)
+	return ""
 
 # --- Familie -------------------------------------------------------------
 
@@ -765,7 +1228,10 @@ func do_action(kind: String, target: int) -> Dictionary:
 	return _res(false, "Unbekannte Aktion.")
 
 func _make_spouse(target: int) -> Dictionary:
-	var g: String = "f" if str(house()["ruler"]["gender"]) == "m" else "m"
+	return _make_spouse_for(player, target)
+
+func _make_spouse_for(house_index: int, target: int) -> Dictionary:
+	var g: String = "f" if str(houses[house_index]["ruler"].get("gender", "m")) == "m" else "m"
 	return {
 		"name": _random_name(), "age": randi_range(18, 30), "gender": g,
 		"martial": randi_range(4, 14), "diplomacy": randi_range(4, 14),
@@ -988,6 +1454,9 @@ func snapshot() -> Dictionary:
 			"id": str(p["id"]), "name": str(p["name"]),
 			"owner": int(p["owner"]), "dev": int(p["dev"]),
 			"levy": int(p["levy"]), "buildings": buildings,
+			"defense": int(p.get("defense", 0)),
+			"siege": int(p.get("siege", 0)),
+			"siege_owner": int(p.get("siege_owner", -1)),
 		})
 	var data_state: Dictionary = extra_state.duplicate(true)
 	data_state["year"] = year

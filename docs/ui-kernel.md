@@ -1,9 +1,9 @@
 # UiKernel-Zuschnitt
 
-> Dokumentversion: 1.1
+> Dokumentversion: 1.2
 > Stand: 2026-11-06
-> Status: Herrschaftsmodal vorhanden; UiKernel-Extraktion noch offen
-> Gültig für Save-Schema: 3
+> Status: Herrschaftsmodal erweitert; UiKernel-Extraktion noch offen
+> Gültig für Save-Schema: 4
 
 ## Problem
 
@@ -97,7 +97,14 @@ Regeln:
 | `load` | `_load()` | `command.load` | Datei |
 | `council_assign` | `game.assign_council(office, index)` | `command.council_assign` | `council`, indirekt `levy` über H1 |
 | `law_succession` | `game.set_law("succession", value)` | `command.law_succession` | `laws.succession`, `heir` über H2 |
-| `build` | `game.build(id, key)` | `command.build` | `buildings`, `gold`, `levy` über H5 |
+| `build` | `game.build(id, key)` | `command.build` | `buildings`, `gold`, `levy`/`defense` über H5 |
+| `set_tax` | `game.set_law("tax", value)` | `command.set_tax` | `laws.tax`, indirekt `gold` über H3 |
+| `fabricate_claim` | `game.fabricate_claim(id)` | `command.claim` | `claims`, `gold` |
+| `raise_army` | `game.raise_army(id)` | `command.army` | `armies`, `gold` |
+| `advance_siege` | `game.advance_siege(id)` | `command.siege` | `siege`, `owner`, `dev`, `buildings` |
+| `make_peace` | `game.make_peace(house)` | `command.peace` | `truces`, `opinion`, ggf. `spouse` |
+| `discover_secret` | `game.discover_secret(house)` | `command.secret_discover` | `secrets` |
+| `expose_secret` | `game.expose_secret(house)` | `command.secret_expose` | `scandal`, `opinion`, `claims` |
 
 `save` und `load` sind Randkommandos: Sie dürfen `Game.snapshot()` und `Game.restore()` benutzen, aber nie eigenes JSON schreiben. Das Schema bleibt in `SaveGame.gd`.
 
@@ -139,8 +146,8 @@ Nach jedem Schritt gilt: `Game.gd` bleibt autoritativ, `snapshot()`/`restore()` 
 - Kein direktes `game.houses[...] = ...` aus einem Panel. Ausnahmen sind nur Leseoperationen.
 - Keine vorzeitige Aufteilung von `Game.gd` in viele Manager, solange die Kanten nicht durch Tests belegt sind.
 
-## Status Welle 1
+## Status Welle 1–3
 
-Die Grenze ist dokumentiert und `SaveGame.gd` ist ausgelagert. Das neue Modal „Herrschaft“ ruft für Rat, Erbfolge und Bau bereits ausschließlich `Game`-Methoden auf; der Spielzustand bleibt dort autoritativ. Die formale `UiKernel`-Klasse mit `dispatch()` existiert noch nicht, deshalb bleiben die Aufrufe in `Main.gd`. `Main._load()` prüft weiterhin den Rückgabewert von `Game.restore()` und bricht bei einem ungültigen Stand sichtbar ab.
+Die Grenze ist dokumentiert und `SaveGame.gd` ist ausgelagert. Das Modal „Herrschaft“ ruft für Rat, Erbfolge, Steuern, Markt, Kaserne, Mauern, Ansprüche, Armee, Belagerung, Frieden und Geheimnisse ausschließlich `Game`-Methoden auf; der Spielzustand bleibt dort autoritativ. Die formale `UiKernel`-Klasse mit `dispatch()` existiert noch nicht, deshalb bleiben die Aufrufe in `Main.gd`. `Main._load()` prüft weiterhin den Rückgabewert von `Game.restore()` und bricht bei einem ungültigen Stand sichtbar ab.
 
-Das Modal ist durch den Script-Parse-Check und den Windows-Export abgedeckt; ein eigener Headless-UI-Test für die Knöpfe existiert noch nicht.
+`TouchTest` prüft die Kartenauswahl und den Ausbau per echtem `InputEventScreenTouch`; `ShotTest` rendert Start, Erstellung, Spiel, Stammbaum und Customizer. Das erweiterte Herrschaftsmodal ist durch Script-Parse, Touch-Smoke und Windows-Export abgedeckt, aber noch nicht mit einem eigenen Button-für-Button-Test.

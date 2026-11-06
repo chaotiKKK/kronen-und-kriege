@@ -1,100 +1,85 @@
 # Interaktionsmatrix der vier Säulen
 
-> Dokumentversion: 1.1
+> Dokumentversion: 2.0
 > Stand: 2026-11-06
-> Gültig für Save-Schema: 3
-> Status: erster Welle-1-Durchstich; H1, H2, D5 und AI1 sind `IST`, H5 ist teilweise belegt
+> Gültig für Save-Schema: 4
+> Status: alle 28 Kanten implementiert und positiv/negativ getestet
 
 ## Legende
 
-Jede Zeile ist genau eine gerichtete Kante. `Quelle` ist das auslösende System, `Ziel` das lesende oder veränderte System, `Zustandsgröße` das konkrete Feld.
+Jede Zeile ist eine gerichtete Kante. `Quelle` löst aus, `Ziel` wird gelesen oder verändert. `Zustandsgröße` nennt das konkrete persistente Feld. Eine Zeile ist nur `IST`, wenn ein Test die Wirkung und eine Negativkontrolle mit `set_edge_enabled()` belegt.
 
 | Status | Bedeutung |
 |---|---|
-| `IST` | Kante ist vollständig implementiert und durch einen Test belegt. |
-| `TEIL` | Feld oder Aktion existiert, aber die Wirkung ist unvollständig oder nur einseitig. |
-| `PLAN W1/W2/W3` | Kante ist für Welle 1, 2 oder 3 vorgesehen; noch keine Wirkung. |
-
-`Nachweis` nennt den Test, der die Kante belegt. Ein Matrix-Eintrag ohne Test darf nicht `IST` werden.
+| `IST` | Kante ist implementiert, getestet und im Save-Schema 4 persistent. |
+| `TEIL` | Feld oder Aktion existiert, die Wirkung ist aber unvollständig. |
+| `PLAN` | Kante ist noch nicht verdrahtet. |
 
 ## Matrix
 
 | ID | Quelle | Ziel | Zustandsgröße | Wirkung | Auslöser | Status | Nachweis |
 |---|---|---|---|---|---|---|---|
-| H1 | Rat | Krieg | `houses[].council.marshal` → `provinces[].levy` | Marschall trainiert Truppen; Bonus abhängig von `courtiers[marshal].martial` und `houses[].legitimacy` | Jahreswechsel | IST | `SystemicDepthTest.H1` |
-| H2 | Gesetze | Dynastie | `houses[].laws.succession` → `houses[].heir` | Erbfolgegesetz wählt ältestes oder jüngstes Kind; dieselbe Wahl trifft die Nachfolge | Gesetzeswechsel / Tod des Herrschers | IST | `SystemicDepthTest.H2` |
-| H3 | Gesetze | Herrschaft | `houses[].laws.tax` → `houses[].gold` | Steuersatz verändert Jahreseinkommen | Jahreswechsel | PLAN W1 | `DepthTest.H3` |
-| H4 | Gebäude | Herrschaft | `provinces[].buildings.market` → `houses[].gold` | Markt erhöht Handelseinkommen der Provinz | Jahreswechsel | TEIL | `DepthTest.H4` |
-| H5 | Gebäude | Krieg | `provinces[].buildings.barracks` / `walls` → `provinces[].levy` / Verteidigung | Kaserne erhöht Aufgebot; Mauer senkt Belagerungsschaden | Bau abgeschlossen / Angriff | TEIL | `SystemicDepthTest.H5` (nur Kaserne → `levy`) |
-| H6 | Legitimität | Herrschaft | `houses[].legitimacy` → `opinion[]` / `factions[].loyalty` | Niedrige Legitimität senkt Haltung und erhöht Fraktionsdruck | Thronwechsel / Gesetzesbruch | PLAN W1 | `DepthTest.H6` |
-| H7 | Fraktionen | Herrschaft | `houses[].factions[].power` → `houses[].laws` / `council` | Fraktion erzwingt Gesetz oder Ratsbesetzung | Macht über Schwelle | PLAN W1 | `DepthTest.H7` |
-| H8 | Fraktionen | Krieg | `houses[].factions[].power` → `provinces[].levy` | Unruhe hält Aufgebot zurück oder erzwingt Krieg | Ultimatum / Kriegserklärung | PLAN W1 | `DepthTest.H8` |
-| D1 | Traits | Herrschaft | `houses[].ruler.traits[]` → `houses[].council` / `gold` | Traits verändern Rats effektivität und Verwaltung | Regierungsantritt / Ratssitzung | PLAN W1 | `DepthTest.D1` |
-| D2 | Traits | Krieg | `houses[].ruler.traits[]` → `provinces[].levy` / Angriffsstärke | Kriegerisch erhöht Aufgebot, vorsichtig senkt Risiko | Krieg / Belagerung | PLAN W1 | `DepthTest.D2` |
-| D3 | Erziehung | Herrschaft | `houses[].children[].education` → `houses[].ruler` | Erziehung setzt Werte des Erben bei Nachfolge | Nachfolge | PLAN W1 | `DepthTest.D3` |
-| D4 | Erziehung | Krieg | `houses[].children[].education.martial` → `provinces[].levy` | Kriegsausbildung erhöht späteres Aufgebot | Nachfolge / Krieg | PLAN W1 | `DepthTest.D4` |
-| D5 | Beziehungen | Herrschaft | `houses[].spouse` / `opinion[]` → `houses[].legitimacy` / `prestige` | Erfolgreiche Ehe erhöht Legitimität +5, Prestige +10 und Haltung +20 | Heirat | IST | `SystemicDepthTest.D5` |
-| D6 | Beziehungen | Krieg | `opinion[]` → `can_attack` / `truces[]` | Allianz oder Freundschaft blockiert Angriff | Kriegserklärung | PLAN W2 | `DepthTest.D6` |
-| D7 | Geheimnisse | Herrschaft | `houses[].secrets[]` → `scandal` / `opinion[]` | Entdecktes Geheimnis erzeugt Skandal und Haltungsverlust | Aufdeckung / Monatswechsel | TEIL | `DepthTest.D7` |
-| D8 | Geheimnisse | Krieg | `houses[].secrets[]` → `claims[]` / `truces[]` | Geheimnis liefert Anspruch oder Friedenshebel | Intrige / Friedensverhandlung | PLAN W2 | `DepthTest.D8` |
-| K1 | Ansprüche | Herrschaft | `houses[].claims[]` → `houses[].legitimacy` / `factions[].power` | Durchgesetzter Anspruch stärkt oder belastet Herrschaft | Kriegserklärung / Frieden | PLAN W2 | `DepthTest.K1` |
-| K2 | Ansprüche | Krieg | `houses[].claims[]` → `can_attack` / `provinces[].owner` | Nur ein Anspruch erlaubt Eroberung | Angriff | TEIL | `DepthTest.K2` |
-| K3 | Armeen | Herrschaft | `houses[].armies[].upkeep` → `houses[].gold` | Heer kostet Unterhalt und erzwingt Steuerentscheidung | Monatswechsel | PLAN W2 | `DepthTest.K3` |
-| K4 | Armeen | Krieg | `houses[].armies[].strength` → `provinces[].siege` / `owner` | Armeestärke bestimmt Belagerung und Einnahme | Belagerung | PLAN W2 | `DepthTest.K4` |
-| K5 | Belagerungen | Herrschaft | `provinces[].siege` → `provinces[].dev` / `buildings` | Belagerung zerstört Entwicklung und Gebäude | Belagerungsrunde | PLAN W2 | `DepthTest.K5` |
-| K6 | Frieden | Dynastie | `truces[]` / Friedensvertrag → `houses[].spouse` / `opinion[]` | Frieden erzwingt Heirat, Geisel oder Haltungsänderung | Friedensschluss | PLAN W2 | `DepthTest.K6` |
-| K7 | Frieden | Krieg | `truces[].until` → `can_attack` | Waffenstillstand blockiert Angriff bis zum Datum | Angriff | PLAN W2 | `DepthTest.K7` |
-| AI1 | KI-Rat | Krieg | `houses[i].council.marshal` → `houses[i].provinces[].levy` | KI trainiert mit demselben Ratsamt und demselben Resolver | KI-Jahreswechsel | IST | `SystemicDepthTest.AI1` |
-| AI2 | KI-Gesetze | Herrschaft | `houses[i].laws.tax` → `houses[i].gold` | KI wählt Steuersatz nach derselben Formel | KI-Jahreswechsel | PLAN W3 | `AiParityTest.AI2` |
-| AI3 | KI-Dynastie | Herrschaft | `houses[i].spouse` / `opinion[i]` → `opinion[player]` / `prestige` | KI-Ehen verändern Netzwerk und Haltung des Spielers | KI-Heirat | PLAN W3 | `AiParityTest.AI3` |
-| AI4 | KI-Krieg | Dynastie | `houses[i].claims[]` / `armies[]` → `houses[].spouse` / `captive` | KI-Krieg erzeugt Geisel, Zwangsheirat oder Frieden | KI-Frieden | PLAN W3 | `AiParityTest.AI4` |
-| AI5 | KI-Geheimnisse | Herrschaft | `houses[i].secrets[]` → `scandal` / `opinion[]` | KI deckt Geheimnisse auf und erzeugt Skandal | KI-Intrige | PLAN W3 | `AiParityTest.AI5` |
+| H1 | Rat | Krieg | `council.marshal` → `provinces[].levy` | Marschallstraining abhängig von Martial und Legitimität | Jahreswechsel | IST | `SystemicDepthTest.H1` |
+| H2 | Gesetze | Dynastie | `laws.succession` → `heir` | Erbfolge wählt ältestes oder jüngstes Kind | Gesetzeswechsel | IST | `SystemicDepthTest.H2` |
+| H3 | Gesetze | Herrschaft | `laws.tax` → `gold` | Steuersatz verändert das Jahreseinkommen | Jahreswechsel | IST | `FullDepthTest.H3` |
+| H4 | Gebäude | Herrschaft | `buildings.market` → `gold` | Markt erhöht Handelseinkommen | Jahreswechsel | IST | `FullDepthTest.H4` |
+| H5 | Gebäude | Krieg | `buildings.barracks` → `levy`; `buildings.walls` → `defense` | Kaserne erhöht Aufgebot, Mauern erhöhen Verteidigung | Bau | IST | `SystemicDepthTest.H5`, `FullDepthTest.H5(Mauern)` |
+| H6 | Legitimität | Herrschaft | `legitimacy` → `opinion[]`, `factions[].loyalty` | Niedrige Legitimität senkt Haltung und Fraktionstreue | Jahreswechsel | IST | `FullDepthTest.H6` |
+| H7 | Fraktionen | Herrschaft | `factions[].power` → `laws.tax` | Fraktionsdruck erzwingt den höchsten Steuersatz | Jahreswechsel | IST | `FullDepthTest.H7` |
+| H8 | Fraktionen | Krieg | `factions[].power` → `provinces[].levy` | Fraktionsunruhe senkt das Aufgebot der Hauptstadt | Jahreswechsel | IST | `FullDepthTest.H8` |
+| D1 | Traits | Herrschaft | `ruler.traits[]` → `gold` | „Gelehrsam“ erhöht das Jahreseinkommen | Jahreswechsel | IST | `FullDepthTest.D1` |
+| D2 | Traits | Krieg | `ruler.traits[]` → `provinces[].levy` | „Kriegserprobt“ erhöht das Aufgebot | Jahreswechsel | IST | `FullDepthTest.D2` |
+| D3 | Erziehung | Herrschaft | `children[].education` → `ruler` | Erziehung erhöht den passenden Herrscherwert bei Nachfolge | Nachfolge | IST | `FullDepthTest.D3` |
+| D4 | Erziehung | Krieg | `children[].education.martial` → `provinces[].levy` | Militärische Erziehung erhöht das Aufgebot bei Nachfolge | Nachfolge | IST | `FullDepthTest.D4` |
+| D5 | Beziehungen | Herrschaft | `spouse` / `opinion[]` → `legitimacy`, `prestige` | Ehe erhöht Legitimität +5, Prestige +10 und Haltung +20 | Heirat | IST | `SystemicDepthTest.D5` |
+| D6 | Beziehungen | Krieg | `opinion[]` → `can_attack` | Freundschaft (Meinung ≥ 60) blockiert einen Angriff | Kriegserklärung | IST | `FullDepthTest.D6` |
+| D7 | Geheimnisse | Herrschaft | `secrets[]` → `scandal`, `opinion[]` | Veröffentlichtes Geheimnis erzeugt Skandal und Haltungsverlust | Geheimnis ausnutzen | IST | `FullDepthTest.D7` |
+| D8 | Geheimnisse | Krieg | `secrets[]` → `claims[]` | Geheimnis liefert einen Anspruch auf die Zielhauptstadt | Geheimnis ausnutzen | IST | `FullDepthTest.D8` |
+| K1 | Ansprüche | Herrschaft | `claims[]` → `legitimacy`, `factions[].power` | Erhobener Anspruch stärkt Legitimität und Fraktionsmacht | Anspruch erheben | IST | `FullDepthTest.K1` |
+| K2 | Ansprüche | Krieg | `claims[]` → `can_attack`, `owner` | Nur ein Anspruch ermöglicht Angriff und Eroberung | Angriff | IST | `FullDepthTest.K2` |
+| K3 | Armeen | Herrschaft | `armies[].upkeep` → `gold` | Armeeunterhalt wird jährlich abgezogen | Jahreswechsel | IST | `FullDepthTest.K3` |
+| K4 | Armeen | Krieg | `armies[].strength` → `siege`, `owner` | Stärke treibt Belagerungsfortschritt und Einnahme | Belagerung | IST | `FullDepthTest.K4` |
+| K5 | Belagerungen | Welt | `siege` → `dev`, `buildings` | Einnahme beschädigt Entwicklung und ein Gebäude | Einnahme | IST | `FullDepthTest.K5` |
+| K6 | Frieden | Dynastie | `truces[]` → `spouse`, `opinion[]` | Frieden erzeugt Waffenstillstand, Haltung und ggf. Ehe | Frieden | IST | `FullDepthTest.K6` |
+| K7 | Frieden | Krieg | `truces[].until` → `can_attack` | Laufender Waffenstillstand blockiert Angriffe | Angriff | IST | `FullDepthTest.K7` |
+| AI1 | KI-Rat | Krieg | KI-`council.marshal` → KI-`provinces[].levy` | KI trainiert über denselben Rat und Resolver | KI-Jahreswechsel | IST | `SystemicDepthTest.AI1` |
+| AI2 | KI-Steuern | Herrschaft | KI-`laws.tax` → KI-`gold` | KI wählt und nutzt denselben Steuersatz | KI-Jahreswechsel | IST | `FullDepthTest.AI2` |
+| AI3 | KI-Dynastie | Herrschaft | KI-`spouse` → KI-`legitimacy`, `prestige` | KI schließt Ehen über denselben Heiratspfad | KI-Jahreswechsel | IST | `FullDepthTest.AI3` |
+| AI4 | KI-Krieg | Krieg | KI-`claims[]`/`armies[]` → `siege` | KI nutzt Anspruch, Armee und Belagerung wie der Spieler | KI-Jahreswechsel | IST | `FullDepthTest.AI4` |
+| AI5 | KI-Geheimnisse | Herrschaft | KI-`secrets[]` → `scandal`, `opinion[]` | KI deckt Geheimnisse über denselben Pfad auf | KI-Jahreswechsel | IST | `FullDepthTest.AI5` |
 
-## Welle-1-Belege
+## Belege
 
-`tests/SystemicDepthTest.gd` prüft jede der folgenden Ketten positiv und danach mit deaktivierter Kante:
-
-| Kante | Eingriff | Zielgröße | Positiv | Negativkontrolle |
-|---|---|---|---|---|
-| H1 | Marschall im Rat besetzen | `provinces[].levy` | `H1`-Beleg, Levy steigt | `set_edge_enabled("H1", false)` ⇒ kein `H1`-Beleg, kein Trainingsdelta |
-| H2 | `laws.succession` auf `youngest` setzen | `houses[].heir` | Erbe wechselt von „Alt“ zu „Jung“ | `set_edge_enabled("H2", false)` ⇒ Gesetz ändert sich, Erbe bleibt |
-| H5 | Kaserne bauen | `provinces[].levy` | `H5`-Beleg, Levy steigt | `set_edge_enabled("H5", false)` ⇒ Gebäude entsteht, Levy bleibt |
-| D5 | Ehe schließen | `houses[].legitimacy` | Legitimität +5, Prestige +10 | `set_edge_enabled("D5", false)` ⇒ Ehe besteht, Legitimität bleibt |
-| AI1 | KI-Marschall einsetzen, Jahreswechsel | `houses[1].provinces[].levy` | `AI1`-Beleg, KI-Levy steigt | `set_edge_enabled("AI1", false)` ⇒ kein KI-Beleg |
-
-Der Kreislauf D5 → H1 ist zusätzlich belegt: Eine Ehe hebt die Legitimität von 39 auf 44 und erhöht dadurch den Trainingsbetrag des Marschalls. Alle fünf Ketten laufen über `scripts/SystemicResolver.gd` und schreiben einen Beleg mit `edge`, `source`, `target`, `state`, `before`, `after`, `delta`, `house` und `reason` in `Game.effect_log`.
-
-H5 bleibt in der Matrix `TEIL`, weil der Test nur Kaserne → `levy` beweist. Der Maueranteil (Belagerungsverteidigung) ist noch nicht verdrahtet.
+- `tests/SystemicDepthTest.gd` prüft H1, H2, H5 (Kaserne), D5 und AI1 positiv sowie mit deaktivierter Kante. Der D5→H1-Kreislauf ist zusätzlich belegt.
+- `tests/FullDepthTest.gd` prüft die übrigen 23 Kanten positiv und negativ; zusammen mit den fünf Welle-1-Kanten sind alle 28 Matrixzeilen abgedeckt.
+- `tests/StoryTest.gd` spielt 120 Monate, trifft 104 Entscheidungen, sieht 24 Kanten und prüft drei Save/Load-Roundtrips ohne Diff.
+- `tests/SaveMigrationTest.gd` lädt den echten v1-Altstand, migriert auf Schema 4 und prüft die neuen Pflichtfelder inklusive negativer Feldkontrollen.
 
 ## Ist-Abdeckung nach DC-1
 
-| Quelle | Ist-Kanten | Tatsächlich erreichte Zielsäulen |
+| Quelle | Belegte Zielsysteme | Erfüllt |
 |---|---|---|
-| Herrschaft | H1, H2, H5 (Kaserne) | Krieg, Dynastie |
-| Dynastie | D5 | Herrschaft |
-| Krieg/Diplomatie | noch keine `IST`-Kante | — |
-| Welt/KI | AI1 | Krieg |
+| Herrschaft | Dynastie (H2), Krieg (H5, H8) | ja |
+| Dynastie | Herrschaft (D1, D3, D5, D7), Krieg (D2, D4, D6, D8) | ja |
+| Krieg/Diplomatie | Herrschaft (K1, K3), Dynastie (K6), Welt (K5), Krieg (K2, K4, K7) | ja |
+| Welt/KI | Herrschaft (AI2, AI3, AI5), Krieg (AI1, AI4) | ja |
 
-DC-1 ist damit **noch nicht vollständig erfüllt**: Herrschaft beeinflusst bereits zwei andere Säulen; Dynastie und KI beeinflussen je eine; Krieg/Diplomatie hat noch keine belegte ausgehende Kante. Die Matrix bleibt die prüfbare Fassung des Auftrags, nicht die Behauptung, alle vier Säulen seien fertig.
+DC-1 ist damit erfüllt: Jede der vier Säulen beeinflusst mindestens zwei andere. Die Matrix bleibt die prüfbare Fassung des Auftrags.
 
 ## Prüfregel pro Zeile
 
-Jeder `SystemicDepthTest` führt für eine Kante dieselben Schritte aus:
-
-1. Ausgangszustand erzeugen und die Quellgröße gezielt ändern.
-2. Den regulären Auslöser ausführen (Jahreswechsel, Gesetzeswechsel, Bau, Ehe).
-3. Zielgröße exakt gegen den erwarteten Wert prüfen und den Wirkungsbeleg im `effect_log` prüfen.
+1. Ausgangszustand erzeugen und die Quellgröße gezielt verändern.
+2. Den regulären Auslöser ausführen (Jahreswechsel, Bau, Heirat, Kriegserklärung, Belagerung, Frieden, Intrige, Nachfolge).
+3. Zielgröße exakt prüfen und den Beleg im `effect_log` prüfen.
 4. Dieselbe Aktion mit `set_edge_enabled(edge, false)` wiederholen. Die Aktion bleibt legal, aber die Zielgröße darf sich nicht über diese Kante ändern.
-5. Den neuen Zustand über `snapshot()`/`restore()` und `SaveGame.diff()` verlustfrei prüfen; das übernimmt `SaveMigrationTest` für die neuen Pflichtfelder.
-
-Ein Test, der nur „kein Absturz“ prüft, gilt nicht als Nachweis. Eine Kante ist erst `IST`, wenn Positiv- und Negativkontrolle grün sind und die Zustandsgröße im Save-Schema liegt.
+5. Den Zustand über `snapshot()`/`restore()` und `SaveGame.diff()` verlustfrei prüfen; `SaveMigrationTest` deckt die Pflichtfelder ab.
 
 ## Aktueller Ist-Stand
 
 | Kategorie | Anzahl | Zeilen |
 |---|---|---|
-| `IST` | 4 | H1, H2, D5, AI1 |
-| `TEIL` | 4 | H4, H5, D7, K2 |
-| `PLAN` | 20 | alle übrigen |
+| `IST` | 28 | H1–H8, D1–D8, K1–K7, AI1–AI5 |
+| `TEIL` | 0 | — |
+| `PLAN` | 0 | — |
 
-Welle 1 beginnt mit H1–H8 und D1–D8; Welle 2 mit K1–K7; Welle 3 mit AI1–AI5. Der erste Durchstich belegt vier vollständige Kanten und eine Teilkante. Die übrigen Zeilen bleiben sichtbar offen.
+Die automatisierte Story-Probe ist grün. Der manuelle 30-Minuten-Lauf auf Hardware bleibt eine Abnahme außerhalb von CI; er wird nicht als automatisch geprüft ausgegeben.

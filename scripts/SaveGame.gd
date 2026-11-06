@@ -1,17 +1,17 @@
 extends RefCounted
 ## Versioniertes Speicherformat für Banger Queens.
 ##
-## Schema 3 ergänzt:
-## - schema_version
-## - provinces[].buildings
-## - victory
-## - houses[].legitimacy
+## Schema 4 ergänzt:
+## - Schema-2-Felder: schema_version, provinces[].buildings, victory
+## - Schema-3-Feld: houses[].legitimacy
+## - Welle-2/3-Felder: factions, secrets, claims, armies, truces,
+##   provinces[].defense/siege/siege_owner
 ##
 ## Schema 1 (Altstand) hat keinen schema_version-Schlüssel. Die Migration
 ## erhält alle vorhandenen Felder und ergänzt nur neue Pflichtfelder mit
 ## deterministischen Defaults. Sie überschreibt keine unbekannten Felder.
 
-const CURRENT_VERSION := 3
+const CURRENT_VERSION := 4
 const BUILDING_KEYS := ["market", "barracks", "walls"]
 
 const REQUIRED_TOP_LEVEL := [
@@ -19,11 +19,11 @@ const REQUIRED_TOP_LEVEL := [
 	"game_over", "log", "pending", "houses", "provinces", "opinion",
 	"cooldowns", "captive", "scandal", "custom", "victory",
 ]
-const REQUIRED_PROVINCE := ["id", "name", "owner", "dev", "levy", "buildings"]
+const REQUIRED_PROVINCE := ["id", "name", "owner", "dev", "levy", "buildings", "defense", "siege", "siege_owner"]
 const REQUIRED_HOUSE := [
 	"name", "color", "gold", "prestige", "legitimacy", "capital", "realm", "ruler",
 	"spouse", "children", "heir", "heir_age", "pregnant", "lover_house",
-	"crest",
+	"crest", "factions", "secrets", "claims", "armies", "truces",
 ]
 
 ## Migriert einen beliebigen Save-Stand auf das aktuelle Schema.
@@ -215,6 +215,80 @@ static func diff(expected, actual, path: String = "") -> Array:
 static func state_equal(expected: Dictionary, actual: Dictionary) -> bool:
 	return diff(expected, actual).is_empty()
 
+static func _migrate_factions(raw) -> Array:
+	var out: Array = []
+	if raw is Array:
+		for item in raw:
+			if item is Dictionary:
+				out.append({
+					"name": str(item.get("name", "Faktion")),
+					"power": clampi(int(item.get("power", 20)), 0, 100),
+					"loyalty": clampi(int(item.get("loyalty", 60)), 0, 100),
+				})
+	if out.is_empty():
+		out = [
+			{"name": "Adel", "power": 20, "loyalty": 65},
+			{"name": "Krieger", "power": 20, "loyalty": 60},
+		]
+	return out
+
+static func _migrate_secrets(raw) -> Array:
+	var out: Array = []
+	if raw is Array:
+		for item in raw:
+			if item is Dictionary:
+				out.append({
+					"id": str(item.get("id", "")),
+					"target": int(item.get("target", -1)),
+					"kind": str(item.get("kind", "scandal")),
+					"known": bool(item.get("known", false)),
+				})
+	return out
+
+static func _migrate_claims(raw) -> Array:
+	var out: Array = []
+	if raw is Array:
+		for item in raw:
+			if item is Dictionary:
+				out.append({
+					"province": str(item.get("province", "")),
+					"strength": clampi(int(item.get("strength", 1)), 1, 5),
+					"expires": int(item.get("expires", 0)),
+				})
+	return out
+
+static func _migrate_armies(raw) -> Array:
+	var out: Array = []
+	if raw is Array:
+		for item in raw:
+			if item is Dictionary:
+				out.append({
+					"id": int(item.get("id", out.size())),
+					"province": str(item.get("province", "")),
+					"strength": clampi(int(item.get("strength", 0)), 0, 5000),
+					"upkeep": clampi(int(item.get("upkeep", 2)), 0, 50),
+					"morale": clampi(int(item.get("morale", 100)), 0, 100),
+				})
+	return out
+
+static func _migrate_truces(raw) -> Dictionary:
+	var out: Dictionary = {}
+	if raw is Dictionary:
+		for key in raw.keys():
+			out[str(key)] = int(raw[key])
+	return out
+
+static func _migrate_traits(raw) -> Array:
+	var out: Array = []
+	if raw is Array:
+		for value in raw:
+			var trait_name: String = str(value)
+			if trait_name != "" and not out.has(trait_name):
+				out.append(trait_name)
+	if out.is_empty():
+		out = ["Loyal"]
+	return out
+
 static func _string_array(raw) -> Array:
 	var out: Array = []
 	if raw is Array:
@@ -256,6 +330,24 @@ static func _migrate_houses(raw, errors: Array) -> Array:
 			var c: Color = h["color"]
 			h["color"] = [c.r, c.g, c.b]
 		h["legitimacy"] = clampi(int(h.get("legitimacy", 50)), 0, 100)
+		h["factions"] = _migrate_factions(h.get("factions", []))
+		h["secrets"] = _migrate_secrets(h.get("secrets", []))
+		h["claims"] = _migrate_claims(h.get("claims", []))
+		h["armies"] = _migrate_armies(h.get("armies", []))
+		h["truces"] = _migrate_truces(h.get("truces", {}))
+		var ruler = h.get("ruler", {})
+		if ruler is Dictionary:
+			ruler["traits"] = _migrate_traits(ruler.get("traits", []))
+		else:
+			h["ruler"] = {}
+		var children = h.get("children", [])
+		if children is Array:
+			for child in children:
+				if child is Dictionary:
+					var education: String = str(child.get("education", "martial"))
+					if education not in ["martial", "diplomacy", "stewardship", "intrigue"]:
+						education = "martial"
+					child["education"] = education
 		out.append(h)
 	return out
 
@@ -275,6 +367,9 @@ static func _migrate_provinces(raw, errors: Array) -> Array:
 		p["owner"] = int(p.get("owner", 0))
 		p["dev"] = int(p.get("dev", 1))
 		p["levy"] = int(p.get("levy", 0))
+		p["defense"] = clampi(int(p.get("defense", 0)), 0, 100)
+		p["siege"] = clampi(int(p.get("siege", 0)), 0, 100)
+		p["siege_owner"] = int(p.get("siege_owner", -1))
 		var raw_buildings = p.get("buildings", {})
 		var buildings: Dictionary = {}
 		for key in BUILDING_KEYS:

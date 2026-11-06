@@ -8,7 +8,7 @@ Bronzezeit-Grand-Strategy für **Android und Windows**, gebaut mit Godot 4.5. Ke
 
 ![Stammbaum](preview/stammbaum.png)
 
-## Architekturstand Welle 1
+## Architekturstand Welle 4
 
 Die systemische Tiefe ist in versionierten Dokumenten festgehalten:
 
@@ -16,9 +16,9 @@ Die systemische Tiefe ist in versionierten Dokumenten festgehalten:
 - [`docs/ui-kernel.md`](docs/ui-kernel.md) — UiKernel-Zuschnitt und schrittweise Extraktion
 - [`docs/depth-contract.md`](docs/depth-contract.md) — Depth Contract und 30-Minuten-Messlatte
 - [`docs/interaction-matrix.md`](docs/interaction-matrix.md) — Kanten der vier Säulen mit Quelle, Ziel und Zustandsgröße
-- [`docs/save-schema.md`](docs/save-schema.md) — Schema 3, Migration und Nachweis
+- [`docs/save-schema.md`](docs/save-schema.md) — Schema 4, Migration und Nachweis
 
-Der Save ist migrationfest: Schema 1 und 2 werden beim Laden auf Schema 3 gehoben, Gebäude, `victory` und `houses[].legitimacy` werden additiv ergänzt, und ein JSON-Roundtrip liefert denselben Zustand. Der Nachweis läuft über `SaveMigrationTest` mit einem echten Altstand als Fixture. Der erste Welle-1-Durchstich verdrahtet H1, H2, H5 (Kaserne), D5 und AI1 über `scripts/SystemicResolver.gd`; `SystemicDepthTest` prüft jede Kette positiv und mit deaktivierter Kante.
+Der Save ist migrationfest: Schema 1 wird beim Laden auf Schema 4 gehoben; Gebäude, `victory`, Legitimität, Fraktionen, Geheimnisse, Ansprüche, Armeen, Truces, Traits, Erziehung, Verteidigung und Belagerung werden additiv ergänzt. Ein JSON-Roundtrip liefert denselben Zustand. Der Nachweis läuft über `SaveMigrationTest` mit einem echten Altstand als Fixture. Die Systemtiefe umfasst alle 28 Matrixkanten: H1–H8, D1–D8, K1–K7 und AI1–AI5; Spieler und KI benutzen denselben `SystemicResolver` und dieselben `Game`-Kommandos. `SystemicDepthTest` und `FullDepthTest` prüfen positive Ketten und Negativkontrollen, `StoryTest` spielt 120 Monate mit drei Save-Roundtrips.
 
 ## Downloads
 
@@ -27,13 +27,13 @@ Der Save ist migrationfest: Schema 1 und 2 werden beim Laden auf Schema 3 gehobe
 | | |
 |---|---|
 | Datei | `F:\ck3-kronen-kriege.apk` |
-| Größe | 195.570.194 Bytes (ca. 187 MiB) |
-| SHA-256 | `ad30b973475b8d694b7b2140a6293d89b98787f31cddba63cb640c11a1522383` |
+| Größe | 196.754.057 Bytes (ca. 188 MiB) |
+| SHA-256 | `d5429a1c9aa5ea6bb5b6543675b53834012acc3cd5cce389be603452421cc71b` |
 | Paket | `org.example.kronen`, versionCode 3, versionName 1.2 |
 | SDK | minSdk 24, targetSdk 35 (compileSdk 35) |
 | ABIs | `arm64-v8a`, `armeabi-v7a` (keine x86-Bibliotheken) |
-| Signatur | Debug-Keystore, mit `apksigner` aus build-tools 36.1.0 geprüft |
-| ZIP | 258 Einträge, inkl. Wappen, Porträts, Icons, Karten- und Audiodaten |
+| Signatur | Debug-Keystore; Signatur in diesem Lauf nicht erneut geprüft |
+| Inhalt | APK mit Wappen, Porträts, Icons, Karten- und Audiodaten |
 
 Installation: Datei aufs Gerät kopieren und dort öffnen (Installation aus unbekannten Quellen erlauben) oder
 
@@ -46,8 +46,8 @@ adb install -r "F:\ck3-kronen-kriege.apk"
 | | |
 |---|---|
 | Datei | `F:\ck3-kronen-kriege.exe` |
-| Größe | 129.898.744 Bytes (ca. 124 MiB) |
-| SHA-256 | `3a0d7e66045d17f2eecbe0e282c0af205c00bbf1cb832f89f310d97790f353de` |
+| Größe | 129.913.240 Bytes (ca. 124 MiB) |
+| SHA-256 | `dc2361df86f86eb6a7b7d104f47a5ea0b1c6d724f8b17b5599447045f9e5666b` |
 | Version | 1.2.0.0, Produkt „Kronen und Kriege“ |
 | Format | einzelne x86_64-EXE mit eingebetteter PCK, eigenem Icon und Versionsressourcen |
 | Start | Doppelklick auf die EXE; `F11` schaltet Vollbild |
@@ -61,7 +61,9 @@ adb install -r "F:\ck3-kronen-kriege.apk"
 - **Familie:** Heiraten, Beilager, Schwangerschaft über neun Monate, Geburt, Kindesalter, Erbfolge. Das Erbfolgegesetz wählt das älteste oder jüngste Kind. Kinder erhalten eigene Porträts.
 - **Stammbaum:** eigener Bildschirm mit Herrscher, Gemahl/in, Ehe-Linie und Kindern samt Porträts; rechts steht die nummerierte Erbfolge. Erreichbar über „Stammbaum“ im Hofpanel.
 - **Intrigen:** Verführen (Geliebte/r, heimliche Schwangerschaft, Skandalrisiko), Ermorden (Nachfolge, Entdeckungsrisiko), Entführen (Gefangener, Lösegeld oder Zwangsheirat), Haltungen der Häuser und Abklingzeiten.
-- **Herrschaft:** Rat besetzen, Erbfolgegesetz ändern, Kaserne oder Mauern bauen; Legitimität, Prestige und Truppen sind sichtbar. Das neue Modal bündelt diese Entscheidungen.
+- **Herrschaft:** Rat besetzen, Erbfolge und Steuersatz ändern, Markt, Kaserne oder Mauern bauen; Legitimität, Prestige, Faktionen, Truppen und Verteidigung sind sichtbar. Das Modal bündelt diese Entscheidungen.
+- **Krieg & Diplomatie:** Ansprüche schmieden und erheben, Armeen aufstellen, Belagerungen vorantreiben, Provinzen einnehmen, Frieden mit Waffenstillstand schließen. Nur ein Anspruch erlaubt einen Angriff; Freundschaft und laufende Truces blockieren ihn.
+- **Geheimnisse:** Aufdecken und Ausnutzen erzeugt Skandal, Haltungsverlust und einen Anspruch auf die Zielhauptstadt.
 - **Hof und Welt:** Ausbau, Truppen werben, Angriffe, Hof halten, jährliches Einkommen, alternde Herrscher, acht Ereignisse mit Entscheidungen.
 - **Speichern/Laden** inklusive eigener Häuser, Gemahl, Kindern, Schwangerschaft, Geliebten, Gefangenen, Haltungen, Abklingzeiten sowie gewähltem Porträt, Wappen und Hausfarbe (`user://spielstand.json`).
 - **Touch-Bedienung:** Karte und Porträt verarbeiten `InputEventScreenTouch`; Buttons laufen über die Maus-Emulation aus Touch.
@@ -107,7 +109,7 @@ Chancen hängen von Diplomatie, Intrige, Kriegskunst, Gesundheit, Prestige und d
 | Tippen auf eine Grafschaft | Grafschaft auswählen |
 | Tippen auf Porträt oder Wappen | Herrscher-Werkstatt öffnen |
 | Buttons im Seitenpanel | Ausbauen, Werben, Angreifen, Heiraten, Beilager, Verführen, Ermorden, Entführen, Hof halten |
-| Herrschaft | Rat wechseln, Erbfolge umstellen, Kaserne oder Mauern bauen |
+| Herrschaft | Rat wechseln, Erbfolge/Steuersatz umstellen, Markt/Kaserne/Mauern bauen, Ansprüche, Armee, Belagerung, Frieden und Geheimnisse |
 | Stammbaum | Öffnet den Stammbaum mit Ehe, Kindern und Erbfolge |
 | Pause / x1 / x2 / x3 | Zeit anhalten oder beschleunigen |
 | Speichern / Laden | Spielstand schreiben oder lesen |
@@ -180,11 +182,13 @@ APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/CustomizeTes
 APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/PortraitTest.tscn
 APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/SaveMigrationTest.tscn
 APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/SystemicDepthTest.tscn
+APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/FullDepthTest.tscn
+APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/StoryTest.tscn
 APPDATA="$PWD/appdata" ./godot.exe --path .. res://tests/TouchTest.tscn --resolution 1280x720
 APPDATA="$PWD/appdata" ./godot.exe --path .. res://tests/ShotTest.tscn --resolution 1280x720
 ```
 
-`SaveMigrationTest` lädt den echten Altstand aus `tests/fixtures/legacy_v1.json`, migriert ihn auf Schema 3 und vergleicht alle Altfelder sowie einen JSON-Roundtrip. Die negativen Kontrollen entfernen `provinces[0].dev` und `houses[0].legitimacy` und müssen beide Verluste melden. `SystemicDepthTest` prüft H1, H2, H5 (Kaserne), D5 und AI1 als Kausalitätskette und danach mit deaktivierter Kante; der D5→H1-Kreislauf ist zusätzlich belegt. `CustomizeTest` klickt auf das Porträt, ändert Porträt, Wappen, Hausfarbe, Namen, Geschlecht, Alter und Charakterwerte, prüft Speichern/Laden und das Zurücksetzen per Abbrechen. `ShotTest` rendert fünf Bilder: Start, Erstellung, Spiel, Stammbaum und Herrscher-Werkstatt.
+`SaveMigrationTest` lädt den echten Altstand aus `tests/fixtures/legacy_v1.json`, migriert ihn auf Schema 4 und vergleicht alle Altfelder sowie einen JSON-Roundtrip. Die negativen Kontrollen entfernen `provinces[0].dev`, `houses[0].legitimacy` und `provinces[0].defense` und müssen alle Verluste melden. `SystemicDepthTest` prüft H1, H2, H5 (Kaserne), D5 und AI1; `FullDepthTest` prüft die übrigen 23 Kanten positiv und negativ. `StoryTest` spielt 120 Monate mit 104 Entscheidungen, 24 Kanten und drei Save-Roundtrips. `CustomizeTest` klickt auf das Porträt, ändert Porträt, Wappen, Hausfarbe, Namen, Geschlecht, Alter und Charakterwerte, prüft Speichern/Laden und das Zurücksetzen per Abbrechen. `ShotTest` rendert fünf Bilder: Start, Erstellung, Spiel, Stammbaum und Herrscher-Werkstatt.
 
 ## Toolchain im Projekt
 
@@ -207,7 +211,7 @@ project.godot
 export_presets.cfg        Android- und Windows-Preset, ABIs, Paketname, Zielpfade
 scenes/Main.tscn          nur die Wurzel, die UI entsteht zur Laufzeit
 scripts/Data.gd           Bronzezeit-Provinzen, Häuser, Familien, Ereignissescripts/Game.gd          Simulation, Familie, Intrigen, Speicherstand
-scripts/SaveGame.gd      Schema 3, Migration, Validierung, kanonischer Diff
+scripts/SaveGame.gd      Schema 4, Migration, Validierung, kanonischer Diff
 scripts/SystemicResolver.gd  zentraler Effektpunkt für Welle-1-Kanten
 
 scripts/MapView.gd        texturierte Karte, Wappen, Touch- und Mausauswahl
@@ -228,14 +232,16 @@ export_windows.sh         Windows-Build
 - `HouseTest`: neun Häuser im Menü, drei Häuser angespielt und ausgebaut.
 - `HousePlayTest`: Wessex, Skandia und Latium je 18 Monate simuliert, gespeichert und geladen.
 - `IntrigueTest`: Heirat, Beilager, Verführen, Mord mit Nachfolge, Entführung mit Lösegeld, Stammbaum und Speichern/Laden.
-- `SaveMigrationTest`: echter v1-Altstand geladen, auf Schema 3 migriert, alle Altfelder erhalten, `legitimacy=50` ergänzt, JSON-Roundtrip identisch; negative Kontrollen erkennen entferntes `dev` und entfernte `legitimacy`.
+- `SaveMigrationTest`: echter v1-Altstand geladen, auf Schema 4 migriert, alle Altfelder erhalten, Legitimität/Faktionen/Verteidigung ergänzt, JSON-Roundtrip identisch; negative Kontrollen erkennen entferntes `dev`, `legitimacy` und `defense`.
 - `SystemicDepthTest`: H1, H2, H5 (Kaserne), D5 und AI1 positiv; alle fünf Negativkontrollen ohne Zieländerung; D5→H1-Kreislauf belegt.
+- `FullDepthTest`: 56 positive/negative Prüfungen für H3–H8 (inkl. Mauern), D1–D4, D6–D8, K1–K7 und AI2–AI5.
+- `StoryTest`: 120 Monate, 104 Entscheidungen, 24 Kanten, 3 Save/Load-Roundtrips ohne Diff; 7 dynastische, 6 Krieg-/Diplomatie- und 5 KI-Kanten.
 - `PortraitTest`: 48 HD-Porträts, Auswahlbereiche und Speichern/Laden grün.
 - `CustomizeTest`: Porträt-Klick, Wappen, Hausfarbe, Name, Hausname, Geschlecht, Alter und Werte; Speichern/Laden und Abbrechen grün.
 - `TouchTest`: Auswahl per `InputEventScreenTouch` und Ausbau per Touch.
 - `ShotTest`: fünf gerenderte Bilder, inklusive Herrscher-Werkstatt.
-- Android: finales APK signiert, auf Poco F7 Pro (`f030379a`) installiert; Startmenü, Spiel und Herrscher-Werkstatt per echtem Touch geöffnet. Ein vollständiger mehrstündiger Spielverlauf auf Hardware wurde nicht durchgespielt.
-- Windows: Welle-1-Export erfolgreich (Exit 0), 129.898.744 Bytes, eingebettete PCK, Audio und Versionsressourcen vorhanden. Ein visueller Windows-Start wurde nicht automatisiert geprüft.
+- Android: Schema-4-Export erfolgreich (Exit 0), 196.754.057 Bytes, SHA-256 `d5429a1c9aa5ea6bb5b6543675b53834012acc3cd5cce389be603452421cc71b`. Signatur und Installation auf Hardware wurden in diesem Lauf nicht erneut geprüft; der vorhandene Touch-Smoke läuft lokal.
+- Windows: Schema-4-Export erfolgreich (Exit 0), 129.913.240 Bytes, SHA-256 `dc2361df86f86eb6a7b7d104f47a5ea0b1c6d724f8b17b5599447045f9e5666b`, eingebettete PCK, Audio und Versionsressourcen vorhanden. Ein visueller Windows-Start wurde nicht automatisiert geprüft.
 
 ## Warum keine CK3-Assets
 
