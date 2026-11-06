@@ -1,0 +1,41 @@
+; Engine configuration file.
+; Godot 4.3+ – Prototyp "Kronen und Kriege"
+; Alle Grafiken sind eigene, mit tools/make_assets.ps1 erzeugte Assets;
+; es werden keine Fremdassets aus Crusader Kings geladen.
+
+config_version=5
+
+[application]
+
+config/name="Kronen und Kriege"
+config/version="1.2"
+config/description="Bronzezeit-Grand-Strategy für Android und Windows: eigene Dynastie, Hof, Familie und Intrigen ab 2000 v. Chr."
+run/main_scene="res://scenes/Loading.tscn"
+config/features=PackedStringArray("4.3", "GL Compatibility")
+config/icon="res://icon.png"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/window_width_override=1600
+window/size/window_height_override=900
+window/size/resizable=true
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=0
+
+[input_devices]
+
+pointing/emulate_mouse_from_touch=true
+pointing/emulate_touch_from_mouse=true
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true
+
+[gui]
+
+theme/default_font_multichannel_signed_distance_field=true

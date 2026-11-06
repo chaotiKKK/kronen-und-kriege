@@ -1,0 +1,916 @@
+{
+  "characters": [
+    {
+      "id": 1,
+      "sheet": "characters_1.jpg",
+      "gender": "f",
+      "character": "character_01.png",
+      "portrait": "portrait_01.png",
+      "bbox": [
+        7,
+        82,
+        255,
+        740
+      ],
+      "portrait_box": [
+        15,
+        70,
+        271,
+        390
+      ]
+    },
+    {
+      "id": 2,
+      "sheet": "characters_1.jpg",
+      "gender": "f",
+      "character": "character_02.png",
+      "portrait": "portrait_02.png",
+      "bbox": [
+        259,
+        86,
+        463,
+        736
+      ],
+      "portrait_box": [
+        236,
+        74,
+        492,
+        394
+      ]
+    },
+    {
+      "id": 3,
+      "sheet": "characters_1.jpg",
+      "gender": "f",
+      "character": "character_03.png",
+      "portrait": "portrait_03.png",
+      "bbox": [
+        467,
+        87,
+        717,
+        737
+      ],
+      "portrait_box": [
+        469,
+        75,
+        725,
+        395
+      ]
+    },
+    {
+      "id": 4,
+      "sheet": "characters_1.jpg",
+      "gender": "f",
+      "character": "character_04.png",
+      "portrait": "portrait_04.png",
+      "bbox": [
+        721,
+        83,
+        960,
+        738
+      ],
+      "portrait_box": [
+        693,
+        71,
+        949,
+        391
+      ]
+    },
+    {
+      "id": 5,
+      "sheet": "characters_1.jpg",
+      "gender": "f",
+      "character": "character_05.png",
+      "portrait": "portrait_05.png",
+      "bbox": [
+        964,
+        92,
+        1177,
+        739
+      ],
+      "portrait_box": [
+        945,
+        80,
+        1201,
+        400
+      ]
+    },
+    {
+      "id": 6,
+      "sheet": "characters_1.jpg",
+      "gender": "f",
+      "character": "character_06.png",
+      "portrait": "portrait_06.png",
+      "bbox": [
+        1181,
+        86,
+        1392,
+        741
+      ],
+      "portrait_box": [
+        1152,
+        74,
+        1408,
+        394
+      ]
+    },
+    {
+      "id": 7,
+      "sheet": "characters_2.jpg",
+      "gender": "m",
+      "character": "character_07.png",
+      "portrait": "portrait_07.png",
+      "bbox": [
+        7,
+        78,
+        254,
+        740
+      ],
+      "portrait_box": [
+        16,
+        66,
+        272,
+        386
+      ]
+    },
+    {
+      "id": 8,
+      "sheet": "characters_2.jpg",
+      "gender": "m",
+      "character": "character_08.png",
+      "portrait": "portrait_08.png",
+      "bbox": [
+        258,
+        87,
+        468,
+        736
+      ],
+      "portrait_box": [
+        240,
+        75,
+        496,
+        395
+      ]
+    },
+    {
+      "id": 9,
+      "sheet": "characters_2.jpg",
+      "gender": "m",
+      "character": "character_09.png",
+      "portrait": "portrait_09.png",
+      "bbox": [
+        472,
+        81,
+        720,
+        740
+      ],
+      "portrait_box": [
+        466,
+        69,
+        722,
+        389
+      ]
+    },
+    {
+      "id": 10,
+      "sheet": "characters_2.jpg",
+      "gender": "m",
+      "character": "character_10.png",
+      "portrait": "portrait_10.png",
+      "bbox": [
+        724,
+        83,
+        959,
+        737
+      ],
+      "portrait_box": [
+        693,
+        71,
+        949,
+        391
+      ]
+    },
+    {
+      "id": 11,
+      "sheet": "characters_2.jpg",
+      "gender": "m",
+      "character": "character_11.png",
+      "portrait": "portrait_11.png",
+      "bbox": [
+        963,
+        91,
+        1175,
+        739
+      ],
+      "portrait_box": [
+        944,
+        79,
+        1200,
+        399
+      ]
+    },
+    {
+      "id": 12,
+      "sheet": "characters_2.jpg",
+      "gender": "m",
+      "character": "character_12.png",
+      "portrait": "portrait_12.png",
+      "bbox": [
+        1179,
+        86,
+        1390,
+        742
+      ],
+      "portrait_box": [
+        1144,
+        74,
+        1400,
+        394
+      ]
+    },
+    {
+      "id": 13,
+      "sheet": "characters_3.jpg",
+      "gender": "f",
+      "character": "character_13.png",
+      "portrait": "portrait_13.png",
+      "bbox": [
+        27,
+        81,
+        233,
+        724
+      ],
+      "portrait_box": [
+        2,
+        73,
+        233,
+        361
+      ]
+    },
+    {
+      "id": 14,
+      "sheet": "characters_3.jpg",
+      "gender": "f",
+      "character": "character_14.png",
+      "portrait": "portrait_14.png",
+      "bbox": [
+        237,
+        84,
+        467,
+        723
+      ],
+      "portrait_box": [
+        237,
+        76,
+        467,
+        363
+      ]
+    },
+    {
+      "id": 15,
+      "sheet": "characters_3.jpg",
+      "gender": "f",
+      "character": "character_15.png",
+      "portrait": "portrait_15.png",
+      "bbox": [
+        471,
+        75,
+        693,
+        732
+      ],
+      "portrait_box": [
+        471,
+        67,
+        693,
+        344
+      ]
+    },
+    {
+      "id": 16,
+      "sheet": "characters_3.jpg",
+      "gender": "f",
+      "character": "character_16.png",
+      "portrait": "portrait_16.png",
+      "bbox": [
+        697,
+        87,
+        930,
+        743
+      ],
+      "portrait_box": [
+        698,
+        79,
+        930,
+        369
+      ]
+    },
+    {
+      "id": 17,
+      "sheet": "characters_3.jpg",
+      "gender": "f",
+      "character": "character_17.png",
+      "portrait": "portrait_17.png",
+      "bbox": [
+        934,
+        84,
+        1157,
+        741
+      ],
+      "portrait_box": [
+        934,
+        76,
+        1157,
+        354
+      ]
+    },
+    {
+      "id": 18,
+      "sheet": "characters_3.jpg",
+      "gender": "f",
+      "character": "character_18.png",
+      "portrait": "portrait_18.png",
+      "bbox": [
+        1161,
+        84,
+        1397,
+        721
+      ],
+      "portrait_box": [
+        1163,
+        76,
+        1395,
+        366
+      ]
+    },
+    {
+      "id": 19,
+      "sheet": "characters_4.jpg",
+      "gender": "f",
+      "character": "character_19.png",
+      "portrait": "portrait_19.png",
+      "bbox": [
+        18,
+        40,
+        251,
+        751
+      ],
+      "portrait_box": [
+        19,
+        32,
+        251,
+        322
+      ]
+    },
+    {
+      "id": 20,
+      "sheet": "characters_4.jpg",
+      "gender": "f",
+      "character": "character_20.png",
+      "portrait": "portrait_20.png",
+      "bbox": [
+        255,
+        46,
+        468,
+        750
+      ],
+      "portrait_box": [
+        255,
+        38,
+        468,
+        304
+      ]
+    },
+    {
+      "id": 21,
+      "sheet": "characters_4.jpg",
+      "gender": "f",
+      "character": "character_21.png",
+      "portrait": "portrait_21.png",
+      "bbox": [
+        472,
+        47,
+        680,
+        753
+      ],
+      "portrait_box": [
+        472,
+        39,
+        680,
+        299
+      ]
+    },
+    {
+      "id": 22,
+      "sheet": "characters_4.jpg",
+      "gender": "f",
+      "character": "character_22.png",
+      "portrait": "portrait_22.png",
+      "bbox": [
+        684,
+        43,
+        927,
+        751
+      ],
+      "portrait_box": [
+        689,
+        35,
+        921,
+        325
+      ]
+    },
+    {
+      "id": 23,
+      "sheet": "characters_4.jpg",
+      "gender": "f",
+      "character": "character_23.png",
+      "portrait": "portrait_23.png",
+      "bbox": [
+        931,
+        38,
+        1168,
+        750
+      ],
+      "portrait_box": [
+        936,
+        30,
+        1168,
+        320
+      ]
+    },
+    {
+      "id": 24,
+      "sheet": "characters_4.jpg",
+      "gender": "f",
+      "character": "character_24.png",
+      "portrait": "portrait_24.png",
+      "bbox": [
+        1172,
+        39,
+        1385,
+        756
+      ],
+      "portrait_box": [
+        1172,
+        31,
+        1404,
+        321
+      ]
+    },
+    {
+      "id": 25,
+      "sheet": "characters_5.jpg",
+      "gender": "f",
+      "character": "character_25.png",
+      "portrait": "portrait_25.png",
+      "bbox": [
+        2,
+        53,
+        262,
+        749
+      ],
+      "portrait_box": [
+        30,
+        45,
+        262,
+        335
+      ]
+    },
+    {
+      "id": 26,
+      "sheet": "characters_5.jpg",
+      "gender": "f",
+      "character": "character_26.png",
+      "portrait": "portrait_26.png",
+      "bbox": [
+        266,
+        57,
+        456,
+        748
+      ],
+      "portrait_box": [
+        266,
+        49,
+        456,
+        286
+      ]
+    },
+    {
+      "id": 27,
+      "sheet": "characters_5.jpg",
+      "gender": "f",
+      "character": "character_27.png",
+      "portrait": "portrait_27.png",
+      "bbox": [
+        460,
+        53,
+        658,
+        746
+      ],
+      "portrait_box": [
+        460,
+        45,
+        658,
+        292
+      ]
+    },
+    {
+      "id": 28,
+      "sheet": "characters_5.jpg",
+      "gender": "f",
+      "character": "character_28.png",
+      "portrait": "portrait_28.png",
+      "bbox": [
+        662,
+        51,
+        881,
+        749
+      ],
+      "portrait_box": [
+        662,
+        43,
+        881,
+        316
+      ]
+    },
+    {
+      "id": 29,
+      "sheet": "characters_5.jpg",
+      "gender": "f",
+      "character": "character_29.png",
+      "portrait": "portrait_29.png",
+      "bbox": [
+        885,
+        53,
+        1116,
+        744
+      ],
+      "portrait_box": [
+        885,
+        45,
+        1116,
+        333
+      ]
+    },
+    {
+      "id": 30,
+      "sheet": "characters_5.jpg",
+      "gender": "f",
+      "character": "character_30.png",
+      "portrait": "portrait_30.png",
+      "bbox": [
+        1120,
+        47,
+        1406,
+        739
+      ],
+      "portrait_box": [
+        1120,
+        39,
+        1352,
+        329
+      ]
+    },
+    {
+      "id": 31,
+      "sheet": "characters_6.jpg",
+      "gender": "f",
+      "character": "character_31.png",
+      "portrait": "portrait_31.png",
+      "bbox": [
+        2,
+        37,
+        247,
+        732
+      ],
+      "portrait_box": [
+        9,
+        29,
+        241,
+        319
+      ]
+    },
+    {
+      "id": 32,
+      "sheet": "characters_6.jpg",
+      "gender": "f",
+      "character": "character_32.png",
+      "portrait": "portrait_32.png",
+      "bbox": [
+        251,
+        83,
+        467,
+        733
+      ],
+      "portrait_box": [
+        251,
+        75,
+        467,
+        345
+      ]
+    },
+    {
+      "id": 33,
+      "sheet": "characters_6.jpg",
+      "gender": "f",
+      "character": "character_33.png",
+      "portrait": "portrait_33.png",
+      "bbox": [
+        471,
+        85,
+        701,
+        733
+      ],
+      "portrait_box": [
+        471,
+        77,
+        701,
+        364
+      ]
+    },
+    {
+      "id": 34,
+      "sheet": "characters_6.jpg",
+      "gender": "f",
+      "character": "character_34.png",
+      "portrait": "portrait_34.png",
+      "bbox": [
+        705,
+        85,
+        935,
+        735
+      ],
+      "portrait_box": [
+        705,
+        77,
+        935,
+        364
+      ]
+    },
+    {
+      "id": 35,
+      "sheet": "characters_6.jpg",
+      "gender": "f",
+      "character": "character_35.png",
+      "portrait": "portrait_35.png",
+      "bbox": [
+        939,
+        87,
+        1148,
+        733
+      ],
+      "portrait_box": [
+        939,
+        79,
+        1148,
+        340
+      ]
+    },
+    {
+      "id": 36,
+      "sheet": "characters_6.jpg",
+      "gender": "f",
+      "character": "character_36.png",
+      "portrait": "portrait_36.png",
+      "bbox": [
+        1152,
+        85,
+        1371,
+        733
+      ],
+      "portrait_box": [
+        1158,
+        77,
+        1390,
+        367
+      ]
+    },
+    {
+      "id": 37,
+      "sheet": "characters_7.jpg",
+      "gender": "f",
+      "character": "character_37.png",
+      "portrait": "portrait_37.png",
+      "bbox": [
+        2,
+        73,
+        261,
+        738
+      ],
+      "portrait_box": [
+        29,
+        65,
+        261,
+        355
+      ]
+    },
+    {
+      "id": 38,
+      "sheet": "characters_7.jpg",
+      "gender": "f",
+      "character": "character_38.png",
+      "portrait": "portrait_38.png",
+      "bbox": [
+        265,
+        73,
+        507,
+        738
+      ],
+      "portrait_box": [
+        269,
+        65,
+        501,
+        355
+      ]
+    },
+    {
+      "id": 39,
+      "sheet": "characters_7.jpg",
+      "gender": "f",
+      "character": "character_39.png",
+      "portrait": "portrait_39.png",
+      "bbox": [
+        511,
+        72,
+        687,
+        736
+      ],
+      "portrait_box": [
+        511,
+        64,
+        687,
+        284
+      ]
+    },
+    {
+      "id": 40,
+      "sheet": "characters_7.jpg",
+      "gender": "f",
+      "character": "character_40.png",
+      "portrait": "portrait_40.png",
+      "bbox": [
+        691,
+        75,
+        929,
+        737
+      ],
+      "portrait_box": [
+        697,
+        67,
+        929,
+        357
+      ]
+    },
+    {
+      "id": 41,
+      "sheet": "characters_7.jpg",
+      "gender": "f",
+      "character": "character_41.png",
+      "portrait": "portrait_41.png",
+      "bbox": [
+        933,
+        65,
+        1169,
+        736
+      ],
+      "portrait_box": [
+        933,
+        57,
+        1165,
+        347
+      ]
+    },
+    {
+      "id": 42,
+      "sheet": "characters_7.jpg",
+      "gender": "f",
+      "character": "character_42.png",
+      "portrait": "portrait_42.png",
+      "bbox": [
+        1173,
+        78,
+        1400,
+        738
+      ],
+      "portrait_box": [
+        1173,
+        70,
+        1405,
+        360
+      ]
+    },
+    {
+      "id": 43,
+      "sheet": "characters_8.jpg",
+      "gender": "f",
+      "character": "character_43.png",
+      "portrait": "portrait_43.png",
+      "bbox": [
+        27,
+        88,
+        286,
+        717
+      ],
+      "portrait_box": [
+        43,
+        80,
+        275,
+        370
+      ]
+    },
+    {
+      "id": 44,
+      "sheet": "characters_8.jpg",
+      "gender": "f",
+      "character": "character_44.png",
+      "portrait": "portrait_44.png",
+      "bbox": [
+        290,
+        82,
+        484,
+        722
+      ],
+      "portrait_box": [
+        290,
+        74,
+        484,
+        316
+      ]
+    },
+    {
+      "id": 45,
+      "sheet": "characters_8.jpg",
+      "gender": "f",
+      "character": "character_45.png",
+      "portrait": "portrait_45.png",
+      "bbox": [
+        488,
+        98,
+        710,
+        720
+      ],
+      "portrait_box": [
+        488,
+        90,
+        710,
+        367
+      ]
+    },
+    {
+      "id": 46,
+      "sheet": "characters_8.jpg",
+      "gender": "f",
+      "character": "character_46.png",
+      "portrait": "portrait_46.png",
+      "bbox": [
+        714,
+        94,
+        953,
+        722
+      ],
+      "portrait_box": [
+        718,
+        86,
+        950,
+        376
+      ]
+    },
+    {
+      "id": 47,
+      "sheet": "characters_8.jpg",
+      "gender": "f",
+      "character": "character_47.png",
+      "portrait": "portrait_47.png",
+      "bbox": [
+        957,
+        97,
+        1140,
+        721
+      ],
+      "portrait_box": [
+        957,
+        89,
+        1140,
+        317
+      ]
+    },
+    {
+      "id": 48,
+      "sheet": "characters_8.jpg",
+      "gender": "f",
+      "character": "character_48.png",
+      "portrait": "portrait_48.png",
+      "bbox": [
+        1144,
+        84,
+        1406,
+        720
+      ],
+      "portrait_box": [
+        1163,
+        76,
+        1395,
+        366
+      ]
+    }
+  ]
+}

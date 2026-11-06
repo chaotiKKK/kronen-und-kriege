@@ -1,0 +1,37 @@
+# Godot import/cache
+.godot/
+
+# Local Godot binary, SDKs, export templates, keystores
+.tools/
+
+# Root build outputs, logs, screenshots
+/build/
+
+# Android Gradle generated output; the source template stays tracked
+android/build/.gradle/
+android/build/build/
+android/build/libs/
+android/build/assets/
+android/build/.cxx/
+android/build/local.properties
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Local third-party reference material; not part of the game or its repository
+/reference/
+
+# Keep only the game screenshots referenced by README; ignore crop/debug material
+/preview/*
+!/preview/screenshot.png
+!/preview/screenshot.png.import
+!/preview/herrscher.png
+!/preview/herrscher.png.import
+!/preview/stammbaum.png
+!/preview/stammbaum.png.import
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.tmp
