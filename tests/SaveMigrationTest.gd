@@ -2,9 +2,9 @@ extends Node
 ## Save-Migrationstest für Banger Queens.
 ##
 ## Beweist:
-## 1. Ein Altspielstand ohne schema_version/buildings/victory wird geladen.
+## 1. Ein Altspielstand ohne schema_version/buildings/victory/legitimacy wird geladen.
 ## 2. Alle vorhandenen Altfelder bleiben erhalten; neue Felder bekommen Defaults.
-## 3. Ein JSON-Speichern/Laden-Zyklus im Schema 2 liefert exakt denselben Zustand.
+## 3. Ein JSON-Speichern/Laden-Zyklus im Schema 3 liefert exakt denselben Zustand.
 ## 4. validate() und diff() erkennen einen entfernten Pflichtwert.
 ##
 ## Aufruf: godot --headless --path . res://tests/SaveMigrationTest.tscn
@@ -37,6 +37,7 @@ func _ready() -> void:
 	var h: Dictionary = source.house()
 	h["gold"] = 321
 	h["prestige"] = 42
+	h["legitimacy"] = 73
 	h["crest"] = 4
 	h["realm"] = "Testreich"
 	h["ruler"]["name"] = "Testherrscher"
@@ -49,33 +50,38 @@ func _ready() -> void:
 	province["buildings"]["market"] = 2
 	province["buildings"]["walls"] = 1
 
-	var v2: Dictionary = source.snapshot()
-	_check(v2.has("schema_version") and int(v2["schema_version"]) == 2, "Schema 2 fehlt im Snapshot.")
-	_check(v2.has("victory") and bool(v2["victory"]) == true, "victory fehlt im Snapshot.")
-	var source_province: Dictionary = _find_province(v2["provinces"], str(province["id"]))
+	var v3: Dictionary = source.snapshot()
+	_check(v3.has("schema_version") and int(v3["schema_version"]) == 3, "Schema 3 fehlt im Snapshot.")
+	_check(v3.has("victory") and bool(v3["victory"]) == true, "victory fehlt im Snapshot.")
+	_check(int(v3["houses"][2]["legitimacy"]) == 73, "legitimacy fehlt im Snapshot.")
+	var source_province: Dictionary = _find_province(v3["provinces"], str(province["id"]))
 	_check(not source_province.is_empty(), "Provinz fehlt im Snapshot.")
 	_check(int(source_province["buildings"]["market"]) == 2, "Gebäude market fehlt im Snapshot.")
 
-	# --- Altstand: aktuelle Altfelder, aber ohne Schema-2-Zusätze ------------
-	var legacy: Dictionary = v2.duplicate(true)
+	# --- Altstand: aktuelle Altfelder, aber ohne Schema-3-Zusätze ------------
+	var legacy: Dictionary = v3.duplicate(true)
 	legacy.erase("schema_version")
 	legacy.erase("victory")
 	for p in legacy["provinces"]:
 		p.erase("buildings")
+	for old_house in legacy["houses"]:
+		old_house.erase("legitimacy")
 	legacy["legacy_marker"] = "muss-erhalten-bleiben"
 
 	# --- Migration und Laden des Altstands ----------------------------------
 	var result: Dictionary = SaveGame.migrate(legacy)
 	_check(bool(result["ok"]), "Migration meldet Fehler: %s" % "; ".join(result["errors"]))
 	var migrated_data: Dictionary = result["data"]
-	_check(int(migrated_data["schema_version"]) == 2, "Migration setzt Schema 2 nicht.")
+	_check(int(migrated_data["schema_version"]) == 3, "Migration setzt Schema 3 nicht.")
 	_check(migrated_data.has("victory") and bool(migrated_data["victory"]) == false, "victory-Default fehlt.")
+	_check(int(migrated_data["houses"][0]["legitimacy"]) == 50, "legitimacy-Default 50 fehlt.")
 	_check(str(migrated_data.get("legacy_marker", "")) == "muss-erhalten-bleiben", "Unbekanntes Feld ging bei Migration verloren.")
 
 	var loaded = GameScript.new(DataScript, 2)
 	_check(loaded.restore(legacy), "Altspielstand wurde nicht geladen.")
 	var migrated: Dictionary = loaded.snapshot()
 	_check(str(migrated.get("legacy_marker", "")) == "muss-erhalten-bleiben", "Unbekanntes Top-Level-Feld ging beim Laden verloren.")
+	_check(int(migrated["houses"][0]["legitimacy"]) == 50, "legitimacy wurde beim Laden nicht mit 50 ergänzt.")
 
 	# Vorhandene Altfelder müssen exakt erhalten sein.
 	for key in ["year", "month", "player", "speed", "event_timer", "game_over",
@@ -95,26 +101,27 @@ func _ready() -> void:
 		for building_key in ["market", "barracks", "walls"]:
 			_check(int(new_province["buildings"][building_key]) == 0, "buildings.%s ist nicht 0 bei %s." % [building_key, old_province["id"]])
 
-	# --- Schema-2-Roundtrip über echtes JSON --------------------------------
+	# --- Schema-3-Roundtrip über echtes JSON --------------------------------
 	var encoded: String = JSON.stringify(migrated)
 	var parsed = JSON.parse_string(encoded)
 	_check(parsed is Dictionary, "JSON-Roundtrip liefert kein Dictionary.")
 	var roundtrip = GameScript.new(DataScript, 2)
-	_check(roundtrip.restore(parsed), "Schema-2-Stand wurde nicht geladen.")
+	_check(roundtrip.restore(parsed), "Schema-3-Stand wurde nicht geladen.")
 	var actual: Dictionary = roundtrip.snapshot()
 	var roundtrip_errors: Array = SaveGame.diff(migrated, actual)
 	_check(roundtrip_errors.is_empty(), "Roundtrip verliert Zustand: %s" % "; ".join(roundtrip_errors))
 	_check(SaveGame.validate(actual).is_empty(), "validate() meldet Fehler: %s" % "; ".join(SaveGame.validate(actual)))
 
-	# --- Schema 2 bewahrt Gebäude und victory ------------------------------
+	# --- Schema 3 bewahrt Gebäude, victory und legitimacy -------------------
 	var direct = GameScript.new(DataScript, 2)
-	_check(direct.restore(v2), "Schema-2-Snapshot wurde nicht geladen.")
+	_check(direct.restore(v3), "Schema-3-Snapshot wurde nicht geladen.")
 	var direct_again: Dictionary = direct.snapshot()
 	var direct_province: Dictionary = _find_province(direct_again["provinces"], str(province["id"]))
-	_check(int(direct_province["buildings"]["market"]) == 2, "Schema 2 verliert market-Gebäude.")
-	_check(bool(direct_again["victory"]) == true, "Schema 2 verliert victory.")
+	_check(int(direct_province["buildings"]["market"]) == 2, "Schema 3 verliert market-Gebäude.")
+	_check(bool(direct_again["victory"]) == true, "Schema 3 verliert victory.")
+	_check(int(direct_again["houses"][2]["legitimacy"]) == 73, "Schema 3 verliert legitimacy.")
 
-	# --- Negativkontrolle: ein entferntes Pflichtfeld muss auffallen --------
+	# --- Negativkontrolle: entfernte Pflichtfelder müssen auffallen ---------
 	var broken: Dictionary = migrated.duplicate(true)
 	broken["provinces"][0].erase("dev")
 	var loss_errors: Array = SaveGame.diff(migrated, broken)
@@ -122,6 +129,14 @@ func _ready() -> void:
 	var validation_errors: Array = SaveGame.validate(broken)
 	_check(not validation_errors.is_empty(), "validate() erkennt entferntes Feld dev nicht.")
 	print("FELDVERLUST-KONTROLLE: %s" % "; ".join(loss_errors))
+
+	var broken_legitimacy: Dictionary = migrated.duplicate(true)
+	broken_legitimacy["houses"][0].erase("legitimacy")
+	var legitimacy_errors: Array = SaveGame.diff(migrated, broken_legitimacy)
+	_check(not legitimacy_errors.is_empty(), "diff() erkennt entfernte legitimacy nicht.")
+	var legitimacy_validation: Array = SaveGame.validate(broken_legitimacy)
+	_check(not legitimacy_validation.is_empty(), "validate() erkennt entfernte legitimacy nicht.")
+	print("LEGITIMITÄTS-KONTROLLE: %s" % "; ".join(legitimacy_errors))
 
 	# --- Zukünftige Schemata werden abgelehnt, nicht geraten ---------------
 	var future: Dictionary = migrated.duplicate(true)
@@ -131,7 +146,7 @@ func _ready() -> void:
 
 	if _failed:
 		return
-	print("SAVEMIGRATIONTEST OK: v1->v2, %d Häuser, %d Provinzen, Altfelder erhalten, JSON-Roundtrip identisch, Feldverlust erkannt." % [
+	print("SAVEMIGRATIONTEST OK: v1->v3, %d Häuser, %d Provinzen, Altfelder erhalten, legitimacy additiv, JSON-Roundtrip identisch, Feldverlust erkannt." % [
 		(migrated["houses"] as Array).size(), (migrated["provinces"] as Array).size()
 	])
 	get_tree().quit(0)
@@ -143,11 +158,11 @@ func _test_legacy_fixture() -> void:
 	file.close()
 	_check(parsed is Dictionary, "Legacy-Fixture ist kein JSON-Objekt.")
 	var legacy: Dictionary = parsed
-	_check(not legacy.has("schema_version"), "Legacy-Fixture ist bereits Schema 2.")
+	_check(not legacy.has("schema_version"), "Legacy-Fixture ist bereits Schema 3.")
 	var loaded = GameScript.new(DataScript, int(legacy.get("player", 0)))
 	_check(loaded.restore(legacy), "Echter Altspielstand wurde nicht geladen.")
 	var migrated: Dictionary = loaded.snapshot()
-	_check(int(migrated["schema_version"]) == 2, "Echter Altspielstand wurde nicht auf Schema 2 gehoben.")
+	_check(int(migrated["schema_version"]) == 3, "Echter Altspielstand wurde nicht auf Schema 3 gehoben.")
 	for key in legacy.keys():
 		if key == "houses" or key == "provinces":
 			continue
@@ -157,6 +172,7 @@ func _test_legacy_fixture() -> void:
 		var new_house: Dictionary = migrated["houses"][i]
 		for key in old_house.keys():
 			_assert_same(old_house[key], new_house[key], "FIXTURE.houses[%d].%s" % [i, key])
+		_check(int(new_house["legitimacy"]) == 50, "FIXTURE.houses[%d].legitimacy ist nicht 50." % i)
 	for old_province in legacy["provinces"]:
 		var new_province: Dictionary = _find_province(migrated["provinces"], str(old_province["id"]))
 		_check(not new_province.is_empty(), "FIXTURE-Provinz %s fehlt." % old_province["id"])
@@ -167,11 +183,11 @@ func _test_legacy_fixture() -> void:
 	var roundtrip_parsed = JSON.parse_string(JSON.stringify(migrated))
 	_check(roundtrip_parsed is Dictionary, "FIXTURE-JSON-Roundtrip liefert kein Dictionary.")
 	var roundtrip = GameScript.new(DataScript, int(legacy.get("player", 0)))
-	_check(roundtrip.restore(roundtrip_parsed), "FIXTURE-Schema-2-Stand wurde nicht geladen.")
+	_check(roundtrip.restore(roundtrip_parsed), "FIXTURE-Schema-3-Stand wurde nicht geladen.")
 	var actual: Dictionary = roundtrip.snapshot()
 	var errors: Array = SaveGame.diff(migrated, actual)
 	_check(errors.is_empty(), "FIXTURE-Roundtrip verliert Zustand: %s" % "; ".join(errors))
-	print("ALTSTAND-FIXTURE OK: %d Häuser, %d Provinzen, alle Altfelder erhalten, Schema 2, Roundtrip identisch." % [
+	print("ALTSTAND-FIXTURE OK: %d Häuser, %d Provinzen, alle Altfelder erhalten, Schema 3, legitimacy=50, Roundtrip identisch." % [
 		(migrated["houses"] as Array).size(), (migrated["provinces"] as Array).size()
 	])
 

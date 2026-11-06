@@ -8,7 +8,7 @@ Bronzezeit-Grand-Strategy für **Android und Windows**, gebaut mit Godot 4.5. Ke
 
 ![Stammbaum](preview/stammbaum.png)
 
-## Architekturstand Welle 0
+## Architekturstand Welle 1
 
 Die systemische Tiefe ist in versionierten Dokumenten festgehalten:
 
@@ -16,9 +16,9 @@ Die systemische Tiefe ist in versionierten Dokumenten festgehalten:
 - [`docs/ui-kernel.md`](docs/ui-kernel.md) — UiKernel-Zuschnitt und schrittweise Extraktion
 - [`docs/depth-contract.md`](docs/depth-contract.md) — Depth Contract und 30-Minuten-Messlatte
 - [`docs/interaction-matrix.md`](docs/interaction-matrix.md) — Kanten der vier Säulen mit Quelle, Ziel und Zustandsgröße
-- [`docs/save-schema.md`](docs/save-schema.md) — Schema 2, Migration und Nachweis
+- [`docs/save-schema.md`](docs/save-schema.md) — Schema 3, Migration und Nachweis
 
-Der Save ist migrationfest: Schema 1 wird beim Laden auf Schema 2 gehoben, Gebäude und `victory` werden additiv ergänzt, und ein JSON-Roundtrip liefert denselben Zustand. Der Nachweis läuft über `SaveMigrationTest` mit einem echten Altstand als Fixture.
+Der Save ist migrationfest: Schema 1 und 2 werden beim Laden auf Schema 3 gehoben, Gebäude, `victory` und `houses[].legitimacy` werden additiv ergänzt, und ein JSON-Roundtrip liefert denselben Zustand. Der Nachweis läuft über `SaveMigrationTest` mit einem echten Altstand als Fixture. Der erste Welle-1-Durchstich verdrahtet H1, H2, H5 (Kaserne), D5 und AI1 über `scripts/SystemicResolver.gd`; `SystemicDepthTest` prüft jede Kette positiv und mit deaktivierter Kante.
 
 ## Downloads
 
@@ -46,8 +46,8 @@ adb install -r "F:\ck3-kronen-kriege.apk"
 | | |
 |---|---|
 | Datei | `F:\ck3-kronen-kriege.exe` |
-| Größe | 128.707.832 Bytes (ca. 123 MiB) |
-| SHA-256 | `022a941d68aaab4642e1803172c626faa4577697dcf938b28ea35dc07299edaf` |
+| Größe | 129.898.744 Bytes (ca. 124 MiB) |
+| SHA-256 | `3a0d7e66045d17f2eecbe0e282c0af205c00bbf1cb832f89f310d97790f353de` |
 | Version | 1.2.0.0, Produkt „Kronen und Kriege“ |
 | Format | einzelne x86_64-EXE mit eingebetteter PCK, eigenem Icon und Versionsressourcen |
 | Start | Doppelklick auf die EXE; `F11` schaltet Vollbild |
@@ -58,9 +58,10 @@ adb install -r "F:\ck3-kronen-kriege.apk"
 - **Herrscher-Werkstatt:** Klick bzw. Tipp auf Porträt oder Wappen öffnet die Gestaltung. Dort lassen sich Porträt, Wappen, Hausfarbe, Name, Hausname, Geschlecht, Alter und die vier Charakterwerte ändern. Die Vorschau aktualisiert das Hofpanel, die Karte und den Spielstand; „Abbrechen“ stellt den Ausgangszustand wieder her.
 - **Eigenes Haus gründen:** Name des Herrschers, Name der Dynastie, Name des Landes, Geschlecht, Heimatgrafschaft und 20 frei verteilbare Gaben (Kriegskunst, Diplomatie, Verwaltung, Intrige). Die gewählte Grafschaft geht an dich und kann umbenannt werden.
 - **Echte Assets statt Platzhalter:** neun Wappen, zwölf Porträts, zehn Icons, Pergament-Oberfläche, Bronze-Buttons, Titelpanorama sowie See- und Geländetexturen für die Karte. Alles wird von Skripten im Projekt erzeugt; nichts stammt aus Crusader Kings.
-- **Familie:** Heiraten, Beilager, Schwangerschaft über neun Monate, Geburt, Kindesalter, Erbfolge. Der Erbe ist das älteste Kind. Kinder erhalten eigene Porträts.
+- **Familie:** Heiraten, Beilager, Schwangerschaft über neun Monate, Geburt, Kindesalter, Erbfolge. Das Erbfolgegesetz wählt das älteste oder jüngste Kind. Kinder erhalten eigene Porträts.
 - **Stammbaum:** eigener Bildschirm mit Herrscher, Gemahl/in, Ehe-Linie und Kindern samt Porträts; rechts steht die nummerierte Erbfolge. Erreichbar über „Stammbaum“ im Hofpanel.
 - **Intrigen:** Verführen (Geliebte/r, heimliche Schwangerschaft, Skandalrisiko), Ermorden (Nachfolge, Entdeckungsrisiko), Entführen (Gefangener, Lösegeld oder Zwangsheirat), Haltungen der Häuser und Abklingzeiten.
+- **Herrschaft:** Rat besetzen, Erbfolgegesetz ändern, Kaserne oder Mauern bauen; Legitimität, Prestige und Truppen sind sichtbar. Das neue Modal bündelt diese Entscheidungen.
 - **Hof und Welt:** Ausbau, Truppen werben, Angriffe, Hof halten, jährliches Einkommen, alternde Herrscher, acht Ereignisse mit Entscheidungen.
 - **Speichern/Laden** inklusive eigener Häuser, Gemahl, Kindern, Schwangerschaft, Geliebten, Gefangenen, Haltungen, Abklingzeiten sowie gewähltem Porträt, Wappen und Hausfarbe (`user://spielstand.json`).
 - **Touch-Bedienung:** Karte und Porträt verarbeiten `InputEventScreenTouch`; Buttons laufen über die Maus-Emulation aus Touch.
@@ -106,11 +107,12 @@ Chancen hängen von Diplomatie, Intrige, Kriegskunst, Gesundheit, Prestige und d
 | Tippen auf eine Grafschaft | Grafschaft auswählen |
 | Tippen auf Porträt oder Wappen | Herrscher-Werkstatt öffnen |
 | Buttons im Seitenpanel | Ausbauen, Werben, Angreifen, Heiraten, Beilager, Verführen, Ermorden, Entführen, Hof halten |
+| Herrschaft | Rat wechseln, Erbfolge umstellen, Kaserne oder Mauern bauen |
 | Stammbaum | Öffnet den Stammbaum mit Ehe, Kindern und Erbfolge |
 | Pause / x1 / x2 / x3 | Zeit anhalten oder beschleunigen |
 | Speichern / Laden | Spielstand schreiben oder lesen |
 | F11 (Windows) | Vollbild umschalten |
-| Escape | Herrscher-Werkstatt schließen und Änderungen verwerfen |
+| Escape | Herrschaft oder Herrscher-Werkstatt schließen; Änderungen verwerfen |
 
 ## Starten
 
@@ -175,12 +177,14 @@ APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/HouseTest.ts
 APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/HousePlayTest.tscn
 APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/IntrigueTest.tscn
 APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/CustomizeTest.tscn
+APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/PortraitTest.tscn
 APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/SaveMigrationTest.tscn
+APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/SystemicDepthTest.tscn
 APPDATA="$PWD/appdata" ./godot.exe --path .. res://tests/TouchTest.tscn --resolution 1280x720
 APPDATA="$PWD/appdata" ./godot.exe --path .. res://tests/ShotTest.tscn --resolution 1280x720
 ```
 
-`SaveMigrationTest` lädt den echten Altstand aus `tests/fixtures/legacy_v1.json`, migriert ihn auf Schema 2 und vergleicht alle Altfelder sowie einen JSON-Roundtrip. Die negative Kontrolle entfernt `provinces[0].dev` und muss den Verlust melden. `CustomizeTest` klickt auf das Porträt, ändert Porträt, Wappen, Hausfarbe, Namen, Geschlecht, Alter und Charakterwerte, prüft Speichern/Laden und das Zurücksetzen per Abbrechen. `ShotTest` rendert fünf Bilder: Start, Erstellung, Spiel, Stammbaum und Herrscher-Werkstatt.
+`SaveMigrationTest` lädt den echten Altstand aus `tests/fixtures/legacy_v1.json`, migriert ihn auf Schema 3 und vergleicht alle Altfelder sowie einen JSON-Roundtrip. Die negativen Kontrollen entfernen `provinces[0].dev` und `houses[0].legitimacy` und müssen beide Verluste melden. `SystemicDepthTest` prüft H1, H2, H5 (Kaserne), D5 und AI1 als Kausalitätskette und danach mit deaktivierter Kante; der D5→H1-Kreislauf ist zusätzlich belegt. `CustomizeTest` klickt auf das Porträt, ändert Porträt, Wappen, Hausfarbe, Namen, Geschlecht, Alter und Charakterwerte, prüft Speichern/Laden und das Zurücksetzen per Abbrechen. `ShotTest` rendert fünf Bilder: Start, Erstellung, Spiel, Stammbaum und Herrscher-Werkstatt.
 
 ## Toolchain im Projekt
 
@@ -203,7 +207,8 @@ project.godot
 export_presets.cfg        Android- und Windows-Preset, ABIs, Paketname, Zielpfade
 scenes/Main.tscn          nur die Wurzel, die UI entsteht zur Laufzeit
 scripts/Data.gd           Bronzezeit-Provinzen, Häuser, Familien, Ereignissescripts/Game.gd          Simulation, Familie, Intrigen, Speicherstand
-scripts/SaveGame.gd      Schema 2, Migration, Validierung, kanonischer Diff
+scripts/SaveGame.gd      Schema 3, Migration, Validierung, kanonischer Diff
+scripts/SystemicResolver.gd  zentraler Effektpunkt für Welle-1-Kanten
 
 scripts/MapView.gd        texturierte Karte, Wappen, Touch- und Mausauswahl
 scripts/FamilyTree.gd     zeichnet Stammbaum, Ehe-Linie und Erbfolge
@@ -223,12 +228,14 @@ export_windows.sh         Windows-Build
 - `HouseTest`: neun Häuser im Menü, drei Häuser angespielt und ausgebaut.
 - `HousePlayTest`: Wessex, Skandia und Latium je 18 Monate simuliert, gespeichert und geladen.
 - `IntrigueTest`: Heirat, Beilager, Verführen, Mord mit Nachfolge, Entführung mit Lösegeld, Stammbaum und Speichern/Laden.
-- `SaveMigrationTest`: echter v1-Altstand geladen, auf Schema 2 migriert, alle Altfelder erhalten, JSON-Roundtrip identisch; negative Kontrolle erkennt entferntes `dev`.
+- `SaveMigrationTest`: echter v1-Altstand geladen, auf Schema 3 migriert, alle Altfelder erhalten, `legitimacy=50` ergänzt, JSON-Roundtrip identisch; negative Kontrollen erkennen entferntes `dev` und entfernte `legitimacy`.
+- `SystemicDepthTest`: H1, H2, H5 (Kaserne), D5 und AI1 positiv; alle fünf Negativkontrollen ohne Zieländerung; D5→H1-Kreislauf belegt.
+- `PortraitTest`: 48 HD-Porträts, Auswahlbereiche und Speichern/Laden grün.
 - `CustomizeTest`: Porträt-Klick, Wappen, Hausfarbe, Name, Hausname, Geschlecht, Alter und Werte; Speichern/Laden und Abbrechen grün.
 - `TouchTest`: Auswahl per `InputEventScreenTouch` und Ausbau per Touch.
 - `ShotTest`: fünf gerenderte Bilder, inklusive Herrscher-Werkstatt.
 - Android: finales APK signiert, auf Poco F7 Pro (`f030379a`) installiert; Startmenü, Spiel und Herrscher-Werkstatt per echtem Touch geöffnet. Ein vollständiger mehrstündiger Spielverlauf auf Hardware wurde nicht durchgespielt.
-- Windows: finale EXE headless gestartet (Exit 0), eingebettete PCK, Audio und Versionsressourcen vorhanden. Ein visueller Windows-Start wurde nicht automatisiert geprüft.
+- Windows: Welle-1-Export erfolgreich (Exit 0), 129.898.744 Bytes, eingebettete PCK, Audio und Versionsressourcen vorhanden. Ein visueller Windows-Start wurde nicht automatisiert geprüft.
 
 ## Warum keine CK3-Assets
 

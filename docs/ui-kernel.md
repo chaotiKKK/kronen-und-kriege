@@ -1,9 +1,9 @@
 # UiKernel-Zuschnitt
 
-> Dokumentversion: 1.0
+> Dokumentversion: 1.1
 > Stand: 2026-11-06
-> Status: Grenze definiert; Extraktion beginnt in Welle 1
-> Gültig für Save-Schema: 2
+> Status: Herrschaftsmodal vorhanden; UiKernel-Extraktion noch offen
+> Gültig für Save-Schema: 3
 
 ## Problem
 
@@ -95,6 +95,9 @@ Regeln:
 | `set_speed` | `_set_speed(value)` | `command.set_speed` | nur UI/`speed` |
 | `save` | `_save()` | `command.save` | Datei |
 | `load` | `_load()` | `command.load` | Datei |
+| `council_assign` | `game.assign_council(office, index)` | `command.council_assign` | `council`, indirekt `levy` über H1 |
+| `law_succession` | `game.set_law("succession", value)` | `command.law_succession` | `laws.succession`, `heir` über H2 |
+| `build` | `game.build(id, key)` | `command.build` | `buildings`, `gold`, `levy` über H5 |
 
 `save` und `load` sind Randkommandos: Sie dürfen `Game.snapshot()` und `Game.restore()` benutzen, aber nie eigenes JSON schreiben. Das Schema bleibt in `SaveGame.gd`.
 
@@ -111,6 +114,7 @@ Es gibt genau einen sichtbaren Modalzustand. `Escape` schließt den obersten Ein
 | `picker` | Heiraten/Intrige | Ziel oder Zurück | nein |
 | `event` | offenes Ereignis | Optionsknopf | ja, genau eine Option |
 | `family_tree` | Stammbaum | Schließen | nein |
+| `herrschaft` | Herrschaftsbutton | Schließen | ja, Rat, Gesetz und Bau über `Game`-Kommandos |
 | `game_over` | Tod ohne Erben | Neues Spiel | nein |
 
 Der Modalstapel ist UI-Zustand und wird **nicht** gespeichert. Nach `load` wird er auf `start`/`game` zurückgesetzt.
@@ -135,6 +139,8 @@ Nach jedem Schritt gilt: `Game.gd` bleibt autoritativ, `snapshot()`/`restore()` 
 - Kein direktes `game.houses[...] = ...` aus einem Panel. Ausnahmen sind nur Leseoperationen.
 - Keine vorzeitige Aufteilung von `Game.gd` in viele Manager, solange die Kanten nicht durch Tests belegt sind.
 
-## Status Welle 0
+## Status Welle 1
 
-Die Grenze ist dokumentiert und `SaveGame.gd` ist bereits ausgelagert. Die eigentliche UiKernel-Extraktion ist Welle 1; sie ist kein Bestandteil des Save-Nachweises. `Main._load()` prüft seit Welle 0 den Rückgabewert von `Game.restore()` und bricht bei einem ungültigen Stand sichtbar ab.
+Die Grenze ist dokumentiert und `SaveGame.gd` ist ausgelagert. Das neue Modal „Herrschaft“ ruft für Rat, Erbfolge und Bau bereits ausschließlich `Game`-Methoden auf; der Spielzustand bleibt dort autoritativ. Die formale `UiKernel`-Klasse mit `dispatch()` existiert noch nicht, deshalb bleiben die Aufrufe in `Main.gd`. `Main._load()` prüft weiterhin den Rückgabewert von `Game.restore()` und bricht bei einem ungültigen Stand sichtbar ab.
+
+Das Modal ist durch den Script-Parse-Check und den Windows-Export abgedeckt; ein eigener Headless-UI-Test für die Knöpfe existiert noch nicht.

@@ -65,6 +65,9 @@ var tree_layer: Control
 var tree_view
 var tree_title: Label
 var tree_list: VBoxContainer
+var rule_layer: Control
+var rule_title: Label
+var rule_body: VBoxContainer
 var custom_layer: Control
 var custom_name: LineEdit
 var custom_house: LineEdit
@@ -438,8 +441,10 @@ func _build() -> void:
 	side_box.add_child(force_btn)
 	court_btn = _button("Hof halten  (40 Gold)", func(): _do(game.court()), "crown")
 	side_box.add_child(court_btn)
+	side_box.add_child(_button("Herrschaft", _show_rule, "crown"))
 	side_box.add_child(_button("Spiel speichern", _save, "scroll"))
 	side_box.add_child(_button("Spielstand laden", _load, "scroll"))
+	_build_rule_layer()
 
 	# Ereignis-Overlay
 	event_layer = Control.new()
@@ -1297,6 +1302,7 @@ func _create_begin() -> void:
 		newgame_layer.visible = false
 	pick_layer.visible = false
 	tree_layer.visible = false
+	rule_layer.visible = false
 	if custom_layer != null:
 		custom_layer.visible = false
 	refresh()
@@ -1311,6 +1317,7 @@ func _start(index: int) -> void:
 	create_layer.visible = false
 	pick_layer.visible = false
 	tree_layer.visible = false
+	rule_layer.visible = false
 	if custom_layer != null:
 		custom_layer.visible = false
 	refresh()
@@ -1420,7 +1427,8 @@ func _refresh_tree() -> void:
 	var spouse: Dictionary = h["spouse"]
 	tree_list.add_child(_label("Gemahl/in: %s" % ("unvermählt" if spouse.is_empty() else spouse["name"]), 12, INK_SOFT))
 	tree_list.add_child(_label("Herrscher: %s (%d Jahre)" % [h["ruler"]["name"], int(h["ruler"]["age"])], 12, INK_SOFT))
-	tree_list.add_child(_label("Der älteste Nachkomme erbt.", 11, INK_SOFT))
+	var succession_law: String = str(game.house()["laws"]["succession"])
+	tree_list.add_child(_label("Erbfolgegesetz: %s." % ("Ältester" if succession_law == "eldest" else "Jüngster"), 11, INK_SOFT))
 
 func _save() -> void:
 	if game == null:
@@ -1461,6 +1469,7 @@ func _load() -> bool:
 	map_view.select("")
 	event_layer.visible = false
 	tree_layer.visible = false
+	rule_layer.visible = false
 	if custom_layer != null:
 		custom_layer.visible = false
 	start_layer.visible = false
@@ -1542,9 +1551,9 @@ func refresh() -> void:
 	var capt_txt := "—"
 	if not game.captive.is_empty():
 		capt_txt = "%s (noch %d Monate)" % [game.captive["name"], int(game.captive["months"])]
-	family_label.text = "Gemahl/in: %s\nErbe: %s · Kinder: %d\nGeliebte/r: %s · Gefangene/r: %s\nGold %d · Prestige %d" % [
+	family_label.text = "Gemahl/in: %s\nErbe: %s · Kinder: %d\nGeliebte/r: %s · Gefangene/r: %s\nGold %d · Prestige %d · Legitimität %d" % [
 		spouse_txt, heir_txt, h["children"].size(), lover_txt, capt_txt,
-		int(h["gold"]), int(h["prestige"]),
+		int(h["gold"]), int(h["prestige"]), int(h["legitimacy"]),
 	]
 	if selected == "":
 		hint_label.text = "Tippe auf eine Grafschaft, um sie auszuwählen."
@@ -1576,7 +1585,136 @@ func refresh() -> void:
 		_show_event()
 	if tree_layer.visible:
 		_refresh_tree()
+	if rule_layer != null and rule_layer.visible:
+		_refresh_rule()
 	over_layer.visible = game.game_over
+
+func _build_rule_layer() -> void:
+	rule_layer = Control.new()
+	rule_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	rule_layer.visible = false
+	rule_layer.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(rule_layer)
+	var dim := ColorRect.new()
+	dim.color = Color(0.04, 0.03, 0.02, 0.72)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	rule_layer.add_child(dim)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	rule_layer.add_child(center)
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(720, 0)
+	card.add_theme_stylebox_override("panel", _card_style(14))
+	center.add_child(card)
+	var box := VBoxContainer.new()
+	box.custom_minimum_size = Vector2(680, 0)
+	box.add_theme_constant_override("separation", 10)
+	card.add_child(box)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	box.add_child(head)
+	rule_title = _label("Herrschaft", 24, INK)
+	rule_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(rule_title)
+	var close := _button("Schließen", _hide_rule, "")
+	close.custom_minimum_size = Vector2(120, 38)
+	head.add_child(close)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 520)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	box.add_child(scroll)
+	rule_body = VBoxContainer.new()
+	rule_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rule_body.add_theme_constant_override("separation", 6)
+	scroll.add_child(rule_body)
+
+func _show_rule() -> void:
+	if game == null:
+		return
+	rule_layer.visible = true
+	_refresh_rule()
+
+func _hide_rule() -> void:
+	if rule_layer != null:
+		rule_layer.visible = false
+
+func _clear_rule_body() -> void:
+	for child in rule_body.get_children():
+		rule_body.remove_child(child)
+		child.queue_free()
+
+func _refresh_rule() -> void:
+	if game == null or rule_body == null:
+		return
+	_clear_rule_body()
+	var h: Dictionary = game.house()
+	rule_title.text = "Herrschaft — %s" % str(h["name"])
+	rule_body.add_child(_label("Legitimität %d/100 · Prestige %d · Gold %d" % [
+		int(h["legitimacy"]), int(h["prestige"]), int(h["gold"])
+	], 13, INK_SOFT))
+	rule_body.add_child(_label("Rat", 18, INK))
+	var offices := [["marshal", "Marschall", "martial"], ["chancellor", "Kanzler", "diplomacy"], ["steward", "Verwalter", "stewardship"]]
+	for office in offices:
+		var member: Dictionary = game.council_member(game.player, str(office[0]))
+		var member_text := "unbesetzt"
+		if not member.is_empty():
+			member_text = "%s · %s %d" % [member["name"], office[2], int(member[str(office[2])])]
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		var row_label := _label("%s: %s" % [office[1], member_text], 13, INK_SOFT)
+		row_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(row_label)
+		var change := _button("Wechseln", Callable(self, "_cycle_council").bind(str(office[0])), "")
+		change.custom_minimum_size = Vector2(110, 36)
+		row.add_child(change)
+		rule_body.add_child(row)
+	rule_body.add_child(_label("Marschallstraining: +%d Truppen pro Jahr (Martial und Legitimität zählen)." % game.council_training_amount(game.player), 11, INK_SOFT))
+	rule_body.add_child(HSeparator.new())
+	rule_body.add_child(_label("Gesetz", 18, INK))
+	var law: String = str(h["laws"]["succession"])
+	var law_button := _button("Erbfolge: %s" % ("Ältester" if law == "eldest" else "Jüngster"), _toggle_succession, "")
+	rule_body.add_child(law_button)
+	rule_body.add_child(_label("Erbe: %s" % (str(h["heir"]) if str(h["heir"]) != "" else "keiner"), 12, INK_SOFT))
+	rule_body.add_child(HSeparator.new())
+	rule_body.add_child(_label("Bauen", 18, INK))
+	var p: Dictionary = {}
+	if selected != "":
+		p = game.province(selected)
+	if p.is_empty():
+		rule_body.add_child(_label("Wähle auf der Karte eine eigene Provinz.", 12, INK_SOFT))
+	else:
+		rule_body.add_child(_label("%s · Truppen %d" % [p["name"], int(p["levy"])], 12, INK_SOFT))
+		for entry in [["barracks", "Kaserne"], ["walls", "Mauern"]]:
+			var key: String = str(entry[0])
+			var level: int = int((p.get("buildings", {}) as Dictionary).get(key, 0))
+			var cost: int = game.building_cost(key)
+			var button := _button("%s: Stufe %d/3 · %d Gold" % [entry[1], level, cost], Callable(self, "_build_system").bind(key), "")
+			button.disabled = not game.can_build(selected, key)
+			rule_body.add_child(button)
+
+func _cycle_council(office: String) -> void:
+	var h: Dictionary = game.house()
+	var courtiers: Array = h.get("courtiers", [])
+	if courtiers.is_empty():
+		return
+	var current: int = int(h["council"].get(office, 0))
+	var result: Dictionary = game.assign_council(office, (current + 1) % courtiers.size())
+	game.note(str(result["msg"]))
+	refresh()
+
+func _toggle_succession() -> void:
+	var current: String = str(game.house()["laws"]["succession"])
+	var result: Dictionary = game.set_law("succession", "youngest" if current == "eldest" else "eldest")
+	game.note(str(result["msg"]))
+	refresh()
+
+func _build_system(key: String) -> void:
+	if selected == "":
+		return
+	var result: Dictionary = game.build(selected, key)
+	game.note(str(result["msg"]))
+	refresh()
 
 func _show_event() -> void:
 	var ev: Dictionary = game.pending_event
@@ -1594,6 +1732,10 @@ func _show_event() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		if rule_layer != null and rule_layer.visible:
+			_hide_rule()
+			get_viewport().set_input_as_handled()
+			return
 		if custom_layer != null and custom_layer.visible:
 			_custom_cancel()
 			get_viewport().set_input_as_handled()

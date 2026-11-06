@@ -1,16 +1,17 @@
 extends RefCounted
 ## Versioniertes Speicherformat für Banger Queens.
 ##
-## Schema 2 ergänzt:
+## Schema 3 ergänzt:
 ## - schema_version
 ## - provinces[].buildings
 ## - victory
+## - houses[].legitimacy
 ##
 ## Schema 1 (Altstand) hat keinen schema_version-Schlüssel. Die Migration
 ## erhält alle vorhandenen Felder und ergänzt nur neue Pflichtfelder mit
 ## deterministischen Defaults. Sie überschreibt keine unbekannten Felder.
 
-const CURRENT_VERSION := 2
+const CURRENT_VERSION := 3
 const BUILDING_KEYS := ["market", "barracks", "walls"]
 
 const REQUIRED_TOP_LEVEL := [
@@ -20,7 +21,7 @@ const REQUIRED_TOP_LEVEL := [
 ]
 const REQUIRED_PROVINCE := ["id", "name", "owner", "dev", "levy", "buildings"]
 const REQUIRED_HOUSE := [
-	"name", "color", "gold", "prestige", "capital", "realm", "ruler",
+	"name", "color", "gold", "prestige", "legitimacy", "capital", "realm", "ruler",
 	"spouse", "children", "heir", "heir_age", "pregnant", "lover_house",
 	"crest",
 ]
@@ -64,10 +65,10 @@ static func migrate(data: Dictionary) -> Dictionary:
 	}
 
 ## Erzeugt aus einem vollständigen Snapshot das aktuelle Schema.
-static func make_v2(data: Dictionary) -> Dictionary:
+static func make_current(data: Dictionary) -> Dictionary:
 	var result: Dictionary = migrate(data)
 	if not bool(result.get("ok", false)):
-		push_error("SaveGame.make_v2: " + "; ".join(result.get("errors", [])))
+		push_error("SaveGame.make_current: " + "; ".join(result.get("errors", [])))
 	return result["data"]
 
 ## Validiert die Pflichtstruktur eines aktuellen Schemas.
@@ -254,6 +255,7 @@ static func _migrate_houses(raw, errors: Array) -> Array:
 		if h.get("color") is Color:
 			var c: Color = h["color"]
 			h["color"] = [c.r, c.g, c.b]
+		h["legitimacy"] = clampi(int(h.get("legitimacy", 50)), 0, 100)
 		out.append(h)
 	return out
 

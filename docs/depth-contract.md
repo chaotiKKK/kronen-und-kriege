@@ -1,9 +1,9 @@
 # Depth Contract
 
-> Dokumentversion: 1.0
+> Dokumentversion: 1.1
 > Stand: 2026-11-06
 > Verbindlich ab: Welle 1
-> Status Welle 0: Speicherpfad erfüllt; Systemkanten noch Soll
+> Status Welle 1: erster Durchstich belegt (H1, H2, D5, AI1 `IST`; H5 teilweise); DC-1 noch nicht vollständig
 
 ## Definition
 
@@ -42,17 +42,20 @@ Jede schreibende Aktion erzeugt genau einen Beleg:
 
 ```gdscript
 {
-    "source": "council.marshal",
-    "target": "provinces[alba].levy",
+    "edge": "H1",
+    "source": "Rat",
+    "target": "Krieg",
+    "state": "provinces[alba].levy",
+    "kind": "levy",
+    "house": 0,
     "before": 820,
     "after": 900,
     "delta": 80,
-    "cause": "training",
-    "decision_id": "council_assign_0042",
+    "reason": "Marschallstraining",
 }
 ```
 
-Der Beleg landet im Spiel-Log und optional im `decision_log` des Save-Schemas, sobald Welle 1 ihn persistiert. Die UI zeigt ihn als erzählerische Zeile, nicht als Debug-Dump.
+Der Beleg landet in `Game.effect_log`; die UI zeigt die daraus abgeleitete erzählerische Zeile, nicht den Debug-Dump. `before` und `after` werden vom zentralen `SystemicResolver` vor und nach der Zustandsänderung gelesen.
 
 ## 30-Minuten-Messlatte
 
@@ -76,25 +79,27 @@ Eine „Kette“ ist:
 
 | Gate | Umfang | Bestehenskriterium |
 |---|---|---|
-| `SaveMigrationTest` | Schema 1→2, echter Altstand, Roundtrip, negative Feldkontrolle | Exit 0; `diff()` leer; ein entfernter Pflichtwert erzeugt Fehler |
-| `DepthTest.H*` | Rat, Gesetz, Gebäude, Legitimität, Fraktionen | Kante H1–H8: Quelle ändern, Zielwert exakt prüfen, Save/Load ohne Diff |
-| `DepthTest.D*` | Traits, Erziehung, Beziehungen, Geheimnisse | Kante D1–D8: gleiche Prüfung |
-| `DepthTest.K*` | Ansprüche, Armeen, Belagerungen, Frieden | Kante K1–K7: gleiche Prüfung |
-| `AiParityTest` | KI nutzt dieselben Kommandos | gleiche Kosten und Zustandsänderungen wie Spieleraktion |
-| `StoryRunTest` | 360 Monate, fester Seed | Schwellen der 30-Minuten-Messlatte |
-| `SaveMigrationTest` ab Welle 1 | v2→v3, v3→v4 usw. | jede Version hat einen Fixture-Stand und einen Roundtrip |
+| `SaveMigrationTest` | Schema 1/2→3, echter Altstand, Roundtrip, negative Feldkontrollen | Exit 0; `diff()` leer; entferntes `dev` und entfernte `legitimacy` erzeugen Fehler |
+| `SystemicDepthTest` | H1, H2, H5 (Kaserne), D5, AI1 | positive Kette plus Negativkontrolle mit `set_edge_enabled()`; Beleg im `effect_log` |
+| `DepthTest.H*` (offen) | H3, H4, H6–H8 | Kante H1–H8: Quelle ändern, Zielwert exakt prüfen, Save/Load ohne Diff |
+| `DepthTest.D*` (offen) | D1–D4, D6–D8 | Kante D1–D8: gleiche Prüfung |
+| `DepthTest.K*` (offen) | Ansprüche, Armeen, Belagerungen, Frieden | Kante K1–K7: gleiche Prüfung |
+| `AiParityTest` (offen) | KI nutzt alle dieselben Kommandos | AI1 ist im `SystemicDepthTest` belegt; AI2–AI5 folgen |
+| `StoryRunTest` (offen) | 360 Monate, fester Seed | Schwellen der 30-Minuten-Messlatte |
+| `SaveMigrationTest` ab Welle 2 | v3→v4 usw. | jede Version hat einen Fixture-Stand und einen Roundtrip |
 
 ## Ist-Stand und ehrliche Lücke
 
-Welle 0 erfüllt DC-6 für das aktuelle Schema und die bekannten Felder. Die Dokumente und die Matrix sind die prüfbare Fassung der Systemtiefe, aber **noch nicht deren Umsetzung**:
+Welle 0 erfüllt DC-6 für das aktuelle Schema und die bekannten Felder. Der Welle-1-Durchstich belegt jetzt einen Teil der Systemtiefe:
 
-- `council` und `laws` existieren als Daten, haben aber keine Regelwirkung.
-- `buildings` existiert im Schema, aber es gibt noch keine Bauaktion und keine Erntewirkung.
-- `legitimacy`, `factions`, `secrets`, `ruler.traits` und `education` fehlen.
+- `council.marshal` trainiert `provinces[].levy` über `H1`; Kanzler und Verwalter haben noch keine Wirkung.
+- `laws.succession` schreibt `houses[].heir` über `H2`; `laws.tax` und `laws.levy` haben noch keine Jahreswirkung.
+- `barracks` erhöht `provinces[].levy` über `H5`; `market` und die Mauer-Verteidigung fehlen noch.
+- `houses[].legitimacy` existiert, wird durch die Ehe (`D5`) geschrieben und vom Marschallstraining gelesen; Fraktionen, Geheimnisse, Traits und Erziehung fehlen.
 - Ansprüche, Armeen, Belagerungen und Frieden fehlen; `attack` ist ein sofortiger Vergleich.
-- Die KI benutzt weder Rat noch Gesetze, Ansprüche oder Kriege.
+- Die KI benutzt für `AI1` denselben Rat und denselben Resolver; Gesetze, Ehen, Ansprüche und Kriege folgen.
 
-Diese Lücken sind Welle 1–3. Eine Matrix-Zeile wird erst `IST`, wenn ihr `DepthTest` grün ist. Die Mission ist erst erfüllt, wenn alle vier Säulen mindestens zwei andere nach DC-1 beeinflussen und die 30-Minuten-Messlatte belegt ist.
+DC-1 ist noch nicht vollständig erfüllt: Herrschaft beeinflusst Dynastie und Krieg, Dynastie beeinflusst Herrschaft, KI beeinflusst Krieg, aber Krieg/Diplomatie hat noch keine ausgehende belegte Kante. Die Mission ist erst erfüllt, wenn alle vier Säulen mindestens zwei andere nach DC-1 beeinflussen und die 30-Minuten-Messlatte belegt ist.
 
 ## Entscheidungslog
 
@@ -105,3 +110,5 @@ Jede Welle führt ein kurzes Entscheidungslog im Bericht:
 | 2026-11-06 | Schema 2 additiv, nicht neues Format | Altstand muss ohne Zustandsverlust laden | neues Save-Format ohne Migration |
 | 2026-11-06 | `SaveGame.gd` zentral | eine Wahrheit für Migration, Validierung, Diff | Migration in `Game.gd` |
 | 2026-11-06 | UiKernel nur UI-Zustand | Regeln bleiben in `Game.gd` | zweiter Spielzustand in Panels |
+| 2026-11-06 | Ein zentraler `SystemicResolver` für Welle-1-Kanten | Effekte, Belege und Negativkontrollen an einer Stelle | verteilte Sonderfälle in `Game.gd` |
+| 2026-11-06 | `legitimacy` additiv in Schema 3 | Altstände und `legacy_v1.json` müssen verlustfrei bleiben | neues Save-Format ohne Migration |
