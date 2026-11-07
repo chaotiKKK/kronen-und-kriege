@@ -4,8 +4,8 @@
 > Stand: 2026-11-07
 > Gültig für: Version 1.2, Build-Commit `89846de4fcdf4c9fef3f11b1c9fbe6041c4a2634` (Tag `v1.2`)
 > Geltungsbereich: Windows x86_64 und Android (`arm64-v8a`, `armeabi-v7a`)
-> **Status: Die manuelle Abnahme ist mit diesem Dokument nicht absolviert. Der Android-Lauf ist extern blockiert und nicht bestanden.**
-> **Sichtprüfung Android:** [Ergebnis vom 2026-11-07](manual-acceptance-android-visual.md) — **nicht bestanden (extern blockiert)**. Der frühere Trefferzonen-Befund ist als Messartefakt widerlegt; der 30-Minuten-Lauf ist wegen des externen ADB-Treibers nicht durchführbar.
+> **Status: Windows-Lauf am 2026-11-07 durchgeführt; Ergebnis DURCHGEFALLEN.** P01–P03 sind belegt; P04–P12, die Roundtrips 2/3 und der KI-Endbeleg fehlen. Der frühere Android-Befund „extern blockiert“ ist widerlegt und im [Android-Bericht](manual-acceptance-android-visual.md) korrigiert.
+> **Windows:** [Laufprotokoll 2026-11-07](#windows-lauf-2026-11-07) — **DURCHGEFALLEN**. **Android:** nicht abgeschlossen; die Force-Stops kamen aus einer lokalen Bash-Schleife, nicht aus einem externen ADB-Treiber.
 
 ## Zweck
 
@@ -214,27 +214,37 @@ Write-Output "KI-BELEG OK: $($edges -join ', ')"
 
 Mindestens zwei **verschiedene** Präfixe `AI2`, `AI3` oder `AI4` müssen ausgegeben werden. Die konkreten Zeilen und das Skript-Ergebnis werden in der Evidenztabelle unter `AI-01` und `AI-02` eingetragen. `AI1` und `AI5` sind optional und zählen nicht als Pflichtersatz.
 
+## Windows-Lauf 2026-11-07
+
+- **Gerät:** Windows x86_64, Client `1600×900`, Fenster `Kronen und Kriege`, EXE `F:\ck3-kronen-kriege.exe`.
+- **Start:** `10:36:53` Uhr, **geplantes Ende:** `11:06:53` Uhr (30:00 Wanduhrzeit).
+- **Startzustand:** `Haus Sequana`, Brennus, **Gold 130**, **Prestige 6**, **Legitimität 50**, Erbe `Epona`, 0 Ansprüche, 0 Armeen, Erbfolge `Ältester`, Steuersatz `1/2`.
+- **Ausgangs-Save:** `saves/ai-start.json` (10:39:53, also bei 03:00 statt 00:30).
+- **Roundtrip 1:** Save/Load am 10:42:06 (05:13 statt 04:30); die vor dem Laden gesicherte Save-Datei und die AppData-Datei waren byte-identisch. Ein belastbarer UI-Diff nach dem Load fehlt; Roundtrip 1 wird deshalb nicht als bestanden gewertet. Roundtrips 2 und 3 wurden nicht ausgeführt.
+- **Ende:** Das Ziel war 11:06:53. Beim Endcheck um 11:07:37 war der Godot-Prozess nicht mehr vorhanden; End-Screenshot und `saves/ai-end.json` fehlen. Die 30:00-Marke wurde daher nicht mit einem gültigen Endbeleg abgeschlossen.
+- **Ergebnis:** **DURCHGEFALLEN**. Nur P01–P03 sind belegt; P04–P12 wurden nicht abgeschlossen. Die Kartenauswahl und der Pause-/Geschwindigkeitswechsel reagierten im automatisierten Windows-Lauf nicht zuverlässig; es wird kein PASS für nicht beobachtete Aktionen vergeben.
+
 ## Evidenztabelle
 
 Jede Zeile wird während des Laufs ausgefüllt. `Beleg` nennt den Screenshot, die Logzeile oder die Save-Datei. `P/F` ist `PASS` oder `FAIL`; leere Zellen sind am Ende `FAIL`.
 
 | ID | Zeit | Aktion | Erwartete Wirkung | Beobachtete Wirkung | Kante | P/F | Beleg | Notizen |
 |---|---|---|---|---|---|---|---|---|
-| P01 |  | `Marschall` → `Wechseln` | Training/Levy steigt |  | H1 |  |  |  |
-| P02 |  | `Erbfolge` umstellen | Gesetz wird `Jüngster` |  | H2 |  |  |  |
-| P03 |  | `Steuersatz` umstellen | Steuersatz-Label ändert sich |  | H3 |  |  |  |
-| P04 |  | `Markt` bauen | Stufe 1, Gold −60 |  | H4 |  |  |  |
-| P05 |  | `Kaserne` bauen | Stufe 1, Truppen steigen |  | H5 |  |  |  |
-| P06 |  | `Heiraten` | Gemahl/in, Legitimität +5 |  | D5 |  |  |  |
-| P07 |  | `Anspruch schmieden` | Anspruch +1, `Angreifen` aktiv |  | K2 |  |  |  |
-| P08 |  | `Armee aufstellen` | Armee +1, Gold −50 |  | K3 |  |  |  |
-| P09 |  | `Belagerung vorantreiben` | Belagerung > 0 % |  | K4 |  |  |  |
-| P10 |  | `Frieden schließen` | Waffenstillstand in der Zukunft |  | K6 |  |  |  |
-| P11 |  | `Geheimnis aufdecken`/`ausnutzen` | Haltung −15, Anspruch +1 |  | D7, D8 |  |  |  |
-| P12 | 20–25 | `Angreifen` bei Truce prüfen | Schaltfläche deaktiviert |  | K7 |  |  |  |
-| AI-01 |  | Save-Diff KI | eine KI-Kante belegt |  | AI2–AI4 |  |  |  |
-| AI-02 |  | Save-Diff KI | zweite, andere KI-Kante belegt |  | AI2–AI4 |  |  |  |
-| **Abschluss** | **30:00** | **Gerät/Datum:**  | **Ergebnis:** BESTANDEN / DURCHGEFALLEN  |  |  |  |  |  |
+| P01 | 03:29 | `Marschall` → `Wechseln` | Training/Levy steigt | `Midas → Sargon`; Log `Sargon trainiert Lugdunum (+8 Truppen)` | H1 | PASS | `win-025-p01.png`, `win-027-after-year.png` | 10:40:22; Training 10:41:29 |
+| P02 | 03:29 | `Erbfolge` umstellen | Gesetz wird `Jüngster` | `Erbfolge: Jüngster`; Log `Erbfolgegesetz: Jüngster.` | H2 | PASS | `win-026-p02.png` | 10:40:22 |
+| P03 | 07:59 | `Steuersatz` umstellen | Steuersatz-Label ändert sich | `1/2 → 2/2`; Log `Steuersatz 2.` | H3 | PASS | `win-035-p03b.png` | 10:44:52 |
+| P04 | — | `Markt` bauen | Stufe 1, Gold −60 | nicht abgeschlossen; Lugdunum wurde nicht ausgewählt | H4 | FAIL | `win-038-lugdunum.png`, `win-039-lugdunum2.png` | Kartenklicks ohne Auswahlwirkung |
+| P05 | — | `Kaserne` bauen | Stufe 1, Truppen steigen | nicht abgeschlossen | H5 | FAIL | — | setzt P04/Provinzauswahl voraus |
+| P06 | — | `Heiraten` | Gemahl/in, Legitimität +5 | nicht abgeschlossen | D5 | FAIL | — | — |
+| P07 | — | `Anspruch schmieden` | Anspruch +1, `Angreifen` aktiv | nicht abgeschlossen | K2 | FAIL | — | — |
+| P08 | — | `Armee aufstellen` | Armee +1, Gold −50 | nicht abgeschlossen | K3 | FAIL | — | — |
+| P09 | — | `Belagerung vorantreiben` | Belagerung > 0 % | nicht abgeschlossen | K4 | FAIL | — | — |
+| P10 | — | `Frieden schließen` | Waffenstillstand in der Zukunft | nicht abgeschlossen | K6 | FAIL | — | — |
+| P11 | — | `Geheimnis aufdecken`/`ausnutzen` | Haltung −15, Anspruch +1 | nicht abgeschlossen | D7, D8 | FAIL | — | — |
+| P12 | — | `Angreifen` bei Truce prüfen | Schaltfläche deaktiviert | nicht abgeschlossen | K7 | FAIL | — | — |
+| AI-01 | — | Save-Diff KI | eine KI-Kante belegt | nur `ai-start.json` vorhanden; kein `ai-end.json` | AI2–AI4 | FAIL | `saves/ai-start.json` | Save-Diff nicht ausführbar |
+| AI-02 | — | Save-Diff KI | zweite, andere KI-Kante belegt | kein End-Save | AI2–AI4 | FAIL | — | — |
+| **Abschluss** | **30:00** | **Gerät/Datum:** Windows, 2026-11-07 | **Ergebnis:** DURCHGEFALLEN |  |  |  | — (kein Endbeleg) | 3/12 Aktionen, 3 Kanten; End-Save/Screenshot fehlen |
 
 ### Save-Diff-Felder je Roundtrip
 

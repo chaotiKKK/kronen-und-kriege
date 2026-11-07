@@ -5,11 +5,11 @@
 > App: `org.example.kronen`, `versionName 1.2`, `versionCode 3`
 > Build: Commit `89846de4fcdf4c9fef3f11b1c9fbe6041c4a2634` (Tag `v1.2`)
 > Anzeige: 3200×1440 im Landscape; Bedienung per ADB-Touch
-> **Ergebnis: NICHT BESTANDEN – extern blockiert.** Der frühere 145-px-Trefferzonen-Befund ist als Messartefakt widerlegt. Der Android-Pflichtlauf konnte nicht durchgeführt werden, weil ein externer ADB-Treiber die App wiederholt beendet hat.
+> **Ergebnis: NICHT BESTANDEN – Lauf abgebrochen; keine externe Blockade belegt.** Der frühere Befund „extern blockiert“ ist widerlegt. Die wiederholten `am force-stop`-Aufrufe stammen aus einer lokalen Bash-Schleife im Host, nicht aus einem externen ADB-Treiber.
 
 ## Ergebnis in einem Satz
 
-Die Touch-Zuordnung ist **kein App-Fehler**: Bei stabilem Scrollzustand öffnete ein Tap auf die sichtbare Beschriftung `Herrschaft` genau das Herrschaftsmodal; der frühere Fehlgriff entstand aus einem Screenshot während einer noch laufenden Scrollanimation. Die Android-Abnahme ist dennoch **nicht bestanden**, weil P01–P12, die Kanten-/KI-Belege und die drei Save/Load-Roundtrips vor jedem Beginn extern per `am force-stop` beendet wurden; diese Punkte sind unten als **extern blockiert**, nicht als bestanden, ausgewiesen.
+Die Touch-Zuordnung ist **kein App-Fehler**: Bei stabilem Scrollzustand öffnete ein Tap auf die sichtbare Beschriftung `Herrschaft` genau das Herrschaftsmodal; der frühere Fehlgriff entstand aus einem Screenshot während einer noch laufenden Scrollanimation. Die Android-Abnahme ist dennoch **nicht bestanden**, weil der Pflichtlauf nicht abgeschlossen wurde; die frühere Zuschreibung an einen externen Treiber ist zurückgezogen.
 
 ## Abgrenzung
 
@@ -28,70 +28,70 @@ Der gemeldete Versatz von etwa 145 px nach dem Scrollen im Hofpanel ist **widerl
 
 **Entscheidung:** Die 145-px-Abweichung ist **kein App-Fehler**. Die betroffenen Schritte wurden bei stabilem Scrollzustand wiederholt; der Tap auf die sichtbare Beschriftung löste die erwartete Aktion aus. Es gibt keinen Grund für eine Code-Korrektur an der Touch-Zuordnung. Die Lehre für den Messweg: Nach einem Scroll mindestens 3 s warten und erst dann die sichtbare Beschriftung antippen; nicht den Screenshot aus der laufenden Animation verwenden.
 
+## Force-Stop-Quelle: Korrektur
+
+Die frühere Behauptung eines externen ADB-Treibers ist nicht durch die Belege gedeckt. Die tatsächliche Kette ist in `build/verify/manual/logs/force-stop-source.log` dokumentiert:
+
+- Im Gerätelog stehen wiederholt `am force-stop --user 0 org.example.kronen` und `am force-stop --user 10 org.example.kronen` (09:06:46 bis 09:06:54).
+- Der Host-Prozessbaum zeigt als Elternprozess von PID 39260 den Codebuff-Orchestrator PID 7356 (`bun.exe`); die Force-Stops liefen aus dieser lokalen Prozesskette.
+- Nach dem Beenden von PID 39260 und Kind 22348 um 09:07:57 traten in den folgenden 12 Sekunden **0** weitere Force-Stop-Zeilen auf.
+- Die Abfrage des Besitzers von PID 39260 ist unvollständig, weil der Prozess beim zweiten Zugriff bereits beendet war; daraus lässt sich kein externer Verursacher ableiten.
+
+**Konsequenz:** Die Bezeichnung „extern blockiert“ wird gestrichen. Der Android-Lauf ist aus den dokumentierten Gründen **nicht abgeschlossen** und wird als **DURCHGEFALLEN** gewertet. Die Störung ist nicht dem Spiel zuzurechnen; sie ist aber auch nicht als externe Blockade belegt.
+
 ## Protokollstatus Android
 
-Die folgende Tabelle nennt für jedes Android-Protokollelement den Status und den konkreten Beleg. `extern blockiert` bedeutet: Die Aktion wurde nicht als bestanden gewertet, weil die App vor bzw. während des Laufs von einem fremden ADB-Treiber beendet wurde. Es handelt sich nicht um ein Anwendungsergebnis.
+Die folgende Tabelle nennt für jedes Android-Protokollelement den Status und den konkreten Beleg. `nicht ausgeführt` bedeutet: Der Schritt wurde in diesem Lauf nicht abgeschlossen und wird nicht als bestanden gewertet.
 
 | Element | Geforderte Aktion | Status | Beleg | Beobachtung |
 |---|---|---|---|---|
-| P01 | `Marschall` → `Wechseln` | **extern blockiert** | `build/verify/manual/logs/external-driver.log` | Kein Spielschritt ausgeführt; App vor dem ersten Fenster extern beendet. |
-| P02 | `Erbfolge` umstellen | **extern blockiert** | `build/verify/manual/logs/external-driver.log` | Kein Spielschritt ausgeführt. |
-| P03 | `Steuersatz` umstellen | **extern blockiert** | `build/verify/manual/logs/external-driver.log` | Kein Spielschritt ausgeführt. |
-| P04 | `Markt` bauen | **extern blockiert** | `build/verify/manual/logs/external-driver.log` | Kein Spielschritt ausgeführt. |
-| P05 | `Kaserne` bauen | **extern blockiert** | `build/verify/manual/logs/external-driver.log` | Kein Spielschritt ausgeführt. |
-| P06 | `Heiraten` | **extern blockiert** | `build/verify/manual/logs/external-driver.log` | Kein Spielschritt ausgeführt. |
-| P07 | `Anspruch schmieden` | **extern blockiert** | `build/verify/manual/logs/external-driver.log` | Kein Spielschritt ausgeführt. |
-| P08 | `Armee aufstellen` | **extern blockiert** | `build/verify/manual/logs/external-driver.log` | Kein Spielschritt ausgeführt. |
-| P09 | `Belagerung vorantreiben` | **extern blockiert** | `build/verify/manual/logs/external-driver.log` | Kein Spielschritt ausgeführt. |
-| P10 | `Frieden schließen` | **extern blockiert** | `build/verify/manual/logs/external-driver.log` | Kein Spielschritt ausgeführt. |
-| P11 | `Geheimnis aufdecken`/`ausnutzen` | **extern blockiert** | `build/verify/manual/logs/external-driver.log` | Kein Spielschritt ausgeführt. |
-| P12 | `Angreifen` bei Truce prüfen | **extern blockiert** | `build/verify/manual/logs/external-driver.log` | Kein Spielschritt ausgeführt. |
-| Kanten H1–H5, D5, D7, D8, K2–K4, K6, K7 | mindestens 10 Kanten | **extern blockiert** | `build/verify/manual/logs/external-driver.log` | Keine Kantenbelege, da kein Spielschritt abgeschlossen wurde. |
-| AI-01 | erste KI-Kante aus Save-Diff | **extern blockiert** | `build/verify/manual/logs/external-driver.log` | Keine Saves `ai-start.json`/`ai-end.json` vorhanden. |
-| AI-02 | zweite, andere KI-Kante | **extern blockiert** | `build/verify/manual/logs/external-driver.log` | Keine Saves vorhanden. |
-| Roundtrip 04:30 | Save/Load-Diff | **extern blockiert** | `build/verify/manual/logs/external-driver.log` | Kein Lauf, kein Save-Diff. |
-| Roundtrip 14:30 | Save/Load-Diff | **extern blockiert** | `build/verify/manual/logs/external-driver.log` | Kein Lauf, kein Save-Diff. |
-| Roundtrip 24:30 | Save/Load-Diff | **extern blockiert** | `build/verify/manual/logs/external-driver.log` | Kein Lauf, kein Save-Diff. |
-| 30-Minuten-Lauf | 30:00 Wanduhrzeit | **extern blockiert** | `build/verify/manual/logs/external-driver.log` | Keine stabile, störungsfreie Sitzung erreichbar. |
-| **Abschluss** | **Gerät/Datum:** `24117RK2CG`, 2026-11-07 | **DURCHGEFALLEN (extern blockiert)** | `build/verify/manual/logs/external-driver.log` | Kein PASS; die Blockade ist nicht dem Spiel zuzurechnen. |
+| P01 | `Marschall` → `Wechseln` | **nicht ausgeführt** | `build/verify/manual/logs/force-stop-source.log` | Kein gültiger 30-Minuten-Lauf abgeschlossen. |
+| P02 | `Erbfolge` umstellen | **nicht ausgeführt** | `build/verify/manual/logs/force-stop-source.log` | Kein gültiger 30-Minuten-Lauf abgeschlossen. |
+| P03 | `Steuersatz` umstellen | **nicht ausgeführt** | `build/verify/manual/logs/force-stop-source.log` | Kein gültiger 30-Minuten-Lauf abgeschlossen. |
+| P04 | `Markt` bauen | **nicht ausgeführt** | `build/verify/manual/logs/force-stop-source.log` | Kein gültiger 30-Minuten-Lauf abgeschlossen. |
+| P05 | `Kaserne` bauen | **nicht ausgeführt** | `build/verify/manual/logs/force-stop-source.log` | Kein gültiger 30-Minuten-Lauf abgeschlossen. |
+| P06 | `Heiraten` | **nicht ausgeführt** | `build/verify/manual/logs/force-stop-source.log` | Kein gültiger 30-Minuten-Lauf abgeschlossen. |
+| P07 | `Anspruch schmieden` | **nicht ausgeführt** | `build/verify/manual/logs/force-stop-source.log` | Kein gültiger 30-Minuten-Lauf abgeschlossen. |
+| P08 | `Armee aufstellen` | **nicht ausgeführt** | `build/verify/manual/logs/force-stop-source.log` | Kein gültiger 30-Minuten-Lauf abgeschlossen. |
+| P09 | `Belagerung vorantreiben` | **nicht ausgeführt** | `build/verify/manual/logs/force-stop-source.log` | Kein gültiger 30-Minuten-Lauf abgeschlossen. |
+| P10 | `Frieden schließen` | **nicht ausgeführt** | `build/verify/manual/logs/force-stop-source.log` | Kein gültiger 30-Minuten-Lauf abgeschlossen. |
+| P11 | `Geheimnis aufdecken`/`ausnutzen` | **nicht ausgeführt** | `build/verify/manual/logs/force-stop-source.log` | Kein gültiger 30-Minuten-Lauf abgeschlossen. |
+| P12 | `Angreifen` bei Truce prüfen | **nicht ausgeführt** | `build/verify/manual/logs/force-stop-source.log` | Kein gültiger 30-Minuten-Lauf abgeschlossen. |
+| Kanten H1–H5, D5, D7, D8, K2–K4, K6, K7 | mindestens 10 Kanten | **nicht ausgeführt** | `build/verify/manual/logs/force-stop-source.log` | Keine gültigen Kantenbelege. |
+| AI-01 | erste KI-Kante aus Save-Diff | **nicht ausgeführt** | `build/verify/manual/logs/force-stop-source.log` | Keine gültigen Saves `ai-start.json`/`ai-end.json` aus diesem Lauf. |
+| AI-02 | zweite, andere KI-Kante | **nicht ausgeführt** | `build/verify/manual/logs/force-stop-source.log` | Kein End-Save. |
+| Roundtrip 04:30 | Save/Load-Diff | **nicht ausgeführt** | `build/verify/manual/logs/force-stop-source.log` | Kein gültiger Lauf, kein Save-Diff. |
+| Roundtrip 14:30 | Save/Load-Diff | **nicht ausgeführt** | `build/verify/manual/logs/force-stop-source.log` | Kein gültiger Lauf, kein Save-Diff. |
+| Roundtrip 24:30 | Save/Load-Diff | **nicht ausgeführt** | `build/verify/manual/logs/force-stop-source.log` | Kein gültiger Lauf, kein Save-Diff. |
+| 30-Minuten-Lauf | 30:00 Wanduhrzeit | **nicht abgeschlossen** | `build/verify/manual/logs/force-stop-source.log` | Keine stabile, vollständige Sitzung. |
+| **Abschluss** | **Gerät/Datum:** `24117RK2CG`, 2026-11-07 | **DURCHGEFALLEN** | `build/verify/manual/logs/force-stop-source.log` | Kein PASS; keine externe Blockade belegt. |
 
-## Paralleler Fremdtreiber und Isolationsversuch
+## Gerätezustand
 
-Der Fremdtreiber auf `com.sylviakart.b3` und das separate `com.sylviakart.b3.touchprobe` wurden zunächst deaktiviert. Zehn Fokusprüfungen zeigten anschließend Kronen im Vordergrund; der Host-Touchprobe-Prozess wurde beendet. Diese erste Isolation war zeitweise erfolgreich.
-
-Danach trat die Störung erneut auf:
-
-- Eine im Host gefundene `bash`-Schleife deaktivierte `org.example.kronen` und rief 900-mal `am force-stop org.example.kronen` auf. Die Prozesskette wurde beendet.
-- Die Störung kehrte danach von außerhalb dieser Sitzung zurück. Im entscheidenden Log stehen ab `09:01:13` wiederholt **`am force-stop --user 10 org.example.kronen`** und **`am force-stop --user 0 org.example.kronen`**; die App war zu diesem Zeitpunkt im eigens angelegten Nutzer 10 installiert.
-- Auch Nutzer 10 schützte daher nicht: Das Paket wurde dort auf `enabled=3` gesetzt und der Vordergrund fiel auf den Launcher zurück. Der Testnutzer wurde nach der Beweissicherung wieder entfernt.
-
-**Isolationsergebnis:** **nicht gelungen.** Die Fremd-App ließ sich temporär deaktivieren, aber der übergeordnete ADB-Treiber beendete die Kronen-App weiterhin. Eine stabile, störungsfreie 30-Minuten-Sitzung war nicht erreichbar. Das ist die extern begründete Einschränkung des Laufs; sie wird nicht als bestanden gewertet.
-
-Der Gerätezustand wurde anschließend wiederhergestellt: Nutzer 10 entfernt, aktueller Nutzer 0, `org.example.kronen` und die beiden Sylviakart-Pakete wieder aktiviert. Die Fremd-Pakete bleiben nicht dauerhaft deaktiviert.
+Der Testnutzer 10 wurde entfernt; aktueller Nutzer ist 0. `org.example.kronen` und die beiden Sylviakart-Pakete wurden wieder aktiviert. Die Fremd-Pakete bleiben nicht dauerhaft deaktiviert. Die frühere externe Zuschreibung wird nicht aufrechterhalten.
 
 ## Nicht geprüft
 
-- P01–P12 und die geforderten zwölf Entscheidungen; kein Spielschritt wurde abgeschlossen.
+- P01–P12 und die geforderten zwölf Entscheidungen; kein gültiger Android-30-Minuten-Lauf abgeschlossen.
 - Mindestens 10 Kanten, davon 3 dynastische, 3 Krieg-/Diplomatie- und 2 KI-Kanten.
 - Drei Save/Load-Roundtrips mit Save-Diff sowie `ai-start.json`/`ai-end.json`.
 - Der vollständige 30-Minuten-Lauf.
-- Ein Windows-Lauf; dieser gehört ausdrücklich nicht zu diesem Auftrag.
-- Eine Produktbewertung der nicht ausgeführten Pflichtaktionen. Die Status `extern blockiert` sind keine Aussage, dass die Aktionen im Spiel fehlerhaft seien.
+- Der Windows-Lauf ist separat im [30-Minuten-Protokoll](manual-acceptance.md#windows-lauf-2026-11-07) dokumentiert und dort **DURCHGEFALLEN**.
 
 ## Evidenz
 
 Primärbelege für diese Entscheidung:
 
-- `build/verify/manual/logs/external-driver.log` – 185 Zeilen mit den externen `force-stop`-Aufrufen für Nutzer 0 und Nutzer 10, inklusive `09:01:13` und `09:02:24`.
+- `build/verify/manual/logs/force-stop-source.log` – Gerätelog mit den `am force-stop`-Aufrufen, Host-Prozessbaum und 12-Sekunden-Nachlauf ohne weitere Force-Stops.
 - `build/verify/manual/screens/android-42-scroll-stable-b.png` – stabiler Scrollzustand mit sichtbarem `Herrschaft`.
 - `build/verify/manual/screens/android-43-rule-at-stable-scroll.png` – nach dem Tap geöffnetes `Herrschaft — Haus Sequana`.
 - `build/verify/manual/screens/r6-004-textdrag2.png` – reproduzierbarer Scroll aus der Textspalte bis `Herrschaft`.
 - `build/verify/manual/screens/android-31-scroll-try2.png` – der alte, während der Scrollanimation aufgenommene Fehlbeleg.
 
-Weitere Ansichtsbelege aus dem Preflight liegen lokal unter `build/verify/manual/screens/`, darunter `android-01-start.png`, `android-05-house-select.png`, `android-06-game-start.png`, `android-16-tree-open.png` und `android-33-rule-probe.png`. `build/` ist von den Exporten ausgeschlossen. Die drei für die Touch-Widerlegung und den externen Blocker zitierten Belege wurden ausnahmsweise mit `git add -f` in den Dokumentations-Commit aufgenommen; die übrigen Rohbelege bleiben lokal.
+Weitere Ansichtsbelege aus dem Preflight liegen lokal unter `build/verify/manual/screens/`, darunter `android-01-start.png`, `android-05-house-select.png`, `android-06-game-start.png`, `android-16-tree-open.png` und `android-33-rule-probe.png`. `build/` ist von den Exporten ausgeschlossen.
 
 ## Fazit
 
-Die Touch-Frage ist entschieden und belegt: **kein App-Fehler, sondern ein Messartefakt**. Die Android-Abnahme ist dennoch **DURCHGEFALLEN**, weil die App vor dem ersten Protokollschritt und danach wiederholt von einem externen ADB-Treiber beendet wurde. Die nicht ausgeführten Punkte sind als **extern blockiert** dokumentiert; es bleibt kein ungeklärter App-Befund und kein unbegründetes „offen“.
+Die Touch-Frage ist entschieden und belegt: **kein App-Fehler, sondern ein Messartefakt**. Die Android-Abnahme ist **DURCHGEFALLEN**, weil der Pflichtlauf nicht abgeschlossen wurde. Die frühere Behauptung eines externen ADB-Treibers ist zurückgezogen; die dokumentierte Force-Stop-Kette ist lokal. Es bleibt kein ungeklärter App-Befund.
 
 [Zurück zum 30-Minuten-Protokoll](manual-acceptance.md)
