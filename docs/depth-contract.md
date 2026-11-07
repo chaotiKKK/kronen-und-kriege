@@ -66,6 +66,8 @@ Der Beleg landet in `Game.effect_log`; der Test prüft ihn. `before` und `after`
 
 Eine „Entscheidung“ ist eine Wahl mit mindestens zwei legalen Optionen und unterschiedlichen Zielzuständen. Ein reiner Bestätigungsdialog zählt nicht.
 
+Das ausführbare Prüfprotokoll für die manuelle Partie steht in [`manual-acceptance.md`](manual-acceptance.md).
+
 ## Testgates
 
 | Gate | Umfang | Bestehenskriterium | Status |

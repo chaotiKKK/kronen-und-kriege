@@ -15,6 +15,7 @@ Die systemische Tiefe ist in versionierten Dokumenten festgehalten:
 - [`docs/waves.md`](docs/waves.md) — Wellenplan und Exit-Gates
 - [`docs/ui-kernel.md`](docs/ui-kernel.md) — UiKernel-Zuschnitt und abgeschlossene Extraktion
 - [`docs/depth-contract.md`](docs/depth-contract.md) — Depth Contract und 30-Minuten-Messlatte
+- [`docs/manual-acceptance.md`](docs/manual-acceptance.md) — ausführbares 30-Minuten-Prüfprotokoll für Windows und Android
 - [`docs/interaction-matrix.md`](docs/interaction-matrix.md) — Kanten der vier Säulen mit Quelle, Ziel und Zustandsgröße
 - [`docs/save-schema.md`](docs/save-schema.md) — Schema 4, Migration und Nachweis
 
@@ -277,7 +278,7 @@ export_windows.sh         Windows-Build
 
 ## Offene manuelle Abnahme
 
-Automatisch nicht möglich sind nur diese Punkte:
+Automatisch nicht möglich sind nur diese Punkte. Das ausführbare Prüfprotokoll mit sechs Zeitfenstern, Evidenztabelle und Abbruchregeln steht in [`docs/manual-acceptance.md`](docs/manual-acceptance.md).
 
 1. **Installation und Start auf einem realen Android-Gerät.** Das Android-SDK liegt unter `C:\Users\HP\AppData\Local\Android\Sdk`; `adb` ist nicht im PATH. Der direkte Aufruf von `C:\Users\HP\AppData\Local\Android\Sdk\platform-tools\adb.exe devices` zeigt das autorisierte Gerät `f030379a` (Android 16, Modell `24117RK2CG`). Die APK 1.2 ist bereits installiert; der Keyguard war beim Smoke-Test aktiv. Zum manuellen Nachtest Gerät entsperren und:
 
