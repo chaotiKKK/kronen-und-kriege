@@ -4,7 +4,8 @@
 > Stand: 2026-11-07
 > Gültig für: Version 1.2, Build-Commit `89846de4fcdf4c9fef3f11b1c9fbe6041c4a2634` (Tag `v1.2`)
 > Geltungsbereich: Windows x86_64 und Android (`arm64-v8a`, `armeabi-v7a`)
-> **Status: Die manuelle Abnahme ist mit diesem Dokument nicht absolviert. Sie bleibt offen.**
+> **Status: Die manuelle Abnahme ist mit diesem Dokument nicht absolviert. Der Android-Lauf ist extern blockiert und nicht bestanden.**
+> **Sichtprüfung Android:** [Ergebnis vom 2026-11-07](manual-acceptance-android-visual.md) — **nicht bestanden (extern blockiert)**. Der frühere Trefferzonen-Befund ist als Messartefakt widerlegt; der 30-Minuten-Lauf ist wegen des externen ADB-Treibers nicht durchführbar.
 
 ## Zweck
 

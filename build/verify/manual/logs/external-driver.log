@@ -1,0 +1,185 @@
+# External-driver evidence
+# Device: 24117RK2CG / f030379a / Android 16
+# Captured: 2026-11-07T09:02:26+0100
+# The following force-stops were issued outside this shell; user 10 was created only to isolate the test.
+
+11-07 09:01:32.621  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:01:32.679  2465  9448 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:20426
+11-07 09:01:33.774  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:01:33.833  2465  9442 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:20437
+11-07 09:01:33.894  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:01:33.961  2465  9442 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:20442
+11-07 09:01:35.058  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:01:35.120  2465  9442 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:20460
+11-07 09:01:35.179  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:01:35.249  2465  9448 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:20467
+11-07 09:01:36.351  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:01:36.417  2465  9448 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:20488
+11-07 09:01:36.478  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:01:36.552  2465  9448 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:20493
+11-07 09:01:37.635  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:01:37.701  2465  9442 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:20523
+11-07 09:01:37.754  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:01:37.817  2465  9442 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:20530
+11-07 09:01:38.913  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:01:38.958  2465 10373 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:20555
+11-07 09:01:39.010  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:01:39.039  2465 10373 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:20562
+11-07 09:01:40.123  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:01:40.197  2465  9443 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:20600
+11-07 09:01:40.263  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:01:40.329  2465  9443 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:20607
+11-07 09:01:41.423  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:01:41.478  2465 10373 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:20628
+11-07 09:01:41.547  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:01:41.578  2465 10373 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:20640
+11-07 09:01:42.666  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:01:42.727  2465 10235 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:20662
+11-07 09:01:42.782  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:01:42.851  2465 10235 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:20667
+11-07 09:01:43.928  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:01:43.993  2465  5075 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:20688
+11-07 09:01:44.060  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:01:44.120  2465 10235 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:20696
+11-07 09:01:45.222  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:01:45.273  2465 10235 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:20733
+11-07 09:01:45.328  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:01:45.394  2465 10235 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:20740
+11-07 09:01:46.482  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:01:46.521  2465 10235 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:20774
+11-07 09:01:46.577  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:01:46.623  2465 10235 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:20781
+11-07 09:01:47.710  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:01:47.760  2465  5075 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:20828
+11-07 09:01:47.820  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:01:47.881  2465 10235 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:20847
+11-07 09:01:48.970  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:01:49.029  2465 10235 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:20872
+11-07 09:01:49.082  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:01:49.137  2465 10235 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:20880
+11-07 09:01:50.219  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:01:50.272  2465  5075 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:20915
+11-07 09:01:50.332  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:01:50.383  2465  5075 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:20921
+11-07 09:01:51.469  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:01:51.522  2465  5075 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:20959
+11-07 09:01:51.582  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:01:51.637  2465  5075 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:20964
+11-07 09:01:52.722  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:01:52.766  2465  9448 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:20990
+11-07 09:01:52.825  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:01:52.884  2465  9448 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:20998
+11-07 09:01:53.965  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:01:54.026  2465  5075 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:21025
+11-07 09:01:54.079  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:01:54.131  2465  9448 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:21035
+11-07 09:01:55.219  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:01:55.287  2465  5075 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:21058
+11-07 09:01:55.351  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:01:55.398  2465  5075 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:21064
+11-07 09:01:56.483  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:01:56.552  2465  9448 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:21076
+11-07 09:01:56.608  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:01:56.654  2465  9448 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:21081
+11-07 09:01:57.728  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:01:57.774  2465  9448 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:21092
+11-07 09:01:57.835  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:01:57.896  2465  9448 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:21097
+11-07 09:01:58.985  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:01:59.043  2465  9448 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:21109
+11-07 09:01:59.099  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:01:59.141  2465  9448 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:21115
+11-07 09:02:00.224  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:00.289  2465  3675 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:21136
+11-07 09:02:00.343  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:00.409  2465  3675 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:21141
+11-07 09:02:01.520  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:01.586  2465  3675 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:21161
+11-07 09:02:01.675  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:01.720  2465  3675 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:21169
+11-07 09:02:02.799  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:02.856  2465  3675 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:21185
+11-07 09:02:02.915  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:02.983  2465  3675 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:21190
+11-07 09:02:04.076  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:04.134  2465 10235 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:21202
+11-07 09:02:04.191  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:04.258  2465  9443 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:21207
+11-07 09:02:05.358  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:05.412  2465 10235 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:21225
+11-07 09:02:05.475  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:05.539  2465 10235 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:21231
+11-07 09:02:06.640  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:06.691  2465  4519 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:21331
+11-07 09:02:06.762  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:06.819  2465  3675 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:21354
+11-07 09:02:07.910  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:07.992  2465  4519 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:21703
+11-07 09:02:08.115  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:08.203  2465  5089 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:21788
+11-07 09:02:09.328  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:09.514  2465  3675 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:22053
+11-07 09:02:09.610  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:09.660  2465  5077 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:22116
+11-07 09:02:10.775  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:10.831  2465  5068 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:22354
+11-07 09:02:10.887  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:10.930  2465  5089 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:22372
+11-07 09:02:12.005  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:12.049  2465  5073 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:22447
+11-07 09:02:12.112  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:12.144  2465  5999 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:22458
+11-07 09:02:13.236  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:13.274  2465  4522 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:22590
+11-07 09:02:13.334  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:13.368  2465  9442 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:22608
+11-07 09:02:14.455  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:14.543  2465  9442 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:22793
+11-07 09:02:14.630  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:14.665  2465  5073 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:22820
+11-07 09:02:14.917  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:pm disable-user --user 0 org.example.kronen'
+11-07 09:02:15.005  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:pm disable-user --user 10 org.example.kronen'
+11-07 09:02:15.096  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:15.137  2465  5996 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:22862
+11-07 09:02:15.227  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:15.258  2465  9443 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:22872
+11-07 09:02:15.744  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:15.791  2465  6141 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:22893
+11-07 09:02:15.852  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:15.901  2465  6141 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:22898
+11-07 09:02:16.979  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:17.019  2465  5118 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:22903
+11-07 09:02:17.074  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:17.106  2465  9443 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:22908
+11-07 09:02:18.182  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:18.225  2465  5118 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:22930
+11-07 09:02:18.282  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:18.312  2465  5023 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:22936
+11-07 09:02:19.381  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:19.426  2465  9443 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:22941
+11-07 09:02:19.474  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:19.519  2465  9443 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:22946
+11-07 09:02:20.603  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:20.639  2465  6141 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:22955
+11-07 09:02:20.695  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:20.729  2465  6141 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:22960
+11-07 09:02:21.792  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:21.836  2465  5073 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:22967
+11-07 09:02:21.893  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:21.929  2465  5073 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:22972
+11-07 09:02:23.013  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:23.063  2465  9443 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:22980
+11-07 09:02:23.122  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:23.155  2465  9443 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:22985
+11-07 09:02:24.241  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:24.282  2465  5073 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:22995
+11-07 09:02:24.351  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:24.384  2465  9443 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:23001
+11-07 09:02:25.474  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:25.520  2465  5073 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:23009
+11-07 09:02:25.579  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:25.624  2465  5073 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:23015
+11-07 09:02:26.719  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 10 org.example.kronen'
+11-07 09:02:26.747  2465  5118 I ActivityManager: Force stopping org.example.kronen appid=10657 user=10: from process:23024
+11-07 09:02:26.812  3376  3376 I adbd    : adbd service requested 'shell,v2,TERM=xterm-256color,raw:am force-stop --user 0 org.example.kronen'
+11-07 09:02:26.845  2465  5073 I ActivityManager: Force stopping org.example.kronen appid=10657 user=0: from process:23029
