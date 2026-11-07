@@ -75,9 +75,10 @@ EXE_NAME="$(basename "$EXE")"
 HEAD_SHA="$(git rev-parse HEAD)"
 SHORT_SHA="$(git rev-parse --short HEAD)"
 
-CHECKSUMS="$(mktemp "${TMPDIR:-/tmp}/kronen-checksums.XXXXXX")"
-NOTES="$(mktemp "${TMPDIR:-/tmp}/kronen-release-notes.XXXXXX")"
-trap 'rm -f "$CHECKSUMS" "$NOTES"' EXIT
+WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/kronen-release.XXXXXX")"
+CHECKSUMS="$WORK_DIR/SHA256SUMS.txt"
+NOTES="$WORK_DIR/release-notes.md"
+trap 'rm -rf "$WORK_DIR"' EXIT
 
 printf '%s  %s\n%s  %s\n' "$APK_SHA" "$APK_NAME" "$EXE_SHA" "$EXE_NAME" > "$CHECKSUMS"
 
