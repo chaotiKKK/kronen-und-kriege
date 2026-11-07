@@ -272,14 +272,14 @@ export_windows.sh         Windows-Build
 - `TouchTest`: Auswahl per `InputEventScreenTouch` und Ausbau per Touch.
 - `ShotTest`: fünf gerenderte Bilder, inklusive Herrscher-Werkstatt.
 - Headless-Läufe: alle zwölf Suiten (elf bestehende plus `UiKernelTest`) Exit 0; die Main-basierten Tests laufen ohne Audio- und Ressourcen-Leak-Warnungen.
-- Android: Schema-4-Export erfolgreich (Exit 0), 179.750.931 Bytes, SHA-256 `8cd6d9b733fc1c62bf63801e4615e0329c62f00f16d2ee440dbe6c409dc8d7d8`; `apksigner` bestätigt v2, einen Signer und das Debug-Zertifikat; `zipalign` ok; Badging: `org.example.kronen`, versionCode 3/versionName 1.2, minSdk 24, targetSdk 35, Activity `com.godot.game.GodotApp`, ABIs `arm64-v8a`/`armeabi-v7a`. ADB sieht ein Gerät (`f030379a`), aber der Status ist `unauthorized`; daher keine physische Installation in diesem Lauf.
+- Android: Schema-4-Export erfolgreich (Exit 0), 179.750.931 Bytes, SHA-256 `8cd6d9b733fc1c62bf63801e4615e0329c62f00f16d2ee440dbe6c409dc8d7d8`; `apksigner` bestätigt v2, einen Signer und das Debug-Zertifikat; `zipalign` ok; Badging: `org.example.kronen`, versionCode 3/versionName 1.2, minSdk 24, targetSdk 35, Activity `com.godot.game.GodotApp`, ABIs `arm64-v8a`/`armeabi-v7a`. ADB sieht das autorisierte Gerät `f030379a` (Android 16, Modell `24117RK2CG`); die APK 1.2 wurde mit `adb install -r` installiert (Exit 0), die Activity kalt gestartet (`Status: ok`) und der Prozess lief nach 15 Sekunden noch ohne FATAL-/Script-Error. Der Keyguard war aktiv; die visuelle Abnahme und der 30-Minuten-Lauf stehen noch aus.
 - Windows: Schema-4-Export erfolgreich (Exit 0), 112.734.400 Bytes, SHA-256 `a37ae5ea8557ec5c276bdced83c2a8e7e9a391308fd1a06daa98e2eebcf0fcf9`, eingebettete PCK, Audio und Versionsressourcen vorhanden. Drei automatisierte Startläufe: Fenster `1298x765`, Titel „Kronen und Kriege“, Startmenü, `MAIN_READY`, Exit 0, keine `ERROR`-/Exception-Zeilen.
 
 ## Offene manuelle Abnahme
 
 Automatisch nicht möglich sind nur diese Punkte:
 
-1. **Installation und Start auf einem realen Android-Gerät.** Das Android-SDK liegt unter `C:\Users\HP\AppData\Local\Android\Sdk`; `adb` ist nicht im PATH. Der direkte Aufruf von `C:\Users\HP\AppData\Local\Android\Sdk\platform-tools\adb.exe devices` zeigt aktuell `f030379a unauthorized`. Die USB-Debugging-Freigabe muss am Gerät bestätigt werden. Danach:
+1. **Installation und Start auf einem realen Android-Gerät.** Das Android-SDK liegt unter `C:\Users\HP\AppData\Local\Android\Sdk`; `adb` ist nicht im PATH. Der direkte Aufruf von `C:\Users\HP\AppData\Local\Android\Sdk\platform-tools\adb.exe devices` zeigt das autorisierte Gerät `f030379a` (Android 16, Modell `24117RK2CG`). Die APK 1.2 ist bereits installiert; der Keyguard war beim Smoke-Test aktiv. Zum manuellen Nachtest Gerät entsperren und:
 
    ```
    "C:\Users\HP\AppData\Local\Android\Sdk\platform-tools\adb.exe" install -r "F:\ck3-kronen-kriege.apk"
