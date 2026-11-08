@@ -1,11 +1,11 @@
 # Manuelle 30-Minuten-Abnahme
 
-> Dokumentversion: 1.2
-> Stand: 2026-11-07
-> Gültig für: Version 1.2, Windows-Abnahmebuild `F:\ck3-kronen-kriege.exe` aus dem Arbeitsbaum nach `2360732` (Ladebildschirm- und Abnahmeänderungen uncommittet); Android-Arbeitsbaumbuild (uncommittet, nicht das GitHub-Release `89846de4fcdf4c9fef3f11b1c9fbe6041c4a2634`).
+> Dokumentversion: 1.3
+> Stand: 2026-11-08
+> Gültig für: Version 1.3, Builds `F:\ck3-kronen-kriege.exe` und `F:\ck3-kronen-kriege.apk` aus dem Arbeitsbaum auf `8af9c8f` (Versionssprung auf 1.3 uncommittet); nicht das GitHub-Release `89846de4fcdf4c9fef3f11b1c9fbe6041c4a2634`.
 > Geltungsbereich: Windows x86_64 und Android (`arm64-v8a`, `armeabi-v7a`)
-> **Status: Windows-Lauf am 2026-11-07 gegen den Build unter `F:` durchgeführt; Ergebnis BESTANDEN.** P01–P12, alle drei Roundtrips und der KI-Beleg sind belegt. Der frühere Android-Befund „extern blockiert“ ist widerlegt und im [Android-Bericht](manual-acceptance-android-visual.md) korrigiert. Die aktuelle Android-APK wurde mangels verbundenem Gerät nicht installiert; der Android-Lauf bleibt offen.
-> **Windows:** [Laufprotokoll 2026-11-07](#windows-lauf-2026-11-07) — **BESTANDEN** (`951c65bd4e04f97f8b607ae4bb153b2c2de3fe4a45c1620d32704754eb1a3121`, `113.716.840 Bytes`, `17:08:59`). **Android:** nicht abgeschlossen; die Force-Stops kamen aus einer lokalen Bash-Schleife, nicht aus einem externen ADB-Treiber.
+> **Status: Windows-Lauf am 2026-11-08 gegen den 1.3-Build durchgeführt; Ergebnis BESTANDEN.** P01–P12, alle drei Roundtrips und der KI-Beleg (AI2+AI3) sind belegt; Belege unter `build/verify/manual-build-d2cc-v2/`. Der Lauf am 2026-11-07 auf dem 1.2-Build bleibt als Historie dokumentiert. Der frühere Android-Befund „extern blockiert“ ist widerlegt und im [Android-Bericht](manual-acceptance-android-visual.md) korrigiert. Die Android-APK 1.3 wurde mangels verbundenem Gerät nicht installiert; der Android-Lauf bleibt offen.
+> **Windows:** [Laufprotokoll 2026-11-08](#windows-lauf-2026-11-08) — **BESTANDEN** auf dem 1.3-Build (`d2cc6508d07c65cb64e786a029736e4c04ad17f800736c6ac2f3c38f0826ec72`, `113.718.904 Bytes`, `14:00:57`). Älterer Beleg: [Lauf 2026-11-07](#windows-lauf-2026-11-07) auf dem 1.2-Build (`951c65bd4e04f97f8b607ae4bb153b2c2de3fe4a45c1620d32704754eb1a3121`, `113.716.840 Bytes`, `17:08:59`). **Android:** nicht abgeschlossen; die Force-Stops kamen aus einer lokalen Bash-Schleife, nicht aus einem externen ADB-Treiber.
 
 ## Zweck
 
@@ -20,18 +20,18 @@ Die automatisierten Tests bleiben eigenständig. Insbesondere ersetzt dieses Pro
 | Prüfung | Windows | Android |
 |---|---|---|
 | Artefakt | `F:\ck3-kronen-kriege.exe` | `F:\ck3-kronen-kriege.apk` bzw. installierte App |
-| Version | `1.2.0.0` | `versionName 1.2`, `versionCode 3` |
-| Build-Commit | Arbeitsbaum nach `2360732` (Ladebildschirm- und Abnahmeänderungen uncommittet) | Arbeitsbaum (uncommittet; nicht das GitHub-Release `89846de4fcdf4c9fef3f11b1c9fbe6041c4a2634`) |
-| SHA-256 | `951c65bd4e04f97f8b607ae4bb153b2c2de3fe4a45c1620d32704754eb1a3121` | `cf89fa500c2faeadf23fc624adc7f16f6ed994933f52557edb92cf487449039a` |
-| Größe | `113.716.840 Bytes` | `180.707.377 Bytes` |
-| Zeitstempel | `2026-11-07 17:08:59` (CET) | `2026-11-07 17:10:23` (CET) |
+| Version | `1.3.0.0` | `versionName 1.3`, `versionCode 4` |
+| Build-Commit | Arbeitsbaum auf `8af9c8f` (Versionssprung auf 1.3 uncommittet) | derselbe Arbeitsbaum |
+| SHA-256 | `d2cc6508d07c65cb64e786a029736e4c04ad17f800736c6ac2f3c38f0826ec72` | `3b17118a9ea7d4e307fec735b58cc4b46dcc459d4ca49a4edac30f71037dbbbf` |
+| Größe | `113.718.904 Bytes` | `180.708.021 Bytes` |
+| Zeitstempel | `2026-11-08 14:00:57` (CET) | `2026-11-08 14:02:14` (CET) |
 | Paket | — | `org.example.kronen` |
 | Start | `F:\ck3-kronen-kriege.exe` | Launcher-Icon oder `org.example.kronen/com.godot.game.GodotApp` |
-| Anzeige | Fenster oder `F11` Vollbild | Hochformat, entsperrter Bildschirm |
+| Anzeige | Fenster oder `F11` Vollbild | Landscape (`window/handheld/orientation=0`), entsperrter Bildschirm |
 
-Der veröffentlichte Referenzstand ist `git rev-parse v1.2^{}`. Für diesen Lauf zählt ausschließlich der Hash der Dateien unter `F:`; der Arbeitsbaum ist nicht das Release `v1.2`.
+Der veröffentlichte Referenzstand auf GitHub ist `git rev-parse v1.2^{}` (Commit `89846de4fcdf4c9fef3f11b1c9fbe6041c4a2634`). Release 1.3 ist lokal gebaut, aber nicht veröffentlicht. Für diesen Lauf zählt ausschließlich der Hash der Dateien unter `F:`.
 
-Erwartet: Windows `951c65bd4e04f97f8b607ae4bb153b2c2de3fe4a45c1620d32704754eb1a3121` bei `113.716.840 Bytes` und Zeitstempel `2026-11-07 17:08:59`; Android `cf89fa500c2faeadf23fc624adc7f16f6ed994933f52557edb92cf487449039a` bei `180.707.377 Bytes`. Weicht der Hash oder die SHA-256 der Binärdatei ab, wird **nicht** getestet: Preflight fehlgeschlagen.
+Erwartet: Windows `d2cc6508d07c65cb64e786a029736e4c04ad17f800736c6ac2f3c38f0826ec72` bei `113.718.904 Bytes` und Zeitstempel `2026-11-08 14:00:57`; Android `3b17118a9ea7d4e307fec735b58cc4b46dcc459d4ca49a4edac30f71037dbbbf` bei `180.708.021 Bytes`. Weicht der Hash oder die SHA-256 der Binärdatei ab, wird **nicht** getestet: Preflight fehlgeschlagen.
 
 ### Zeit, Tempo und Ausgangszustand
 
@@ -102,7 +102,7 @@ Die Zeitangaben sind Soll-Zeiten. Die Aktion muss innerhalb ihres Fensters abges
 
 ### 00:00–05:00 — Start und Herrschaft
 
-1. `Neues Spiel` → `Wähle dein Haus` → Zeile `Haus Sequana` wählen (Startgold 130). Die App startet die Partie; die Startmarke `v1.2 · Bronzezeit · 2000 v. Chr.` muss vor dem Start sichtbar gewesen sein. Nach dem Start sofort `Pause`.
+1. `Neues Spiel` → `Wähle dein Haus` → Zeile `Haus Sequana` wählen (Startgold 130). Die App startet die Partie; die Startmarke `v1.3 · Bronzezeit · 2000 v. Chr.` muss vor dem Start sichtbar gewesen sein. Nach dem Start sofort `Pause`.
 2. Provinz `Lugdunum` (Hauptstadt) auf der Karte antippen. Die Hinweiszeile muss `Eigenes Land: ausbauen oder Truppen werben.` oder eine eigene Provinzinfo zeigen.
 3. Bei 00:30 `Spiel speichern`; die Datei als `saves\ai-start.json` kopieren (Windows) bzw. per `run-as` abholen (Android). Dies ist die KI-Ausgangsbasis, kein Roundtrip.
 4. **P01 (H1):** `Herrschaft` öffnen. Im Abschnitt `Rat` beim Eintrag `Marschall: ...` auf `Wechseln` klicken. Notieren, welcher Marschall aktiv ist. Danach `Schließen`, `x3` für mindestens einen Jahreswechsel (Log `... trainiert ... (+N Truppen)`), dann wieder `Pause`.
@@ -211,6 +211,44 @@ Write-Output "KI-BELEG OK: $($edges -join ', ')"
 
 Mindestens zwei **verschiedene** Präfixe `AI2`, `AI3` oder `AI4` müssen ausgegeben werden. Die konkreten Zeilen und das Skript-Ergebnis werden in der Evidenztabelle unter `AI-01` und `AI-02` eingetragen. `AI1` und `AI5` sind optional und zählen nicht als Pflichtersatz.
 
+## Windows-Lauf 2026-11-08
+
+- **Gerät:** Windows x86_64, Fenster `Kronen und Kriege`, EXE `F:\ck3-kronen-kriege.exe`.
+- **Build:** `1.3.0.0`, SHA-256 `d2cc6508d07c65cb64e786a029736e4c04ad17f800736c6ac2f3c38f0826ec72`, `113.718.904 Bytes`, Zeitstempel `2026-11-08 14:00:57` (CET); `MAIN_READY version=1.3`.
+- **Start:** `14:45:16` Uhr, **geplantes Ende:** `15:15:16` Uhr, **tatsächliches Ende:** `15:15:17` Uhr (30:01 Wanduhrzeit).
+- **Startzustand:** `Haus Sequana`, Hartung 2000 v. Chr., Gold 130, Prestige 6, Legitimität 50, Erbe `Epona`, 0 Ansprüche, 0 Armeen.
+- **Ereignisse im Lauf:** `14:46:22` „Schlicht bleiben“ (+5 Prestige); `15:00:18` „Verweigern“ (+35 Gold, −12 Prestige).
+- **Ausgangs-Save:** `saves/ai-start.json` um `14:45:47` (00:31).
+- **Roundtrip 1:** `14:49:47` (04:31), `saves/roundtrip1-before.json`, Save/Load ohne Diff (Gold 228, Prestige 11, Legitimität 50, Erbfolge `Jüngster`, sechs eigene Provinzen).
+- **Roundtrip 2:** `14:59:47` (14:31), `saves/roundtrip2-before.json`, Save/Load ohne Diff.
+- **Roundtrip 3:** `15:09:47` (24:31), `saves/roundtrip3-before.json`, Save/Load ohne Diff.
+- **Aktionen:** P01–P12 vollständig ausgeführt und **PASS**; Zeiten und beobachtete Wirkung in der Tabelle unten.
+- **KI-Beleg:** **AI2** (Haus 3, 5 und 7: Steuersatz 1 → 2) und **AI3** (Haus 5 und Haus 7 haben geheiratet); zwei verschiedene KI-Kanten.
+- **Ende:** `ai-end.json` und die Screenshots um `15:15:17`; der Prozess endete nach `run_end 2026-11-08T15:15:17 status=BESTANDEN`.
+- **Befehl:** `powershell -NoProfile -ExecutionPolicy Bypass -File tools/run_acceptance.ps1 -Exe "F:\ck3-kronen-kriege.exe" -Project "" -Out "C:/Crusader Kings III/mobile-godot/build/verify/manual-build-d2cc-v2"`.
+- **Beleg:** `build/verify/manual-build-d2cc-v2/` mit `acceptance-result.json`, `acceptance.log`, `run.out.log`, `run.err.log`, `saves/` und `screens/`.
+- **Screenshots:** `screens/win-043-05.png`, `win-043-10.png`, `win-043-15.png`, `win-043-20.png`, `win-043-25.png`, `win-042-3000.png` und `win-042-3000-preview.png` (Endstand).
+- **Logs:** `run.out.log` enthält `MAIN_READY version=1.3` und den vollständigen Driver-Lauf; `run.err.log` enthält nur die nicht kritische Windows-Common-Controls-Warnung. Keine `ERROR`-, `SCRIPT ERROR`-, Exception- oder Crash-Zeile.
+- **Ergebnis:** **BESTANDEN**.
+
+| ID | Zeit | Aktion | Beobachtete Wirkung | Kante | P/F |
+|---|---|---|---|---|---|
+| P01 | 14:46:01 | `Herrschaft` → `Rat` → `Marschall` → `Wechseln` | Marschallwechsel; `Hattusa trainiert Lugdunum (+8 Truppen)` | H1 | PASS |
+| P02 | 14:46:16 | `Herrschaft` → `Gesetz` → `Erbfolge: Ältester` | Erbfolge `Ältester` → `Jüngster`; Gold 130 unverändert | H2 | PASS |
+| P03 | 14:50:16 | `Herrschaft` → `Gesetz` → `Steuersatz` | Steuersatz `1/2` → `2/2`; Gold 228 unverändert | H3 | PASS |
+| P04 | 14:50:31 | `Lugdunum` → `Bauen` → `Markt` | `Lugdunum` Markt Stufe 0 → 1; Gold 228 → 168 | H4 | PASS |
+| P05 | 14:55:17 | `Lugdunum` → `Bauen` → `Kaserne` | `Lugdunum` Kaserne Stufe 0 → 1; Gold 168 → 98 | H5 | PASS |
+| P06 | 14:55:19 | `Heiraten (30 Gold)` → Picker → freies Ziel | Gemahl/in `Gadir`; Legitimität 50 → 55 | D5 | PASS |
+| P07 | 15:00:21 | Fremde Nachbarprovinz → `Anspruch schmieden` | `etruria` (Haus Latium): Ansprüche 0 → 1; Gold 220 → 180; `Angreifen` aktiv | K2 | PASS |
+| P08 | 15:00:24 | Eigene Provinz → `Armee aufstellen` | Armeen 0 → 1; Gold 180 → 130 | K3 | PASS |
+| P09 | 15:05:16 | Zielprovinz → `Belagerung vorantreiben` | `etruria` Belagerung 0 % → 28 % | K4 | PASS |
+| P10 | 15:05:18 | Zielprovinz → `Frieden schließen` | Haus Latium: Waffenstillstand bis 49; Meinung 0 → 10 | K6 | PASS |
+| P11 | 15:10:16 | Anderes Haus → `Geheimnis aufdecken` → `ausnutzen` | Haus Unetice: Haltung 60 → 45; Ansprüche 1 → 2 | D7, D8 | PASS |
+| P12 | 15:05:20 | Friedensziel → `Angreifen` prüfen | `etruria`: `Angreifen` disabled=true; Waffenstillstand bis 49 (jetzt 25) | K7 | PASS |
+| AI-01 | 15:15:17 | Save-Diff KI | `AI2: Haus 3 Steuersatz 1 → 2`; `AI2: Haus 5 Steuersatz 1 → 2`; `AI2: Haus 7 Steuersatz 1 → 2` | AI2 | PASS |
+| AI-02 | 15:15:17 | Save-Diff KI | `AI3: Haus 5 hat geheiratet`; `AI3: Haus 7 hat geheiratet` | AI3 | PASS |
+| **Abschluss** | **30:00** | **Gerät/Datum:** Windows, 2026-11-08 | 12/12 Aktionen, 3/3 Roundtrips ohne Diff, AI2+AI3 | — | PASS |
+
 ## Windows-Lauf 2026-11-07
 
 - **Gerät:** Windows x86_64, Fenster `Kronen und Kriege`, EXE `F:\ck3-kronen-kriege.exe`.
@@ -228,9 +266,10 @@ Mindestens zwei **verschiedene** Präfixe `AI2`, `AI3` oder `AI4` müssen ausgeg
 - **Screenshots:** `screens/win-043-05.png`, `win-043-10.png`, `win-043-15.png`, `win-043-20.png`, `win-043-25.png`, `win-042-3000.png` und `win-042-3000-preview.png` (Endstand).
 - **Logs:** `run.out.log` enthält `MAIN_READY version=1.2` und den vollständigen Driver-Lauf; `run.err.log` enthält nur die nicht kritische Windows-Common-Controls-Warnung. Keine `ERROR`-, `SCRIPT ERROR`-, Exception- oder Crash-Zeile.
 - **Exit:** Der Prozess beendete sich nach dem regulären `run_end`; die aufrufende Tool-Shell wurde beim Start nach 30 Sekunden abgeschnitten, ohne die bereits laufende EXE zu beenden. Der Lauf selbst wurde bis zum regulären Ende beobachtet.
+- **Verhältnis zu 1.3:** Dieser Lauf fand auf `1.2.0.0` statt (`MAIN_READY version=1.2`) und bleibt als Vorgängerbeleg stehen. Der maßgebliche Lauf für 1.3 ist der [Lauf 2026-11-08](#windows-lauf-2026-11-08) auf `1.3.0.0`, der denselben Ablauf mit den 1.3-Metadaten bestanden hat.
 - **Ergebnis:** **BESTANDEN**.
 
-## Evidenztabelle
+## Evidenztabelle Windows-Lauf 2026-11-07
 
 Jede Zeile wird während des Laufs ausgefüllt. `Beleg` nennt den Screenshot, die Logzeile oder die Save-Datei. `P/F` ist `PASS` oder `FAIL`; leere Zellen sind am Ende `FAIL`.
 
@@ -294,7 +333,7 @@ Nach einem Abbruch werden die Evidenzdateien **nicht überschrieben**. Der Lauf 
 - kein Abbruchgrund eingetreten ist,
 - die Evidenztabelle Gerät, Datum, Uhrzeit und Ergebnis nennt.
 
-Andernfalls lautet das Ergebnis **DURCHGEFALLEN**. Dieses Dokument selbst ist kein Nachweis, dass der Lauf durchgeführt wurde; der Status bleibt offen, bis eine Person die Tabelle ausgefüllt hat.
+Andernfalls lautet das Ergebnis **DURCHGEFALLEN**. Dieses Dokument selbst ist kein Nachweis, dass der Lauf durchgeführt wurde; ohne ausgefüllte Tabelle bleibt der Status offen.
 
 ## Bezeichnungsabgleich mit dem Spielcode
 

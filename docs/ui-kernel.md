@@ -155,4 +155,4 @@ Regressionslauf vom 2026-11-06 (Godot 4.5.stable, Logs unter `build/verify/uiker
 - Mit Fenster/Rendering: `TouchTest` (echter `InputEventScreenTouch`) und `ShotTest` (fünf Bilder, 1280×720) — beide grün.
 - `UiKernelTest` — 35 Prüfungen, grün.
 
-Die Testversion 1.2 wird aus dem aktuellen Stand gebaut und über GitHub Releases verteilt: <https://github.com/chaotiKKK/kronen-und-kriege/releases/tag/v1.2>. Die Artefakt-Hashes stehen im README; `repo-compare/` blieb unverändert. Der Quellstand liegt auf `main`.
+Die Testversion 1.3 ist aus dem aktuellen Stand gebaut (Artefakte unter `F:`, Hashes im README) und am 2026-11-08 im Windows-30-Minuten-Lauf bestanden (12/12 Aktionen, 3/3 Roundtrips, AI2+AI3; Beleg `build/verify/manual-build-d2cc-v2/`), aber noch nicht veröffentlicht; auf GitHub verteilt wird weiterhin 1.2: <https://github.com/chaotiKKK/kronen-und-kriege/releases/tag/v1.2>. `repo-compare/` blieb unverändert. Der Quellstand liegt auf `main`.

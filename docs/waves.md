@@ -1,7 +1,7 @@
 # Wellenplan
 
 > Dokumentversion: 2.1
-> Stand: 2026-11-07
+> Stand: 2026-11-08
 > Gültig für Save-Schema: 4
 > Status: Wellen 0–3 umgesetzt; Welle 4 automatisiert geprüft; Windows-30-Minuten-Abnahme BESTANDEN, Android offen
 
@@ -74,7 +74,7 @@ Der Unterschied liegt nur in der Bewertungsfunktion. AI1–AI5 sind in `Systemic
 
 `tests/StoryTest.gd` spielt 120 Monate mit festem Seed, trifft 104 Entscheidungen, sieht 24 verschiedene Kanten, davon 7 dynastische, 6 Krieg-/Diplomatie- und 5 KI-Kanten, und prüft drei Save/Load-Roundtrips ohne Diff.
 
-Das ist die automatisierte CI-Probe, keine Wall-Clock-Messung. Der Windows-30-Minuten-Lauf bei x3 ist am 2026-11-07 **BESTANDEN** ([Protokoll](manual-acceptance.md#windows-lauf-2026-11-07), 12/12 Aktionen, 3/3 Roundtrips, AI2+AI3). Der Android-Lauf bleibt offen und wird nicht als geprüft ausgegeben.
+Das ist die automatisierte CI-Probe, keine Wall-Clock-Messung. Der Windows-30-Minuten-Lauf bei x3 ist am 2026-11-08 gegen den 1.3-Build **BESTANDEN** ([Protokoll](manual-acceptance.md#windows-lauf-2026-11-08), 12/12 Aktionen, 3/3 Roundtrips, AI2+AI3). Der Android-Lauf bleibt offen und wird nicht als geprüft ausgegeben.
 
 ## Nachweise
 

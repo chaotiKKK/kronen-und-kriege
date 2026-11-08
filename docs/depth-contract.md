@@ -1,7 +1,7 @@
 # Depth Contract
 
 > Dokumentversion: 2.1
-> Stand: 2026-11-07
+> Stand: 2026-11-08
 > Verbindlich ab: Welle 1
 > Status: alle 28 Matrixkanten `IST`; DC-1 erfüllt; automatisierte Story-Probe grün; Windows-30-Minuten-Lauf BESTANDEN, Android offen
 
@@ -88,7 +88,7 @@ Alle 28 Matrixzeilen sind `IST`:
 - Krieg/Diplomatie beeinflusst Herrschaft (K1, K3), Dynastie (K6), Welt (K5) und Krieg (K2, K4, K7).
 - KI beeinflusst Herrschaft (AI2, AI3, AI5) und Krieg (AI1, AI4).
 
-DC-1 ist damit erfüllt. Der Windows-30-Minuten-Lauf ist am 2026-11-07 **BESTANDEN** ([Protokoll](manual-acceptance.md#windows-lauf-2026-11-07)); offen bleibt nur der Android-Lauf. Er ist kein automatischer Test und wird nicht als solcher behauptet.
+DC-1 ist damit erfüllt. Der Windows-30-Minuten-Lauf ist am 2026-11-08 gegen den 1.3-Build **BESTANDEN** ([Protokoll](manual-acceptance.md#windows-lauf-2026-11-08)); offen bleibt nur der Android-Lauf. Er ist kein automatischer Test und wird nicht als solcher behauptet.
 
 ## Entscheidungslog
 
