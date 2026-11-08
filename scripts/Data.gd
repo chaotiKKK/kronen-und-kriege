@@ -10,6 +10,49 @@ const EMPIRE_NAMES := {
 	"ost": "Östliches Reich",
 }
 
+## Geländetypen für die Kartenschichten. Die Werte sind bewusst spielbar:
+## "defense" fließt in die Schlachtverteidigung ein, "supply" begrenzt die
+## Versorgung einer Armee in der Grafschaft.
+const TERRAIN_TYPES := {
+	"plains": {"name": "Ebenen", "color": Color(0.47, 0.54, 0.30), "defense": 0, "supply": 6},
+	"farmland": {"name": "Ackerland", "color": Color(0.63, 0.60, 0.32), "defense": 0, "supply": 7},
+	"forest": {"name": "Wald", "color": Color(0.28, 0.42, 0.25), "defense": 10, "supply": 4},
+	"hills": {"name": "Hügel", "color": Color(0.56, 0.48, 0.29), "defense": 15, "supply": 4},
+	"mountains": {"name": "Gebirge", "color": Color(0.47, 0.43, 0.38), "defense": 25, "supply": 2},
+	"marsh": {"name": "Sumpf", "color": Color(0.34, 0.45, 0.37), "defense": 10, "supply": 2},
+	"coast": {"name": "Küste", "color": Color(0.35, 0.53, 0.56), "defense": 0, "supply": 5},
+	"steppe": {"name": "Steppe", "color": Color(0.66, 0.58, 0.34), "defense": -5, "supply": 3},
+	"heath": {"name": "Heide", "color": Color(0.48, 0.43, 0.38), "defense": 5, "supply": 3},
+}
+
+## Geografische Näherung je Grafschaft, keine CK3-Daten.
+const COUNTY_TERRAIN := {
+	"gades": "coast", "corduba": "farmland", "olisipo": "hills",
+	"tarraco": "coast", "numantia": "hills",
+	"lugdunum": "farmland", "aedui": "forest", "aquitania": "farmland",
+	"narbonensis": "coast", "belgica": "forest", "armorica": "coast",
+	"cantium": "farmland", "iceni": "forest", "brigantes": "hills",
+	"cambria": "hills", "caledonia": "mountains",
+	"latium": "hills", "campania": "coast", "etruria": "hills",
+	"venetia": "marsh", "apulia": "farmland",
+	"boiohaemum": "forest", "suebia": "forest", "chattia": "hills",
+	"frisia": "marsh", "saxonia": "plains", "vandalia": "forest",
+	"vestland": "mountains", "norrland": "forest", "svealand": "forest",
+	"gotaland": "plains", "skane": "coast", "jutland": "heath",
+	"dalmatia": "mountains", "makedonia": "hills", "thessalia": "plains",
+	"attika": "coast", "boeotia": "farmland", "peloponnesos": "hills",
+	"troas": "coast", "hatti": "steppe", "phrygia": "hills",
+	"lycia": "mountains", "cilicia": "coast",
+	"borysthenes": "steppe", "venedia": "forest", "tauris": "steppe",
+	"sarmatia": "steppe", "rha": "steppe",
+}
+
+static func terrain_info(key: String) -> Dictionary:
+	return TERRAIN_TYPES.get(key, TERRAIN_TYPES["plains"])
+
+static func terrain_for(province_id: String) -> String:
+	return str(COUNTY_TERRAIN.get(province_id, "plains"))
+
 static var _province_cache: Array = []
 static var _adjacency_cache: Dictionary = {}
 static var _geometry_cache: Dictionary = {}
@@ -248,6 +291,8 @@ static func _build_provinces() -> Array:
 					pts = parts[j]
 			if label_pos == Vector2.ZERO:
 				label_pos = _centroid(pts)
+			var terrain_key := str(COUNTY_TERRAIN.get(str(c["id"]), "plains"))
+			var terrain: Dictionary = terrain_info(terrain_key)
 			out.append({
 				"id": c["id"], "name": c["name"], "owner": int(k["owner"]),
 				"dev": int(c["dev"]), "levy": int(c["levy"]), "points": pts,
@@ -256,6 +301,9 @@ static func _build_provinces() -> Array:
 				"duchy": c["duchy"], "duchy_name": c["duchy_name"],
 				"empire": k["empire"], "empire_name": EMPIRE_NAMES[str(k["empire"])],
 				"capital": bool(c.get("capital", false)),
+				"terrain": terrain_key, "terrain_name": str(terrain["name"]),
+				"terrain_color": terrain["color"], "terrain_defense": int(terrain["defense"]),
+				"terrain_supply": int(terrain["supply"]),
 			})
 	return out
 

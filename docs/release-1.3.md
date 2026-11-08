@@ -2,7 +2,7 @@
 
 > Status: **Entwurf, nicht veröffentlicht.** Tag, Push, Upload und Freigabe stehen aus.
 > Stand: 2026-11-08
-> Quellstand: `035df18` auf `main` (sechs Commits vor `origin/main`, nicht gepusht)
+> Quellstand der Builds: Arbeitsbaum auf `8af9c8f` mit uncommittetem Versionssprung auf 1.3. Doku-HEAD: `bbb0f27` auf `main` (ein Commit nicht gepusht); dieser Entwurf ist noch uncommittet.
 > Artefakte: `F:\ck3-kronen-kriege.exe` und `F:\ck3-kronen-kriege.apk`
 > Vorherige Veröffentlichung: `v1.2` (Commit `89846de4fcdf4c9fef3f11b1c9fbe6041c4a2634`), bleibt unverändert.
 
@@ -10,7 +10,7 @@
 
 ### Kronen und Kriege 1.3 — Testversion
 
-Bronzezeit-Grand-Strategy für Windows und Android. Diese Testversion bringt das neue Titelbild, einen korrigierten Waffenstillstand und einen reproduzierbaren 30-Minuten-Abnahmelauf. Die Windows-Abnahme ist bestanden; die Android-APK ist gebaut und signiert, aber noch nicht auf einem Gerät geprüft.
+Bronzezeit-Grand-Strategy für Windows und Android. Diese Testversion bringt das neue Titelbild, einen korrigierten Waffenstillstand und einen reproduzierbaren 30-Minuten-Abnahmelauf. Die Windows-Abnahme ist bestanden; die Android-APK ist gebaut und signiert und auf dem Emulator `emulator-5554` mit Host-GPU sichtbar getestet, aber noch nicht auf realer Hardware geprüft.
 
 **Neu in 1.3**
 
@@ -51,7 +51,7 @@ d2cc6508d07c65cb64e786a029736e4c04ad17f800736c6ac2f3c38f0826ec72  ck3-kronen-kri
 - **Windows-Startcheck:** `WINDOWSTART OK`, Fenster `1298x765`, Titel „Kronen und Kriege“, Sichtbarkeit und nichtleerer Render-Frame geprüft, `MAIN_READY version=1.3`, Exit 0, keine Fehlerzeilen. Beleg: `build/verify/exe-1.3.log`.
 - **Android-Paketprüfung:** `ANDROID_APK OK`, Paket `org.example.kronen`, Version 1.3/4, minSdk 24, targetSdk 35, beide ABIs, V2-Signatur, `zipalign` ok. Beleg: `build/verify/apk-1.3.log`.
 - **30-Minuten-Abnahme Windows, 2026-11-08:** `14:45:16–15:15:17` (30:01), `status=BESTANDEN`; 12/12 Aktionen, 3/3 Roundtrips ohne Save-Diff, KI-Kanten AI2+AI3, 0 Fehlerzeilen. Beleg: `build/verify/manual-build-d2cc-v2/`, Protokoll: [manual-acceptance.md](manual-acceptance.md#windows-lauf-2026-11-08).
-- **Automatisierte Tiefentests:** `FullDepthTest` 57 Prüfungen (`build/verify/final-fulldepth-check-1.3.log`, 2026-11-08 15:38), `SystemicDepthTest` 38 Prüfungen (`build/verify/SystemicDepthTest.log`), beide grün.
+- **Automatisierte Tiefentests:** `FullDepthTest` 57 Prüfungen (`build/verify/final-fulldepth-check-1.3.log`, 2026-11-08 15:38), `SystemicDepthTest` 38 Prüfungen (`build/verify/systemicdepth-check-1.3.log`, 2026-11-08 15:52), beide grün.
 
 ## Abgleich mit dem Trockenlauf (2026-11-08)
 
@@ -70,7 +70,7 @@ d2cc6508d07c65cb64e786a029736e4c04ad17f800736c6ac2f3c38f0826ec72  ck3-kronen-kri
 
 ## Bekannte Einschränkungen
 
-- **Android nicht auf Hardware geprüft:** `adb devices` meldet kein Gerät. Die APK 1.3 ist weder installiert noch gestartet; visuelle Abnahme und Android-30-Minuten-Lauf fehlen. Das ist der einzige offene Abnahmepunkt und wird hier nicht als erledigt ausgegeben.
+- **Android nicht auf realer Hardware geprüft:** `adb devices` meldet kein reales Gerät. Die APK 1.3 ist auf `emulator-5554` (AVD `fhd36`, Android 16) mit Host-GPU (`-gpu host`, NVIDIA) installiert und rendert dort sichtbar: Ladebildschirm bei 82 % und Hauptmenü, `MAIN_READY version=1.3`, kein FATAL. Ein früherer SwiftShader-Lauf scheiterte an `GL_MAX_FRAGMENT_UNIFORM_VECTORS (261)`; das ist ein Emulator-/SwiftShader-Fall, kein realer Hardware-Nachweis. Die reale Sichtprüfung und der Android-30-Minuten-Lauf bleiben offen; der Emulator-Smoke-Test ist bestanden.
 - **Debug-Signatur:** Die APK ist mit dem Android-Debug-Zertifikat signiert und nicht für Store-Verteilung gedacht.
 - **Spielstände aus 1.2:** Das Feld `truces` enthielt bis 1.2 die Restdauer (z. B. `24`). 1.3 liest es als Kalenderjahr und vergleicht mit dem laufenden Monatsindex; ein aus 1.2 übernommener Waffenstillstand gilt deshalb nach dem Update als abgelaufen. Neu geschlossene Waffenstillstände sind korrekt. Save-Schema bleibt 4.
 - **Windows-Build** ist nur x86_64 und wird nicht installiert, sondern direkt gestartet.
@@ -79,7 +79,7 @@ d2cc6508d07c65cb64e786a029736e4c04ad17f800736c6ac2f3c38f0826ec72  ck3-kronen-kri
 
 ### 0. Voraussetzungen
 
-- [x] Beide Commits der Release-Vorbereitung liegen auf `main` (`0f54b02`, `035df18`).
+- [x] Die Release-Vorbereitung liegt auf `main`; aktueller HEAD ist `bbb0f27`, ein Commit nicht gepusht.
 - [x] Arbeitsbaum sauber bis auf diesen Entwurf; `build/` und `.tools/` sind ignoriert.
 - [x] Windows-Abnahme, Startcheck, APK-Prüfung und Tiefentests bestanden.
 - [ ] **Freigabe des Eigentümers zur Veröffentlichung** — ohne diese Freigabe wird nichts gepusht, getaggt oder hochgeladen.

@@ -1,20 +1,33 @@
 # Android-Sichtprüfung des 30-Minuten-Protokolls
 
-> Stand: 2026-11-07
+> Stand: 2026-11-08 (historische Sichtprüfung 2026-11-07)
 > Gerät: `24117RK2CG`, Android 16, Geräteserie `f030379a`
 > App: `org.example.kronen`, `versionName 1.3`, `versionCode 4` (historische Sichtprüfung auf `versionName 1.2`, `versionCode 3`)
 > Build der historischen Sichtprüfung: Commit `89846de4fcdf4c9fef3f11b1c9fbe6041c4a2634` (Tag `v1.2`), APK `8cd6d9b733fc1c62bf63801e4615e0329c62f00f16d2ee440dbe6c409dc8d7d8` (179.750.931 Bytes)
-> Aktueller Release-1.3-Build: APK `3b17118a9ea7d4e307fec735b58cc4b46dcc459d4ca49a4edac30f71037dbbbf` (180.708.021 Bytes, `2026-11-08 14:02:14`); nicht auf einem Gerät installiert.
+> Aktueller Release-1.3-Build: APK `3b17118a9ea7d4e307fec735b58cc4b46dcc459d4ca49a4edac30f71037dbbbf` (180.708.021 Bytes, `2026-11-08 14:02:14`); am 2026-11-08 auf `emulator-5554` (AVD `fhd36`, Android 16) mit Host-GPU sichtbar geprüft: Ladebildschirm bei 82 % und Hauptmenü, `MAIN_READY version=1.3`, kein FATAL. Der frühere SwiftShader-Lauf scheitert an `GL_MAX_FRAGMENT_UNIFORM_VECTORS (261)`; auf realer Hardware nicht installiert.
 > Anzeige: 3200×1440 im Landscape; Bedienung per ADB-Touch
-> **Ergebnis der historischen Sichtprüfung: NICHT BESTANDEN – Lauf abgebrochen; keine externe Blockade belegt.** Der frühere Befund „extern blockiert“ ist widerlegt. Die wiederholten `am force-stop`-Aufrufe stammen aus einer lokalen Bash-Schleife im Host, nicht aus einem externen ADB-Treiber. Die aktuelle APK bleibt ungeprüft.
+> **Ergebnis:** Die historische 1.2-Sichtprüfung vom 2026-11-07 bleibt **NICHT BESTANDEN** (Lauf abgebrochen; „extern blockiert“ widerlegt, Force-Stops aus lokaler Bash-Schleife). Der 1.3-Emulator-Smoke-Test am 2026-11-08 ist auf `emulator-5554` mit Host-GPU **BESTANDEN** (Ladebildschirm + Hauptmenü, kein FATAL); die reale Hardware und der Android-30-Minuten-Lauf bleiben offen.
 
 ## Ergebnis in einem Satz
 
-Die Touch-Zuordnung ist **kein App-Fehler**: Bei stabilem Scrollzustand öffnete ein Tap auf die sichtbare Beschriftung `Herrschaft` genau das Herrschaftsmodal; der frühere Fehlgriff entstand aus einem Screenshot während einer noch laufenden Scrollanimation. Die Android-Abnahme ist dennoch **nicht bestanden**, weil der Pflichtlauf nicht abgeschlossen wurde; die frühere Zuschreibung an einen externen Treiber ist zurückgezogen.
+Die Touch-Zuordnung ist **kein App-Fehler**: Bei stabilem Scrollzustand öffnete ein Tap auf die sichtbare Beschriftung `Herrschaft` genau das Herrschaftsmodal; der frühere Fehlgriff entstand aus einem Screenshot während einer noch laufenden Scrollanimation. Die Android-Abnahme ist dennoch **nicht bestanden**, weil der Pflichtlauf nicht abgeschlossen wurde; die frühere Zuschreibung an einen externen Treiber ist zurückgezogen. Der separate 1.3-Emulator-Smoke-Test auf `emulator-5554` mit Host-GPU ist **bestanden** und ersetzt diesen Pflichtlauf nicht.
 
 ## Abgrenzung
 
 Diese Prüfung ist ein visueller Smoke-Test der wichtigsten Ansichten und Interaktionen. Sie ersetzt weder den vollständigen 30-Minuten-Lauf noch die Pflichtaktionen P01–P12, die Kantenmatrix, die KI-Belege oder die drei Save/Load-Roundtrips aus dem [30-Minuten-Protokoll](manual-acceptance.md). Der 30-Minuten-Lauf wird hier ausdrücklich **nicht** als absolviert bezeichnet.
+
+## Emulator-Smoke-Test 2026-11-08 — BESTANDEN (Host-GPU)
+
+- **Gerät (erfolgreicher Lauf):** `emulator-5554`, AVD `fhd36`, `sdk_gphone64_x86_64`, Android 16, 1080×2340, Host-GPU (`-gpu host`, NVIDIA RTX 5070 Laptop, OpenGL ES 3.1).
+- **Gegencheck:** `emulator-5556`, AVD `fc3d`, Android 14, Host-GPU; ebenfalls Ladebildschirm (100 %) und Hauptmenü.
+- **SwiftShader-Vergleich:** Derselbe APK-Stand auf `emulator-5554` mit `-gpu swiftshader_indirect` startet bis `MAIN_READY version=1.3`, kann aber die GLES3-Shader nicht linken; Einzelheiten unten.
+- **Build:** APK 1.3/4, SHA-256 `3b17118a9ea7d4e307fec735b58cc4b46dcc459d4ca49a4edac30f71037dbbbf`, 180.708.021 Bytes; Installation und Paketprüfung erfolgreich.
+- **Start:** `MAIN_READY version=1.3`; der Prozess blieb am Leben, kein `FATAL`/`AndroidRuntime`-Crash und kein `SceneShaderGLES3`-/`CanvasShaderGLES3`-Linkfehler.
+- **Befund (Host-GPU):** Der Ladebildschirm ist bei 82 % sichtbar, danach das Hauptmenü mit `Neues Spiel`, `Spiel laden` und `Beenden`; die App bleibt aktiv. Das ist ein **bestandener Emulator-Smoke-Test**, keine vollständige Android-Abnahme.
+- **Befund (SwiftShader):** `SceneShaderGLES3` und `CanvasShaderGLES3` scheitern am Linken: `Fragment shader active uniforms exceed GL_MAX_FRAGMENT_UNIFORM_VECTORS (261)`. Die Screens bleiben leer. Das ist ein bekannter Godot-/SwiftShader-Emulatorfall (Godot-Issue #109550), kein Nachweis für reale Hardware.
+- **Bewertung:** **Emulator-Smoke-Test BESTANDEN** auf Host-GPU; **keine vollständige Android-Abnahme**. Der 30-Minuten-Lauf und die reale Hardware bleiben offen.
+- **Belege (Erfolg):** `build/verify/android-emulator/target-5554/loading-82pct.png`, `build/verify/android-emulator/target-5554/main-menu.png`, `build/verify/android-emulator/target-5554/launch.log`, `build/verify/android-emulator/target-5554/key-lines.log`; Gegencheck `build/verify/android-emulator/host/screens/30-launch.png` und `.../42-current.png`.
+- **Belege (SwiftShader-Vergleich):** `build/verify/android-emulator/logs/clean-launch.log`, `build/verify/android-emulator/screens/current-20s.png`.
 
 ## Touch-Befund: entschieden
 
@@ -93,6 +106,6 @@ Weitere Ansichtsbelege aus dem Preflight liegen lokal unter `build/verify/manual
 
 ## Fazit
 
-Die Touch-Frage ist entschieden und belegt: **kein App-Fehler, sondern ein Messartefakt**. Die Android-Abnahme ist **DURCHGEFALLEN**, weil der Pflichtlauf nicht abgeschlossen wurde. Die frühere Behauptung eines externen ADB-Treibers ist zurückgezogen; die dokumentierte Force-Stop-Kette ist lokal. Es bleibt kein ungeklärter App-Befund.
+Die Touch-Frage ist entschieden und belegt: **kein App-Fehler, sondern ein Messartefakt**. Die Android-Abnahme ist **DURCHGEFALLEN**, weil der Pflichtlauf nicht abgeschlossen wurde. Der 1.3-Emulator-Smoke-Test auf `emulator-5554` mit Host-GPU ist **bestanden**; die reale Hardware bleibt ungeprüft. Die frühere Behauptung eines externen ADB-Treibers ist zurückgezogen; die dokumentierte Force-Stop-Kette ist lokal. Es bleibt kein ungeklärter App-Befund.
 
 [Zurück zum 30-Minuten-Protokoll](manual-acceptance.md)

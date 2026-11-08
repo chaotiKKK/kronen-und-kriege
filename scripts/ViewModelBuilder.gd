@@ -78,9 +78,13 @@ static func _info(game, selected: String) -> String:
 				if not q.is_empty():
 					nb.append("%s (%s)" % [q["name"], game.houses[int(q["owner"])]["name"]])
 			var capital_txt := "ja" if bool(p.get("capital", false)) else "nein"
-			info = "Provinz %s\nLand: %s · %s\nHerzogtum: %s\nBesitzer: %s · Haltung %+d\nHauptstadt: %s · Entwicklung: %d / 10 · Truppen: %d\nNachbarn: %s" % [
+			var terrain_name: String = str(p.get("terrain_name", "Ebenen"))
+			var terrain_def: int = int(p.get("terrain_defense", 0))
+			var supply: int = int(p.get("terrain_supply", 6))
+			info = "Provinz %s\nLand: %s · %s\nHerzogtum: %s\nBesitzer: %s · Haltung %+d\nGelände: %s · Verteidigung %+d%% · Versorgung %d\nHauptstadt: %s · Entwicklung: %d / 10 · Truppen: %d\nNachbarn: %s" % [
 				p["name"], p["kingdom_name"], p["empire_name"], p["duchy_name"],
 				owner_house["name"], int(game.opinion[int(p["owner"])]),
+				terrain_name, terrain_def, supply * 100,
 				capital_txt, int(p["dev"]), int(p["levy"]), ", ".join(nb),
 			]
 	return info
@@ -186,9 +190,9 @@ static func rule(game, selected: String) -> Dictionary:
 		"discover_disabled": target < 0,
 		"expose_disabled": target < 0,
 		"province_hint": "Wähle auf der Karte eine eigene Provinz.",
-		"province_text": ("%s · Truppen %d" % [p["name"], int(p["levy"])]) if not p.is_empty() else "",
+		"province_text": ("%s · %s · Truppen %d" % [p["name"], p.get("terrain_name", "Ebenen"), int(p["levy"])]) if not p.is_empty() else "",
 		"buildings": buildings,
-		"defense": ("Verteidigung %d/100 · Belagerung %d%%" % [int(p.get("defense", 0)), int(p.get("siege", 0))]) if not p.is_empty() else "",
+		"defense": ("%s · Verteidigung %d/100 · Gelände %+d%% · Belagerung %d%%" % [p.get("terrain_name", "Ebenen"), int(p.get("defense", 0)), int(p.get("terrain_defense", 0)), int(p.get("siege", 0))]) if not p.is_empty() else "",
 	}
 
 static func _target_house(game, selected: String) -> int:

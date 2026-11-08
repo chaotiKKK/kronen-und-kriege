@@ -32,6 +32,8 @@ var extra_state: Dictionary = {}
 var resolver = ResolverScript.new()
 var disabled_edges: Dictionary = {}
 var effect_log: Array = []
+## Testhook: >= 0 erzwingt den Schlachtwurf; im normalen Spiel bleibt der Wert -1.
+var attack_roll_override: float = -1.0
 
 func _init(data_script, player_index: int = 0, custom: Dictionary = {}) -> void:
 	data = data_script
@@ -99,6 +101,13 @@ func _normalize_province(p: Dictionary) -> void:
 	p["defense"] = clampi(int(p.get("defense", 0)), 0, 100)
 	p["siege"] = clampi(int(p.get("siege", 0)), 0, 100)
 	p["siege_owner"] = int(p.get("siege_owner", -1))
+	var terrain_key: String = str(p.get("terrain", data.terrain_for(str(p["id"]))))
+	var terrain: Dictionary = data.terrain_info(terrain_key)
+	p["terrain"] = terrain_key
+	p["terrain_name"] = str(terrain["name"])
+	p["terrain_color"] = terrain["color"]
+	p["terrain_defense"] = int(terrain["defense"])
+	p["terrain_supply"] = int(terrain["supply"])
 
 func _make_courtier(i: int, n: int) -> Dictionary:
 	var g: String = "f" if (i + n) % 2 == 0 else "m"
@@ -311,6 +320,7 @@ func _yearly() -> void:
 			_recompute_heir(h)
 		_apply_house_economy(i)
 		_apply_army_upkeep(i)
+		_apply_army_supply(i)
 		_apply_trait_effects(i)
 	for p in provinces:
 		p["levy"] = mini(4000, int(p["levy"]) + int(p["levy"] * 0.02) + 5)
@@ -529,8 +539,12 @@ func attack(id: String) -> Dictionary:
 	var base_power: int = border_power if border_power > 0 else int(total_power * 0.5)
 	var attack_power: int = int(base_power * (1.0 + int(house()["ruler"]["martial"]) / 20.0))
 	var defender: Dictionary = houses[int(target["owner"])]
-	var defense: int = int(target["levy"] * (1.0 + int(target["dev"]) / 12.0) * (1.0 + int(defender["ruler"]["martial"]) / 25.0) * (1.0 + int(target.get("defense", 0)) / 100.0))
-	if attack_power * randf_range(0.85, 1.15) > defense:
+	var terrain_defense: int = int(target.get("terrain_defense", 0))
+	var defense: int = int(target["levy"] * (1.0 + int(target["dev"]) / 12.0) * (1.0 + int(defender["ruler"]["martial"]) / 25.0) * (1.0 + (int(target.get("defense", 0)) + terrain_defense) / 100.0))
+	var attack_roll: float = randf_range(0.85, 1.15)
+	if attack_roll_override >= 0.0:
+		attack_roll = attack_roll_override
+	if attack_power * attack_roll > defense:
 		var old_owner: int = int(target["owner"])
 		target["owner"] = player
 		target["levy"] = int(int(target["levy"]) * 0.6)
@@ -864,6 +878,22 @@ func _apply_army_upkeep(i: int) -> void:
 		"state": "houses[%d].gold" % i, "kind": "gold", "house": i,
 		"amount": -total, "reason": "Armeeunterhalt",
 	}])
+
+func _apply_army_supply(i: int) -> void:
+	var h: Dictionary = houses[i]
+	for army in h.get("armies", []):
+		var p: Dictionary = province(str(army.get("province", "")))
+		if p.is_empty():
+			continue
+		var capacity: int = int(p.get("terrain_supply", 6)) * 100
+		var strength: int = int(army.get("strength", 0))
+		if strength <= capacity:
+			continue
+		var loss: int = maxi(1, int(round(float(strength - capacity) * 0.02)))
+		loss = mini(loss, maxi(1, int(strength / 20)))
+		army["strength"] = maxi(1, strength - loss)
+		if i == player:
+			note("%s: Versorgung im %s reicht nicht; %d Mann gehen verloren." % [str(p["name"]), str(p.get("terrain_name", "Gelände")), loss])
 
 func _apply_trait_effects(i: int) -> void:
 	var h: Dictionary = houses[i]

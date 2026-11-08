@@ -34,13 +34,15 @@ func _ready() -> void:
 	_test_k4_k5()
 	_test_k6()
 	_test_k7()
+	_test_terrain_defense()
+	_test_army_supply()
 	_test_ai2()
 	_test_ai3()
 	_test_ai4()
 	_test_ai5()
 	if _failed:
 		return
-	print("FULLDEPTHTEST OK: H3, H4, H5(Mauern), H6, H7, H8, D1, D2, D3, D4, D6, D7, D8, K1-K7 und AI2-AI5 positiv sowie negativ kontrolliert; %d Prüfungen." % _checks)
+	print("FULLDEPTHTEST OK: H3, H4, H5(Mauern), H6, H7, H8, D1, D2, D3, D4, D6, D7, D8, K1-K7, T1/T2 (Gelände/Versorgung) und AI2-AI5 positiv sowie negativ kontrolliert; %d Prüfungen." % _checks)
 	get_tree().quit(0)
 
 func _test_h3() -> void:
@@ -305,6 +307,9 @@ func _test_k7() -> void:
 	_check(g.can_attack(target), "K7-Negativ: deaktivierte Kante blockiert weiterhin.")
 
 func _test_ai2() -> void:
+	# T1/T2 stehen bewusst vor den KI-Kanten: Gelände- und Versorgungswerte
+	# werden rein über die echte Spiel-API geprüft, ohne UI oder Zufall im Test.
+
 	var g = _new_game(0)
 	g.houses[1]["laws"]["tax"] = 0
 	g.effect_log.clear()
@@ -359,6 +364,87 @@ func _test_ai5() -> void:
 	n.effect_log.clear()
 	n.expose_secret(0, 1)
 	_deny(n, "AI5", "AI5-Negativ: Skandalbeleg trotz deaktivierter Kante.")
+
+func _test_terrain_defense() -> void:
+	var g = _new_game(0)
+	var target: String = _border_target(g, 0)
+	_check(target != "", "T1: Kein Grenzziel für Geländeverteidigung.")
+	if target == "":
+		return
+	var home: Dictionary = {}
+	for q in g.owned():
+		if (g.neighbours(str(q["id"])) as Array).has(target):
+			home = q
+			break
+	_check(not home.is_empty(), "T1: Kein angrenzendes Heimatland.")
+	if home.is_empty():
+		return
+	for q in g.owned():
+		q["levy"] = 100 if str(q["id"]) == str(home["id"]) else 0
+	g.house()["ruler"]["martial"] = 0
+	g.house()["gold"] = 1000
+	g.houses[1]["ruler"]["martial"] = 0
+	g.set_edge_enabled("K2", false)
+	g.set_edge_enabled("D6", false)
+	g.set_edge_enabled("K7", false)
+	g.attack_roll_override = 1.0
+	var p: Dictionary = g.province(target)
+	var cases: Array = [
+		{"key": "plains", "defense": 0},
+		{"key": "forest", "defense": int(DataScript.TERRAIN_TYPES["forest"]["defense"])},
+		{"key": "hills", "defense": int(DataScript.TERRAIN_TYPES["hills"]["defense"])},
+		{"key": "mountains", "defense": int(DataScript.TERRAIN_TYPES["mountains"]["defense"])},
+	]
+	var outcomes: Array = []
+	for c in cases:
+		p["owner"] = 1
+		p["levy"] = 95
+		p["dev"] = 0
+		p["defense"] = 0
+		p["siege"] = 0
+		p["siege_owner"] = -1
+		p["terrain"] = str(c["key"])
+		p["terrain_name"] = str(DataScript.terrain_info(str(c["key"]))["name"])
+		p["terrain_defense"] = int(c["defense"])
+		home["levy"] = 100
+		g.house()["gold"] = 1000
+		g.house()["ruler"]["martial"] = 0
+		g.houses[1]["ruler"]["martial"] = 0
+		_check(g.can_attack(target), "T1: Kontrollangriff auf %s nicht möglich." % str(c["key"]))
+		var result: Dictionary = g.attack(target)
+		outcomes.append(bool(result["ok"]))
+	_check(outcomes.size() == 4, "T1: Geländefälle unvollständig.")
+	_check(outcomes.size() == 4 and bool(outcomes[0]), "T1: Angriff auf Ebenen verliert.")
+	for i in range(1, outcomes.size()):
+		_check(not bool(outcomes[i]), "T1: %s verteidigt nicht stärker als Ebenen." % str(cases[i]["key"]))
+	print("TERRAIN OK: 100 Mann gegen 95 Verteidiger; Ebenen Sieg, Wald/Hügel/Gebirge Niederlage (Terrainwerte %d/%d/%d)." % [int(cases[1]["defense"]), int(cases[2]["defense"]), int(cases[3]["defense"])])
+
+func _test_army_supply() -> void:
+	var g = _new_game(0)
+	var capital: Dictionary = _capital(g, 0)
+	_check(not capital.is_empty(), "T2: Keine Hauptstadt für Versorgung.")
+	if capital.is_empty():
+		return
+	var capacity: int = int(capital["terrain_supply"]) * 100
+	var over: int = capacity + 500
+	var under: int = capacity
+	g.house()["armies"] = [
+		{"id": 1, "province": str(capital["id"]), "strength": over, "upkeep": 2, "morale": 100},
+		{"id": 2, "province": str(capital["id"]), "strength": under, "upkeep": 2, "morale": 100},
+	]
+	g._yearly()
+	var armies: Array = g.house().get("armies", [])
+	_check(armies.size() == 2, "T2: Armeen fehlen nach dem Jahres-Tick.")
+	if armies.size() != 2:
+		return
+	var after_over: int = int(armies[0]["strength"])
+	var after_under: int = int(armies[1]["strength"])
+	var loss: int = over - after_over
+	_check(capacity > 0, "T2: Versorgungskapazität ist nicht positiv.")
+	_check(loss > 0, "T2: Armee über Kapazität verliert keine Stärke.")
+	_check(loss <= maxi(1, over / 20), "T2: Versorgungsverlust ist nicht moderat.")
+	_check(after_under == under, "T2: Armee innerhalb der Kapazität verliert Stärke.")
+	print("SUPPLY OK: Kapazität %d; Armee %d -> %d (%d Verlust), Armee %d unverändert." % [capacity, over, after_over, loss, under])
 
 # --- Helfer --------------------------------------------------------------
 

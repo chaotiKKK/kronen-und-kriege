@@ -63,6 +63,24 @@ func _run() -> void:
 	if not main.info_label.text.contains(str(p0["empire_name"])):
 		_fail("Auswahl zeigt das Reich nicht")
 		return
+	if not main.info_label.text.contains(str(p0.get("terrain_name", ""))):
+		_fail("Auswahl zeigt das Gelände nicht")
+		return
+	if not main.info_label.text.contains("Versorgung"):
+		_fail("Auswahl zeigt die Versorgung nicht")
+		return
+	for mode in ["political", "terrain", "duchy", "kingdom", "development", "war"]:
+		main._set_map_mode(mode)
+		if str(main.map_view.map_mode) != mode:
+			_fail("Kartenmodus %s wurde nicht gesetzt" % mode)
+			return
+		if not bool(main.map_mode_buttons[mode].button_pressed):
+			_fail("Kartenmodus %s ist nicht hervorgehoben" % mode)
+			return
+		if main.selected != str(p0["id"]):
+			_fail("Auswahl ging beim Moduswechsel %s verloren" % mode)
+			return
+	main._set_map_mode("political")
 
 	main._show_create()
 	var home_id := str(main.create_home.get_item_metadata(0))
@@ -84,5 +102,5 @@ func _run() -> void:
 		_fail("Eigenes Haus ohne Grafschaftssitz")
 		return
 
-	print("MAPTEST OK: 49 Grafschaften, %d Herzogtümer, 9 Königreiche, 3 Reiche; Auswahl und eigener Grafschaftsstart funktionieren" % duchies.size())
+	print("MAPTEST OK: 49 Grafschaften, %d Herzogtümer, 9 Königreiche, 3 Reiche, sechs Kartenmodi; Auswahl und eigener Grafschaftsstart funktionieren" % duchies.size())
 	get_tree().quit(0)

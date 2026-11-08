@@ -4,8 +4,8 @@
 > Stand: 2026-11-08
 > Gültig für: Version 1.3, Builds `F:\ck3-kronen-kriege.exe` und `F:\ck3-kronen-kriege.apk` aus dem Arbeitsbaum auf `8af9c8f` (Versionssprung auf 1.3 uncommittet); nicht das GitHub-Release `89846de4fcdf4c9fef3f11b1c9fbe6041c4a2634`.
 > Geltungsbereich: Windows x86_64 und Android (`arm64-v8a`, `armeabi-v7a`)
-> **Status: Windows-Lauf am 2026-11-08 gegen den 1.3-Build durchgeführt; Ergebnis BESTANDEN.** P01–P12, alle drei Roundtrips und der KI-Beleg (AI2+AI3) sind belegt; Belege unter `build/verify/manual-build-d2cc-v2/`. Der Lauf am 2026-11-07 auf dem 1.2-Build bleibt als Historie dokumentiert. Der frühere Android-Befund „extern blockiert“ ist widerlegt und im [Android-Bericht](manual-acceptance-android-visual.md) korrigiert. Die Android-APK 1.3 wurde mangels verbundenem Gerät nicht installiert; der Android-Lauf bleibt offen.
-> **Windows:** [Laufprotokoll 2026-11-08](#windows-lauf-2026-11-08) — **BESTANDEN** auf dem 1.3-Build (`d2cc6508d07c65cb64e786a029736e4c04ad17f800736c6ac2f3c38f0826ec72`, `113.718.904 Bytes`, `14:00:57`). Älterer Beleg: [Lauf 2026-11-07](#windows-lauf-2026-11-07) auf dem 1.2-Build (`951c65bd4e04f97f8b607ae4bb153b2c2de3fe4a45c1620d32704754eb1a3121`, `113.716.840 Bytes`, `17:08:59`). **Android:** nicht abgeschlossen; die Force-Stops kamen aus einer lokalen Bash-Schleife, nicht aus einem externen ADB-Treiber.
+> **Status: Windows-Lauf am 2026-11-08 gegen den 1.3-Build durchgeführt; Ergebnis BESTANDEN.** P01–P12, alle drei Roundtrips und der KI-Beleg (AI2+AI3) sind belegt; Belege unter `build/verify/manual-build-d2cc-v2/`. Der Lauf am 2026-11-07 auf dem 1.2-Build bleibt als Historie dokumentiert. Der frühere Android-Befund „extern blockiert“ ist widerlegt und im [Android-Bericht](manual-acceptance-android-visual.md) korrigiert. Die Android-APK 1.3 ist auf `emulator-5554` (AVD `fhd36`, Android 16) mit Host-GPU (`-gpu host`, NVIDIA) installiert und rendert dort sichtbar: Ladebildschirm bei 82 % und Hauptmenü, `MAIN_READY version=1.3`, kein FATAL. Der frühere SwiftShader-Start scheitert an `GL_MAX_FRAGMENT_UNIFORM_VECTORS (261)`. Auf einem realen Gerät wurde sie nicht installiert; der Android-30-Minuten-Lauf und die reale Sichtprüfung bleiben offen.
+> **Windows:** [Laufprotokoll 2026-11-08](#windows-lauf-2026-11-08) — **BESTANDEN** auf dem 1.3-Build (`d2cc6508d07c65cb64e786a029736e4c04ad17f800736c6ac2f3c38f0826ec72`, `113.718.904 Bytes`, `14:00:57`). Älterer Beleg: [Lauf 2026-11-07](#windows-lauf-2026-11-07) auf dem 1.2-Build (`951c65bd4e04f97f8b607ae4bb153b2c2de3fe4a45c1620d32704754eb1a3121`, `113.716.840 Bytes`, `17:08:59`). **Android:** Emulator-Smoke-Test auf `emulator-5554` mit Host-GPU **BESTANDEN** (Ladebildschirm + Hauptmenü); der 30-Minuten-Lauf und reale Hardware bleiben offen. Die Force-Stops kamen aus einer lokalen Bash-Schleife, nicht aus einem externen ADB-Treiber.
 
 ## Zweck
 
@@ -225,6 +225,7 @@ Mindestens zwei **verschiedene** Präfixe `AI2`, `AI3` oder `AI4` müssen ausgeg
 - **Aktionen:** P01–P12 vollständig ausgeführt und **PASS**; Zeiten und beobachtete Wirkung in der Tabelle unten.
 - **KI-Beleg:** **AI2** (Haus 3, 5 und 7: Steuersatz 1 → 2) und **AI3** (Haus 5 und Haus 7 haben geheiratet); zwei verschiedene KI-Kanten.
 - **Automatisierte Gegenprüfung:** `FullDepthTest` headless am `2026-11-08` um `15:38` gegen genau diesen Stand: `FULLDEPTHTEST OK … 57 Prüfungen`, Exit 0, keine Fehlerzeile. Beleg: `build/verify/final-fulldepth-check-1.3.log`; die K6-Zusicherung `truce_until(1) > _now()` steht in `tests/FullDepthTest.gd:290`.
+- **Automatisierte Gegenprüfung (Systemtiefe):** `SystemicDepthTest` headless am `2026-11-08` um `15:52` gegen genau diesen Stand: `SYSTEMICDEPTHTEST OK … 38 Prüfungen`, Exit 0, keine Fehlerzeile, alle fünf Negativkontrollen ohne Zieländerung. Beleg: `build/verify/systemicdepth-check-1.3.log`.
 - **Ende:** `ai-end.json` und die Screenshots um `15:15:17`; der Prozess endete nach `run_end 2026-11-08T15:15:17 status=BESTANDEN`.
 - **Befehl:** `powershell -NoProfile -ExecutionPolicy Bypass -File tools/run_acceptance.ps1 -Exe "F:\ck3-kronen-kriege.exe" -Project "" -Out "C:/Crusader Kings III/mobile-godot/build/verify/manual-build-d2cc-v2"`.
 - **Beleg:** `build/verify/manual-build-d2cc-v2/` mit `acceptance-result.json`, `acceptance.log`, `run.out.log`, `run.err.log`, `saves/` und `screens/`.
@@ -249,6 +250,7 @@ Mindestens zwei **verschiedene** Präfixe `AI2`, `AI3` oder `AI4` müssen ausgeg
 | AI-01 | 15:15:17 | Save-Diff KI | `AI2: Haus 3 Steuersatz 1 → 2`; `AI2: Haus 5 Steuersatz 1 → 2`; `AI2: Haus 7 Steuersatz 1 → 2` | AI2 | PASS |
 | AI-02 | 15:15:17 | Save-Diff KI | `AI3: Haus 5 hat geheiratet`; `AI3: Haus 7 hat geheiratet` | AI3 | PASS |
 | T-01 | 15:38 | `FullDepthTest` headless (`res://tests/FullDepthTest.tscn`) | `FULLDEPTHTEST OK: …; 57 Prüfungen`, Exit 0, 0 Fehlerzeilen; K6-Zusicherung `truce_until(1) > _now()` (Zeile 290) | H3–H8, D1–D8, K1–K7, AI2–AI5 | PASS |
+| T-02 | 15:52 | `SystemicDepthTest` headless (`res://tests/SystemicDepthTest.tscn`) | `SYSTEMICDEPTHTEST OK: …; 38 Prüfungen`, Exit 0, 0 Fehlerzeilen; fünf Negativkontrollen ohne Zieländerung | H1, H2, H5, D5, AI1 | PASS |
 | **Abschluss** | **30:00** | **Gerät/Datum:** Windows, 2026-11-08 | 12/12 Aktionen, 3/3 Roundtrips ohne Diff, AI2+AI3 | — | PASS |
 
 ## Windows-Lauf 2026-11-07

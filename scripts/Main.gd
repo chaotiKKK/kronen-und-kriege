@@ -22,6 +22,7 @@ const CREAM := Color(0.98, 0.94, 0.84)
 var game
 var kernel
 var map_view
+var map_mode_buttons: Dictionary = {}
 var date_label: Label
 var gold_label: Label
 var prestige_label: Label
@@ -372,6 +373,7 @@ func _build() -> void:
 	map_view = MapViewScript.new()
 	map_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	map_view.province_selected.connect(_on_province_selected)
+	map_view.map_mode_changed.connect(_on_map_mode_changed)
 	map_wrap.add_child(map_view)
 	var map_tools := HBoxContainer.new()
 	map_tools.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
@@ -384,6 +386,21 @@ func _build() -> void:
 	map_tools.add_child(_map_tool("−", func(): map_view.zoom_by(0.8)))
 	map_tools.add_child(_map_tool("+", func(): map_view.zoom_by(1.25)))
 	map_tools.add_child(_map_tool("1:1", func(): map_view.reset_view()))
+
+	var mode_bar := HBoxContainer.new()
+	mode_bar.custom_minimum_size = Vector2(0, 38)
+	mode_bar.add_theme_constant_override("separation", 5)
+	mode_bar.add_child(_label("Karte", 12, Color(0.46, 0.35, 0.20)))
+	for mode in MapViewScript.MAP_MODES:
+		var mb := _map_tool(_map_mode_title(str(mode)), Callable(self, "_set_map_mode").bind(str(mode)))
+		mb.custom_minimum_size = Vector2(74, 34)
+		mb.toggle_mode = true
+		mb.add_theme_font_size_override("font_size", 12)
+		mb.add_theme_stylebox_override("pressed", _flat(Color(0.30, 0.22, 0.10, 0.98), Color(0.96, 0.78, 0.38), 2))
+		map_mode_buttons[str(mode)] = mb
+		mode_bar.add_child(mb)
+	left.add_child(mode_bar)
+	_sync_map_mode_buttons()
 
 	var log_panel := PanelContainer.new()
 	log_panel.custom_minimum_size = Vector2(0, 92)
@@ -1371,6 +1388,31 @@ func _start(index: int) -> void:
 
 # --- Aktionen ------------------------------------------------------------
 
+func _map_mode_title(mode: String) -> String:
+	return {
+		"political": "Politik", "terrain": "Gelände", "duchy": "Titel",
+		"kingdom": "Reiche", "development": "Entwicklung", "war": "Krieg",
+	}.get(mode, "Politik")
+
+func _set_map_mode(mode: String) -> void:
+	if map_view == null:
+		return
+	map_view.set_mode(mode)
+	_sync_map_mode_buttons()
+	map_view.queue_redraw()
+
+func _on_map_mode_changed(mode: String) -> void:
+	_sync_map_mode_buttons()
+	if map_view != null and map_view.selected != "":
+		refresh()
+
+func _sync_map_mode_buttons() -> void:
+	if map_view == null:
+		return
+	for mode in map_mode_buttons.keys():
+		var b: Button = map_mode_buttons[mode]
+		b.button_pressed = str(mode) == map_view.map_mode
+
 func _on_province_selected(id: String) -> void:
 	kernel.select_province(id)
 	selected = kernel.selection
@@ -1531,6 +1573,7 @@ func refresh() -> void:
 	var h: Dictionary = game.house()
 	_ensure_custom_crest(h)
 	map_view.set_game(game)
+	map_view.queue_redraw()
 	var vm: Dictionary = ViewModelBuilder.refresh(game, selected)
 	date_label.text = str(vm["date"])
 	gold_label.text = str(vm["gold"])
