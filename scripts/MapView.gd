@@ -41,7 +41,7 @@ const SEAS := [
 ]
 
 const MAP_SIZE := Vector2(1200, 760)
-const EUROPE := preload("res://assets/map/europe_bg.png")
+const EUROPE := preload("res://assets/map/europe_detail.png")
 const INK := Color(0.12, 0.09, 0.05)
 const CREAM := Color(1.0, 0.96, 0.86)
 const GOLD := Color(0.86, 0.68, 0.32)
@@ -57,14 +57,30 @@ var zoom: float = 1.0
 var pan := Vector2.ZERO
 var _dragging := false
 var labels_drawn: int = 0
+var _terrain_tex: Dictionary = {}
+var _building_tex: Dictionary = {}
+var _unit_tex: Dictionary = {}
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	for i in 9:
 		var t = load("res://assets/crests/crest_%d.png" % i)
 		if t != null:
 			crests.append(t)
+	for key in TERRAIN_ORDER:
+		var tex = load("res://assets/ui/tokens/terrain_%s.png" % key)
+		if tex != null:
+			_terrain_tex[str(key)] = tex
+	for key in ["market", "barracks", "walls"]:
+		var btex = load("res://assets/ui/tokens/building_%s.png" % key)
+		if btex != null:
+			_building_tex[str(key)] = btex
+	for key in ["levy", "archer", "knight", "siege"]:
+		var utex = load("res://assets/ui/tokens/unit_%s.png" % key)
+		if utex != null:
+			_unit_tex[str(key)] = utex
 
 func set_game(g) -> void:
 	game = g
@@ -370,6 +386,19 @@ func _draw_labels(s: float, off: Vector2) -> void:
 			if ci < crests.size() and crests[ci] != null:
 				draw_texture_rect(crests[ci], box, false)
 			occupied.append(box.grow(2))
+			# Gebaute Anlagen als kleine Token unter dem Wappen.
+			var levels: Dictionary = p.get("buildings", {})
+			var bx: float = box.position.x
+			for bkey in ["market", "barracks", "walls"]:
+				if int(levels.get(bkey, 0)) <= 0:
+					continue
+				var btex: Texture2D = _building_tex.get(str(bkey))
+				if btex == null:
+					continue
+				var bpos := Vector2(bx, box.position.y + box.size.y + 2)
+				draw_texture_rect(btex, Rect2(bpos, Vector2(13, 13)), false)
+				occupied.append(Rect2(bpos, Vector2(13, 13)).grow(1))
+				bx += 14.0
 
 	var drawn := 0
 	for p in game.provinces:
@@ -494,7 +523,9 @@ func _draw_terrain_details() -> void:
 		var line := PackedVector2Array()
 		for point in river["points"]:
 			line.append(point)
-		draw_polyline(line, Color(0.18, 0.45, 0.58, 0.78), 2.0, true)
+		draw_polyline(line, Color(0.16, 0.43, 0.57, 0.80), 2.6, true)
+		if line.size() > 0:
+			draw_circle(line[line.size() - 1], 3.2, Color(0.22, 0.50, 0.62, 0.62))
 		if line.size() > 1:
 			var mid: Vector2 = line[int(line.size() / 2)]
 			draw_string(font, mid + Vector2(4, -4), str(river["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.84, 0.93, 0.92, 0.82))
@@ -502,7 +533,12 @@ func _draw_terrain_details() -> void:
 		draw_string(font, sea["pos"], str(sea["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.88, 0.91, 0.84, 0.72))
 	for p in game.provinces:
 		var pos: Vector2 = _label_point(p) + Vector2(0, -10)
-		_draw_terrain_icon(str(p.get("terrain", "plains")), pos, Color(0.09, 0.07, 0.04, 0.52))
+		var kind: String = str(p.get("terrain", "plains"))
+		var token: Texture2D = _terrain_tex.get(kind)
+		if token != null:
+			draw_texture_rect(token, Rect2(pos - Vector2(11, 11), Vector2(22, 22)), false, Color(1, 1, 1, 0.94))
+		else:
+			_draw_terrain_icon(kind, pos, Color(0.09, 0.07, 0.04, 0.52))
 
 func _draw_terrain_icon(kind: String, pos: Vector2, col: Color) -> void:
 	match kind:
@@ -541,9 +577,15 @@ func _draw_war_markers(s: float, off: Vector2, font: Font) -> void:
 		if siege <= 0:
 			continue
 		var pos: Vector2 = _label_point(p) * s + off
-		draw_circle(pos, 12.0, Color(0.55, 0.10, 0.06, 0.92))
-		draw_arc(pos, 12.0, 0.0, TAU, 20, Color(1.0, 0.83, 0.44, 0.95), 1.5, true)
-		draw_string(font, pos + Vector2(-10, 4), "%d%%" % siege, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1.0, 0.96, 0.86))
+		var token: Texture2D = _unit_tex.get("siege")
+		if token != null:
+			draw_texture_rect(token, Rect2(pos - Vector2(14, 14), Vector2(28, 28)), false)
+			draw_arc(pos, 15.0, 0.0, TAU, 20, Color(1.0, 0.83, 0.44, 0.72), 1.0, true)
+			draw_string(font, pos + Vector2(16, 4), "%d%%" % siege, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1.0, 0.96, 0.86))
+		else:
+			draw_circle(pos, 12.0, Color(0.55, 0.10, 0.06, 0.92))
+			draw_arc(pos, 12.0, 0.0, TAU, 20, Color(1.0, 0.83, 0.44, 0.95), 1.5, true)
+			draw_string(font, pos + Vector2(-10, 4), "%d%%" % siege, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1.0, 0.96, 0.86))
 
 func _legend_rows() -> Array:
 	match map_mode:
@@ -572,25 +614,33 @@ func _legend_rows() -> Array:
 func _draw_legend(map_rect: Rect2, font: Font) -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	var w := 246.0
-	var h := 96.0
+	var h := 124.0
 	if map_mode == "terrain":
-		h = 106.0
+		h = 134.0
 	elif map_mode == "development":
 		h = 78.0
+	elif map_mode == "war":
+		h = 96.0
 	var box := Rect2(map_rect.position + Vector2(10, map_rect.size.y - h - 10), Vector2(w, h))
 	draw_rect(box, Color(0.06, 0.05, 0.03, 0.89), true)
 	draw_rect(box, Color(0.72, 0.57, 0.30, 0.92), false, 1.0)
 	draw_string(font, box.position + Vector2(8, 15), "KARTE · %s" % mode_title(), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.98, 0.86, 0.58))
 	if map_mode == "terrain":
 		for i in TERRAIN_ORDER.size():
-			var info: Dictionary = _terrain_info(str(TERRAIN_ORDER[i]))
+			var key: String = str(TERRAIN_ORDER[i])
+			var info: Dictionary = _terrain_info(key)
 			var col: int = i % 3
 			var row: int = int(i / 3)
-			var origin: Vector2 = box.position + Vector2(8 + col * 78, 27 + row * 19)
-			draw_rect(Rect2(origin, Vector2(10, 10)), info["color"], true)
-			draw_string(font, origin + Vector2(14, 9), str(info["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.92, 0.88, 0.78))
-		draw_line(box.position + Vector2(8, h - 11), box.position + Vector2(32, h - 11), Color(0.18, 0.45, 0.58, 0.9), 2.0)
-		draw_string(font, box.position + Vector2(38, h - 8), "Flüsse · Geländesymbole", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.82, 0.88, 0.86))
+			var origin: Vector2 = box.position + Vector2(8 + col * 79, 23 + row * 22)
+			var tex: Texture2D = _terrain_tex.get(key)
+			if tex != null:
+				draw_texture_rect(tex, Rect2(origin, Vector2(18, 18)), false, Color(1, 1, 1, 0.97))
+			else:
+				draw_rect(Rect2(origin + Vector2(2, 2), Vector2(14, 14)), info["color"], true)
+			draw_string(font, origin + Vector2(22, 14), str(info["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.94, 0.90, 0.80))
+		draw_line(box.position + Vector2(8, h - 34), box.position + Vector2(32, h - 34), Color(0.18, 0.45, 0.58, 0.9), 2.0)
+		draw_string(font, box.position + Vector2(38, h - 31), "Flüsse · Geländesymbole", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.82, 0.88, 0.86))
+		draw_string(font, box.position + Vector2(8, h - 12), "Token = Geländetyp (Blender-Render)", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.76, 0.70, 0.58))
 	elif map_mode == "development":
 		for i in 5:
 			var t: float = float(i) / 4.0

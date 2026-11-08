@@ -15,6 +15,20 @@ const TEX_CARD = preload("res://assets/ui/card.png")
 const TEX_BUTTON = preload("res://assets/ui/button.png")
 const TEX_TITLE = preload("res://assets/ui/bq_beta_title.jpg")
 
+const SETTINGS_PATH := "user://einstellungen.cfg"
+const RESOLUTIONS := [[1280, 720], [1600, 900], [1920, 1080]]
+const EventArtFallbackScript := preload("res://scripts/EventArtFallback.gd")
+const EVENT_ART_KEYS := {
+	"hoftag": "event_court_reception",
+	"hochzeit": "event_wedding",
+	"kloster": "event_monastery",
+	"zehnt": "event_tithe",
+	"ernte": "event_harvest",
+	"haendler": "event_merchant",
+	"grenzstreit": "event_battle",
+	"krankheit": "event_fever",
+}
+
 const INK := Color(0.16, 0.11, 0.07)
 const INK_SOFT := Color(0.32, 0.24, 0.15)
 const CREAM := Color(0.98, 0.94, 0.84)
@@ -46,6 +60,8 @@ var ransom_btn: Button
 var force_btn: Button
 var speed_buttons: Array = []
 var event_layer: Control
+var event_art: TextureRect
+var event_art_fallback: Control
 var event_title: Label
 var event_text: Label
 var event_buttons: VBoxContainer
@@ -92,9 +108,62 @@ var banner_generator
 var banner_prev_speed: int = 0
 var ambient_player: AudioStreamPlayer
 var click_player: AudioStreamPlayer
+var open_player: AudioStreamPlayer
 var sound_btn: Button
 var sound_on := true
 var selected: String = ""
+var settings := {
+	"window_mode": 0,
+	"resolution": 1,
+	"vsync": 1,
+	"ui_scale": 1.0,
+	"music": 55,
+	"sfx": 75,
+	"muted": false,
+	"autosave": true,
+	"pause_events": true,
+	"start_speed": 0,
+}
+var TOKENS: Dictionary = {}
+var EVENT_ARTS: Dictionary = {}
+var options_layer: Control
+var options_tab_buttons: Dictionary = {}
+var options_sections: Dictionary = {}
+var options_status: Label
+var opt_window_mode: OptionButton
+var opt_resolution: OptionButton
+var opt_vsync: OptionButton
+var opt_ui_scale: HSlider
+var opt_ui_scale_label: Label
+var opt_music: HSlider
+var opt_music_label: Label
+var opt_sfx: HSlider
+var opt_sfx_label: Label
+var opt_muted: CheckButton
+var opt_autosave: CheckButton
+var opt_pause_events: CheckButton
+var opt_start_speed: OptionButton
+var opt_save_btn: Button
+var opt_save_quit_btn: Button
+var province_layer: Control
+var province_title: Label
+var province_art: TextureRect
+var province_crest: TextureRect
+var province_portrait: TextureRect
+var province_info: VBoxContainer
+var province_owner_name: Label
+var province_buildings: HBoxContainer
+var province_troops: HBoxContainer
+var province_neighbors: Label
+var province_action_buttons: Dictionary = {}
+var province_side_panel: VBoxContainer
+var province_side_icon: TextureRect
+var province_side_crest: TextureRect
+var province_side_title: Label
+var province_side_meta: Label
+var quit_layer: Control
+var quit_status: Label
+var _cli_resolution_locked := false
 var accum: float = 0.0
 var stat_values := {"martial": 6, "diplomacy": 6, "stewardship": 6, "intrigue": 6}
 var stat_labels := {}
@@ -108,12 +177,16 @@ func _ready() -> void:
 	kernel.save_handler = Callable(self, "_save")
 	kernel.load_handler = Callable(self, "_load")
 	_load_assets()
+	_setup_audio_buses()
+	_load_settings()
+	_apply_display_settings(false)
 	# Headless-Tests brauchen keinen Audio-Stream; die Wiedergabe kann beim
 	# harten Test-Quit eine Ressource offen halten.
 	if DisplayServer.get_name() != "headless":
 		_load_audio()
 	_build()
 	_show_start()
+	_apply_audio_settings()
 	var args := OS.get_cmdline_user_args()
 	if args.has("--acceptance"):
 		var driver = AcceptanceDriverScript.new()
@@ -133,6 +206,12 @@ func _stop_audio() -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		# Der Fenster-Schließen-Knopf ist der harte Windows-Ausgang: laufende
+		# Partie automatisch sichern, damit ein versehentliches Schließen nicht
+		# den Fortschritt verliert. Die Menüs bieten zusätzlich die bewusste Wahl.
+		if game != null:
+			_write_save()
+		_save_settings()
 		_stop_audio()
 		get_tree().quit()
 
@@ -141,7 +220,8 @@ func _exit_tree() -> void:
 
 func _load_audio() -> void:
 	ambient_player = AudioStreamPlayer.new()
-	ambient_player.volume_db = -21.0
+	ambient_player.bus = "Musik"
+	ambient_player.volume_db = -10.0
 	var amb = load("res://assets/audio/ambient.wav")
 	if amb != null:
 		ambient_player.stream = amb
@@ -152,22 +232,119 @@ func _load_audio() -> void:
 		add_child(ambient_player)
 		ambient_player.play()
 	click_player = AudioStreamPlayer.new()
-	click_player.volume_db = -9.0
+	click_player.bus = "Effekte"
+	click_player.volume_db = -3.0
 	var clk = load("res://assets/audio/click.wav")
 	if clk != null:
 		click_player.stream = clk
 		add_child(click_player)
+	open_player = AudioStreamPlayer.new()
+	open_player.bus = "Effekte"
+	open_player.volume_db = -5.0
+	var opn = load("res://assets/audio/open.wav")
+	if opn != null:
+		open_player.stream = opn
+		add_child(open_player)
 
-func _play_click() -> void:
-	if sound_on and click_player != null:
-		click_player.play()
+func _setup_audio_buses() -> void:
+	for bus_name in ["Musik", "Effekte"]:
+		if AudioServer.get_bus_index(bus_name) >= 0:
+			continue
+		AudioServer.add_bus()
+		var idx: int = AudioServer.bus_count - 1
+		AudioServer.set_bus_name(idx, bus_name)
+		AudioServer.set_bus_send(idx, "Master")
 
-func _toggle_sound() -> void:
-	sound_on = not sound_on
+func _apply_audio_settings() -> void:
+	sound_on = not bool(settings.get("muted", false))
 	if ambient_player != null:
 		ambient_player.stream_paused = not sound_on
+	var music_idx: int = AudioServer.get_bus_index("Musik")
+	var sfx_idx: int = AudioServer.get_bus_index("Effekte")
+	var music_linear: float = clampf(float(settings.get("music", 55)) / 100.0, 0.0, 1.0)
+	var sfx_linear: float = clampf(float(settings.get("sfx", 75)) / 100.0, 0.0, 1.0)
+	if music_idx >= 0:
+		AudioServer.set_bus_volume_db(music_idx, linear_to_db(maxf(music_linear, 0.001)))
+		AudioServer.set_bus_mute(music_idx, not sound_on or music_linear <= 0.001)
+	if sfx_idx >= 0:
+		AudioServer.set_bus_volume_db(sfx_idx, linear_to_db(maxf(sfx_linear, 0.001)))
+		AudioServer.set_bus_mute(sfx_idx, not sound_on or sfx_linear <= 0.001)
+	AudioServer.set_bus_mute(0, not sound_on)
 	if sound_btn != null:
 		sound_btn.text = "Ton an" if sound_on else "Ton aus"
+	if opt_music_label != null:
+		opt_music_label.text = "%d %%" % int(settings["music"])
+	if opt_sfx_label != null:
+		opt_sfx_label.text = "%d %%" % int(settings["sfx"])
+
+func _load_settings() -> void:
+	var cf := ConfigFile.new()
+	if cf.load(SETTINGS_PATH) != OK:
+		return
+	settings["window_mode"] = clampi(int(cf.get_value("bild", "fenstermodus", 0)), 0, 1)
+	settings["resolution"] = clampi(int(cf.get_value("bild", "aufloesung", 1)), 0, RESOLUTIONS.size() - 1)
+	settings["vsync"] = clampi(int(cf.get_value("bild", "vsync", 1)), 0, 2)
+	settings["ui_scale"] = clampf(float(cf.get_value("bild", "ui_scale", 1.0)), 0.8, 1.2)
+	settings["music"] = clampi(int(cf.get_value("ton", "musik", 55)), 0, 100)
+	settings["sfx"] = clampi(int(cf.get_value("ton", "effekte", 75)), 0, 100)
+	settings["muted"] = bool(cf.get_value("ton", "stumm", false))
+	settings["autosave"] = bool(cf.get_value("spiel", "autosave", true))
+	settings["pause_events"] = bool(cf.get_value("spiel", "ereignisse_pausieren", true))
+	settings["start_speed"] = clampi(int(cf.get_value("spiel", "starttempo", 0)), 0, 3)
+
+func _save_settings() -> void:
+	var cf := ConfigFile.new()
+	cf.set_value("bild", "fenstermodus", int(settings["window_mode"]))
+	cf.set_value("bild", "aufloesung", int(settings["resolution"]))
+	cf.set_value("bild", "vsync", int(settings["vsync"]))
+	cf.set_value("bild", "ui_scale", float(settings["ui_scale"]))
+	cf.set_value("ton", "musik", int(settings["music"]))
+	cf.set_value("ton", "effekte", int(settings["sfx"]))
+	cf.set_value("ton", "stumm", bool(settings["muted"]))
+	cf.set_value("spiel", "autosave", bool(settings["autosave"]))
+	cf.set_value("spiel", "ereignisse_pausieren", bool(settings["pause_events"]))
+	cf.set_value("spiel", "starttempo", int(settings["start_speed"]))
+	cf.save(SETTINGS_PATH)
+
+func _apply_display_settings(force: bool) -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	# Ein per CLI vorgegebenes Testfenster nicht durch gespeicherte Werte
+	# überschreiben; eine bewusste Änderung im Optionsmenü (force) gewinnt.
+	if not force and OS.get_cmdline_args().has("--resolution"):
+		_cli_resolution_locked = true
+	if not force and _cli_resolution_locked:
+		return
+	var win := get_window()
+	if int(settings["window_mode"]) == 1:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+	else:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+		var res: Array = RESOLUTIONS[clampi(int(settings["resolution"]), 0, RESOLUTIONS.size() - 1)]
+		DisplayServer.window_set_size(Vector2i(int(res[0]), int(res[1])))
+	match int(settings["vsync"]):
+		0:
+			DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+		2:
+			DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ADAPTIVE)
+		_:
+			DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED)
+	win.content_scale_factor = clampf(float(settings["ui_scale"]), 0.8, 1.2)
+
+func _play_click() -> void:
+	if click_player != null:
+		click_player.play()
+
+func _play_open() -> void:
+	if open_player != null:
+		open_player.play()
+
+func _toggle_sound() -> void:
+	settings["muted"] = not bool(settings.get("muted", false))
+	_apply_audio_settings()
+	_save_settings()
+	if opt_muted != null:
+		opt_muted.set_pressed_no_signal(not bool(settings["muted"]))
 
 func _load_assets() -> void:
 	for i in 9:
@@ -184,6 +361,16 @@ func _load_assets() -> void:
 		var t3 = load("res://assets/icons/icon_%s.png" % n)
 		if t3 != null:
 			ICONS[n] = t3
+	TOKENS.clear()
+	for n in ["terrain_plains", "terrain_farmland", "terrain_forest", "terrain_hills", "terrain_mountains", "terrain_marsh", "terrain_coast", "terrain_steppe", "terrain_heath", "building_barracks", "building_walls", "building_market", "unit_levy", "unit_archer", "unit_knight", "unit_siege", "unit_fleet"]:
+		var tex = load("res://assets/ui/tokens/%s.png" % n)
+		if tex != null:
+			TOKENS[n] = tex
+	EVENT_ARTS.clear()
+	for n in EVENT_ART_KEYS.values():
+		var tex = load("res://assets/ui/events/%s.png" % n)
+		if tex != null:
+			EVENT_ARTS[n] = tex
 
 # --- Stile ---------------------------------------------------------------
 
@@ -345,6 +532,16 @@ func _build() -> void:
 	sound_btn.add_theme_stylebox_override("normal", _flat(Color(0.10, 0.07, 0.05, 0.8), Color(0.50, 0.38, 0.18), 1))
 	sound_btn.pressed.connect(_toggle_sound)
 	top_row.add_child(sound_btn)
+	var options_btn := Button.new()
+	options_btn.text = "Optionen"
+	options_btn.custom_minimum_size = Vector2(94, 40)
+	options_btn.add_theme_font_size_override("font_size", 13)
+	options_btn.add_theme_color_override("font_color", CREAM)
+	options_btn.add_theme_stylebox_override("normal", _flat(Color(0.10, 0.07, 0.05, 0.8), Color(0.50, 0.38, 0.18), 1))
+	options_btn.add_theme_stylebox_override("hover", _flat(Color(0.20, 0.14, 0.08, 0.95), Color(0.86, 0.68, 0.34), 1))
+	options_btn.pressed.connect(_show_options)
+	options_btn.pressed.connect(_play_click)
+	top_row.add_child(options_btn)
 	for i in 4:
 		var names := ["Pause", "x1", "x2", "x3"]
 		var b := Button.new()
@@ -399,6 +596,10 @@ func _build() -> void:
 		mb.add_theme_stylebox_override("pressed", _flat(Color(0.30, 0.22, 0.10, 0.98), Color(0.96, 0.78, 0.38), 2))
 		map_mode_buttons[str(mode)] = mb
 		mode_bar.add_child(mb)
+	var chronicle_btn := _map_tool("Chronik", Callable(self, "_show_chronicle"))
+	chronicle_btn.custom_minimum_size = Vector2(78, 34)
+	chronicle_btn.add_theme_font_size_override("font_size", 12)
+	mode_bar.add_child(chronicle_btn)
 	left.add_child(mode_bar)
 	_sync_map_mode_buttons()
 
@@ -465,6 +666,38 @@ func _build() -> void:
 	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	side_box.add_child(hint_label)
 
+	# Provinz-Kurzansicht mit Gelände-Token und Besitzerwappen.
+	province_side_panel = VBoxContainer.new()
+	province_side_panel.add_theme_constant_override("separation", 4)
+	province_side_panel.visible = false
+	side_box.add_child(province_side_panel)
+	var province_side_row := HBoxContainer.new()
+	province_side_row.add_theme_constant_override("separation", 8)
+	province_side_panel.add_child(province_side_row)
+	province_side_icon = TextureRect.new()
+	province_side_icon.custom_minimum_size = Vector2(46, 46)
+	province_side_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	province_side_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	province_side_row.add_child(province_side_icon)
+	province_side_crest = TextureRect.new()
+	province_side_crest.custom_minimum_size = Vector2(36, 44)
+	province_side_crest.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	province_side_crest.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	province_side_row.add_child(province_side_crest)
+	var province_side_text := VBoxContainer.new()
+	province_side_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	province_side_text.add_theme_constant_override("separation", 1)
+	province_side_row.add_child(province_side_text)
+	province_side_title = _label("", 15, INK)
+	province_side_text.add_child(province_side_title)
+	province_side_meta = _label("", 11, INK_SOFT)
+	province_side_meta.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	province_side_text.add_child(province_side_meta)
+	var province_open := _button("Provinzseite öffnen", _show_province, "scroll")
+	province_open.custom_minimum_size = Vector2(0, 36)
+	province_open.add_theme_font_size_override("font_size", 13)
+	province_side_panel.add_child(province_open)
+
 	develop_btn = _button("Ausbauen  (50 Gold)", func(): _dispatch({"id": "develop"}), "gold")
 	recruit_btn = _button("Truppen werben  (30 Gold)", func(): _dispatch({"id": "recruit"}), "sword")
 	attack_btn = _button("Angreifen  (25 Gold)", func(): _dispatch({"id": "attack"}), "sword")
@@ -511,14 +744,29 @@ func _build() -> void:
 	event_layer.add_child(center)
 	var card := PanelContainer.new()
 	card.custom_minimum_size = Vector2(720, 0)
-	card.add_theme_stylebox_override("panel", _card_style(22))
+	var event_card_style := _card_style(22)
+	event_card_style.content_margin_bottom = 38
+	card.add_theme_stylebox_override("panel", event_card_style)
 	center.add_child(card)
 	var card_box := VBoxContainer.new()
-	card_box.add_theme_constant_override("separation", 14)
+	card_box.add_theme_constant_override("separation", 8)
 	card.add_child(card_box)
-	event_title = _label("", 25, INK)
+	var event_art_frame := Control.new()
+	event_art_frame.custom_minimum_size = Vector2(660, 148)
+	event_art_frame.clip_contents = true
+	card_box.add_child(event_art_frame)
+	event_art_fallback = EventArtFallbackScript.new()
+	event_art_fallback.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	event_art_frame.add_child(event_art_fallback)
+	event_art = TextureRect.new()
+	event_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	event_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	event_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	event_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	event_art_frame.add_child(event_art)
+	event_title = _label("", 23, INK)
 	card_box.add_child(event_title)
-	event_text = _label("", 17, INK_SOFT)
+	event_text = _label("", 16, INK_SOFT)
 	event_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	card_box.add_child(event_text)
 	event_buttons = VBoxContainer.new()
@@ -583,7 +831,7 @@ func _build() -> void:
 	var title_menu := VBoxContainer.new()
 	title_menu.add_theme_constant_override("separation", 7)
 	title_panel.add_child(title_menu)
-	for entry in [["Neues Spiel", _show_newgame, "crown"], ["Spiel laden", _load_from_title, "scroll"], ["Beenden", _quit_game, ""]]:
+	for entry in [["Neues Spiel", _show_newgame, "crown"], ["Spiel laden", _load_from_title, "scroll"], ["Optionen", _show_options, "scroll"], ["Beenden", _quit_game, ""]]:
 		var button := _title_button(str(entry[0]), entry[1], str(entry[2]))
 		button.custom_minimum_size = Vector2(0, 48)
 		button.add_theme_font_size_override("font_size", 18)
@@ -816,6 +1064,9 @@ func _build() -> void:
 
 	_build_customizer()
 	_build_banner_generator()
+	_build_province_layer()
+	_build_options_layer()
+	_build_quit_layer()
 
 func _build_banner_generator() -> void:
 	banner_generator = BannerGeneratorScript.new()
@@ -824,6 +1075,560 @@ func _build_banner_generator() -> void:
 	banner_generator.closed.connect(_on_banner_closed)
 
 # --- Herrscher-Werkstatt -------------------------------------------------
+
+func _build_province_layer() -> void:
+	province_layer = Control.new()
+	province_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	province_layer.visible = false
+	province_layer.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(province_layer)
+	var dim := ColorRect.new()
+	dim.color = Color(0.04, 0.03, 0.02, 0.74)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	province_layer.add_child(dim)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	province_layer.add_child(center)
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(900, 0)
+	card.add_theme_stylebox_override("panel", _card_style(18))
+	center.add_child(card)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	card.add_child(box)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	box.add_child(head)
+	province_title = _label("Provinz", 24, INK)
+	province_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(province_title)
+	head.add_child(_button("Schließen", _hide_province, ""))
+
+	var hero := HBoxContainer.new()
+	hero.add_theme_constant_override("separation", 12)
+	box.add_child(hero)
+	province_art = TextureRect.new()
+	province_art.custom_minimum_size = Vector2(150, 150)
+	province_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	province_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	hero.add_child(province_art)
+	province_info = VBoxContainer.new()
+	province_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	province_info.add_theme_constant_override("separation", 2)
+	hero.add_child(province_info)
+	var owner_box := VBoxContainer.new()
+	owner_box.custom_minimum_size = Vector2(132, 0)
+	owner_box.add_theme_constant_override("separation", 2)
+	hero.add_child(owner_box)
+	province_crest = TextureRect.new()
+	province_crest.custom_minimum_size = Vector2(46, 56)
+	province_crest.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	province_crest.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	owner_box.add_child(province_crest)
+	province_portrait = TextureRect.new()
+	province_portrait.custom_minimum_size = Vector2(64, 78)
+	province_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	province_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	owner_box.add_child(province_portrait)
+	province_owner_name = _label("", 10, INK_SOFT)
+	province_owner_name.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	owner_box.add_child(province_owner_name)
+
+	box.add_child(_label("Gebäude", 16, INK))
+	province_buildings = HBoxContainer.new()
+	province_buildings.add_theme_constant_override("separation", 16)
+	box.add_child(province_buildings)
+	box.add_child(_label("Aufgebot", 16, INK))
+	province_troops = HBoxContainer.new()
+	province_troops.add_theme_constant_override("separation", 10)
+	box.add_child(province_troops)
+	province_neighbors = _label("", 12, INK_SOFT)
+	province_neighbors.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(province_neighbors)
+	var actions := HBoxContainer.new()
+	actions.add_theme_constant_override("separation", 6)
+	for entry in [["develop", "Ausbauen (50)"], ["recruit", "Truppen werben (30)"], ["attack", "Angreifen (25)"], ["rule", "Herrschaft"]]:
+		var key: String = str(entry[0])
+		var b := _button(str(entry[1]), Callable(self, "_province_action").bind(key), "")
+		b.custom_minimum_size = Vector2(0, 40)
+		b.add_theme_font_size_override("font_size", 13)
+		actions.add_child(b)
+		province_action_buttons[key] = b
+	box.add_child(actions)
+
+func _refresh_province_side() -> void:
+	if province_side_panel == null:
+		return
+	if game == null or selected == "":
+		province_side_panel.visible = false
+		return
+	var p: Dictionary = game.province(selected)
+	if p.is_empty():
+		province_side_panel.visible = false
+		return
+	province_side_panel.visible = true
+	province_side_icon.texture = TOKENS.get("terrain_%s" % str(p.get("terrain", "plains")))
+	province_side_crest.texture = _crest_for_house(int(p["owner"]))
+	province_side_title.text = str(p["name"])
+	province_side_meta.text = "%s · %s\nAufgebot %d · Entwicklung %d/10" % [
+		str(p.get("terrain_name", "Ebenen")), str(game.houses[int(p["owner"])]["name"]),
+		int(p.get("levy", 0)), int(p.get("dev", 1)),
+	]
+
+func _crest_for_house(index: int) -> Texture2D:
+	if game == null or index < 0 or index >= game.houses.size():
+		return null
+	var h: Dictionary = game.houses[index]
+	var custom := _house_crest_texture(h)
+	if custom != null:
+		return custom
+	if not CRESTS.is_empty():
+		return CRESTS[posmod(int(h.get("crest", index)), CRESTS.size())]
+	return null
+
+func _refresh_province_page() -> void:
+	if province_layer == null:
+		return
+	if game == null or selected == "":
+		if province_layer.visible:
+			_hide_province()
+		return
+	var p: Dictionary = game.province(selected)
+	if p.is_empty():
+		if province_layer.visible:
+			_hide_province()
+		return
+	var owner_i: int = int(p["owner"])
+	var owner: Dictionary = game.houses[owner_i]
+	var terrain_key: String = str(p.get("terrain", "plains"))
+	province_title.text = "Provinz %s" % str(p["name"])
+	province_art.texture = TOKENS.get("terrain_%s" % terrain_key)
+	province_crest.texture = _crest_for_house(owner_i)
+	if not PORTRAITS.is_empty():
+		province_portrait.texture = PORTRAITS[int(owner["ruler"].get("portrait", 0)) % PORTRAITS.size()]
+	else:
+		province_portrait.texture = null
+	province_owner_name.text = "%s\n%s" % [str(owner["name"]), str(owner["ruler"]["name"])]
+	for c in province_info.get_children():
+		province_info.remove_child(c)
+		c.queue_free()
+	province_info.add_child(_label("%s · %s" % [str(p["kingdom_name"]), str(p["empire_name"])], 12, INK_SOFT))
+	province_info.add_child(_label("Herzogtum: %s" % str(p["duchy_name"]), 12, INK_SOFT))
+	province_info.add_child(_label("Gelände: %s · Verteidigung %+d%% · Versorgung %d" % [
+		str(p.get("terrain_name", "Ebenen")), int(p.get("terrain_defense", 0)), int(p.get("terrain_supply", 6)) * 100
+	], 12, INK_SOFT))
+	province_info.add_child(_label("Entwicklung %d/10 · Aufgebot %d · Hauptstadt: %s" % [
+		int(p.get("dev", 1)), int(p.get("levy", 0)), "ja" if bool(p.get("capital", false)) else "nein"
+	], 12, INK_SOFT))
+	province_info.add_child(_label("Besitzer: %s · Haltung %+d" % [str(owner["name"]), int(game.opinion[owner_i])], 12, INK_SOFT))
+	for c in province_buildings.get_children():
+		province_buildings.remove_child(c)
+		c.queue_free()
+	var buildings: Dictionary = p.get("buildings", {})
+	for entry in [["market", "Markt"], ["barracks", "Kaserne"], ["walls", "Mauern"]]:
+		var key: String = str(entry[0])
+		var cell := VBoxContainer.new()
+		cell.add_theme_constant_override("separation", 1)
+		var icon := TextureRect.new()
+		icon.custom_minimum_size = Vector2(44, 44)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture = TOKENS.get("building_%s" % key)
+		cell.add_child(icon)
+		cell.add_child(_label("%s %d/3" % [str(entry[1]), int(buildings.get(key, 0))], 10, INK_SOFT))
+		province_buildings.add_child(cell)
+	for c in province_troops.get_children():
+		province_troops.remove_child(c)
+		c.queue_free()
+	province_troops.add_child(_army_tokens(int(p.get("levy", 0))))
+	var neighbours: Array = []
+	for nid in game.neighbours(selected):
+		var q: Dictionary = game.province(str(nid))
+		if not q.is_empty():
+			neighbours.append("%s (%s)" % [q["name"], game.houses[int(q["owner"])]["name"]])
+	province_neighbors.text = "Nachbarn: " + ", ".join(neighbours)
+	province_action_buttons["develop"].disabled = not game.can_develop(selected)
+	province_action_buttons["recruit"].disabled = not game.can_recruit(selected)
+	province_action_buttons["attack"].disabled = not game.can_attack(selected)
+
+func _province_action(key: String) -> void:
+	if key == "rule":
+		_hide_province()
+		_show_rule()
+		return
+	_dispatch({"id": key})
+
+func _show_province() -> void:
+	if game == null or selected == "":
+		return
+	if province_layer == null:
+		_build_province_layer()
+	_refresh_province_page()
+	province_layer.visible = true
+	province_layer.move_to_front()
+	kernel.push_modal("provinz")
+	_play_open()
+
+func _hide_province() -> void:
+	kernel.pop_modal("provinz")
+	if province_layer != null:
+		province_layer.visible = false
+
+func _option_row(text: String, control: Control) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	var l := _label(text, 14, INK)
+	l.custom_minimum_size = Vector2(190, 0)
+	row.add_child(l)
+	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(control)
+	return row
+
+func _check_option(text: String) -> CheckButton:
+	var c := CheckButton.new()
+	c.text = text
+	c.add_theme_font_size_override("font_size", 14)
+	c.add_theme_color_override("font_color", INK)
+	c.add_theme_color_override("font_hover_color", INK)
+	return c
+
+func _drop_option(items: Array) -> OptionButton:
+	var o := OptionButton.new()
+	for item in items:
+		o.add_item(str(item))
+	o.add_theme_stylebox_override("normal", _field_style())
+	o.add_theme_stylebox_override("hover", _field_style())
+	o.add_theme_stylebox_override("pressed", _field_style())
+	o.add_theme_color_override("font_color", INK)
+	o.add_theme_font_size_override("font_size", 14)
+	return o
+
+func _build_options_layer() -> void:
+	options_layer = Control.new()
+	options_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	options_layer.visible = false
+	options_layer.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(options_layer)
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.72)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	options_layer.add_child(dim)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	options_layer.add_child(center)
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(860, 0)
+	card.add_theme_stylebox_override("panel", _card_style(18))
+	center.add_child(card)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	card.add_child(box)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	box.add_child(head)
+	var title := _label("Optionen", 25, INK)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(title)
+	head.add_child(_button("Schließen", _hide_options, ""))
+	var tabs := HBoxContainer.new()
+	tabs.add_theme_constant_override("separation", 6)
+	box.add_child(tabs)
+	for entry in [["bild", "Bild"], ["ton", "Ton"], ["spiel", "Spiel"]]:
+		var key: String = str(entry[0])
+		var tab := _button(str(entry[1]), Callable(self, "_select_options_tab").bind(key), "")
+		tab.toggle_mode = true
+		tab.custom_minimum_size = Vector2(110, 34)
+		tab.add_theme_font_size_override("font_size", 14)
+		options_tab_buttons[key] = tab
+		tabs.add_child(tab)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(820, 300)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	box.add_child(scroll)
+	var pages := VBoxContainer.new()
+	pages.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pages.add_theme_constant_override("separation", 4)
+	scroll.add_child(pages)
+	for key in ["bild", "ton", "spiel"]:
+		var page := VBoxContainer.new()
+		page.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		page.add_theme_constant_override("separation", 6)
+		page.visible = str(key) == "bild"
+		options_sections[str(key)] = page
+		pages.add_child(page)
+
+	var bild: VBoxContainer = options_sections["bild"]
+	opt_window_mode = _drop_option(["Fenster", "Vollbild"])
+	bild.add_child(_option_row("Fenstermodus", opt_window_mode))
+	opt_resolution = _drop_option(["1280 × 720", "1600 × 900", "1920 × 1080"])
+	bild.add_child(_option_row("Fensterauflösung", opt_resolution))
+	opt_vsync = _drop_option(["Aus", "An", "Adaptiv"])
+	bild.add_child(_option_row("VSync", opt_vsync))
+	var scale_row := HBoxContainer.new()
+	scale_row.add_theme_constant_override("separation", 10)
+	var scale_label := _label("Oberflächengröße", 14, INK)
+	scale_label.custom_minimum_size = Vector2(190, 0)
+	scale_row.add_child(scale_label)
+	opt_ui_scale = HSlider.new()
+	opt_ui_scale.min_value = 80
+	opt_ui_scale.max_value = 120
+	opt_ui_scale.step = 5
+	opt_ui_scale.custom_minimum_size = Vector2(320, 24)
+	opt_ui_scale.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scale_row.add_child(opt_ui_scale)
+	opt_ui_scale_label = _label("100 %", 12, INK_SOFT)
+	opt_ui_scale_label.custom_minimum_size = Vector2(50, 0)
+	scale_row.add_child(opt_ui_scale_label)
+	bild.add_child(scale_row)
+	var bild_hint := _label("Auflösung und Vollbild gelten sofort; die Oberfläche bleibt bei 1280 × 720 lesbar.", 11, INK_SOFT)
+	bild_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	bild.add_child(bild_hint)
+
+	var ton: VBoxContainer = options_sections["ton"]
+	opt_muted = _check_option("Ton aktiv")
+	ton.add_child(_option_row("Gesamter Ton", opt_muted))
+	var music_row := HBoxContainer.new()
+	music_row.add_theme_constant_override("separation", 10)
+	var music_label := _label("Musik", 14, INK)
+	music_label.custom_minimum_size = Vector2(190, 0)
+	music_row.add_child(music_label)
+	opt_music = HSlider.new()
+	opt_music.min_value = 0
+	opt_music.max_value = 100
+	opt_music.step = 1
+	opt_music.custom_minimum_size = Vector2(320, 24)
+	opt_music.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	music_row.add_child(opt_music)
+	opt_music_label = _label("55 %", 12, INK_SOFT)
+	opt_music_label.custom_minimum_size = Vector2(50, 0)
+	music_row.add_child(opt_music_label)
+	ton.add_child(music_row)
+	var sfx_row := HBoxContainer.new()
+	sfx_row.add_theme_constant_override("separation", 10)
+	var sfx_label := _label("Effekte", 14, INK)
+	sfx_label.custom_minimum_size = Vector2(190, 0)
+	sfx_row.add_child(sfx_label)
+	opt_sfx = HSlider.new()
+	opt_sfx.min_value = 0
+	opt_sfx.max_value = 100
+	opt_sfx.step = 1
+	opt_sfx.custom_minimum_size = Vector2(320, 24)
+	opt_sfx.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sfx_row.add_child(opt_sfx)
+	opt_sfx_label = _label("75 %", 12, INK_SOFT)
+	opt_sfx_label.custom_minimum_size = Vector2(50, 0)
+	sfx_row.add_child(opt_sfx_label)
+	ton.add_child(sfx_row)
+	var ton_hint := _label("Musik und Effekte laufen auf getrennten Bussen; „Ton aus“ schaltet beide stumm.", 11, INK_SOFT)
+	ton_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	ton.add_child(ton_hint)
+
+	var spiel: VBoxContainer = options_sections["spiel"]
+	opt_autosave = _check_option("Automatisch jährlich speichern")
+	spiel.add_child(_option_row("Speichern", opt_autosave))
+	opt_pause_events = _check_option("Zeit bei Ereignissen anhalten")
+	spiel.add_child(_option_row("Ereignisse", opt_pause_events))
+	opt_start_speed = _drop_option(["Pause", "x1", "x2", "x3"])
+	spiel.add_child(_option_row("Starttempo neuer Partien", opt_start_speed))
+	var spiel_hint := _label("Speichern legt den Spielstand unter user://spielstand.json ab. Beim Schließen des Fensters wird eine laufende Partie zusätzlich automatisch gesichert.", 11, INK_SOFT)
+	spiel_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	spiel.add_child(spiel_hint)
+
+	var footer := HBoxContainer.new()
+	footer.add_theme_constant_override("separation", 6)
+	box.add_child(footer)
+	opt_save_btn = _button("Spiel speichern", _options_save, "scroll")
+	opt_save_btn.custom_minimum_size = Vector2(150, 40)
+	opt_save_btn.add_theme_font_size_override("font_size", 13)
+	footer.add_child(opt_save_btn)
+	opt_save_quit_btn = _button("Speichern & Beenden", _save_then_quit, "")
+	opt_save_quit_btn.custom_minimum_size = Vector2(160, 40)
+	opt_save_quit_btn.add_theme_font_size_override("font_size", 13)
+	footer.add_child(opt_save_quit_btn)
+	var quit_btn := _button("Beenden", _request_quit, "")
+	quit_btn.custom_minimum_size = Vector2(110, 40)
+	quit_btn.add_theme_font_size_override("font_size", 13)
+	footer.add_child(quit_btn)
+	var close_btn := _button("Zurück", _hide_options, "")
+	close_btn.custom_minimum_size = Vector2(100, 40)
+	close_btn.add_theme_font_size_override("font_size", 13)
+	footer.add_child(close_btn)
+	options_status = _label("", 11, INK_SOFT)
+	options_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(options_status)
+
+	opt_window_mode.item_selected.connect(_options_window_mode)
+	opt_resolution.item_selected.connect(_options_resolution)
+	opt_vsync.item_selected.connect(_options_vsync)
+	opt_ui_scale.value_changed.connect(_options_ui_scale)
+	opt_music.value_changed.connect(_options_music)
+	opt_sfx.value_changed.connect(_options_sfx)
+	opt_muted.toggled.connect(_options_muted)
+	opt_autosave.toggled.connect(_options_autosave)
+	opt_pause_events.toggled.connect(_options_pause_events)
+	opt_start_speed.item_selected.connect(_options_start_speed)
+	_select_options_tab("bild")
+
+func _select_options_tab(key: String) -> void:
+	for tab_key in options_sections.keys():
+		var page: VBoxContainer = options_sections[tab_key]
+		page.visible = str(tab_key) == key
+		var b: Button = options_tab_buttons.get(tab_key)
+		if b != null:
+			b.button_pressed = str(tab_key) == key
+
+func _refresh_options() -> void:
+	if options_layer == null:
+		return
+	opt_window_mode.select(clampi(int(settings["window_mode"]), 0, 1))
+	opt_resolution.select(clampi(int(settings["resolution"]), 0, RESOLUTIONS.size() - 1))
+	opt_vsync.select(clampi(int(settings["vsync"]), 0, 2))
+	opt_ui_scale.set_value_no_signal(float(settings["ui_scale"]) * 100.0)
+	opt_ui_scale_label.text = "%d %%" % int(round(float(settings["ui_scale"]) * 100.0))
+	opt_music.set_value_no_signal(float(settings["music"]))
+	opt_music_label.text = "%d %%" % int(settings["music"])
+	opt_sfx.set_value_no_signal(float(settings["sfx"]))
+	opt_sfx_label.text = "%d %%" % int(settings["sfx"])
+	opt_muted.set_pressed_no_signal(not bool(settings["muted"]))
+	opt_autosave.set_pressed_no_signal(bool(settings["autosave"]))
+	opt_pause_events.set_pressed_no_signal(bool(settings["pause_events"]))
+	opt_start_speed.select(clampi(int(settings["start_speed"]), 0, 3))
+	opt_save_btn.disabled = game == null
+	opt_save_quit_btn.disabled = game == null
+	options_status.text = ""
+
+func _show_options() -> void:
+	if options_layer == null:
+		return
+	_refresh_options()
+	options_layer.visible = true
+	options_layer.move_to_front()
+	kernel.push_modal("optionen")
+	_play_open()
+
+func _hide_options() -> void:
+	kernel.pop_modal("optionen")
+	if options_layer != null:
+		options_layer.visible = false
+
+func _options_window_mode(index: int) -> void:
+	settings["window_mode"] = clampi(index, 0, 1)
+	_apply_display_settings(true)
+	_save_settings()
+	_refresh_options()
+
+func _options_resolution(index: int) -> void:
+	settings["resolution"] = clampi(index, 0, RESOLUTIONS.size() - 1)
+	_apply_display_settings(true)
+	_save_settings()
+
+func _options_vsync(index: int) -> void:
+	settings["vsync"] = clampi(index, 0, 2)
+	_apply_display_settings(true)
+	_save_settings()
+
+func _options_ui_scale(value: float) -> void:
+	settings["ui_scale"] = clampf(value / 100.0, 0.8, 1.2)
+	if DisplayServer.get_name() != "headless":
+		get_window().content_scale_factor = float(settings["ui_scale"])
+	opt_ui_scale_label.text = "%d %%" % int(round(value))
+	_save_settings()
+
+func _options_music(value: float) -> void:
+	settings["music"] = clampi(int(round(value)), 0, 100)
+	_apply_audio_settings()
+	_save_settings()
+
+func _options_sfx(value: float) -> void:
+	settings["sfx"] = clampi(int(round(value)), 0, 100)
+	_apply_audio_settings()
+	_save_settings()
+
+func _options_muted(on: bool) -> void:
+	settings["muted"] = not on
+	_apply_audio_settings()
+	_save_settings()
+
+func _options_autosave(on: bool) -> void:
+	settings["autosave"] = on
+	_save_settings()
+
+func _options_pause_events(on: bool) -> void:
+	settings["pause_events"] = on
+	_save_settings()
+
+func _options_start_speed(index: int) -> void:
+	settings["start_speed"] = clampi(index, 0, 3)
+	_save_settings()
+
+func _options_save() -> void:
+	var results: Dictionary = _save()
+	if options_status != null:
+		options_status.text = str(results.get("message", ""))
+
+func _build_quit_layer() -> void:
+	quit_layer = Control.new()
+	quit_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	quit_layer.visible = false
+	quit_layer.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(quit_layer)
+	var dim := ColorRect.new()
+	dim.color = Color(0.03, 0.02, 0.02, 0.82)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	quit_layer.add_child(dim)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	quit_layer.add_child(center)
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(640, 0)
+	card.add_theme_stylebox_override("panel", _card_style(22))
+	center.add_child(card)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 10)
+	card.add_child(box)
+	box.add_child(_label("Spiel beenden?", 24, INK))
+	var text := _label("Eine laufende Partie kann gespeichert werden. Beim Schließen des Fensters speichert das Spiel automatisch.", 13, INK_SOFT)
+	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(text)
+	box.add_child(_button("Speichern & Beenden", _save_then_quit, "scroll"))
+	box.add_child(_button("Ohne Speichern beenden", _finish_quit, ""))
+	box.add_child(_button("Abbrechen", _hide_quit, ""))
+	quit_status = _label("", 11, Color(0.55, 0.18, 0.12))
+	quit_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(quit_status)
+
+func _request_quit() -> void:
+	if game == null:
+		_finish_quit()
+		return
+	if quit_layer == null:
+		_build_quit_layer()
+	if quit_status != null:
+		quit_status.text = ""
+	quit_layer.visible = true
+	quit_layer.move_to_front()
+	kernel.push_modal("quit_confirm")
+	_play_open()
+
+func _hide_quit() -> void:
+	kernel.pop_modal("quit_confirm")
+	if quit_layer != null:
+		quit_layer.visible = false
+
+func _save_then_quit() -> void:
+	if game == null:
+		_finish_quit()
+		return
+	var result: Dictionary = _save()
+	if bool(result.get("ok", false)):
+		_finish_quit()
+	elif quit_status != null:
+		quit_status.text = str(result.get("message", "Speichern fehlgeschlagen."))
+
+func _finish_quit() -> void:
+	_save_settings()
+	_stop_audio()
+	get_tree().quit()
 
 func _build_customizer() -> void:
 	custom_layer = Control.new()
@@ -1286,7 +2091,10 @@ func _load_from_title() -> void:
 			title_status.text = "Spielstand konnte nicht geladen werden."
 
 func _quit_game() -> void:
-	get_tree().quit()
+	if game != null:
+		_request_quit()
+	else:
+		_finish_quit()
 
 func _show_start() -> void:
 	for c in start_box.get_children():
@@ -1354,6 +2162,7 @@ func _create_begin() -> void:
 		"stewardship": stat_values["stewardship"], "intrigue": stat_values["intrigue"],
 	}
 	game = GameScript.new(DataScript, 0, cfg)
+	game.speed = clampi(int(settings["start_speed"]), 0, 3)
 	kernel.bind_game(game)
 	kernel.set_base_modal("game")
 	selected = ""
@@ -1371,6 +2180,7 @@ func _create_begin() -> void:
 
 func _start(index: int) -> void:
 	game = GameScript.new(DataScript, index)
+	game.speed = clampi(int(settings["start_speed"]), 0, 3)
 	kernel.bind_game(game)
 	kernel.set_base_modal("game")
 	selected = ""
@@ -1505,16 +2315,23 @@ func _refresh_tree() -> void:
 	tree_list.add_child(_label(str(vm["ruler"]), 12, INK_SOFT))
 	tree_list.add_child(_label(str(vm["law"]), 11, INK_SOFT))
 
+func _write_save() -> bool:
+	if game == null:
+		return false
+	var f := FileAccess.open("user://spielstand.json", FileAccess.WRITE)
+	if f == null:
+		return false
+	f.store_string(JSON.stringify(game.snapshot()))
+	f.close()
+	return true
+
 func _save() -> Dictionary:
 	if game == null:
 		return {"ok": false, "code": "invalid", "message": "Kein Spiel aktiv.", "delta": {}, "refresh": []}
-	var f := FileAccess.open("user://spielstand.json", FileAccess.WRITE)
-	if f == null:
+	if not _write_save():
 		game.note("Speichern fehlgeschlagen.")
 		refresh()
 		return {"ok": false, "code": "blocked", "message": "Speichern fehlgeschlagen.", "delta": {}, "refresh": []}
-	f.store_string(JSON.stringify(game.snapshot()))
-	f.close()
 	game.note("Spielstand gespeichert.")
 	refresh()
 	return {"ok": true, "code": "ok", "message": "Spielstand gespeichert.", "delta": {}, "refresh": []}
@@ -1553,6 +2370,12 @@ func _load() -> bool:
 	start_layer.visible = false
 	if newgame_layer != null:
 		newgame_layer.visible = false
+	if province_layer != null:
+		province_layer.visible = false
+	if options_layer != null:
+		options_layer.visible = false
+	if quit_layer != null:
+		quit_layer.visible = false
 	game.note("Spielstand geladen.")
 	refresh()
 	return true
@@ -1618,6 +2441,10 @@ func refresh() -> void:
 	if rule_layer != null and rule_layer.visible:
 		_refresh_rule()
 	over_layer.visible = bool(vm["game_over"])
+	_refresh_province_side()
+	_refresh_province_page()
+	if chronicle_layer != null and chronicle_layer.visible:
+		_fill_chronicle()
 
 func _build_rule_layer() -> void:
 	rule_layer = Control.new()
@@ -1730,6 +2557,21 @@ func _refresh_rule() -> void:
 		rule_body.add_child(_label(str(vm["province_hint"]), 12, INK_SOFT))
 	else:
 		rule_body.add_child(_label(str(vm["province_text"]), 12, INK_SOFT))
+		var building_icons := HBoxContainer.new()
+		building_icons.add_theme_constant_override("separation", 14)
+		for building in vm["buildings"]:
+			var cell := VBoxContainer.new()
+			cell.add_theme_constant_override("separation", 2)
+			var icon := TextureRect.new()
+			icon.custom_minimum_size = Vector2(48, 48)
+			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			icon.texture = load("res://assets/ui/tokens/building_%s.png" % str(building["key"]))
+			icon.tooltip_text = "Gebäude-Token aus der Blender-Pipeline"
+			cell.add_child(icon)
+			cell.add_child(_label("%s %d/3" % [str(building["name"]), int(building["level"])], 10, INK_SOFT))
+			building_icons.add_child(cell)
+		rule_body.add_child(building_icons)
 		for building in vm["buildings"]:
 			var button := _button(str(building["text"]), Callable(self, "_build_system").bind(str(building["key"])), "")
 			button.disabled = bool(building["disabled"])
@@ -1766,23 +2608,326 @@ func _discover_secret() -> void:
 func _expose_secret() -> void:
 	_dispatch({"id": "secret_expose"})
 
+var chronicle_layer: Control
+var chronicle_body: VBoxContainer
+var _chronicle_span: int = 60
+
+func _army_tokens(strength: int) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 14)
+	var comp: Dictionary = game.army_composition(strength)
+	for entry in [["levy", "Fußvolk"], ["archer", "Bogenschützen"], ["knight", "Reiterei"], ["siege", "Belagerung"]]:
+		var cell := VBoxContainer.new()
+		cell.add_theme_constant_override("separation", 1)
+		var icon := TextureRect.new()
+		icon.custom_minimum_size = Vector2(38, 38)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture = load("res://assets/ui/tokens/unit_%s.png" % str(entry[0]))
+		icon.tooltip_text = str(entry[1])
+		cell.add_child(icon)
+		cell.add_child(_label("%s %d" % [str(entry[1]), int(comp[entry[0]])], 10, INK_SOFT))
+		row.add_child(cell)
+	return row
+
+func _show_chronicle() -> void:
+	if chronicle_layer == null:
+		_build_chronicle_layer()
+	_fill_chronicle()
+	chronicle_layer.visible = true
+	kernel.push_modal("chronik")
+
+func _hide_chronicle() -> void:
+	kernel.pop_modal("chronik")
+	chronicle_layer.visible = false
+
+func _build_chronicle_layer() -> void:
+	chronicle_layer = Control.new()
+	chronicle_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	chronicle_layer.visible = false
+	chronicle_layer.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(chronicle_layer)
+	var dim := ColorRect.new()
+	dim.color = Color(0.04, 0.03, 0.02, 0.74)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	chronicle_layer.add_child(dim)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	chronicle_layer.add_child(center)
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(820, 680)
+	card.add_theme_stylebox_override("panel", _card_style(16))
+	center.add_child(card)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	card.add_child(box)
+	var head := HBoxContainer.new()
+	box.add_child(head)
+	var title := _label("Chronik", 24, INK)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(title)
+	head.add_child(_button("Schließen", _hide_chronicle, ""))
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(764, 590)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	box.add_child(scroll)
+	chronicle_body = VBoxContainer.new()
+	chronicle_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	chronicle_body.add_theme_constant_override("separation", 6)
+	scroll.add_child(chronicle_body)
+
+func _chronicle_span_name(span: int) -> String:
+	match span:
+		12:
+			return "12 Monate"
+		60:
+			return "5 Jahre"
+		240:
+			return "20 Jahre"
+	return "gesamter Verlauf"
+
+func _set_chronicle_span(span: int) -> void:
+	_chronicle_span = span
+	_fill_chronicle()
+
+func _slice_history(raw: Array, span: int) -> Array:
+	if raw == null or raw.is_empty():
+		return []
+	if span <= 0:
+		return raw.duplicate()
+	var last_t: int = int(raw[raw.size() - 1].get("t", 0))
+	var out: Array = []
+	for e in raw:
+		if int(e.get("t", 0)) > last_t - span:
+			out.append(e)
+	return out
+
+func _comparison_points(span: int) -> Dictionary:
+	var series: Array = []
+	var points: Array = []
+	var latest: Array = []
+	var hh: Array = game.house_history
+	# Der Vergleich übernimmt exakt die Monatspunkte der eigenen Graphen.
+	var own: Array = _slice_history(game.history, span)
+	for i in game.houses.size():
+		series.append([str(i), game.houses[i]["color"], ""])
+		latest.append({})
+	var last_t: int = 0
+	if not own.is_empty():
+		last_t = int(own[own.size() - 1].get("t", 0))
+	else:
+		for i in game.houses.size():
+			var series_data: Array = hh[i] if i < hh.size() else []
+			if not series_data.is_empty():
+				last_t = maxi(last_t, int(series_data[series_data.size() - 1].get("t", 0)))
+	# Jede Hausreihe wird am selben Zeitachsenpunkt abgetastet (letzter Wert
+	# bis dahin), damit alle Reihen dieselbe Punktzahl und X-Skala besitzen.
+	var cursors: Array = []
+	cursors.resize(game.houses.size())
+	cursors.fill(0)
+	for e in own:
+		var t: int = int(e.get("t", 0))
+		var point: Dictionary = {"t": t}
+		for i in game.houses.size():
+			var series_data: Array = hh[i] if i < hh.size() else []
+			var c: int = int(cursors[i])
+			while c + 1 < series_data.size() and int(series_data[c + 1].get("t", 0)) <= t:
+				c += 1
+			cursors[i] = c
+			if c < series_data.size() and int(series_data[c].get("t", 0)) <= t:
+				point[str(i)] = int(series_data[c].get("gold", 0))
+			else:
+				point[str(i)] = 0
+		points.append(point)
+	for i in game.houses.size():
+		var series_data: Array = hh[i] if i < hh.size() else []
+		var sample: Dictionary = {}
+		for j in range(series_data.size() - 1, -1, -1):
+			if int(series_data[j].get("t", 0)) <= last_t:
+				sample = series_data[j]
+				break
+		if sample.is_empty() and not series_data.is_empty():
+			sample = series_data[series_data.size() - 1]
+		if sample.is_empty():
+			var h: Dictionary = game.houses[i]
+			var troops := 0
+			for a in h.get("armies", []):
+				troops += int(a.get("strength", 0))
+			latest[i] = {
+				"t": last_t,
+				"gold": int(h["gold"]),
+				"prestige": int(h["prestige"]),
+				"army": troops,
+			}
+		else:
+			latest[i] = {
+				"t": int(sample.get("t", last_t)),
+				"gold": int(sample.get("gold", 0)),
+				"prestige": int(sample.get("prestige", 0)),
+				"army": int(sample.get("army", 0)),
+			}
+	return {"series": series, "points": points, "latest": latest}
+
+func _chronicle_ranking(cmp: Dictionary) -> VBoxContainer:
+	var box := VBoxContainer.new()
+	box.name = "HausRangliste"
+	box.add_theme_constant_override("separation", 2)
+	box.add_child(_label("Rangliste am Fensterende", 11, INK_SOFT))
+	var latest: Array = cmp.get("latest", [])
+	var rows: Array = []
+	for i in game.houses.size():
+		var stat: Dictionary = latest[i] if i < latest.size() else {}
+		rows.append([int(stat.get("gold", game.houses[i]["gold"])), i, stat])
+	rows.sort_custom(_sort_rank_rows)
+	for row in rows:
+		var i: int = int(row[1])
+		var stat: Dictionary = row[2]
+		var hh: Dictionary = game.houses[i]
+		var line := HBoxContainer.new()
+		line.add_theme_constant_override("separation", 6)
+		var swatch := ColorRect.new()
+		swatch.custom_minimum_size = Vector2(12, 12)
+		swatch.color = hh["color"]
+		line.add_child(swatch)
+		line.add_child(_label("%s: %d Gold · %d Prestige · %d Truppen" % [
+			str(hh["name"]), int(stat.get("gold", 0)), int(stat.get("prestige", 0)), int(stat.get("army", 0))
+		], 11, INK_SOFT))
+		box.add_child(line)
+	return box
+
+func _sort_rank_rows(a: Array, b: Array) -> bool:
+	if int(a[0]) == int(b[0]):
+		return int(a[1]) < int(b[1])
+	return int(a[0]) > int(b[0])
+
+func _fill_chronicle() -> void:
+	if game == null or chronicle_body == null:
+		return
+	for c in chronicle_body.get_children():
+		chronicle_body.remove_child(c)
+		c.queue_free()
+	var h: Dictionary = game.house()
+	chronicle_body.add_child(_label("Haus %s · %s" % [str(h["name"]), str(ViewModelBuilder.refresh(game, selected)["date"])], 15, INK_SOFT))
+
+	var filters := HBoxContainer.new()
+	filters.add_theme_constant_override("separation", 6)
+	filters.add_child(_label("Zeitraum", 12, INK_SOFT))
+	for entry in [[12, "12 Monate"], [60, "5 Jahre"], [240, "20 Jahre"], [0, "Alles"]]:
+		var b := _button(str(entry[1]), Callable(self, "_set_chronicle_span").bind(int(entry[0])), "")
+		b.custom_minimum_size = Vector2(88, 32)
+		b.add_theme_font_size_override("font_size", 12)
+		if int(entry[0]) == _chronicle_span:
+			b.modulate = Color(1.0, 0.85, 0.42)
+		filters.add_child(b)
+	chronicle_body.add_child(filters)
+
+	var span_label := _chronicle_span_name(_chronicle_span)
+	var hist: Array = _slice_history(game.history, _chronicle_span)
+	if hist.size() < 2:
+		chronicle_body.add_child(_label("Noch kein Verlauf — einige Monate vergehen lassen.", 12, INK_SOFT))
+	else:
+		var chart_script = load("res://scripts/ChronicleChart.gd")
+		chronicle_body.add_child(chart_script.new("Gold & Prestige · %s" % span_label, [["gold", Color(0.87, 0.69, 0.26), "Gold"], ["prestige", Color(0.38, 0.62, 0.88), "Prestige"]], hist, 734, 132))
+		chronicle_body.add_child(chart_script.new("Macht & Legitimität · %s" % span_label, [["army", Color(0.72, 0.30, 0.24), "Truppen"], ["legitimacy", Color(0.34, 0.60, 0.34), "Legit."]], hist, 734, 132))
+
+	chronicle_body.add_child(_label("Vergleich der Häuser — Gold · %s" % span_label, 17, INK))
+	var cmp: Dictionary = _comparison_points(_chronicle_span)
+	if (cmp["points"] as Array).size() < 2:
+		chronicle_body.add_child(_label("Vergleich braucht mindestens zwei Monatspunkte — Rangliste zeigt den letzten Stand.", 12, INK_SOFT))
+	else:
+		var chart_script = load("res://scripts/ChronicleChart.gd")
+		chronicle_body.add_child(chart_script.new("Gold je Haus · %s" % span_label, cmp["series"], cmp["points"], 734, 150, false))
+	chronicle_body.add_child(_chronicle_ranking(cmp))
+
+	chronicle_body.add_child(_label("Geschichte", 17, INK))
+	var lines: Array = game.log_lines
+	var from: int = maxi(0, lines.size() - 8)
+	for i in range(from, lines.size()):
+		chronicle_body.add_child(_label(str(lines[i]), 12, INK_SOFT))
+	chronicle_body.add_child(HSeparator.new())
+	chronicle_body.add_child(_label("Reich & Wirtschaft", 17, INK))
+	chronicle_body.add_child(_label("Gold %d · Steuersatz %d/2 · Legitimität %d/100" % [int(h["gold"]), int(h["laws"]["tax"]), int(h["legitimacy"])], 12, INK_SOFT))
+	var econ := HBoxContainer.new()
+	econ.add_theme_constant_override("separation", 6)
+	econ.add_child(_button("Steuersatz", _toggle_tax, ""))
+	econ.add_child(_button("Erbfolge", _toggle_succession, ""))
+	econ.add_child(_button("Ausbauen (50)", func(): _dispatch({"id": "develop"}), ""))
+	chronicle_body.add_child(econ)
+	chronicle_body.add_child(HSeparator.new())
+	chronicle_body.add_child(_label("Armee & Krieg", 17, INK))
+	var armies: Array = h["armies"]
+	if armies.is_empty():
+		chronicle_body.add_child(_label("Keine stehende Armee.", 12, INK_SOFT))
+	else:
+		for a in armies:
+			var strength: int = int(a.get("strength", 0))
+			chronicle_body.add_child(_label("Armee: %d Truppen · Moral %d" % [strength, int(a.get("morale", 0))], 12, INK_SOFT))
+			chronicle_body.add_child(_army_tokens(strength))
+	var war := HBoxContainer.new()
+	war.add_theme_constant_override("separation", 6)
+	war.add_child(_button("Truppen werben (30)", func(): _dispatch({"id": "recruit"}), ""))
+	war.add_child(_button("Armee aufstellen (50)", _raise_army, ""))
+	war.add_child(_button("Hof halten (40)", func(): _dispatch({"id": "court"}), ""))
+	chronicle_body.add_child(war)
+
+func _apply_event_art(art_key: String) -> void:
+	var tex = EVENT_ARTS.get(art_key) if art_key != "" else null
+	event_art.texture = tex
+	event_art.visible = tex != null
+	if event_art_fallback != null:
+		event_art_fallback.visible = tex == null
+
 func _show_event() -> void:
 	var vm: Dictionary = ViewModelBuilder.event(game)
 	event_title.text = str(vm["title"])
 	event_text.text = str(vm["text"])
+	var art_key: String = str(EVENT_ART_KEYS.get(str(vm.get("id", "")), ""))
+	_apply_event_art(art_key)
 	for c in event_buttons.get_children():
+		event_buttons.remove_child(c)
 		c.queue_free()
 	var options: Array = vm["options"]
 	for i in options.size():
-		event_buttons.add_child(_button(str(options[i]), Callable(self, "_choose").bind(i), ""))
+		var opt: Dictionary = options[i]
+		var row := VBoxContainer.new()
+		row.add_theme_constant_override("separation", 1)
+		var label := str(opt["label"])
+		var cut := label.find("  (")
+		if cut > 0:
+			label = label.substr(0, cut)
+		var choose := _button(label, Callable(self, "_choose").bind(i), "")
+		choose.custom_minimum_size = Vector2(0, 40)
+		row.add_child(choose)
+		var chips := RichTextLabel.new()
+		chips.bbcode_enabled = true
+		chips.fit_content = true
+		chips.scroll_active = false
+		chips.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		chips.add_theme_font_size_override("normal_font_size", 12)
+		chips.text = str(opt["chips"])
+		row.add_child(chips)
+		event_buttons.add_child(row)
 	kernel.push_modal("event")
 	event_layer.visible = true
+	_play_open()
 
 # --- Zeitlauf ------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		var top: String = kernel.top_modal()
+		if top == "optionen":
+			_hide_options()
+			get_viewport().set_input_as_handled()
+			return
+		if top == "quit_confirm":
+			_hide_quit()
+			get_viewport().set_input_as_handled()
+			return
+		if top == "provinz":
+			_hide_province()
+			get_viewport().set_input_as_handled()
+			return
 		if top == "herrschaft":
 			_hide_rule()
 			get_viewport().set_input_as_handled()
@@ -1800,13 +2945,15 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 	if event is InputEventKey and event.pressed and event.keycode == KEY_F11:
-		if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN:
-			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
-		else:
-			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+		settings["window_mode"] = 0 if int(settings["window_mode"]) == 1 else 1
+		_apply_display_settings(true)
+		_save_settings()
+		_refresh_options()
 
 func _process(delta: float) -> void:
-	if game == null or game.game_over or game.pending_event != null:
+	if game == null or game.game_over:
+		return
+	if game.pending_event != null and bool(settings["pause_events"]):
 		return
 	if game.speed <= 0:
 		return
@@ -1815,4 +2962,6 @@ func _process(delta: float) -> void:
 	if accum >= interval:
 		accum = 0.0
 		game.advance_month()
+		if bool(settings["autosave"]) and game.month == 1:
+			_write_save()
 		refresh()

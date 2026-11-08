@@ -32,6 +32,10 @@ var extra_state: Dictionary = {}
 var resolver = ResolverScript.new()
 var disabled_edges: Dictionary = {}
 var effect_log: Array = []
+## Monatliche Momentaufnahmen für die Chronik-Graphen (max. 240 Punkte).
+var history: Array = []
+## Verlauf je Haus (Index = Haus) für den Vergleich in der Chronik.
+var house_history: Array = []
 ## Testhook: >= 0 erzwingt den Schlachtwurf; im normalen Spiel bleibt der Wert -1.
 var attack_roll_override: float = -1.0
 
@@ -55,6 +59,7 @@ func _init(data_script, player_index: int = 0, custom: Dictionary = {}) -> void:
 		])
 	else:
 		_custom_start(custom)
+	_record_history()
 
 # --- Zugriff -------------------------------------------------------------
 
@@ -304,6 +309,82 @@ func advance_month() -> void:
 		event_timer -= 1
 		if event_timer <= 0:
 			_trigger_event()
+	_record_history()
+
+func _record_history() -> void:
+	var t: int = (year - START_YEAR) * 12 + month
+	history.append(_house_point(player, t))
+	while history.size() > 240:
+		history.pop_front()
+	while house_history.size() < houses.size():
+		house_history.append([])
+	for i in houses.size():
+		house_history[i].append(_house_point(i, t))
+		while house_history[i].size() > 240:
+			house_history[i].pop_front()
+
+func _house_point(index: int, t: int) -> Dictionary:
+	var h: Dictionary = houses[index]
+	var troops := 0
+	for a in h.get("armies", []):
+		troops += int(a.get("strength", 0))
+	var own := 0
+	var dev := 0
+	for p in provinces:
+		if int(p["owner"]) == index:
+			own += 1
+			dev += int(p["dev"])
+	return {
+		"t": t,
+		"gold": int(h["gold"]),
+		"prestige": int(h["prestige"]),
+		"legitimacy": int(h["legitimacy"]),
+		"army": troops,
+		"dev": int(round(float(dev) / maxi(1, own))),
+	}
+
+func _clean_series(raw) -> Array:
+	var out: Array = []
+	if not (raw is Array):
+		return out
+	for e in raw:
+		if not (e is Dictionary) or not e.has("t"):
+			continue
+		out.append({
+			"t": int(e.get("t", 0)),
+			"gold": int(e.get("gold", 0)),
+			"prestige": int(e.get("prestige", 0)),
+			"legitimacy": int(e.get("legitimacy", 0)),
+			"army": int(e.get("army", 0)),
+			"dev": int(e.get("dev", 0)),
+		})
+	return out
+
+## Stellt sicher, dass der Verlauf nach Init oder Laden gefüllt ist und zu
+## den vorhandenen Häusern passt. Alte Spielstände bekommen einen Startpunkt.
+func _ensure_history() -> void:
+	var t: int = (year - START_YEAR) * 12 + month
+	history = _clean_series(history)
+	if history.is_empty():
+		history = [_house_point(player, t)]
+	var cleaned: Array = []
+	for i in houses.size():
+		var series: Array = _clean_series(house_history[i]) if i < house_history.size() else []
+		if series.is_empty():
+			series = [_house_point(i, t)]
+		cleaned.append(series)
+	house_history = cleaned
+
+## Teilt eine Armeestärke auf die vier Truppengattungen auf. Die Belagerung
+## bekommt ein Gerät je angefangener 100 Mann, der Rest verteilt sich 55/25/15.
+func army_composition(strength: int) -> Dictionary:
+	var total: int = maxi(0, strength)
+	var siege: int = maxi(1, int(ceil(float(total) / 100.0))) if total > 0 else 0
+	var field: int = maxi(0, total - siege)
+	var levy: int = int(round(float(field) * 0.55))
+	var archer: int = int(round(float(field) * 0.25))
+	var knight: int = maxi(0, field - levy - archer)
+	return {"levy": levy, "archer": archer, "knight": knight, "siege": siege}
 
 func _yearly() -> void:
 	run_ai_turn()
@@ -1498,7 +1579,10 @@ func snapshot() -> Dictionary:
 	data_state["speed"] = speed
 	data_state["event_timer"] = event_timer
 	data_state["game_over"] = game_over
+	_ensure_history()
 	data_state["log"] = log_lines.duplicate()
+	data_state["history"] = history.duplicate(true)
+	data_state["house_history"] = house_history.duplicate(true)
 	data_state["pending"] = pending_event["id"] if pending_event != null else ""
 	data_state["houses"] = hs
 	data_state["provinces"] = ps
@@ -1603,4 +1687,11 @@ func restore(d: Dictionary) -> bool:
 			if ev["id"] == pid:
 				pending_event = ev
 				break
+	history = _clean_series(state.get("history", []))
+	var raw_house_history = state.get("house_history", [])
+	house_history = []
+	if raw_house_history is Array:
+		for series in raw_house_history:
+			house_history.append(_clean_series(series))
+	_ensure_history()
 	return true

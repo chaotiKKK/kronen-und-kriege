@@ -124,8 +124,28 @@ static func event(game) -> Dictionary:
 		return {"title": "", "text": "", "options": []}
 	var options: Array = []
 	for opt in ev.get("options", []):
-		options.append(str(opt["label"]))
-	return {"title": str(ev["title"]), "text": str(ev["text"]), "options": options}
+		options.append({"label": str(opt["label"]), "chips": _effect_chips(opt.get("effects", {}))})
+	return {"id": str(ev.get("id", "")), "title": str(ev["title"]), "text": str(ev["text"]), "options": options}
+
+const EFFECT_NAMES := {
+	"gold": ["Gold", 1], "prestige": ["Prestige", 1], "legitimacy": ["Legitimität", 1],
+	"levy": ["Truppen", 1], "dev": ["Entwicklung", 1], "health": ["Gesundheit", 1],
+	"heir": ["Erbe", 0],
+}
+
+static func _effect_chips(effects: Dictionary) -> String:
+	var parts: Array = []
+	for key in effects:
+		var meta: Array = EFFECT_NAMES.get(str(key), [str(key), 1])
+		var value: int = int(effects[key])
+		if value == 0:
+			parts.append("[b][color=#d8c9a6]%s[/color][/b]" % str(meta[0]))
+			continue
+		var sign_text := "+" if value > 0 else "−"
+		var text := "%s%d %s" % [sign_text, absi(value), str(meta[0])]
+		var col := "#1c6b2f" if value > 0 else "#9c2f24"
+		parts.append("[b][color=%s]%s[/color][/b]" % [col, text])
+	return "   ".join(parts)
 
 static func tree(game) -> Dictionary:
 	var h: Dictionary = game.house()
@@ -162,6 +182,8 @@ static func rule(game, selected: String) -> Dictionary:
 			var level: int = int((p.get("buildings", {}) as Dictionary).get(key, 0))
 			buildings.append({
 				"key": key,
+				"name": str(entry[1]),
+				"level": level,
 				"text": "%s: Stufe %d/3 · %d Gold" % [entry[1], level, game.building_cost(key)],
 				"disabled": not game.can_build(selected, key),
 			})
