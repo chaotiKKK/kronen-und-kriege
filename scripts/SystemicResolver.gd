@@ -176,9 +176,10 @@ func _write(host, effect: Dictionary, before):
 			if amount <= 0:
 				truces.erase(str(target_house))
 				return 0
-			truces[str(target_house)] = amount
+			var until: int = int(host._now()) + amount
+			truces[str(target_house)] = until
 			host.houses[house_index]["truces"] = truces
-			return amount
+			return until
 	return before
 
 func _faction_value(host, house_index: int, effect: Dictionary, key: String) -> int:

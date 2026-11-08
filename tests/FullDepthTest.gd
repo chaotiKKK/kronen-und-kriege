@@ -287,6 +287,7 @@ func _test_k6() -> void:
 	g.effect_log.clear()
 	g.make_peace(1, 0)
 	_need(g, "K6", "truce", 0, "K6: Frieden erzeugt keinen Waffenstillstand.")
+	_check(g.truce_until(1) > g._now(), "K6: Waffenstillstand liegt nicht in der Zukunft.")
 	var n = _new_game(0)
 	n.set_edge_enabled("K6", false)
 	n.effect_log.clear()
