@@ -118,7 +118,7 @@ func _ready() -> void:
 		var driver = AcceptanceDriverScript.new()
 		add_child(driver)
 		driver.begin(self, args)
-	print("MAIN_READY version=1.2")
+	print("MAIN_READY version=1.3")
 
 func _stop_audio() -> void:
 	# Die laufende Ambient-Wiedergabe kann beim Engine-Shutdown eine Ressource
@@ -576,7 +576,7 @@ func _build() -> void:
 	title_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	title_menu.add_child(title_status)
 
-	var version := _label("v1.2 · Bronzezeit · 2000 v. Chr.", 12, Color(0.72, 0.60, 0.42))
+	var version := _label("v1.3 · Bronzezeit · 2000 v. Chr.", 12, Color(0.72, 0.60, 0.42))
 	version.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	version.offset_left = 24
 	version.offset_top = -32

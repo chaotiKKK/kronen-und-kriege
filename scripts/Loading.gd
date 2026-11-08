@@ -113,7 +113,7 @@ func _build() -> void:
 	tip.custom_minimum_size = Vector2(640, 38)
 	box.add_child(tip)
 
-	var version := _label("v1.2 · Bronzezeit · 2000 v. Chr.", 12, Color(0.64, 0.54, 0.38))
+	var version := _label("v1.3 · Bronzezeit · 2000 v. Chr.", 12, Color(0.64, 0.54, 0.38))
 	version.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	version.offset_left = 24
 	version.offset_top = -30
