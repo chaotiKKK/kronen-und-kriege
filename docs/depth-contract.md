@@ -1,9 +1,9 @@
 # Depth Contract
 
-> Dokumentversion: 2.0
-> Stand: 2026-11-06
+> Dokumentversion: 2.1
+> Stand: 2026-11-07
 > Verbindlich ab: Welle 1
-> Status: alle 28 Matrixkanten `IST`; DC-1 erfüllt; automatisierte Story-Probe grün; manueller 30-Minuten-Lauf offen
+> Status: alle 28 Matrixkanten `IST`; DC-1 erfüllt; automatisierte Story-Probe grün; Windows-30-Minuten-Lauf BESTANDEN, Android offen
 
 ## Definition
 
@@ -60,7 +60,7 @@ Der Beleg landet in `Game.effect_log`; der Test prüft ihn. `before` und `after`
 | Messung | Fenster | Schwelle | Werkzeug | Status |
 |---|---|---|---|---|
 | CI-Story-Probe | 120 Spielmonate, Seed `20261106` | ≥12 Entscheidungen, ≥10 Kanten, ≥3 dynastisch, ≥3 Krieg/Diplomatie, ≥2 KI, 3 Save-Roundtrips | `StoryTest` | **grün** |
-| Manuelle Partie | 30 Minuten bei x3 | dieselben Schwellen plus visuelle Prüfung | Prüfprotokoll | **offen** |
+| Manuelle Partie | 30 Minuten bei x3 | dieselben Schwellen plus visuelle Prüfung | Prüfprotokoll | **Windows BESTANDEN; Android offen** |
 
 `StoryTest` erreicht 104 Entscheidungen, 24 Kanten, 7 dynastische, 6 Krieg-/Diplomatie- und 5 KI-Kanten sowie drei Roundtrips ohne Diff. Das ist ein automatisierter Proxy, keine Wall-Clock-Messung.
 
@@ -77,7 +77,7 @@ Das ausführbare Prüfprotokoll für die manuelle Partie steht in [`manual-accep
 | `FullDepthTest` | H3–H8 (Mauern), D1–D4, D6–D8, K1–K7, AI2–AI5 | 56 positive/negative Prüfungen | **grün** |
 | `StoryTest` | 120 Monate, fester Seed | Schwellen der automatisierten Story-Probe | **grün** |
 | `TouchTest` / `ShotTest` | Touch-Auswahl, Ausbau, fünf UI-Bilder | Exit 0 | **grün** |
-| Manuelle 30-Minuten-Partie | Windows/Android | Story-Schwellen plus visuelle Prüfung | **offen** |
+| Manuelle 30-Minuten-Partie | Windows/Android | Story-Schwellen plus visuelle Prüfung | **Windows BESTANDEN; Android offen** |
 
 ## Ist-Stand
 
@@ -88,7 +88,7 @@ Alle 28 Matrixzeilen sind `IST`:
 - Krieg/Diplomatie beeinflusst Herrschaft (K1, K3), Dynastie (K6), Welt (K5) und Krieg (K2, K4, K7).
 - KI beeinflusst Herrschaft (AI2, AI3, AI5) und Krieg (AI1, AI4).
 
-DC-1 ist damit erfüllt. Die einzige verbleibende Abnahme ist der manuelle 30-Minuten-Lauf; er ist kein automatischer Test und wird nicht als solcher behauptet.
+DC-1 ist damit erfüllt. Der Windows-30-Minuten-Lauf ist am 2026-11-07 **BESTANDEN** ([Protokoll](manual-acceptance.md#windows-lauf-2026-11-07)); offen bleibt nur der Android-Lauf. Er ist kein automatischer Test und wird nicht als solcher behauptet.
 
 ## Entscheidungslog
 

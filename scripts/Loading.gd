@@ -1,9 +1,8 @@
 extends Control
-## Ladebildschirm: zeigt Titelart, Wortmarke, Fortschritt und Tipps, während
-## die Hauptszene geladen wird. Wechselt danach mit Fade.
+## Ladebildschirm: zeigt das Banger-Queens-Titelbild, Fortschritt und Tipps,
+## während die Hauptszene geladen wird. Wechselt danach mit Fade.
 
-const TEX_BG = preload("res://assets/ui/title_bg.png")
-const TEX_LOGO = preload("res://assets/ui/logo_title.png")
+const TEX_TITLE = preload("res://assets/ui/bq_beta_title.jpg")
 const MAIN_PATH := "res://scenes/Main.tscn"
 const TIPS := [
 	"Ein Erbe sichert das Fortbestehen deines Hauses.",
@@ -52,7 +51,7 @@ func _label(text: String, px: int, col: Color) -> Label:
 
 func _build() -> void:
 	var bg := TextureRect.new()
-	bg.texture = TEX_BG
+	bg.texture = TEX_TITLE
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
@@ -61,26 +60,24 @@ func _build() -> void:
 
 	var dim := ColorRect.new()
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	dim.color = Color(0.02, 0.015, 0.01, 0.66)
+	dim.color = Color(0.02, 0.015, 0.01, 0.34)
 	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(dim)
 
+	# Das Titelbild enthält die Wortmarke bereits. Der Ladebereich sitzt deshalb
+	# ohne zweites Logo unten und lässt Bild und Wortmarke sichtbar.
 	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	center.offset_left = 24
+	center.offset_top = -224
+	center.offset_right = -24
+	center.offset_bottom = -28
 	add_child(center)
 	var box := VBoxContainer.new()
 	box.custom_minimum_size = Vector2(640, 0)
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_theme_constant_override("separation", 13)
 	center.add_child(box)
-
-	var logo := TextureRect.new()
-	logo.texture = TEX_LOGO
-	logo.custom_minimum_size = Vector2(0, 330)
-	logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(logo)
 
 	status = _label("Die Reiche Europas werden geschmiedet …", 20, Color(0.96, 0.90, 0.77))
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -116,7 +113,7 @@ func _build() -> void:
 	tip.custom_minimum_size = Vector2(640, 38)
 	box.add_child(tip)
 
-	var version := _label("v1.2 · Kronen und Kriege", 12, Color(0.64, 0.54, 0.38))
+	var version := _label("v1.2 · Bronzezeit · 2000 v. Chr.", 12, Color(0.64, 0.54, 0.38))
 	version.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	version.offset_left = 24
 	version.offset_top = -30

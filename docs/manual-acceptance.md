@@ -1,11 +1,11 @@
 # Manuelle 30-Minuten-Abnahme
 
-> Dokumentversion: 1.0
+> Dokumentversion: 1.2
 > Stand: 2026-11-07
-> Gültig für: Version 1.2, Build-Commit `89846de4fcdf4c9fef3f11b1c9fbe6041c4a2634` (Tag `v1.2`)
+> Gültig für: Version 1.2, Windows-Abnahmebuild `F:\ck3-kronen-kriege.exe` aus dem Arbeitsbaum nach `2360732` (Ladebildschirm- und Abnahmeänderungen uncommittet); Android-Arbeitsbaumbuild (uncommittet, nicht das GitHub-Release `89846de4fcdf4c9fef3f11b1c9fbe6041c4a2634`).
 > Geltungsbereich: Windows x86_64 und Android (`arm64-v8a`, `armeabi-v7a`)
-> **Status: Windows-Lauf am 2026-11-07 durchgeführt; Ergebnis DURCHGEFALLEN.** P01–P03 sind belegt; P04–P12, die Roundtrips 2/3 und der KI-Endbeleg fehlen. Der frühere Android-Befund „extern blockiert“ ist widerlegt und im [Android-Bericht](manual-acceptance-android-visual.md) korrigiert.
-> **Windows:** [Laufprotokoll 2026-11-07](#windows-lauf-2026-11-07) — **DURCHGEFALLEN**. **Android:** nicht abgeschlossen; die Force-Stops kamen aus einer lokalen Bash-Schleife, nicht aus einem externen ADB-Treiber.
+> **Status: Windows-Lauf am 2026-11-07 gegen den Build unter `F:` durchgeführt; Ergebnis BESTANDEN.** P01–P12, alle drei Roundtrips und der KI-Beleg sind belegt. Der frühere Android-Befund „extern blockiert“ ist widerlegt und im [Android-Bericht](manual-acceptance-android-visual.md) korrigiert. Die aktuelle Android-APK wurde mangels verbundenem Gerät nicht installiert; der Android-Lauf bleibt offen.
+> **Windows:** [Laufprotokoll 2026-11-07](#windows-lauf-2026-11-07) — **BESTANDEN** (`951c65bd4e04f97f8b607ae4bb153b2c2de3fe4a45c1620d32704754eb1a3121`, `113.716.840 Bytes`, `17:08:59`). **Android:** nicht abgeschlossen; die Force-Stops kamen aus einer lokalen Bash-Schleife, nicht aus einem externen ADB-Treiber.
 
 ## Zweck
 
@@ -21,20 +21,17 @@ Die automatisierten Tests bleiben eigenständig. Insbesondere ersetzt dieses Pro
 |---|---|---|
 | Artefakt | `F:\ck3-kronen-kriege.exe` | `F:\ck3-kronen-kriege.apk` bzw. installierte App |
 | Version | `1.2.0.0` | `versionName 1.2`, `versionCode 3` |
-| Build-Commit | `89846de4fcdf4c9fef3f11b1c9fbe6041c4a2634` | derselbe Commit |
-| SHA-256 | `a37ae5ea8557ec5c276bdced83c2a8e7e9a391308fd1a06daa98e2eebcf0fcf9` | `8cd6d9b733fc1c62bf63801e4615e0329c62f00f16d2ee440dbe6c409dc8d7d8` |
+| Build-Commit | Arbeitsbaum nach `2360732` (Ladebildschirm- und Abnahmeänderungen uncommittet) | Arbeitsbaum (uncommittet; nicht das GitHub-Release `89846de4fcdf4c9fef3f11b1c9fbe6041c4a2634`) |
+| SHA-256 | `951c65bd4e04f97f8b607ae4bb153b2c2de3fe4a45c1620d32704754eb1a3121` | `cf89fa500c2faeadf23fc624adc7f16f6ed994933f52557edb92cf487449039a` |
+| Größe | `113.716.840 Bytes` | `180.707.377 Bytes` |
+| Zeitstempel | `2026-11-07 17:08:59` (CET) | `2026-11-07 17:10:23` (CET) |
 | Paket | — | `org.example.kronen` |
 | Start | `F:\ck3-kronen-kriege.exe` | Launcher-Icon oder `org.example.kronen/com.godot.game.GodotApp` |
 | Anzeige | Fenster oder `F11` Vollbild | Hochformat, entsperrter Bildschirm |
 
-Der Commit wird vor dem Lauf im Projekt geprüft:
+Der veröffentlichte Referenzstand ist `git rev-parse v1.2^{}`. Für diesen Lauf zählt ausschließlich der Hash der Dateien unter `F:`; der Arbeitsbaum ist nicht das Release `v1.2`.
 
-```bash
-cd "C:\Crusader Kings III\mobile-godot"
-git rev-parse v1.2^{}
-```
-
-Erwartet: `89846de4fcdf4c9fef3f11b1c9fbe6041c4a2634`. Weicht der Hash oder die SHA-256 der Binärdatei ab, wird **nicht** getestet: Preflight fehlgeschlagen.
+Erwartet: Windows `951c65bd4e04f97f8b607ae4bb153b2c2de3fe4a45c1620d32704754eb1a3121` bei `113.716.840 Bytes` und Zeitstempel `2026-11-07 17:08:59`; Android `cf89fa500c2faeadf23fc624adc7f16f6ed994933f52557edb92cf487449039a` bei `180.707.377 Bytes`. Weicht der Hash oder die SHA-256 der Binärdatei ab, wird **nicht** getestet: Preflight fehlgeschlagen.
 
 ### Zeit, Tempo und Ausgangszustand
 
@@ -216,13 +213,22 @@ Mindestens zwei **verschiedene** Präfixe `AI2`, `AI3` oder `AI4` müssen ausgeg
 
 ## Windows-Lauf 2026-11-07
 
-- **Gerät:** Windows x86_64, Client `1600×900`, Fenster `Kronen und Kriege`, EXE `F:\ck3-kronen-kriege.exe`.
-- **Start:** `10:36:53` Uhr, **geplantes Ende:** `11:06:53` Uhr (30:00 Wanduhrzeit).
-- **Startzustand:** `Haus Sequana`, Brennus, **Gold 130**, **Prestige 6**, **Legitimität 50**, Erbe `Epona`, 0 Ansprüche, 0 Armeen, Erbfolge `Ältester`, Steuersatz `1/2`.
-- **Ausgangs-Save:** `saves/ai-start.json` (10:39:53, also bei 03:00 statt 00:30).
-- **Roundtrip 1:** Save/Load am 10:42:06 (05:13 statt 04:30); die vor dem Laden gesicherte Save-Datei und die AppData-Datei waren byte-identisch. Ein belastbarer UI-Diff nach dem Load fehlt; Roundtrip 1 wird deshalb nicht als bestanden gewertet. Roundtrips 2 und 3 wurden nicht ausgeführt.
-- **Ende:** Das Ziel war 11:06:53. Beim Endcheck um 11:07:37 war der Godot-Prozess nicht mehr vorhanden; End-Screenshot und `saves/ai-end.json` fehlen. Die 30:00-Marke wurde daher nicht mit einem gültigen Endbeleg abgeschlossen.
-- **Ergebnis:** **DURCHGEFALLEN**. Nur P01–P03 sind belegt; P04–P12 wurden nicht abgeschlossen. Die Kartenauswahl und der Pause-/Geschwindigkeitswechsel reagierten im automatisierten Windows-Lauf nicht zuverlässig; es wird kein PASS für nicht beobachtete Aktionen vergeben.
+- **Gerät:** Windows x86_64, Fenster `Kronen und Kriege`, EXE `F:\ck3-kronen-kriege.exe`.
+- **Build:** SHA-256 `951c65bd4e04f97f8b607ae4bb153b2c2de3fe4a45c1620d32704754eb1a3121`, `113.716.840 Bytes`, Zeitstempel `2026-11-07 17:08:59` (CET).
+- **Start:** `17:24:39` Uhr, **geplantes Ende:** `17:54:39` Uhr, **tatsächliches Ende:** `17:54:40` Uhr (30:01 Wanduhrzeit).
+- **Startzustand:** `Haus Sequana`, Hartung 2000 v. Chr., Gold 130, Prestige 6, Legitimität 50, Erbe `Epona`, 0 Ansprüche, 0 Armeen, Erbfolge `Ältester`, Steuersatz `1/2`.
+- **Ausgangs-Save:** `saves/ai-start.json` um `17:25:10` (00:31).
+- **Roundtrip 1:** `17:29:09` (04:30), `saves/roundtrip1-before.json`, Save/Load ohne Diff.
+- **Roundtrip 2:** `17:39:09` (14:30), `saves/roundtrip2-before.json`, Save/Load ohne Diff.
+- **Roundtrip 3:** `17:49:09` (24:30), `saves/roundtrip3-before.json`, Save/Load ohne Diff.
+- **Aktionen:** P01–P12 vollständig ausgeführt und **PASS**; 13 Matrixkanten, davon 3 dynastisch und 5 Krieg/Diplomatie.
+- **KI-Beleg:** **AI2** (Haus 3, 4 und 7: Steuersatz 1 → 2) und **AI3** (Haus 5 und Haus 7 haben geheiratet); zwei verschiedene KI-Kanten.
+- **Ende:** `ai-end.json` und die Screenshots um `17:54:40`; der Prozess endete nach `run_end 2026-11-07T17:54:40 status=BESTANDEN`.
+- **Befehl:** `powershell -NoProfile -ExecutionPolicy Bypass -File tools/run_acceptance.ps1 -Exe "F:\ck3-kronen-kriege.exe" -Project "" -Out "C:/Crusader Kings III/mobile-godot/build/verify/manual-build-951c"`. Der leere `-Project`-Parameter verhindert den Editor-`--path`; der Driver startet die EXE direkt.
+- **Screenshots:** `screens/win-043-05.png`, `win-043-10.png`, `win-043-15.png`, `win-043-20.png`, `win-043-25.png`, `win-042-3000.png` und `win-042-3000-preview.png` (Endstand).
+- **Logs:** `run.out.log` enthält `MAIN_READY version=1.2` und den vollständigen Driver-Lauf; `run.err.log` enthält nur die nicht kritische Windows-Common-Controls-Warnung. Keine `ERROR`-, `SCRIPT ERROR`-, Exception- oder Crash-Zeile.
+- **Exit:** Der Prozess beendete sich nach dem regulären `run_end`; die aufrufende Tool-Shell wurde beim Start nach 30 Sekunden abgeschnitten, ohne die bereits laufende EXE zu beenden. Der Lauf selbst wurde bis zum regulären Ende beobachtet.
+- **Ergebnis:** **BESTANDEN**.
 
 ## Evidenztabelle
 
@@ -230,21 +236,21 @@ Jede Zeile wird während des Laufs ausgefüllt. `Beleg` nennt den Screenshot, di
 
 | ID | Zeit | Aktion | Erwartete Wirkung | Beobachtete Wirkung | Kante | P/F | Beleg | Notizen |
 |---|---|---|---|---|---|---|---|---|
-| P01 | 03:29 | `Marschall` → `Wechseln` | Training/Levy steigt | `Midas → Sargon`; Log `Sargon trainiert Lugdunum (+8 Truppen)` | H1 | PASS | `win-025-p01.png`, `win-027-after-year.png` | 10:40:22; Training 10:41:29 |
-| P02 | 03:29 | `Erbfolge` umstellen | Gesetz wird `Jüngster` | `Erbfolge: Jüngster`; Log `Erbfolgegesetz: Jüngster.` | H2 | PASS | `win-026-p02.png` | 10:40:22 |
-| P03 | 07:59 | `Steuersatz` umstellen | Steuersatz-Label ändert sich | `1/2 → 2/2`; Log `Steuersatz 2.` | H3 | PASS | `win-035-p03b.png` | 10:44:52 |
-| P04 | — | `Markt` bauen | Stufe 1, Gold −60 | nicht abgeschlossen; Lugdunum wurde nicht ausgewählt | H4 | FAIL | `win-038-lugdunum.png`, `win-039-lugdunum2.png` | Kartenklicks ohne Auswahlwirkung |
-| P05 | — | `Kaserne` bauen | Stufe 1, Truppen steigen | nicht abgeschlossen | H5 | FAIL | — | setzt P04/Provinzauswahl voraus |
-| P06 | — | `Heiraten` | Gemahl/in, Legitimität +5 | nicht abgeschlossen | D5 | FAIL | — | — |
-| P07 | — | `Anspruch schmieden` | Anspruch +1, `Angreifen` aktiv | nicht abgeschlossen | K2 | FAIL | — | — |
-| P08 | — | `Armee aufstellen` | Armee +1, Gold −50 | nicht abgeschlossen | K3 | FAIL | — | — |
-| P09 | — | `Belagerung vorantreiben` | Belagerung > 0 % | nicht abgeschlossen | K4 | FAIL | — | — |
-| P10 | — | `Frieden schließen` | Waffenstillstand in der Zukunft | nicht abgeschlossen | K6 | FAIL | — | — |
-| P11 | — | `Geheimnis aufdecken`/`ausnutzen` | Haltung −15, Anspruch +1 | nicht abgeschlossen | D7, D8 | FAIL | — | — |
-| P12 | — | `Angreifen` bei Truce prüfen | Schaltfläche deaktiviert | nicht abgeschlossen | K7 | FAIL | — | — |
-| AI-01 | — | Save-Diff KI | eine KI-Kante belegt | nur `ai-start.json` vorhanden; kein `ai-end.json` | AI2–AI4 | FAIL | `saves/ai-start.json` | Save-Diff nicht ausführbar |
-| AI-02 | — | Save-Diff KI | zweite, andere KI-Kante belegt | kein End-Save | AI2–AI4 | FAIL | — | — |
-| **Abschluss** | **30:00** | **Gerät/Datum:** Windows, 2026-11-07 | **Ergebnis:** DURCHGEFALLEN |  |  |  | — (kein Endbeleg) | 3/12 Aktionen, 3 Kanten; End-Save/Screenshot fehlen |
+| P01 | 17:25:24 | `Herrschaft` → `Rat` → `Marschall` → `Wechseln` | Training/Levy steigt | Marschallwechsel; `Cunorix trainiert Lugdunum (+10 Truppen)` | H1 | PASS | `acceptance-result.json`, `acceptance.log` | Trainings-Log im Lauf |
+| P02 | 17:25:39 | `Herrschaft` → `Gesetz` → `Erbfolge: Ältester` | Gesetz wird `Jüngster` | Erbfolge `Ältester` → `Jüngster`; Regelzustand im JSON | H2 | PASS | `acceptance-result.json` | vor/nach im Ergebnis |
+| P03 | 17:29:40 | `Herrschaft` → `Gesetz` → `Steuersatz` | Steuersatz-Label ändert sich | Steuersatz `1/2` → `2/2` | H3 | PASS | `acceptance-result.json` | Gold 273 unverändert |
+| P04 | 17:29:54 | `Lugdunum` → `Bauen` → `Markt` | Stufe 1, Gold −60 | `Lugdunum` Markt Stufe 0 → 1; Gold 273 → 213 | H4 | PASS | `acceptance-result.json` | Markt gebaut |
+| P05 | 17:34:39 | `Lugdunum` → `Bauen` → `Kaserne` | Stufe 1, Truppen steigen | `Lugdunum` Kaserne Stufe 0 → 1; Gold 213 → 143 | H5 | PASS | `acceptance-result.json` | Kaserne gebaut |
+| P06 | 17:34:42 | `Heiraten (30 Gold)` → Picker → freies Ziel | Gemahl/in, Legitimität +5 | Gemahl/in `Sigrun`; Legitimität 55 | D5 | PASS | `acceptance-result.json` | Startlegitimität 50 |
+| P07 | 17:39:39 | Fremde Nachbarprovinz → `Anspruch schmieden` | Anspruch +1; `Angreifen` aktiv | `Etruria` (Haus Latium): Ansprüche 0 → 1; Gold 113 → 73; `Angreifen` aktiv | K2 | PASS | `acceptance-result.json` | Ziel `Etruria` |
+| P08 | 17:39:42 | Eigene Provinz → `Armee aufstellen` | Armee +1, Gold −50 | Armeen 0 → 1; Gold 73 → 23 | K3 | PASS | `acceptance-result.json` | — |
+| P09 | 17:44:40 | Zielprovinz → `Belagerung vorantreiben` | Belagerung > 0 % | `Etruria` Belagerung 0 % → 27 % | K4 | PASS | `acceptance-result.json` | — |
+| P10 | 17:44:41 | Zielprovinz → `Frieden schließen` | Waffenstillstand in der Zukunft | Haus Latium: Waffenstillstand bis 37; Meinung 0 → 10 | K6 | PASS | `acceptance-result.json` | — |
+| P11 | 17:49:40 | Anderes Haus → `Geheimnis aufdecken` → `ausnutzen` | Haltung −15, Anspruch +1 | Haus Unetice: Haltung 60 → 45; Ansprüche 1 → 2 | D7, D8 | PASS | `acceptance-result.json` | Zielhaus Unetice |
+| P12 | 17:44:43 | Friedensziel → `Angreifen` prüfen | Schaltfläche deaktiviert | `Etruria`: `Angreifen` disabled=true; Waffenstillstand bis 37 (jetzt 13) | K7 | PASS | `acceptance-result.json` | Während Pause geprüft |
+| AI-01 | 17:54:40 | Save-Diff KI | eine KI-Kante belegt | `AI2: Haus 3 Steuersatz 1 → 2`; `AI2: Haus 4 Steuersatz 1 → 2`; `AI2: Haus 7 Steuersatz 1 → 2` | AI2 | PASS | `saves/ai-start.json`, `saves/ai-end.json` | — |
+| AI-02 | 17:54:40 | Save-Diff KI | zweite, andere KI-Kante belegt | `AI3: Haus 5 hat geheiratet`; `AI3: Haus 7 hat geheiratet` | AI3 | PASS | `saves/ai-start.json`, `saves/ai-end.json` | — |
+| **Abschluss** | **30:00** | **Gerät/Datum:** Windows, 2026-11-07 | **Ergebnis:** BESTANDEN | 12/12 Aktionen, 13 Kanten, 3/3 Roundtrips, AI2+AI3 | — | — | `acceptance-result.json`, `screens/win-042-3000.png` | Lauf 17:24:39–17:54:40; regulärer `run_end` |
 
 ### Save-Diff-Felder je Roundtrip
 

@@ -3,9 +3,10 @@
 > Stand: 2026-11-07
 > Gerät: `24117RK2CG`, Android 16, Geräteserie `f030379a`
 > App: `org.example.kronen`, `versionName 1.2`, `versionCode 3`
-> Build: Commit `89846de4fcdf4c9fef3f11b1c9fbe6041c4a2634` (Tag `v1.2`)
+> Build der historischen Sichtprüfung: Commit `89846de4fcdf4c9fef3f11b1c9fbe6041c4a2634` (Tag `v1.2`), APK `8cd6d9b733fc1c62bf63801e4615e0329c62f00f16d2ee440dbe6c409dc8d7d8` (179.750.931 Bytes)
+> Aktueller Arbeitsbaum-Build: APK `cf89fa500c2faeadf23fc624adc7f16f6ed994933f52557edb92cf487449039a` (180.707.377 Bytes, `2026-11-07 17:10:23`); nicht auf einem Gerät installiert.
 > Anzeige: 3200×1440 im Landscape; Bedienung per ADB-Touch
-> **Ergebnis: NICHT BESTANDEN – Lauf abgebrochen; keine externe Blockade belegt.** Der frühere Befund „extern blockiert“ ist widerlegt. Die wiederholten `am force-stop`-Aufrufe stammen aus einer lokalen Bash-Schleife im Host, nicht aus einem externen ADB-Treiber.
+> **Ergebnis der historischen Sichtprüfung: NICHT BESTANDEN – Lauf abgebrochen; keine externe Blockade belegt.** Der frühere Befund „extern blockiert“ ist widerlegt. Die wiederholten `am force-stop`-Aufrufe stammen aus einer lokalen Bash-Schleife im Host, nicht aus einem externen ADB-Treiber. Die aktuelle APK bleibt ungeprüft.
 
 ## Ergebnis in einem Satz
 
@@ -76,7 +77,7 @@ Der Testnutzer 10 wurde entfernt; aktueller Nutzer ist 0. `org.example.kronen` u
 - Mindestens 10 Kanten, davon 3 dynastische, 3 Krieg-/Diplomatie- und 2 KI-Kanten.
 - Drei Save/Load-Roundtrips mit Save-Diff sowie `ai-start.json`/`ai-end.json`.
 - Der vollständige 30-Minuten-Lauf.
-- Der Windows-Lauf ist separat im [30-Minuten-Protokoll](manual-acceptance.md#windows-lauf-2026-11-07) dokumentiert und dort **DURCHGEFALLEN**.
+- Der Windows-Lauf ist separat im [30-Minuten-Protokoll](manual-acceptance.md#windows-lauf-2026-11-07) dokumentiert und dort **BESTANDEN**.
 
 ## Evidenz
 

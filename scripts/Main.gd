@@ -9,11 +9,11 @@ const FamilyTreeScript = preload("res://scripts/FamilyTree.gd")
 const BannerGeneratorScript = preload("res://scripts/BannerGenerator.gd")
 const UiKernelScript = preload("res://scripts/UiKernel.gd")
 const ViewModelBuilder = preload("res://scripts/ViewModelBuilder.gd")
+const AcceptanceDriverScript = preload("res://scripts/AcceptanceDriver.gd")
 
 const TEX_CARD = preload("res://assets/ui/card.png")
 const TEX_BUTTON = preload("res://assets/ui/button.png")
-const TEX_TITLE = preload("res://assets/ui/title_bg.png")
-const TEX_LOGO = preload("res://assets/ui/logo_title.png")
+const TEX_TITLE = preload("res://assets/ui/bq_beta_title.jpg")
 
 const INK := Color(0.16, 0.11, 0.07)
 const INK_SOFT := Color(0.32, 0.24, 0.15)
@@ -113,6 +113,11 @@ func _ready() -> void:
 		_load_audio()
 	_build()
 	_show_start()
+	var args := OS.get_cmdline_user_args()
+	if args.has("--acceptance"):
+		var driver = AcceptanceDriverScript.new()
+		add_child(driver)
+		driver.begin(self, args)
 	print("MAIN_READY version=1.2")
 
 func _stop_audio() -> void:
@@ -547,26 +552,25 @@ func _build() -> void:
 	dim3.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	start_layer.add_child(dim3)
 
+	# Das Titelbild enthält die Wortmarke bereits. Die Menüleiste sitzt deshalb
+	# ohne zweites Logo im dunklen Bereich unter dem Bogen.
 	var title_panel := VBoxContainer.new()
-	title_panel.set_anchors_and_offsets_preset(Control.PRESET_RIGHT_WIDE)
-	title_panel.offset_left = -440
-	title_panel.offset_right = -44
-	title_panel.alignment = BoxContainer.ALIGNMENT_CENTER
-	title_panel.add_theme_constant_override("separation", 8)
+	title_panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	title_panel.offset_left = -470
+	title_panel.offset_top = -238
+	title_panel.offset_right = -40
+	title_panel.offset_bottom = -20
+	title_panel.alignment = BoxContainer.ALIGNMENT_END
+	title_panel.add_theme_constant_override("separation", 6)
 	start_layer.add_child(title_panel)
-	var logo_rect := TextureRect.new()
-	logo_rect.texture = TEX_LOGO
-	logo_rect.custom_minimum_size = Vector2(0, 342)
-	logo_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	logo_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	logo_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	title_panel.add_child(logo_rect)
 	var title_menu := VBoxContainer.new()
-	title_menu.add_theme_constant_override("separation", 9)
+	title_menu.add_theme_constant_override("separation", 7)
 	title_panel.add_child(title_menu)
-	title_menu.add_child(_title_button("Neues Spiel", _show_newgame, "crown"))
-	title_menu.add_child(_title_button("Spiel laden", _load_from_title, "scroll"))
-	title_menu.add_child(_title_button("Beenden", _quit_game, ""))
+	for entry in [["Neues Spiel", _show_newgame, "crown"], ["Spiel laden", _load_from_title, "scroll"], ["Beenden", _quit_game, ""]]:
+		var button := _title_button(str(entry[0]), entry[1], str(entry[2]))
+		button.custom_minimum_size = Vector2(0, 48)
+		button.add_theme_font_size_override("font_size", 18)
+		title_menu.add_child(button)
 	title_status = _label("", 12, Color(0.90, 0.75, 0.48))
 	title_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -580,12 +584,12 @@ func _build() -> void:
 	version.offset_bottom = -10
 	start_layer.add_child(version)
 	var fullscreen_hint := _label("F11 · Vollbild", 12, Color(0.58, 0.50, 0.38))
-	fullscreen_hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	fullscreen_hint.offset_left = -180
+	fullscreen_hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	fullscreen_hint.offset_left = 430
 	fullscreen_hint.offset_top = -32
-	fullscreen_hint.offset_right = -24
+	fullscreen_hint.offset_right = 720
 	fullscreen_hint.offset_bottom = -10
-	fullscreen_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	fullscreen_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	start_layer.add_child(fullscreen_hint)
 
 	# Hausauswahl für ein neues Spiel

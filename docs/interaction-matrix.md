@@ -82,4 +82,4 @@ DC-1 ist damit erfüllt: Jede der vier Säulen beeinflusst mindestens zwei ander
 | `TEIL` | 0 | — |
 | `PLAN` | 0 | — |
 
-Die automatisierte Story-Probe ist grün. Der manuelle 30-Minuten-Lauf auf Hardware bleibt eine Abnahme außerhalb von CI; er wird nicht als automatisch geprüft ausgegeben.
+Die automatisierte Story-Probe ist grün. Der Windows-30-Minuten-Lauf ist **BESTANDEN** ([Protokoll](manual-acceptance.md#windows-lauf-2026-11-07)); der Android-Lauf bleibt eine Abnahme außerhalb von CI und wird nicht als automatisch geprüft ausgegeben.

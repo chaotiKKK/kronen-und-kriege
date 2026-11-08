@@ -25,13 +25,16 @@ Der Save ist migrationfest: Schema 1 wird beim Laden auf Schema 4 gehoben; Gebä
 
 Die veröffentlichten Testversionen liegen auf GitHub: [Kronen und Kriege 1.2](https://github.com/chaotiKKK/kronen-und-kriege/releases/tag/v1.2).
 
+Die folgenden Hashes beschreiben den aktuellen Arbeitsbaum-Build unter `F:`. Das GitHub-Release `v1.2` wurde für den Ladebildschirm-Stand nicht neu veröffentlicht.
+
 ### Android
 
 | | |
 |---|---|
 | Datei | `F:\ck3-kronen-kriege.apk` |
-| Größe | 179.750.931 Bytes (ca. 171 MiB) |
-| SHA-256 | `8cd6d9b733fc1c62bf63801e4615e0329c62f00f16d2ee440dbe6c409dc8d7d8` |
+| Größe | 180.707.377 Bytes (ca. 172 MiB) |
+| SHA-256 | `cf89fa500c2faeadf23fc624adc7f16f6ed994933f52557edb92cf487449039a` |
+| Zeitstempel | `2026-11-07 17:10:23` (CET) |
 | Paket | `org.example.kronen`, versionCode 3, versionName 1.2 |
 | SDK | minSdk 24, targetSdk 35 (compileSdk 35) |
 | ABIs | `arm64-v8a`, `armeabi-v7a` (keine x86-Bibliotheken) |
@@ -50,12 +53,13 @@ adb install -r "F:\ck3-kronen-kriege.apk"
 | | |
 |---|---|
 | Datei | `F:\ck3-kronen-kriege.exe` |
-| Größe | 112.734.400 Bytes (ca. 108 MiB) |
-| SHA-256 | `a37ae5ea8557ec5c276bdced83c2a8e7e9a391308fd1a06daa98e2eebcf0fcf9` |
+| Größe | 113.716.840 Bytes (ca. 108 MiB) |
+| SHA-256 | `951c65bd4e04f97f8b607ae4bb153b2c2de3fe4a45c1620d32704754eb1a3121` |
+| Zeitstempel | `2026-11-07 17:08:59` (CET) |
 | Version | 1.2.0.0, Produkt „Kronen und Kriege“ |
 | Format | einzelne x86_64-EXE mit eingebetteter PCK, eigenem Icon und Versionsressourcen |
 | Start | Doppelklick auf die EXE; `F11` schaltet Vollbild |
-| Geprüft | Fenster `1298x765`, Titel „Kronen und Kriege“, Startmenü, `MAIN_READY`, Exit 0; drei aufeinanderfolgende Läufe grün |
+| Geprüft | Vollständiger 30-Minuten-Abnahmelauf **BESTANDEN** (12/12 Aktionen, 3/3 Roundtrips, AI2+AI3, regulärer `run_end`); Fenster `1298x765`, Titel „Kronen und Kriege“, `MAIN_READY`, keine Skriptfehler |
 
 ### Release-Verifikation
 
@@ -66,7 +70,7 @@ bash tools/verify_android_apk.sh "F:/ck3-kronen-kriege.apk"
 powershell -NoProfile -ExecutionPolicy Bypass -File tools/verify_windows_start.ps1
 ```
 
-Die APK-Prüfung bestätigt mit `apksigner` `Verifies`, APK Signature Scheme v2, genau einen Signer und das Debug-Zertifikat. `aapt dump badging` weist Paket, Version, minSdk/targetSdk, Launchable Activity und beide ABIs aus; `zipalign -c -v 4` bestätigt die Ausrichtung. Die Windows-Prüfung startet die EXE ohne erzwingenden `--quit-after`, wartet auf `MAIN_READY`, prüft Fenster, Sichtbarkeit und einen nichtleeren Render-Frame, schließt per `WM_CLOSE` und verlangt Exit 0 sowie keine `ERROR`-/Exception-Zeilen. Der Screenshot liegt unter `build/verify/windows-start.png`. Drei Läufe hintereinander waren grün. Die einzige Log-Warnung ist die umgebungsbedingte Godot-Meldung zu Windows-Common-Controls; sie ist keine Fehlerzeile.
+Die APK-Prüfung bestätigt mit `apksigner` `Verifies`, APK Signature Scheme v2, genau einen Signer und das Debug-Zertifikat. `aapt dump badging` weist Paket, Version, minSdk/targetSdk, Launchable Activity und beide ABIs aus; `zipalign -c -v 4` bestätigt die Ausrichtung. Die Windows-Prüfung startet die EXE ohne erzwingenden `--quit-after`, wartet auf `MAIN_READY`, prüft Fenster, Sichtbarkeit und einen nichtleeren Render-Frame, schließt per `WM_CLOSE` und verlangt Exit 0 sowie keine `ERROR`-/Exception-Zeilen. Der Screenshot liegt unter `build/verify/windows-start.png`. Der Startcheck war für diesen Build grün. Der vollständige 30-Minuten-Lauf gegen die ausgelieferte EXE ist im [Abnahmeprotokoll](docs/manual-acceptance.md#windows-lauf-2026-11-07) mit 12/12 Aktionen, 3/3 Roundtrips ohne Save-Diff und den KI-Kanten AI2+AI3 dokumentiert. Die einzige Log-Warnung ist die umgebungsbedingte Godot-Meldung zu Windows-Common-Controls; sie ist keine Fehlerzeile.
 
 ## Spielinhalt
 
@@ -273,14 +277,14 @@ export_windows.sh         Windows-Build
 - `TouchTest`: Auswahl per `InputEventScreenTouch` und Ausbau per Touch.
 - `ShotTest`: fünf gerenderte Bilder, inklusive Herrscher-Werkstatt.
 - Headless-Läufe: alle zwölf Suiten (elf bestehende plus `UiKernelTest`) Exit 0; die Main-basierten Tests laufen ohne Audio- und Ressourcen-Leak-Warnungen.
-- Android: Schema-4-Export erfolgreich (Exit 0), 179.750.931 Bytes, SHA-256 `8cd6d9b733fc1c62bf63801e4615e0329c62f00f16d2ee440dbe6c409dc8d7d8`; `apksigner` bestätigt v2, einen Signer und das Debug-Zertifikat; `zipalign` ok; Badging: `org.example.kronen`, versionCode 3/versionName 1.2, minSdk 24, targetSdk 35, Activity `com.godot.game.GodotApp`, ABIs `arm64-v8a`/`armeabi-v7a`. ADB sieht das autorisierte Gerät `f030379a` (Android 16, Modell `24117RK2CG`); die APK 1.2 wurde mit `adb install -r` installiert (Exit 0), die Activity kalt gestartet (`Status: ok`) und der Prozess lief nach 15 Sekunden noch ohne FATAL-/Script-Error. Der Keyguard war aktiv; die visuelle Abnahme und der 30-Minuten-Lauf stehen noch aus.
-- Windows: Schema-4-Export erfolgreich (Exit 0), 112.734.400 Bytes, SHA-256 `a37ae5ea8557ec5c276bdced83c2a8e7e9a391308fd1a06daa98e2eebcf0fcf9`, eingebettete PCK, Audio und Versionsressourcen vorhanden. Drei automatisierte Startläufe: Fenster `1298x765`, Titel „Kronen und Kriege“, Startmenü, `MAIN_READY`, Exit 0, keine `ERROR`-/Exception-Zeilen.
+- Android: Schema-4-Export erfolgreich (Exit 0), 180.707.377 Bytes, SHA-256 `cf89fa500c2faeadf23fc624adc7f16f6ed994933f52557edb92cf487449039a`; `apksigner` bestätigt v2, einen Signer und das Debug-Zertifikat; `zipalign` ok; Badging: `org.example.kronen`, versionCode 3/versionName 1.2, minSdk 24, targetSdk 35, Activity `com.godot.game.GodotApp`, ABIs `arm64-v8a`/`armeabi-v7a`. Bei der letzten Prüfung sah ADB das autorisierte Gerät `f030379a` (Android 16, Modell `24117RK2CG`); aktuell meldet `adb devices` kein verbundenes Gerät. Die frühere APK 1.2 wurde mit `adb install -r` installiert (Exit 0), die Activity kalt gestartet (`Status: ok`); der Prozess lief nach 15 Sekunden noch ohne FATAL-/Script-Error. Die aktuelle APK 1.2 mit dem neuen Ladebildschirm wurde noch nicht auf einem Gerät installiert; die visuelle Android-Abnahme und der Android-30-Minuten-Lauf bleiben offen.
+- Windows: Schema-4-Export erfolgreich (Exit 0), **113.716.840 Bytes**, SHA-256 `951c65bd4e04f97f8b607ae4bb153b2c2de3fe4a45c1620d32704754eb1a3121`, eingebettete PCK, Audio und Versionsressourcen vorhanden. Der vollständige 30-Minuten-Abnahmelauf war **BESTANDEN** (12/12 Aktionen, 3/3 Roundtrips, AI2+AI3, regulärer `run_end`); der Startcheck meldet `MAIN_READY` und keine `ERROR`-/Exception-Zeilen.
 
 ## Offene manuelle Abnahme
 
 Automatisch nicht möglich sind nur diese Punkte. Das ausführbare Prüfprotokoll mit sechs Zeitfenstern, Evidenztabelle und Abbruchregeln steht in [`docs/manual-acceptance.md`](docs/manual-acceptance.md).
 
-1. **Installation und Start auf einem realen Android-Gerät.** Das Android-SDK liegt unter `C:\Users\HP\AppData\Local\Android\Sdk`; `adb` ist nicht im PATH. Der direkte Aufruf von `C:\Users\HP\AppData\Local\Android\Sdk\platform-tools\adb.exe devices` zeigt das autorisierte Gerät `f030379a` (Android 16, Modell `24117RK2CG`). Die APK 1.2 ist bereits installiert; der Keyguard war beim Smoke-Test aktiv. Zum manuellen Nachtest Gerät entsperren und:
+1. **Installation und Start auf einem realen Android-Gerät.** Das Android-SDK liegt unter `C:\Users\HP\AppData\Local\Android\Sdk`; `adb` ist nicht im PATH. Bei der letzten Prüfung zeigte der direkte Aufruf von `C:\Users\HP\AppData\Local\Android\Sdk\platform-tools\adb.exe devices` das autorisierte Gerät `f030379a` (Android 16, Modell `24117RK2CG`); aktuell meldet derselbe Aufruf kein verbundenes Gerät. Die frühere APK 1.2 war bei der letzten Prüfung installiert; die aktuelle APK 1.2 mit dem neuen Ladebildschirm wurde noch nicht auf einem Gerät installiert. Der Keyguard war bei der früheren Prüfung aktiv. Zum manuellen Nachtest Gerät per USB verbinden, entsperren und:
 
    ```
    "C:\Users\HP\AppData\Local\Android\Sdk\platform-tools\adb.exe" install -r "F:\ck3-kronen-kriege.apk"
@@ -289,7 +293,7 @@ Automatisch nicht möglich sind nur diese Punkte. Das ausführbare Prüfprotokol
 
    Danach „Neues Spiel“ wählen, Karte und Porträt antippen, einen Ausbau und Speichern/Laden auslösen und auf Abstürze prüfen.
 
-2. **Menschlicher 30-Minuten-Spielauf.** Eine vollständige Partie über 30 Minuten (Android oder Windows), inklusive mehrerer Entscheidungen, Speichern/Laden, Krieg/Diplomatie und einer Sichtprüfung der Darstellung, ist kein automatisierbarer Nachweis. Die automatischen Tests decken die Spiellogik, die Start-EXE und die Touch-/Bildpfade ab, aber nicht das Langzeitverhalten auf realer Hardware.
+2. **Menschlicher 30-Minuten-Spielauf auf Android.** Der Windows-Lauf ist am 2026-11-07 **BESTANDEN** (12/12 Aktionen, 3/3 Roundtrips, AI2+AI3; [Laufprotokoll](docs/manual-acceptance.md#windows-lauf-2026-11-07)). Für Android bleibt eine vollständige Partie über 30 Minuten inklusive mehrerer Entscheidungen, Speichern/Laden, Krieg/Diplomatie und Sichtprüfung offen; sie ist kein automatisierbarer Nachweis. Die automatischen Tests decken die Spiellogik, die Start-EXE und die Touch-/Bildpfade ab, aber nicht das Langzeitverhalten auf realer Hardware.
 
 ## Warum keine CK3-Assets
 

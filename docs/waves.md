@@ -1,9 +1,9 @@
 # Wellenplan
 
-> Dokumentversion: 2.0
-> Stand: 2026-11-06
+> Dokumentversion: 2.1
+> Stand: 2026-11-07
 > Gültig für Save-Schema: 4
-> Status: Wellen 0–3 umgesetzt; Welle 4 automatisiert geprüft, manuelle 30-Minuten-Abnahme offen
+> Status: Wellen 0–3 umgesetzt; Welle 4 automatisiert geprüft; Windows-30-Minuten-Abnahme BESTANDEN, Android offen
 
 ## Zweck
 
@@ -25,7 +25,7 @@ Der Plan legt die Reihenfolge fest, in der aus dem Prototyp eine verzahnte Bronz
 | **1 — Herrschaft & Dynastie** | Rat, Erbfolge, Steuern, Märkte, Gebäude, Legitimität, Fraktionen, Traits, Erziehung, Geheimnisse | `legitimacy`, `factions`, `secrets`, `ruler.traits`, `children[].education`; Schema 3/4 | H1–H8, D1–D8, AI1–AI2 | **umgesetzt** |
 | **2 — Krieg & Diplomatie** | Ansprüche, Armeen, Belagerungen, Frieden, Waffenstillstände, Verteidigung | `claims`, `armies`, `truces`, `provinces[].defense/siege/siege_owner`; Schema 4 | K1–K7, H5-Mauern | **umgesetzt** |
 | **3 — Welt & KI** | KI nutzt Rat, Steuern, Ehen, Ansprüche, Armeen, Belagerungen und Geheimnisse über dieselben Methoden | dieselben Felder für KI-Häuser | AI1–AI5; `FullDepthTest` | **umgesetzt** |
-| **4 — 30-Minuten-Bogen** | Automatisierte Story-Probe mit Entscheidungen, Chronik und Save-Checkpoints | keine neuen Pflichtfelder | `StoryTest` plus manueller 30-Minuten-Lauf | **automatisiert geprüft; manuell offen** |
+| **4 — 30-Minuten-Bogen** | Automatisierte Story-Probe mit Entscheidungen, Chronik und Save-Checkpoints | keine neuen Pflichtfelder | `StoryTest` plus manueller 30-Minuten-Lauf | **automatisiert geprüft; Windows BESTANDEN; Android offen** |
 
 ## Welle 1 — Herrschaft und Dynastie
 
@@ -74,7 +74,7 @@ Der Unterschied liegt nur in der Bewertungsfunktion. AI1–AI5 sind in `Systemic
 
 `tests/StoryTest.gd` spielt 120 Monate mit festem Seed, trifft 104 Entscheidungen, sieht 24 verschiedene Kanten, davon 7 dynastische, 6 Krieg-/Diplomatie- und 5 KI-Kanten, und prüft drei Save/Load-Roundtrips ohne Diff.
 
-Das ist die automatisierte CI-Probe, keine Wall-Clock-Messung. Der manuelle 30-Minuten-Lauf bei x3 auf Windows oder Android bleibt offen und wird im Abschlussbericht nicht als geprüft ausgegeben.
+Das ist die automatisierte CI-Probe, keine Wall-Clock-Messung. Der Windows-30-Minuten-Lauf bei x3 ist am 2026-11-07 **BESTANDEN** ([Protokoll](manual-acceptance.md#windows-lauf-2026-11-07), 12/12 Aktionen, 3/3 Roundtrips, AI2+AI3). Der Android-Lauf bleibt offen und wird nicht als geprüft ausgegeben.
 
 ## Nachweise
 
