@@ -1,0 +1,235 @@
+{
+  "generated_by": "tools/blender/make_tokens.py",
+  "blender": "5.2.1 LTS",
+  "families": {
+    "tokens": {
+      "dir": "assets/ui/tokens",
+      "size": [
+        256,
+        256
+      ],
+      "coverage": [
+        0.15,
+        0.55
+      ],
+      "files": [
+        "assets/ui/tokens/terrain_plains.png",
+        "assets/ui/tokens/terrain_farmland.png",
+        "assets/ui/tokens/terrain_forest.png",
+        "assets/ui/tokens/terrain_hills.png",
+        "assets/ui/tokens/terrain_mountains.png",
+        "assets/ui/tokens/terrain_marsh.png",
+        "assets/ui/tokens/terrain_coast.png",
+        "assets/ui/tokens/terrain_steppe.png",
+        "assets/ui/tokens/terrain_heath.png",
+        "assets/ui/tokens/building_barracks.png",
+        "assets/ui/tokens/building_walls.png",
+        "assets/ui/tokens/building_market.png",
+        "assets/ui/tokens/unit_levy.png",
+        "assets/ui/tokens/unit_knight.png",
+        "assets/ui/tokens/unit_archer.png",
+        "assets/ui/tokens/unit_siege.png",
+        "assets/ui/tokens/unit_fleet.png"
+      ]
+    },
+    "portraits": {
+      "dir": "assets/ui/portraits",
+      "size": [
+        512,
+        512
+      ],
+      "coverage": [
+        0.97,
+        1.0
+      ],
+      "files": [
+        "assets/ui/portraits/portrait_ruler_male_adult.png",
+        "assets/ui/portraits/portrait_ruler_female_adult.png",
+        "assets/ui/portraits/portrait_council_male_mid.png",
+        "assets/ui/portraits/portrait_council_female_mid.png",
+        "assets/ui/portraits/portrait_clergy_male_old.png",
+        "assets/ui/portraits/portrait_clergy_female_mid.png",
+        "assets/ui/portraits/portrait_child_boy.png",
+        "assets/ui/portraits/portrait_child_girl.png",
+        "assets/ui/portraits/portrait_knight_male_adult.png",
+        "assets/ui/portraits/portrait_matron_female_old.png",
+        "assets/ui/portraits/portrait_steward_male_young.png",
+        "assets/ui/portraits/portrait_envoy_female_young.png"
+      ]
+    },
+    "events": {
+      "dir": "assets/ui/events",
+      "size": [
+        960,
+        540
+      ],
+      "coverage": [
+        0.97,
+        1.0
+      ],
+      "files": [
+        "assets/ui/events/event_court_reception.png",
+        "assets/ui/events/event_battle.png",
+        "assets/ui/events/event_harvest.png",
+        "assets/ui/events/event_fever.png",
+        "assets/ui/events/event_wedding.png",
+        "assets/ui/events/event_monastery.png",
+        "assets/ui/events/event_tithe.png",
+        "assets/ui/events/event_merchant.png"
+      ]
+    }
+  },
+  "key_map": [
+    {
+      "code": "terrain.plains",
+      "asset": "assets/ui/tokens/terrain_plains.png"
+    },
+    {
+      "code": "terrain.farmland",
+      "asset": "assets/ui/tokens/terrain_farmland.png"
+    },
+    {
+      "code": "terrain.forest",
+      "asset": "assets/ui/tokens/terrain_forest.png"
+    },
+    {
+      "code": "terrain.hills",
+      "asset": "assets/ui/tokens/terrain_hills.png"
+    },
+    {
+      "code": "terrain.mountains",
+      "asset": "assets/ui/tokens/terrain_mountains.png"
+    },
+    {
+      "code": "terrain.marsh",
+      "asset": "assets/ui/tokens/terrain_marsh.png"
+    },
+    {
+      "code": "terrain.coast",
+      "asset": "assets/ui/tokens/terrain_coast.png"
+    },
+    {
+      "code": "terrain.steppe",
+      "asset": "assets/ui/tokens/terrain_steppe.png"
+    },
+    {
+      "code": "terrain.heath",
+      "asset": "assets/ui/tokens/terrain_heath.png"
+    },
+    {
+      "code": "building.barracks",
+      "asset": "assets/ui/tokens/building_barracks.png"
+    },
+    {
+      "code": "building.walls",
+      "asset": "assets/ui/tokens/building_walls.png"
+    },
+    {
+      "code": "building.market",
+      "asset": "assets/ui/tokens/building_market.png"
+    },
+    {
+      "code": "unit.levy",
+      "asset": "assets/ui/tokens/unit_levy.png"
+    },
+    {
+      "code": "unit.archer",
+      "asset": "assets/ui/tokens/unit_archer.png"
+    },
+    {
+      "code": "unit.knight",
+      "asset": "assets/ui/tokens/unit_knight.png"
+    },
+    {
+      "code": "unit.siege",
+      "asset": "assets/ui/tokens/unit_siege.png"
+    },
+    {
+      "code": "unit.fleet",
+      "asset": "assets/ui/tokens/unit_fleet.png"
+    },
+    {
+      "code": "event.hoftag",
+      "asset": "assets/ui/events/event_court_reception.png"
+    },
+    {
+      "code": "event.hochzeit",
+      "asset": "assets/ui/events/event_wedding.png"
+    },
+    {
+      "code": "event.kloster",
+      "asset": "assets/ui/events/event_monastery.png"
+    },
+    {
+      "code": "event.zehnt",
+      "asset": "assets/ui/events/event_tithe.png"
+    },
+    {
+      "code": "event.ernte",
+      "asset": "assets/ui/events/event_harvest.png"
+    },
+    {
+      "code": "event.haendler",
+      "asset": "assets/ui/events/event_merchant.png"
+    },
+    {
+      "code": "event.grenzstreit",
+      "asset": "assets/ui/events/event_battle.png"
+    },
+    {
+      "code": "event.krankheit",
+      "asset": "assets/ui/events/event_fever.png"
+    }
+  ],
+  "open": [],
+  "existing": [
+    {
+      "code": "characters.portrait_0",
+      "asset": "assets/portraits/portrait_0.png"
+    },
+    {
+      "code": "characters.portrait_1",
+      "asset": "assets/portraits/portrait_1.png"
+    },
+    {
+      "code": "characters.portrait_2",
+      "asset": "assets/portraits/portrait_2.png"
+    },
+    {
+      "code": "characters.portrait_3",
+      "asset": "assets/portraits/portrait_3.png"
+    },
+    {
+      "code": "characters.portrait_4",
+      "asset": "assets/portraits/portrait_4.png"
+    },
+    {
+      "code": "characters.portrait_5",
+      "asset": "assets/portraits/portrait_5.png"
+    },
+    {
+      "code": "characters.portrait_6",
+      "asset": "assets/portraits/portrait_6.png"
+    },
+    {
+      "code": "characters.portrait_7",
+      "asset": "assets/portraits/portrait_7.png"
+    },
+    {
+      "code": "characters.portrait_8",
+      "asset": "assets/portraits/portrait_8.png"
+    },
+    {
+      "code": "characters.portrait_9",
+      "asset": "assets/portraits/portrait_9.png"
+    },
+    {
+      "code": "characters.portrait_10",
+      "asset": "assets/portraits/portrait_10.png"
+    },
+    {
+      "code": "characters.portrait_11",
+      "asset": "assets/portraits/portrait_11.png"
+    }
+  ]
+}
