@@ -32,7 +32,7 @@ d2cc6508d07c65cb64e786a029736e4c04ad17f800736c6ac2f3c38f0826ec72  ck3-kronen-kri
 3b17118a9ea7d4e307fec735b58cc4b46dcc459d4ca49a4edac30f71037dbbbf  ck3-kronen-kriege.apk
 ```
 
-`tools/publish_github_release.sh` erzeugt diese Notizen beim Veröffentlichen neu und setzt dabei den Quellstand auf den dann aktuellen Commit-Kurzhash. Der Text oben ist der geprüfte Entwurf; die Hashes müssen vor dem Upload mit `F:` übereinstimmen.
+`tools/publish_github_release.sh` erzeugt beim Veröffentlichen **eigene, minimale Notizen** (Titel, Quellstand, Downloads, Prüfsummen, Debug-Hinweis) und setzt darin den Quellstand auf den dann aktuellen Commit-Kurzhash. Die Abschnitte „Neu in 1.3“, „Bekannte Einschränkungen“ und die Nachweise oben sind darin **nicht** enthalten und müssen nach dem Publish per `gh release edit v1.3 --notes-file <datei>` nachgezogen oder durch eine Erweiterung des Skripts ergänzt werden. Die Hashes müssen vor dem Upload mit `F:` übereinstimmen.
 
 ## Builds
 
@@ -51,7 +51,22 @@ d2cc6508d07c65cb64e786a029736e4c04ad17f800736c6ac2f3c38f0826ec72  ck3-kronen-kri
 - **Windows-Startcheck:** `WINDOWSTART OK`, Fenster `1298x765`, Titel „Kronen und Kriege“, Sichtbarkeit und nichtleerer Render-Frame geprüft, `MAIN_READY version=1.3`, Exit 0, keine Fehlerzeilen. Beleg: `build/verify/exe-1.3.log`.
 - **Android-Paketprüfung:** `ANDROID_APK OK`, Paket `org.example.kronen`, Version 1.3/4, minSdk 24, targetSdk 35, beide ABIs, V2-Signatur, `zipalign` ok. Beleg: `build/verify/apk-1.3.log`.
 - **30-Minuten-Abnahme Windows, 2026-11-08:** `14:45:16–15:15:17` (30:01), `status=BESTANDEN`; 12/12 Aktionen, 3/3 Roundtrips ohne Save-Diff, KI-Kanten AI2+AI3, 0 Fehlerzeilen. Beleg: `build/verify/manual-build-d2cc-v2/`, Protokoll: [manual-acceptance.md](manual-acceptance.md#windows-lauf-2026-11-08).
-- **Automatisierte Tiefentests:** `FullDepthTest` 57 Prüfungen (`build/verify/final-fulldepth-check.log`), `SystemicDepthTest` 38 Prüfungen (`build/verify/SystemicDepthTest.log`), beide grün.
+- **Automatisierte Tiefentests:** `FullDepthTest` 57 Prüfungen (`build/verify/final-fulldepth-check-1.3.log`, 2026-11-08 15:38), `SystemicDepthTest` 38 Prüfungen (`build/verify/SystemicDepthTest.log`), beide grün.
+
+## Abgleich mit dem Trockenlauf (2026-11-08)
+
+`bash tools/publish_github_release.sh --dry-run` lief zweimal; Ausgaben unter `build/verify/release-dryrun.log` und `build/verify/release-dryrun-dirty.log`.
+
+| Prüfung | Ergebnis |
+|---|---|
+| Im aktuellen Baum (vier Doku-Dateien geändert) | **Exit 1**: „Arbeitsbaum ist nicht sauber“ — der Entwurf muss vorher committet werden |
+| Auf sauberem Snapshot bei `38a4b28` | **Exit 0**, kein Push, kein Upload |
+| Repository | `chaotiKKK/kronen-und-kriege` |
+| Version / Tag | `1.3` / `v1.3` auf `38a4b28`; Tag existiert noch nicht |
+| APK-Prüfung | `ANDROID_APK OK`, V2, ein Signer, `zipalign ok`, versionCode 4/versionName 1.3 |
+| Hashes | EXE `d2cc6508…`, APK `3b17118a…` — identisch mit diesem Entwurf und mit `F:` |
+
+**Einzige Abweichung:** Die Skript-Notizen sind kürzer als dieser Entwurf (kein „Neu in 1.3“, keine Einschränkungen, keine Nachweise) und listen die APK vor der EXE. Hashes, Größen und Downloads stimmen überein, sodass nur der kuratierte Text nach dem Publish nachgezogen werden muss.
 
 ## Bekannte Einschränkungen
 
@@ -93,6 +108,7 @@ d2cc6508d07c65cb64e786a029736e4c04ad17f800736c6ac2f3c38f0826ec72  ck3-kronen-kri
 - [ ] Assets herunterladen und `sha256sum -c SHA256SUMS.txt` besteht.
 - [ ] Release-Seite im Browser öffnen: Titel, Vorab-Kennzeichnung und Notizen sichtbar.
 - [ ] `README.md` und `docs/ui-kernel.md` von „nicht veröffentlicht“ auf „veröffentlicht“ umstellen (Folge-Commit, danach erneut sauberer Baum).
+- [ ] Release-Notizen prüfen: das Skript veröffentlicht nur die Minimalnotizen; „Neu in 1.3“ und „Bekannte Einschränkungen“ per `gh release edit v1.3 --notes-file <datei>` ergänzen.
 
 ### 4. Rücknahme
 

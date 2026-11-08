@@ -224,6 +224,7 @@ Mindestens zwei **verschiedene** Präfixe `AI2`, `AI3` oder `AI4` müssen ausgeg
 - **Roundtrip 3:** `15:09:47` (24:31), `saves/roundtrip3-before.json`, Save/Load ohne Diff.
 - **Aktionen:** P01–P12 vollständig ausgeführt und **PASS**; Zeiten und beobachtete Wirkung in der Tabelle unten.
 - **KI-Beleg:** **AI2** (Haus 3, 5 und 7: Steuersatz 1 → 2) und **AI3** (Haus 5 und Haus 7 haben geheiratet); zwei verschiedene KI-Kanten.
+- **Automatisierte Gegenprüfung:** `FullDepthTest` headless am `2026-11-08` um `15:38` gegen genau diesen Stand: `FULLDEPTHTEST OK … 57 Prüfungen`, Exit 0, keine Fehlerzeile. Beleg: `build/verify/final-fulldepth-check-1.3.log`; die K6-Zusicherung `truce_until(1) > _now()` steht in `tests/FullDepthTest.gd:290`.
 - **Ende:** `ai-end.json` und die Screenshots um `15:15:17`; der Prozess endete nach `run_end 2026-11-08T15:15:17 status=BESTANDEN`.
 - **Befehl:** `powershell -NoProfile -ExecutionPolicy Bypass -File tools/run_acceptance.ps1 -Exe "F:\ck3-kronen-kriege.exe" -Project "" -Out "C:/Crusader Kings III/mobile-godot/build/verify/manual-build-d2cc-v2"`.
 - **Beleg:** `build/verify/manual-build-d2cc-v2/` mit `acceptance-result.json`, `acceptance.log`, `run.out.log`, `run.err.log`, `saves/` und `screens/`.
@@ -247,6 +248,7 @@ Mindestens zwei **verschiedene** Präfixe `AI2`, `AI3` oder `AI4` müssen ausgeg
 | P12 | 15:05:20 | Friedensziel → `Angreifen` prüfen | `etruria`: `Angreifen` disabled=true; Waffenstillstand bis 49 (jetzt 25) | K7 | PASS |
 | AI-01 | 15:15:17 | Save-Diff KI | `AI2: Haus 3 Steuersatz 1 → 2`; `AI2: Haus 5 Steuersatz 1 → 2`; `AI2: Haus 7 Steuersatz 1 → 2` | AI2 | PASS |
 | AI-02 | 15:15:17 | Save-Diff KI | `AI3: Haus 5 hat geheiratet`; `AI3: Haus 7 hat geheiratet` | AI3 | PASS |
+| T-01 | 15:38 | `FullDepthTest` headless (`res://tests/FullDepthTest.tscn`) | `FULLDEPTHTEST OK: …; 57 Prüfungen`, Exit 0, 0 Fehlerzeilen; K6-Zusicherung `truce_until(1) > _now()` (Zeile 290) | H3–H8, D1–D8, K1–K7, AI2–AI5 | PASS |
 | **Abschluss** | **30:00** | **Gerät/Datum:** Windows, 2026-11-08 | 12/12 Aktionen, 3/3 Roundtrips ohne Diff, AI2+AI3 | — | PASS |
 
 ## Windows-Lauf 2026-11-07
