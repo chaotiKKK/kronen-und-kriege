@@ -1,6 +1,6 @@
 extends Node
 ## Erzeugt Prüfbilder der Oberfläche (Start, Erstellung, Spiel, Kartenmodi).
-## Aufruf: godot --path . res://tests/ShotTest.tscn --resolution 1400x720
+## Aufruf: godot --path . res://tests/ShotTest.tscn --resolution 1280x720
 ## Kein Headless, damit der Viewport tatsächlich gerendert wird.
 
 var main
@@ -8,6 +8,9 @@ var frames: int = 0
 var shots: int = 0
 
 func _ready() -> void:
+	# Ein frischer Checkout enthält build/ nicht; die Bildpfade müssen trotzdem
+	# beschreibbar sein, bevor der erste Screenshot fällt.
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://build"))
 	main = load("res://scenes/Main.tscn").instantiate()
 	add_child(main)
 

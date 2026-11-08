@@ -3,7 +3,7 @@
 Ein Aufruf rendert den kompletten Satz:
   * 17 Karten-Token (9 Gelände, 3 Gebäude, 5 Einheiten)  256x256 RGBA, isometrisch
   * 12 Charakterporträts                                 512x512, Brustbild
-  * 4 Ereignisbilder                                     960x540, Szene mit Vorder-/Hintergrund
+  * 8 Ereignisbilder                                     960x540, Szene mit Vorder-/Hintergrund
 und schreibt assets/asset_manifest.json mit Dateiliste, Zielgrößen, Deckungs-
 korridoren und der Zuordnung zu den Schlüsseln aus dem Spielcode.
 
@@ -552,6 +552,173 @@ def event_harvest():
         _finish(bpy.context.active_object, "trunk")
 
 
+def _wheel(x, y, z, radius=0.32, depth=0.14, color="trunk"):
+    bpy.ops.mesh.primitive_cylinder_add(vertices=20, radius=radius, depth=depth,
+                                        location=(x, y, z),
+                                        rotation=(math.radians(90), 0.0, 0.0))
+    _finish(bpy.context.active_object, color)
+
+
+def event_wedding():
+    _floor("stone")
+    _backdrop("sky_warm", y=14.0)
+    ball((3.5, 13.3, 3.6), 1.15, "ember")
+    # Blumenbogen über dem Paar
+    for side in (-1.0, 1.0):
+        box((side * 1.8, 6.2, 1.75), (0.34, 0.34, 3.5), "stone_light")
+        box((side * 1.8, 6.2, 3.58), (0.42, 0.42, 0.16), "gold")
+        for z in (2.25, 2.65, 3.05):
+            ball((side * 1.8, 6.02, z), 0.13, "leaf")
+    box((0.0, 6.2, 3.55), (3.9, 0.36, 0.30), "stone_light")
+    for i in range(7):
+        ball((-1.5 + i * 0.5, 6.02, 3.70 + 0.12 * math.sin(i)), 0.12, "leaf")
+    # Banner rechts und links
+    for side, color in ((-1.0, "garment_red"), (1.0, "garment_blue")):
+        box((side * 3.0, 5.7, 2.0), (0.06, 0.06, 4.0), "trunk")
+        box((side * 3.0, 5.66, 3.6), (0.65, 0.04, 0.60), color)
+    # Brautpaar, Hände verbunden
+    _figure(-0.55, 4.15, 1.70, "garment_blue")
+    _figure(0.55, 4.15, 1.60, "linen")
+    cone((0.55, 4.05, 0.58), 0.38, 0.18, 1.15, "garment_white", vertices=14)
+    box((0.0, 4.05, 1.22), (0.60, 0.14, 0.09), "skin_light")
+    cone((0.55, 4.15, 1.43), 0.20, 0.20, 0.10, "gold", vertices=14)
+    box((-0.55, 4.30, 1.00), (0.50, 0.10, 0.90), "garment_red")
+    # Gäste
+    for x, y, h, color in ((-2.7, 3.2, 1.50, "garment_green"),
+                           (-2.2, 4.8, 1.45, "garment_purple"),
+                           (2.4, 3.1, 1.55, "garment_red"),
+                           (2.9, 4.5, 1.40, "garment_green")):
+        _figure(x, y, h, color)
+    # Gabentisch links
+    box((-2.9, 5.7, 0.65), (1.4, 0.65, 0.14), "wood")
+    for x in (-3.3, -2.5):
+        box((x, 5.7, 0.32), (0.10, 0.10, 0.65), "trunk")
+    for x in (-3.2, -2.9, -2.6):
+        cone((x, 5.65, 0.82), 0.07, 0.05, 0.16, "steel", vertices=12)
+    # Geschenke rechts
+    box((2.8, 3.0, 0.30), (0.70, 0.60, 0.60), "wood")
+    box((2.8, 3.0, 0.62), (0.50, 0.40, 0.06), "gold")
+    # Blüten auf dem Boden
+    for x, y in ((-1.4, 2.7), (-0.9, 3.1), (1.2, 2.8), (1.7, 3.2),
+                 (-2.0, 2.2), (2.0, 2.4)):
+        box((x, y, 0.05), (0.12, 0.12, 0.03), "ember")
+
+
+def event_monastery():
+    _floor("ground_field")
+    _backdrop("sky_day", y=18.0)
+    ball((-3.4, 16.5, 4.1), 1.0, "ember")
+    # Fundament und Stufen des werdenden Tempels
+    box((0.0, 7.2, 0.14), (7.2, 3.2, 0.28), "stone")
+    for i in range(3):
+        box((0.0, 5.35 + i * 0.35, 0.10 + i * 0.10),
+            (5.2 - i * 0.5, 0.4, 0.20), "stone_light")
+    # Säulen und Architrav
+    for x in (-2.5, -0.9, 0.9, 2.5):
+        box((x, 7.2, 1.85), (0.32, 0.32, 3.30), "stone_light")
+        box((x, 7.2, 0.35), (0.55, 0.55, 0.18), "stone")
+    box((0.0, 7.2, 3.65), (6.0, 0.55, 0.40), "stone_light")
+    box((0.0, 7.2, 4.05), (6.2, 2.2, 0.28), "roof")
+    box((0.0, 6.05, 4.02), (0.65, 0.08, 0.65), "gold")
+    box((0.0, 7.05, 1.55), (1.15, 0.12, 2.60), "wood")
+    # Baugerüst links
+    for z in (1.2, 2.4, 3.6):
+        box((-4.0, 5.3, z), (0.08, 2.0, 0.08), "wood")
+    for x in (-4.4, -3.6):
+        box((x, 5.3, 1.8), (0.08, 0.08, 3.6), "wood")
+    box((-4.0, 5.3, 2.4), (0.70, 2.2, 0.08), "wood")
+    # Priester, Bauleute, Werkzeug und Steinvorrat
+    _figure(1.6, 4.2, 1.70, "linen")
+    box((1.95, 4.2, 1.05), (0.08, 0.50, 0.28), "garment_white")
+    _figure(-1.3, 3.1, 1.55, "garment_green")
+    box((-1.0, 3.0, 0.20), (0.55, 0.40, 0.40), "stone")
+    _figure(-2.2, 4.0, 1.45, "garment_blue")
+    for i in range(4):
+        box((2.0 + i * 0.35, 2.5, 0.16 + i * 0.10),
+            (0.35, 0.35, 0.30), "stone_light")
+    box((1.55, 2.2, 0.06), (2.2, 0.10, 0.04), "wood")
+
+
+def event_tithe():
+    _floor("stone")
+    _backdrop("sky_dusk", y=10.0)
+    # Tempelbanner hinter dem Altar
+    box((0.0, 9.35, 3.20), (3.4, 0.08, 3.0), "garment_red")
+    box((0.0, 9.30, 4.70), (3.6, 0.06, 0.16), "gold")
+    # Säulen und Fackeln
+    for x in (-2.8, -1.7, 1.7, 2.8):
+        cone((x, 6.9, 2.0), 0.22, 0.26, 4.0, "stone_light", vertices=12)
+    for side in (-1.0, 1.0):
+        cone((side * 2.35, 4.6, 0.85), 0.24, 0.17, 1.70, "stone")
+        ball((side * 2.35, 4.6, 1.78), 0.10, "ember")
+    # Altar mit Gabe
+    box((0.0, 6.4, 0.50), (3.0, 1.3, 1.0), "stone_light")
+    box((0.0, 6.4, 1.08), (3.2, 1.5, 0.18), "stone")
+    cone((0.0, 6.35, 1.30), 0.48, 0.30, 0.28, "gold", vertices=16)
+    for x in (-0.30, -0.10, 0.10, 0.30):
+        disc("gold", radius=0.065, z=1.23, depth=0.025, loc=(x, 6.28, 0.0))
+    cone((-0.90, 6.35, 1.38), 0.20, 0.05, 0.36, "dry", vertices=8)
+    cone((0.90, 6.35, 1.38), 0.20, 0.05, 0.36, "dry", vertices=8)
+    # Priester rechts vor dem Altar, mit erhobenen Armen
+    _figure(1.30, 5.55, 1.85, "garment_white")
+    cone((1.30, 5.45, 1.59), 0.20, 0.20, 0.10, "gold", vertices=14)
+    box((0.88, 5.45, 1.46), (0.55, 0.12, 0.12), "garment_white",
+        rot=(0.0, 0.0, math.radians(35)))
+    box((1.72, 5.45, 1.46), (0.55, 0.12, 0.12), "garment_white",
+        rot=(0.0, 0.0, math.radians(-35)))
+    # Gläubiger mit Korn- und Goldsack
+    _figure(-1.7, 3.8, 1.40, "garment_green")
+    for x in (-2.35, 2.35):
+        cone((x, 4.0, 0.48), 0.52, 0.26, 0.95, "dry", vertices=10)
+        ball((x, 4.0, 0.98), 0.08, "gold")
+    box((-1.25, 3.4, 0.22), (0.50, 0.40, 0.44), "wood")
+
+
+def event_merchant():
+    _floor("sand")
+    _backdrop("sky_day", y=20.0)
+    ball((3.2, 18.0, 4.2), 1.10, "ember")
+    # Weg und Stadttor
+    box((0.0, 5.2, 0.02), (3.4, 12.0, 0.04), "ground_field")
+    for side in (-1.0, 1.0):
+        box((side * 3.3, 9.0, 2.40), (1.3, 1.4, 4.8), "stone")
+        box((side * 3.3, 9.0, 5.05), (1.6, 1.6, 0.22), "stone_light")
+        box((side * 3.3, 8.2, 4.50), (1.5, 0.10, 0.55), "garment_blue")
+        for i in range(3):
+            box((side * 3.3, 8.30, 4.95 + i * 0.12),
+                (1.4, 0.12, 0.18), "stone_light")
+    box((0.0, 9.0, 4.90), (5.4, 1.4, 0.90), "stone")
+    box((0.0, 8.45, 4.55), (2.0, 0.10, 0.22), "gold")
+    # Handelsbanner im Tor
+    box((-1.0, 8.6, 3.05), (0.55, 0.06, 0.90), "garment_red")
+    box((1.0, 8.6, 3.05), (0.55, 0.06, 0.90), "garment_purple")
+    # Flacher Planwagen links, ohne hohes Zeltdach
+    box((-0.75, 4.0, 0.62), (1.9, 1.1, 0.28), "wood")
+    box((-0.75, 4.0, 0.83), (1.6, 0.95, 0.22), "trunk")
+    for x in (-1.45, -0.05):
+        _wheel(x, 4.0, 0.42, radius=0.40, depth=0.12)
+    # Ladung auf dem Wagen
+    box((-0.95, 4.0, 1.08), (0.70, 0.75, 0.70), "garment_blue")
+    box((-0.35, 4.0, 1.02), (0.55, 0.65, 0.58), "garment_red")
+    # Waren vorne rechts
+    box((1.75, 3.1, 0.42), (0.85, 0.75, 0.84), "garment_blue")
+    box((2.45, 3.1, 0.30), (0.60, 0.60, 0.60), "garment_red")
+    box((1.65, 2.25, 0.18), (0.70, 0.40, 0.36), "garment_purple")
+    # Fass und Kisten links
+    _wheel(-2.25, 3.3, 0.38, radius=0.34, depth=0.68, color="wood")
+    box((-2.65, 3.3, 0.30), (0.35, 0.70, 0.60), "wood")
+    # Händler, zentral und sichtbar
+    _figure(0.75, 3.8, 1.65, "garment_purple")
+    _figure(1.55, 4.4, 1.55, "garment_blue")
+    # Waage auf einer Kiste
+    box((0.85, 2.7, 0.35), (0.55, 0.45, 0.70), "wood")
+    box((0.85, 2.7, 0.86), (0.05, 0.05, 0.70), "gold")
+    box((0.85, 2.7, 1.20), (0.75, 0.04, 0.04), "gold")
+    for side in (-1.0, 1.0):
+        box((0.85 + side * 0.34, 2.7, 1.04), (0.03, 0.03, 0.32), "trunk")
+        cone((0.85 + side * 0.34, 2.7, 0.90), 0.12, 0.08, 0.06, "steel", vertices=12)
+
+
 def event_betrayal():
     _floor("ground_dark")
     _backdrop("sky_dusk", y=10.0)
@@ -576,11 +743,67 @@ def event_betrayal():
     box((1.25, 3.2, 0.80), (0.34, 0.34, 0.03), "steel")
 
 
+def event_fever():
+    _floor("ground_dark")
+    _backdrop("wood", y=12.0)
+    # Deckenbalken und Fenster mit Dämmerlicht
+    for x in (-3.3, -1.65, 0.0, 1.65, 3.3):
+        box((x, 11.82, 2.5), (0.10, 0.12, 4.8), "trunk")
+    box((0.0, 11.78, 4.85), (7.5, 0.12, 0.18), "trunk")
+    box((2.25, 11.72, 3.15), (1.45, 0.06, 1.55), "sky_dusk")
+    box((2.25, 11.66, 2.32), (1.70, 0.05, 0.12), "stone")
+    box((2.25, 11.66, 3.98), (1.70, 0.05, 0.12), "stone")
+    box((1.45, 11.66, 3.15), (0.12, 0.05, 1.78), "stone")
+    box((3.05, 11.66, 3.15), (0.12, 0.05, 1.78), "stone")
+    box((2.25, 11.64, 3.15), (0.08, 0.04, 1.55), "stone")
+    # Bett mit Kranken und Decke
+    box((-0.8, 4.5, 0.52), (2.9, 1.3, 0.22), "wood")
+    for x in (-2.15, 0.55):
+        for y in (3.95, 5.05):
+            box((x, y, 0.25), (0.12, 0.12, 0.5), "trunk")
+    box((-0.8, 4.5, 0.72), (2.7, 1.1, 0.18), "linen")
+    box((-0.8, 4.5, 0.94), (2.55, 1.0, 0.28), "garment_blue")
+    box((-1.65, 4.45, 1.07), (0.55, 0.72, 0.20), "garment_white")
+    # Fieberkranker mit Tuch auf der Stirn
+    ball((-1.55, 4.45, 1.27), 0.26, "skin_light", scale=(1.0, 1.1, 0.9))
+    ball((-1.62, 4.58, 1.30), 0.23, "hair_brown", scale=(1.0, 0.55, 0.85))
+    box((-1.55, 4.22, 1.40), (0.44, 0.06, 0.08), "garment_white")
+    for ex in (-1.64, -1.46):
+        box((ex, 4.19, 1.29), (0.055, 0.025, 0.018), "hair_black")
+    box((-0.5, 4.5, 1.10), (1.6, 1.05, 0.16), "garment_blue")
+    # Heiler mit Schale
+    _figure(1.25, 4.0, 1.8, "garment_white")
+    cone((1.25, 3.92, 1.57), 0.24, 0.10, 0.16, "garment_blue", vertices=12)
+    for ex in (1.18, 1.32):
+        box((ex, 3.77, 1.35), (0.035, 0.02, 0.02), "hair_black")
+    box((1.65, 3.85, 1.24), (0.62, 0.12, 0.10), "garment_white",
+        rot=(0.0, 0.0, math.radians(-28)))
+    ball((1.91, 3.78, 1.22), 0.07, "skin_light")
+    cone((1.95, 3.8, 1.12), 0.18, 0.10, 0.10, "steel", vertices=14)
+    # Beistelltisch mit Arzneien
+    box((1.8, 2.85, 0.62), (1.35, 0.65, 0.12), "wood")
+    for x in (1.3, 2.3):
+        box((x, 2.85, 0.31), (0.10, 0.10, 0.62), "trunk")
+    cone((1.45, 2.8, 0.82), 0.09, 0.06, 0.24, "steel", vertices=10)
+    cone((1.75, 2.8, 0.78), 0.08, 0.05, 0.20, "garment_green", vertices=10)
+    ball((2.25, 2.8, 0.82), 0.08, "ember")
+    # Kräuter und Feuerstelle
+    for x in (-2.8, -2.4):
+        box((x, 11.7, 3.9), (0.03, 0.03, 0.9), "trunk")
+        ball((x, 11.7, 3.45), 0.13, "leaf")
+    cone((-2.8, 3.2, 0.65), 0.45, 0.30, 1.2, "stone", vertices=10)
+    ball((-2.8, 3.2, 1.33), 0.10, "ember")
+
+
 EVENTS = [
     ("event_court_reception", event_court_reception, "sky_dusk"),
     ("event_battle", event_battle, "sky_warm"),
     ("event_harvest", event_harvest, "sky_day"),
-    ("event_betrayal", event_betrayal, "sky_dusk"),
+    ("event_fever", event_fever, "sky_dusk"),
+    ("event_wedding", event_wedding, "sky_warm"),
+    ("event_monastery", event_monastery, "sky_day"),
+    ("event_tithe", event_tithe, "sky_dusk"),
+    ("event_merchant", event_merchant, "sky_day"),
 ]
 
 
@@ -775,18 +998,17 @@ def main():
             {"code": "unit.archer", "asset": "assets/ui/tokens/unit_archer.png"},
             {"code": "unit.knight", "asset": "assets/ui/tokens/unit_knight.png"},
             {"code": "unit.siege", "asset": "assets/ui/tokens/unit_siege.png"},
+            {"code": "unit.fleet", "asset": "assets/ui/tokens/unit_fleet.png"},
             {"code": "event.hoftag", "asset": "assets/ui/events/event_court_reception.png"},
+            {"code": "event.hochzeit", "asset": "assets/ui/events/event_wedding.png"},
+            {"code": "event.kloster", "asset": "assets/ui/events/event_monastery.png"},
+            {"code": "event.zehnt", "asset": "assets/ui/events/event_tithe.png"},
             {"code": "event.ernte", "asset": "assets/ui/events/event_harvest.png"},
+            {"code": "event.haendler", "asset": "assets/ui/events/event_merchant.png"},
             {"code": "event.grenzstreit", "asset": "assets/ui/events/event_battle.png"},
+            {"code": "event.krankheit", "asset": "assets/ui/events/event_fever.png"},
         ],
-        "open": [
-            {"code": "unit.fleet", "reason": "Seekrieg existiert im Code nicht; Token liegt als Vorleistung bereit."},
-            {"code": "event.zehnt", "reason": "Erster Ereignissatz deckt vier Szenen; Panel nutzt später die passende Fallback-Illustration."},
-            {"code": "event.hochzeit", "reason": "Keine eigene Illustration im ersten Satz."},
-            {"code": "event.krankheit", "reason": "Keine eigene Illustration im ersten Satz."},
-            {"code": "event.kloster", "reason": "Keine eigene Illustration im ersten Satz."},
-            {"code": "event.haendler", "reason": "Keine eigene Illustration im ersten Satz."},
-        ],
+        "open": [],
         "existing": [
             {"code": "characters.portrait_%d" % i,
              "asset": "assets/portraits/portrait_%d.png" % i}

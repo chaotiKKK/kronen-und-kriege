@@ -217,11 +217,13 @@ APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/SystemicDept
 APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/FullDepthTest.tscn
 APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/StoryTest.tscn
 APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/UiKernelTest.tscn
+APPDATA="$PWD/appdata" ./godot.exe --headless --path .. res://tests/EventArtTest.tscn
 APPDATA="$PWD/appdata" ./godot.exe --path .. res://tests/TouchTest.tscn --resolution 1280x720
 APPDATA="$PWD/appdata" ./godot.exe --path .. res://tests/ShotTest.tscn --resolution 1280x720
+APPDATA="$PWD/appdata" ./godot.exe --path .. res://tests/TitleShot.tscn --resolution 1280x720
 ```
 
-`SaveMigrationTest` lädt den echten Altstand aus `tests/fixtures/legacy_v1.json`, migriert ihn auf Schema 4 und vergleicht alle Altfelder sowie einen JSON-Roundtrip. Die negativen Kontrollen entfernen `provinces[0].dev`, `houses[0].legitimacy` und `provinces[0].defense` und müssen alle Verluste melden. `SystemicDepthTest` prüft H1, H2, H5 (Kaserne), D5 und AI1; `FullDepthTest` prüft die übrigen 23 Kanten positiv und negativ. `StoryTest` spielt 120 Monate mit 104 Entscheidungen, 24 Kanten und drei Save-Roundtrips. `CustomizeTest` klickt auf das Porträt, ändert Porträt, Wappen, Hausfarbe, Namen, Geschlecht, Alter und Charakterwerte, prüft Speichern/Laden und das Zurücksetzen per Abbrechen. `ShotTest` rendert fünf Bilder: Start, Erstellung, Spiel, Stammbaum und Herrscher-Werkstatt.
+Godot 4.5 muss vorhanden sein; die lokale `.tools/godot.exe` ist wie die übrige Toolchain nicht versioniert und muss in einem frischen Checkout separat bereitgestellt werden. Es gibt keinen zentralen Test-Runner; die Szenen werden einzeln gestartet. `EventArtTest` prüft die acht Ereignisbilder, ihre Zuordnung, das Manifest und den Vektor-Fallback. `SaveMigrationTest` lädt den echten Altstand aus `tests/fixtures/legacy_v1.json`, migriert ihn auf Schema 4 und vergleicht alle Altfelder sowie einen JSON-Roundtrip. Die negativen Kontrollen entfernen `provinces[0].dev`, `houses[0].legitimacy` und `provinces[0].defense` und müssen alle Verluste melden. `SystemicDepthTest` prüft H1, H2, H5 (Kaserne), D5 und AI1; `FullDepthTest` prüft die übrigen 23 Kanten positiv und negativ sowie Gelände und Versorgung. `StoryTest` spielt 120 Monate mit 104 Entscheidungen, 24 Kanten und drei Save-Roundtrips. `CustomizeTest` klickt auf das Porträt, ändert Porträt, Wappen, Hausfarbe, Namen, Geschlecht, Alter und Charakterwerte, prüft Speichern/Laden und das Zurücksetzen per Abbrechen. `ShotTest` rendert elf Bilder: Start, Erstellung, Spiel, sechs Kartenmodi, Stammbaum und Herrscher-Werkstatt; `TitleShot` rendert Titelbild, Hausauswahl und Ladebildschirm.
 
 ## Toolchain im Projekt
 
@@ -269,14 +271,16 @@ export_windows.sh         Windows-Build
 - `IntrigueTest`: Heirat, Beilager, Verführen, Mord mit Nachfolge, Entführung mit Lösegeld, Stammbaum und Speichern/Laden.
 - `SaveMigrationTest`: echter v1-Altstand geladen, auf Schema 4 migriert, alle Altfelder erhalten, Legitimität/Faktionen/Verteidigung ergänzt, JSON-Roundtrip identisch; negative Kontrollen erkennen entferntes `dev`, `legitimacy` und `defense`.
 - `SystemicDepthTest`: H1, H2, H5 (Kaserne), D5 und AI1 positiv; alle fünf Negativkontrollen ohne Zieländerung; D5→H1-Kreislauf belegt.
-- `FullDepthTest`: 57 positive/negative Prüfungen für H3–H8 (inkl. Mauern), D1–D4, D6–D8, K1–K7 und AI2–AI5.
+- `FullDepthTest`: 74 positive/negative Prüfungen für H3–H8 (inkl. Mauern), D1–D4, D6–D8, K1–K7, AI2–AI5, Gelände und Versorgung.
 - `StoryTest`: 120 Monate, 104 Entscheidungen, 24 Kanten, 3 Save/Load-Roundtrips ohne Diff; 7 dynastische, 6 Krieg-/Diplomatie- und 5 KI-Kanten.
 - `UiKernelTest`: 35 Prüfungen für Auswahl, Modalstapel, blockierte und gültige Kommandos, Save-Grenze und View-Model-Strings.
 - `PortraitTest`: 48 HD-Porträts, Auswahlbereiche und Speichern/Laden grün.
 - `CustomizeTest`: Porträt-Klick, Wappen, Hausfarbe, Name, Hausname, Geschlecht, Alter und Werte; Speichern/Laden und Abbrechen grün.
 - `TouchTest`: Auswahl per `InputEventScreenTouch` und Ausbau per Touch.
-- `ShotTest`: fünf gerenderte Bilder, inklusive Herrscher-Werkstatt.
-- Headless-Läufe: alle zwölf Suiten (elf bestehende plus `UiKernelTest`) Exit 0; die Main-basierten Tests laufen ohne Audio- und Ressourcen-Leak-Warnungen.
+- `ShotTest`: elf gerenderte Bilder, inklusive sechs Kartenmodi und Herrscher-Werkstatt.
+- `TitleShot`: Titelbild, Hausauswahl und Ladebildschirm gerendert.
+- `EventArtTest`: acht Ereignisse, acht eindeutige Bilddateien, acht Cache-Treffer, leeres Manifest-`open` und Vektor-Fallback; 98 Prüfungen.
+- Headless-Läufe: 13 Suiten (zwölf bestehende plus `EventArtTest`) Exit 0; die Main-basierten Tests laufen ohne Audio- und Ressourcen-Leak-Warnungen. `TouchTest`, `ShotTest` und `TitleShot` laufen als Fenstertests.
 - Android: Schema-4-Export erfolgreich (Exit 0), 180.708.021 Bytes, SHA-256 `3b17118a9ea7d4e307fec735b58cc4b46dcc459d4ca49a4edac30f71037dbbbf`; `apksigner` bestätigt v2, einen Signer und das Debug-Zertifikat; `zipalign` ok; Badging: `org.example.kronen`, versionCode 4/versionName 1.3, minSdk 24, targetSdk 35, Activity `com.godot.game.GodotApp`, ABIs `arm64-v8a`/`armeabi-v7a`. Bei der letzten Prüfung sah ADB das autorisierte Gerät `f030379a` (Android 16, Modell `24117RK2CG`); während der Prüfung war kein reales Gerät verbunden; der Ziel-Emulator `emulator-5554` wurde für den Host-GPU-Test neu gestartet. Die frühere APK 1.2 wurde mit `adb install -r` installiert (Exit 0), die Activity kalt gestartet (`Status: ok`); der Prozess lief nach 15 Sekunden noch ohne FATAL-/Script-Error. Die aktuelle APK 1.3 ist auf `emulator-5554` (AVD `fhd36`, Android 16) mit Host-GPU (`-gpu host`, NVIDIA RTX 5070 Laptop) installiert und rendert dort sichtbar: Ladebildschirm bei 82 % und Hauptmenü, `MAIN_READY version=1.3`, kein FATAL. Der frühere SwiftShader-Start scheitert an `GL_MAX_FRAGMENT_UNIFORM_VECTORS (261)`; auf realer Hardware wurde sie nicht installiert, daher bleiben die reale Sichtprüfung und der Android-30-Minuten-Lauf offen.
 - Windows: Schema-4-Export erfolgreich (Exit 0), **113.718.904 Bytes**, SHA-256 `d2cc6508d07c65cb64e786a029736e4c04ad17f800736c6ac2f3c38f0826ec72`, eingebettete PCK, Audio und Versionsressourcen `1.3.0.0` vorhanden. Der Startcheck meldet `MAIN_READY version=1.3` und keine `ERROR`-/Exception-Zeilen. Der vollständige 30-Minuten-Abnahmelauf am 2026-11-08 war gegen diesen 1.3-Build **BESTANDEN** (12/12 Aktionen, 3/3 Roundtrips, AI2+AI3, regulärer `run_end`; Beleg `build/verify/manual-build-d2cc-v2/`).
 

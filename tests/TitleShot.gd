@@ -8,6 +8,9 @@ var frames := 0
 var shots := 0
 
 func _ready() -> void:
+	# Ein frischer Checkout enthält build/ nicht; die Bildpfade müssen trotzdem
+	# beschreibbar sein, bevor der erste Screenshot fällt.
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://build"))
 	main = load("res://scenes/Main.tscn").instantiate()
 	add_child(main)
 

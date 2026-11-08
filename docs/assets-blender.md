@@ -7,7 +7,7 @@ des Godot-Ports — ohne Fremdassets, ohne CK3-Material, ohne manuelle Nacharbei
 |---|---|---|---|
 | Karten-Token | 17 | 256×256 RGBA, transparent | 9 Geländetypen, 3 Gebäude, 5 Einheiten |
 | Charakterporträts | 12 | 512×512 | Brustbilder vor neutralem Grund |
-| Ereignisbilder | 4 | 960×540 | Hofempfang, Schlacht, Ernte, Verrat |
+| Ereignisbilder | 8 | 960×540 | Hofempfang, Hochzeit, Tempelgründung, Gabe, Ernte, Händler, Schlacht, Fieber |
 
 ## Erzeugen
 
@@ -17,8 +17,8 @@ des Godot-Ports — ohne Fremdassets, ohne CK3-Material, ohne manuelle Nacharbei
 cd .tools && APPDATA="$PWD/appdata" ./godot.exe --headless --path .. --import
 ```
 
-Der Blender-Lauf rendert alle 33 Bilder und schreibt `assets/asset_manifest.json`;
-sein letzter Ausgabesatz ist `ASSETS OK: 17 Token, 12 Porträts, 4 Ereignisse`.
+Der Blender-Lauf rendert alle 37 Bilder und schreibt `assets/asset_manifest.json`;
+sein letzter Ausgabesatz ist `ASSETS OK: 17 Token, 12 Porträts, 8 Ereignisse`.
 Der Godot-Import ist Pflicht und nach **jedem** Neu-Rendern zu wiederholen, weil
 sonst die importierten `.ctex` veralten.
 
@@ -47,7 +47,7 @@ Deckungskorridore und Schlüsselzuordnung:
 ```json
 "families": { "tokens": { "size": [256,256], "coverage": [0.15,0.55], "files": [...] }, ... },
 "key_map":  [ { "code": "terrain.forest", "asset": "assets/ui/tokens/terrain_forest.png" }, ... ],
-"open":     [ { "code": "unit.fleet", "reason": "Seekrieg existiert im Code nicht; ..." } ],
+"open":     [],
 "existing": [ { "code": "characters.portrait_0", "asset": "assets/portraits/portrait_0.png" }, ... ]
 ```
 
@@ -71,21 +71,24 @@ Geprüft wird:
 5. **Bestand** — die zwölf bestehenden `assets/portraits/portrait_N.png` müssen
    weiterhin vorhanden sein.
 
-Aktueller Stand: 33 Bilddateien, 20 Code-Schlüssel (terrain=9, building=3,
-event=8), Exit 0.
+Aktueller Stand: 37 Bilddateien, 20 Code-Schlüssel (terrain=9, building=3,
+event=8), Exit 0. Die Ereigniszuordnung prüft zusätzlich
+`tests/EventArtTest.tscn`: acht Ereignisse, acht eindeutige Dateien, acht
+Cache-Treffer, ein leeres Manifest-`open` und der Vektor-Fallback; zuletzt
+98 Prüfungen, Exit 0.
 
 ## Reproduzierbarkeit und Tor-Nachweis
 
-Geprüft aus vollständig geleerten Zielordnern (PNG **und** `.import` gelöscht,
-Manifest entfernt):
+Der vollständige Lauf nach der Erweiterung; die Leerordner-Probe des
+Grundbestands wurde zuvor bestanden:
 
 | Schritt | Ergebnis |
 |---|---|
-| Ein Aufruf `blender --background --python tools/blender/make_tokens.py` | Exit 0, `ASSETS OK: 17 Token, 12 Porträts, 4 Ereignisse` |
-| Zählung danach | 17 / 12 / 4 PNG, Manifest mit denselben Zahlen |
-| Zweiter Aufruf direkt danach | Exit 0, gleiche Zahlen, keine Reste — jede PNG-Datei steht im Manifest |
-| `python tools/verify_assets.py` | Exit 0, 33 Dateien, 20 Code-Schlüssel |
-| `godot --headless --import` | Exit 0, 17 / 12 / 4 `.import` |
+| Ein Aufruf `blender --background --python tools/blender/make_tokens.py` | Exit 0, `ASSETS OK: 17 Token, 12 Porträts, 8 Ereignisse` |
+| Zählung danach | 17 / 12 / 8 PNG, Manifest mit denselben Zahlen |
+| Erneuter vollständiger Lauf nach der Erweiterung | Exit 0, gleiche Zahlen, keine Reste — jede PNG-Datei steht im Manifest |
+| `python tools/verify_assets.py` | Exit 0, 37 Dateien, 20 Code-Schlüssel |
+| `godot --headless --import` | Exit 0, 17 / 12 / 8 `.import` |
 
 Das Prüfskript ist als Tor belegt — jede gezielte Verletzung endet mit Exit 1:
 
@@ -106,18 +109,26 @@ wieder Exit 0, und es bleiben keine Testreste.
 |---|---|
 | `terrain_*` (9) | `Data.gd` `TERRAIN_TYPES` |
 | `building_*` (3) | `Game.gd` `building_cost()` |
-| `unit_levy`, `unit_archer`, `unit_knight`, `unit_siege` | `Game.army_composition()`: Armeest�rke je 55/25/15 % auf Fu�volk, Bogensch�tzen, Reiterei, dazu ein Belagerungsger�t je 100 Mann |
+| `unit_levy`, `unit_archer`, `unit_knight`, `unit_siege` | `Game.army_composition()`: Armeestärke je 55/25/15 % auf Fußvolk, Bogenschützen, Reiterei, dazu ein Belagerungsgerät je 100 Mann |
+| `unit_fleet` | fertiger Token für ein künftiges Seekriegs-System; im Manifest zugeordnet |
 | `event_court_reception` | `hoftag` |
+| `event_wedding` | `hochzeit` |
+| `event_monastery` | `kloster` |
+| `event_tithe` | `zehnt` |
 | `event_harvest` | `ernte` |
+| `event_merchant` | `haendler` |
 | `event_battle` | `grenzstreit` |
+| `event_fever` | `krankheit` |
 
-Bewusst offen (im Manifest mit Begr�ndung): `unit.fleet` � Seekrieg existiert im
-Code nicht; der Token liegt als Vorleistung bereit. Fu�volk, Bogensch�tzen,
-Reiterei und Belagerung sind �ber `Game.army_composition()` an die Armeest�rke
-gebunden und erscheinen als Token-Zeile im Chronik-Abschnitt �Armee & Krieg�.
-Ebenso `event.zehnt`, `event.hochzeit`, `event.krankheit`, `event.kloster` und `event.haendler`: der
-erste Satz deckt vier Szenen ab, die übrigen Ereignisse nutzen später eine
-Fallback-Illustration.
+Die Offen-Liste im Manifest ist leer. Der Flotten-Token ist als Asset vorhanden
+und zugeordnet; ein Seekrieg als Spielsystem ist noch nicht implementiert.
+Fußvolk, Bogenschützen, Reiterei und Belagerung sind über
+`Game.army_composition()` an die Armeestärke gebunden und erscheinen als
+Token-Zeile im Chronik-Abschnitt „Armee & Krieg“.
+Jedes der acht Ereignisse löst über `EVENT_ART_KEYS` eine eigene, vorhandene
+Bilddatei auf. Fehlt eine Datei oder kommt eine unbekannte Ereignis-ID an,
+zeichnet `EventArtFallback.gd` eine texturfreie Burgenlandschaft als
+Vektor-Fallback; das Panel bleibt dadurch nie leer.
 
 ## Sichtprüfung
 
@@ -141,21 +152,36 @@ Dabei gefunden und behoben:
 - Ereignis-Sonne stand hinter der Rückwand → Sonne davor, Komposition mit
   Vordergrund-/Hintergrundstaffelung neu aufgebaut.
 - Der gebückte Schnitter lag quer im Feld → aufrechte Figur mit Sichel.
+- Hochzeit, Tempelgründung, Zehnt und Händler waren zunächst nur Wiederverwendungen
+  anderer Szenen → vier eigene Renders; Priester und Wagen wurden nach der
+  Fensterprüfung sichtbar in den mittleren Bildbereich gerückt.
+- Das Fieber-Ereignis zeigte zunächst das alte Verratsmotiv → eigene
+  Krankenstube mit Bett, Heiler, Arzneien und warmem Kerzenlicht gerendert.
 
 ## Stand und Offen
 
 Verdrahtet:
 
-- **Gelände-Token als Kartenlegende** (`scripts/MapView.gd`): im Kartenmodus
-  „Gelände" zeigt die Legende die neun Token als Icon neben dem Geländenamen;
-  fehlt ein Token, greift der Farbbalken als Rückfall.
-- **Gebäude-Token in der Provinzseite** (`scripts/Main.gd`, `ViewModelBuilder.gd`):
-  Markt, Kaserne und Mauern erscheinen mit Token, Name und Stufe über den
-  Ausbauknöpfen des Bau-Abschnitts.
+- **Karte** (`scripts/MapView.gd`): Gelände-Token markieren die Provinzen im
+  Modus „Gelände“; Hauptstädte tragen Gebäude-Token, im Kriegsmodus erscheinen
+  Belagerungs-Token. Die Legende nutzt dieselben Token; fehlt eines, greift die
+  Vektorform als Rückfall.
+- **Provinzseite** (`scripts/Main.gd`): Gelände-Token als Provinzillustration,
+  Besitzerwappen, Herrscherporträt, drei Gebäude-Token mit Stufe, Truppen-Token,
+  Nachbarliste und die Aktionen Ausbauen, Werben, Angreifen und Herrschaft. Das
+  Hofpanel bietet zusätzlich eine Kurzansicht mit Token, Wappen und Aufgebot.
+- **Ereignis-Panel** (`scripts/Main.gd`, `ViewModelBuilder.gd`): alle acht
+  Ereignisse erhalten ihr eigenes Render über die feste Zuordnung
+  `EVENT_ART_KEYS`; beim Öffnen erklingt `open.wav`. Fehlt ein Bild, zeichnet
+  `scripts/EventArtFallback.gd` eine Vektorlandschaft statt einer leeren Fläche.
+- **Chronik**: Die Armeestärke erscheint als gemischte Token-Zeile aus Fußvolk,
+  Bogenschützen, Reiterei und Belagerung.
 
 Offen:
 
-- Einheiten-Token, Porträts und Ereignisbilder sind noch nicht angebunden
-  (Truppenliste, Charakteransicht, Ereignis-Panel).
-- Jede UI-Änderung verschiebt die Screenshots der 30-Minuten-Abnahme; nach dieser
-  Verdrahtung ist ein frischer Windows-Lauf nötig.
+- Keine offenen Assets im Manifest. Der Seekrieg als Spielsystem fehlt weiterhin;
+  der Flotten-Token ist dafür bereits vorbereitet.
+
+Nach jeder UI-Änderung ist ein frischer Windows-Lauf mit
+`tools/verify_windows_start.ps1` nötig; der Lauf prüft Fenster, Render-Frame,
+Exit-Code und Skriptfehler.

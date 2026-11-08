@@ -1,7 +1,7 @@
 extends Node
 ## Automatischer Touch-Test: speist echte InputEventScreenTouch-Events in den
 ## Viewport ein und prüft, ob Provinzauswahl und Button-Aktion ausgelöst werden.
-## Aufruf: godot --path . res://tests/TouchTest.tscn
+## Aufruf: godot --path . res://tests/TouchTest.tscn --resolution 1280x720
 ## Exit-Code 0 = bestanden, 1 = fehlgeschlagen.
 
 var main
@@ -14,10 +14,12 @@ var touch_pos := Vector2.ZERO
 var target_id: String = ""
 
 func _ready() -> void:
-	# Der Test rechnet in Fensterkoordinaten; 1:1 vermeidet Stretch-Umrechnung.
-	DisplayServer.window_set_size(Vector2i(1280, 720))
 	main = load("res://scenes/Main.tscn").instantiate()
 	add_child(main)
+	# Erst nach Main._ready setzen: die gespeicherten Anzeigeeinstellungen dürfen
+	# das Testfenster nicht wieder auf 1600x900 vergrößern. 1:1 vermeidet die
+	# Stretch-Umrechnung zwischen Touch- und MapView-Koordinaten.
+	DisplayServer.window_set_size(Vector2i(1280, 720))
 	# Hauswahl überspringen: als Falkenried starten, damit die Karte bedienbar ist.
 	main._start(0)
 
@@ -27,6 +29,16 @@ func _centroid(poly: Array) -> Vector2:
 		sum += p
 	return sum / float(poly.size())
 
+func _interior_point(p: Dictionary) -> Vector2:
+	# Der Schwerpunkt einer konkaven Provinz kann außerhalb liegen. Ein
+	# Schwerpunkt des ersten triangulierten Dreiecks ist garantiert innen.
+	for part in main.map_view._province_parts(p):
+		var poly: PackedVector2Array = part
+		var indices := Geometry2D.triangulate_polygon(poly)
+		if indices.size() >= 3:
+			return (poly[indices[0]] + poly[indices[1]] + poly[indices[2]]) / 3.0
+	return _centroid(p["points"])
+
 func _touch(pos: Vector2, pressed: bool) -> void:
 	last_pos = pos
 	var ev := InputEventScreenTouch.new()
@@ -34,6 +46,14 @@ func _touch(pos: Vector2, pressed: bool) -> void:
 	ev.position = pos
 	ev.pressed = pressed
 	Input.parse_input_event(ev)
+
+func _scroll_into_view(control: Control) -> void:
+	var node: Node = control.get_parent()
+	while node != null:
+		if node is ScrollContainer:
+			(node as ScrollContainer).ensure_control_visible(control)
+			return
+		node = node.get_parent()
 
 func _fail(msg: String) -> void:
 	print("TOUCHTEST FAIL: " + msg)
@@ -51,7 +71,7 @@ func _process(_delta: float) -> void:
 				return
 			target_id = str(owned[0]["id"])
 			var p: Dictionary = main.game.province(target_id)
-			var c := _centroid(p["points"])
+			var c := _interior_point(p)
 			var fit: Array = main.map_view._fit()
 			var local: Vector2 = c * float(fit[0]) + (fit[1] as Vector2)
 			var screen: Vector2 = main.map_view.get_global_rect().position + local
@@ -69,15 +89,20 @@ func _process(_delta: float) -> void:
 				var mp: Vector2 = (touch_pos - (fit2[1] as Vector2)) / float(fit2[0])
 				_fail("Grafschaft wurde nicht per ScreenTouch gewählt (selected='%s', erwartet '%s', Touch bei %s, MapView %s, fit %s, Punkt %s)" % [main.selected, target_id, str(touch_pos), str(main.map_view.size), str(fit2), str(mp)])
 				return
+			# Die rechte Spalte ist scrollbar; der Ausbau-Button kann unterhalb des
+			# Viewports liegen. Erst sichtbar scrollen, im nächsten Frame klicken.
+			_scroll_into_view(main.develop_btn)
+			phase = 4
+		4:
 			dev_before = int(main.game.province(target_id)["dev"])
 			gold_before = int(main.game.house()["gold"])
 			var r: Rect2 = main.develop_btn.get_global_rect()
 			_touch(r.get_center(), true)
-			phase = 4
-		4:
-			_touch(last_pos, false)
 			phase = 5
 		5:
+			_touch(last_pos, false)
+			phase = 6
+		6:
 			var dev_after: int = int(main.game.province(target_id)["dev"])
 			var gold_after: int = int(main.game.house()["gold"])
 			if dev_after != dev_before + 1:

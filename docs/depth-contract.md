@@ -74,9 +74,9 @@ Das ausführbare Prüfprotokoll für die manuelle Partie steht in [`manual-accep
 |---|---|---|---|
 | `SaveMigrationTest` | v1→v4, echter Altstand, Roundtrip, negative Feldkontrollen | Exit 0; `diff()` leer; entfernte Pflichtfelder werden erkannt | **grün** |
 | `SystemicDepthTest` | H1, H2, H5 (Kaserne), D5, AI1 | positive Kette plus Negativkontrolle; Beleg im `effect_log` | **grün** |
-| `FullDepthTest` | H3–H8 (Mauern), D1–D4, D6–D8, K1–K7, AI2–AI5 | 57 positive/negative Prüfungen | **grün** |
+| `FullDepthTest` | H3–H8 (Mauern), D1–D4, D6–D8, K1–K7, AI2–AI5, Gelände/Versorgung | 74 positive/negative Prüfungen | **grün** |
 | `StoryTest` | 120 Monate, fester Seed | Schwellen der automatisierten Story-Probe | **grün** |
-| `TouchTest` / `ShotTest` | Touch-Auswahl, Ausbau, fünf UI-Bilder | Exit 0 | **grün** |
+| `TouchTest` / `ShotTest` | Touch-Auswahl, Ausbau, elf UI-Bilder | Exit 0 | **grün** |
 | Manuelle 30-Minuten-Partie | Windows/Android | Story-Schwellen plus visuelle Prüfung | **Windows BESTANDEN; Android offen** |
 
 ## Ist-Stand
