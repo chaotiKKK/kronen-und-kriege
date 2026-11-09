@@ -29,7 +29,40 @@
         "assets/ui/tokens/unit_knight.png",
         "assets/ui/tokens/unit_archer.png",
         "assets/ui/tokens/unit_siege.png",
-        "assets/ui/tokens/unit_fleet.png"
+        "assets/ui/tokens/unit_fleet.png",
+        "assets/ui/tokens/legacy_war.png",
+        "assets/ui/tokens/legacy_crown.png",
+        "assets/ui/tokens/legacy_guile.png",
+        "assets/ui/tokens/council_marshal.png",
+        "assets/ui/tokens/council_chancellor.png",
+        "assets/ui/tokens/council_steward.png",
+        "assets/ui/tokens/council_spymaster.png",
+        "assets/ui/tokens/contract_0.png",
+        "assets/ui/tokens/contract_1.png",
+        "assets/ui/tokens/contract_2.png",
+        "assets/ui/tokens/relic_crown.png",
+        "assets/ui/tokens/relic_blade.png",
+        "assets/ui/tokens/relic_seal.png",
+        "assets/ui/tokens/faith_sun.png",
+        "assets/ui/tokens/faith_moon.png",
+        "assets/ui/tokens/faith_earth.png",
+        "assets/ui/tokens/faith_heresy_low.png",
+        "assets/ui/tokens/faith_heresy_mid.png",
+        "assets/ui/tokens/faith_heresy_high.png",
+        "assets/ui/tokens/faith_reform_0.png",
+        "assets/ui/tokens/faith_reform_1.png",
+        "assets/ui/tokens/faith_reform_2.png",
+        "assets/ui/tokens/faith_reform_3.png",
+        "assets/ui/tokens/faith_holy_war_0.png",
+        "assets/ui/tokens/faith_holy_war_1.png",
+        "assets/ui/tokens/faith_holy_war_2.png",
+        "assets/ui/tokens/faith_holy_war_3.png",
+        "assets/ui/tokens/faith_holy_war_4.png",
+        "assets/ui/tokens/faith_holy_war_5.png",
+        "assets/ui/tokens/faith_holy_war_6.png",
+        "assets/ui/tokens/faith_holy_war_7.png",
+        "assets/ui/tokens/faith_holy_war_8.png",
+        "assets/ui/tokens/faith_holy_war_9.png"
       ]
     },
     "portraits": {
@@ -76,6 +109,34 @@
         "assets/ui/events/event_monastery.png",
         "assets/ui/events/event_tithe.png",
         "assets/ui/events/event_merchant.png"
+      ]
+    },
+    "scenes": {
+      "dir": "assets/ui/court",
+      "size": [
+        1280,
+        720
+      ],
+      "coverage": [
+        0.97,
+        1.0
+      ],
+      "files": [
+        "assets/ui/court/court_hall.png"
+      ]
+    },
+    "faith_scenes": {
+      "dir": "assets/ui/faith",
+      "size": [
+        1280,
+        720
+      ],
+      "coverage": [
+        0.97,
+        1.0
+      ],
+      "files": [
+        "assets/ui/faith/faith_temple.png"
       ]
     }
   },
@@ -147,6 +208,138 @@
     {
       "code": "unit.fleet",
       "asset": "assets/ui/tokens/unit_fleet.png"
+    },
+    {
+      "code": "legacy.war",
+      "asset": "assets/ui/tokens/legacy_war.png"
+    },
+    {
+      "code": "legacy.crown",
+      "asset": "assets/ui/tokens/legacy_crown.png"
+    },
+    {
+      "code": "legacy.guile",
+      "asset": "assets/ui/tokens/legacy_guile.png"
+    },
+    {
+      "code": "council.marshal",
+      "asset": "assets/ui/tokens/council_marshal.png"
+    },
+    {
+      "code": "council.chancellor",
+      "asset": "assets/ui/tokens/council_chancellor.png"
+    },
+    {
+      "code": "council.steward",
+      "asset": "assets/ui/tokens/council_steward.png"
+    },
+    {
+      "code": "council.spymaster",
+      "asset": "assets/ui/tokens/council_spymaster.png"
+    },
+    {
+      "code": "contract.0",
+      "asset": "assets/ui/tokens/contract_0.png"
+    },
+    {
+      "code": "contract.1",
+      "asset": "assets/ui/tokens/contract_1.png"
+    },
+    {
+      "code": "contract.2",
+      "asset": "assets/ui/tokens/contract_2.png"
+    },
+    {
+      "code": "relic.crown",
+      "asset": "assets/ui/tokens/relic_crown.png"
+    },
+    {
+      "code": "relic.blade",
+      "asset": "assets/ui/tokens/relic_blade.png"
+    },
+    {
+      "code": "relic.seal",
+      "asset": "assets/ui/tokens/relic_seal.png"
+    },
+    {
+      "code": "faith.sun",
+      "asset": "assets/ui/tokens/faith_sun.png"
+    },
+    {
+      "code": "faith.moon",
+      "asset": "assets/ui/tokens/faith_moon.png"
+    },
+    {
+      "code": "faith.earth",
+      "asset": "assets/ui/tokens/faith_earth.png"
+    },
+    {
+      "code": "faith.heresy_low",
+      "asset": "assets/ui/tokens/faith_heresy_low.png"
+    },
+    {
+      "code": "faith.heresy_mid",
+      "asset": "assets/ui/tokens/faith_heresy_mid.png"
+    },
+    {
+      "code": "faith.heresy_high",
+      "asset": "assets/ui/tokens/faith_heresy_high.png"
+    },
+    {
+      "code": "faith.reform_0",
+      "asset": "assets/ui/tokens/faith_reform_0.png"
+    },
+    {
+      "code": "faith.reform_1",
+      "asset": "assets/ui/tokens/faith_reform_1.png"
+    },
+    {
+      "code": "faith.reform_2",
+      "asset": "assets/ui/tokens/faith_reform_2.png"
+    },
+    {
+      "code": "faith.reform_3",
+      "asset": "assets/ui/tokens/faith_reform_3.png"
+    },
+    {
+      "code": "faith.holy_war_0",
+      "asset": "assets/ui/tokens/faith_holy_war_0.png"
+    },
+    {
+      "code": "faith.holy_war_1",
+      "asset": "assets/ui/tokens/faith_holy_war_1.png"
+    },
+    {
+      "code": "faith.holy_war_2",
+      "asset": "assets/ui/tokens/faith_holy_war_2.png"
+    },
+    {
+      "code": "faith.holy_war_3",
+      "asset": "assets/ui/tokens/faith_holy_war_3.png"
+    },
+    {
+      "code": "faith.holy_war_4",
+      "asset": "assets/ui/tokens/faith_holy_war_4.png"
+    },
+    {
+      "code": "faith.holy_war_5",
+      "asset": "assets/ui/tokens/faith_holy_war_5.png"
+    },
+    {
+      "code": "faith.holy_war_6",
+      "asset": "assets/ui/tokens/faith_holy_war_6.png"
+    },
+    {
+      "code": "faith.holy_war_7",
+      "asset": "assets/ui/tokens/faith_holy_war_7.png"
+    },
+    {
+      "code": "faith.holy_war_8",
+      "asset": "assets/ui/tokens/faith_holy_war_8.png"
+    },
+    {
+      "code": "faith.holy_war_9",
+      "asset": "assets/ui/tokens/faith_holy_war_9.png"
     },
     {
       "code": "event.hoftag",

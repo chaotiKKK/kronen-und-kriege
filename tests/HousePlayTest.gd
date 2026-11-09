@@ -7,6 +7,7 @@ extends Node
 
 var main
 var frames: int = 0
+var _checks: int = 0
 
 func _ready() -> void:
 	seed(424242)
@@ -29,6 +30,8 @@ func _process(_delta: float) -> void:
 		_fail("Startmenü bietet nur %d Häuser" % entries)
 		return
 	print("Startmenü: %d Häuser wählbar" % entries)
+	if not _check(entries >= 3, "Das Startmenü bietet weniger als drei Häuser."):
+		return
 
 	var results: Array = []
 	for id in [2, 4, 8]:
@@ -90,6 +93,15 @@ func _process(_delta: float) -> void:
 		results.append("%d:%s (%d Monate, Stand %d-%02d, Gold %d, %d Provinzen)" % [
 			id, main.game.house()["name"], 18, year_before, month_before, gold_before, count_before
 		])
+		if not _check(main.game.year == year_before and main.game.month == month_before and int(main.game.house()["gold"]) == gold_before and main.game.owned().size() == count_before, "Haus %d wurde nicht vollständig gespeichert und geladen." % id):
+			return
 
-	print("PLAYTEST OK: 3 Häuser ausgewählt, gespielt, gespeichert und geladen -> " + " | ".join(results))
+	print("PLAYTEST OK: 3 Häuser ausgewählt, gespielt, gespeichert und geladen -> " + " | ".join(results) + "; %d Prüfungen." % _checks)
 	get_tree().quit(0)
+
+func _check(condition: bool, message: String) -> bool:
+	_checks += 1
+	if condition:
+		return true
+	_fail(message)
+	return false

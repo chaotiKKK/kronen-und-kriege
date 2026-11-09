@@ -6,6 +6,7 @@ extends Node
 var main
 var frames: int = 0
 var started: bool = false
+var _checks: int = 0
 
 func _ready() -> void:
 	seed(20261106)
@@ -51,6 +52,8 @@ func _run() -> void:
 	if int(cap["owner"]) != 9 or str(cap["name"]) != "Arialand":
 		_fail("Eigenes Land nicht übernommen (owner=%d, Name=%s)" % [int(cap["owner"]), cap["name"]])
 		return
+	if not _check(g.player == 9 and g.houses.size() == 10 and int(cap["owner"]) == 9 and str(cap["name"]) == "Arialand" and g.year == -2000, "Die Hauserstellung ist unvollständig."):
+		return
 	print("ERSTELLUNG OK: %s · %s · %s · Start %s" % [
 		g.house()["name"], g.house()["ruler"]["name"], cap["name"], g.date_text()
 	])
@@ -70,6 +73,8 @@ func _run() -> void:
 	if not married or g.house()["spouse"].is_empty():
 		_fail("Heirat gelang in sieben Versuchen nicht")
 		return
+	if not _check(married and not g.house()["spouse"].is_empty(), "Die Heirat ist unvollständig."):
+		return
 	print("HEIRAT OK: %s aus %s" % [g.house()["spouse"]["name"], g.houses[int(g.house()["spouse"]["house"])]["name"]])
 
 	# Beilager bis Schwangerschaft oder Geburt
@@ -85,6 +90,8 @@ func _run() -> void:
 			break
 	if not pregnant and g.house()["children"].size() == kids_before:
 		_fail("Beilager brachte keine Schwangerschaft")
+		return
+	if not _check(pregnant or g.house()["children"].size() > kids_before, "Das Beilager brachte keine Schwangerschaft oder Geburt."):
 		return
 	print("BEILAGER OK: Kinder %d, schwanger %d" % [g.house()["children"].size(), int(g.house()["pregnant"])])
 
@@ -104,6 +111,8 @@ func _run() -> void:
 		g.house()["gold"] = 500
 	if not seduced or int(g.house()["lover_house"]) != sed_target:
 		_fail("Verführen gelang in fünf Versuchen nicht")
+		return
+	if not _check(seduced and int(g.house()["lover_house"]) == sed_target, "Das Verführen ist unvollständig."):
 		return
 	print("VERFÜHREN OK: Geliebte/r aus %s" % g.houses[sed_target]["name"])
 
@@ -128,6 +137,8 @@ func _run() -> void:
 	if not murdered:
 		_fail("Mord gelang in fünf Versuchen nicht")
 		return
+	if not _check(murdered and new_ruler != victim, "Der Mord ohne Nachfolge ist unvollständig."):
+		return
 	print("MORD OK: Opfer %s, neuer Herrscher %s" % [victim, new_ruler])
 
 	# Entführen und Lösegeld
@@ -148,6 +159,8 @@ func _run() -> void:
 	var ran: Dictionary = g.ransom_captive()
 	if not ran["ok"] or not g.captive.is_empty() or int(g.house()["gold"]) < gold_before + 70:
 		_fail("Lösegeld wirkte nicht")
+		return
+	if not _check(kidnapped and g.captive.is_empty(), "Die Entführung oder das Lösegeld ist unvollständig."):
 		return
 	print("ENTFÜHRUNG OK: Gefangener genommen und Lösegeld kassiert")
 
@@ -177,6 +190,8 @@ func _run() -> void:
 	if g2.provinces.size() != province_count or g2.opinion.size() != g2.houses.size():
 		_fail("Laden verlor Provinzen oder Haltungen")
 		return
+	if not _check(g2 != null and g2.player == 9 and g2.year == year and g2.month == month and int(g2.house()["gold"]) == gold and g2.provinces.size() == province_count and str(g2.province(home_id)["name"]) == "Arialand", "Speichern/Laden verlor Zustand."):
+		return
 	print("SPEICHERN/LADEN OK: %s, %d Provinzen, Haltungen %d" % [
 		g2.date_text(), g2.provinces.size(), g2.opinion.size()
 	])
@@ -204,6 +219,15 @@ func _run() -> void:
 	if main.tree_layer.visible:
 		_fail("Stammbaum schließt nicht")
 		return
+	if not _check(rows == g2.house()["children"].size() and not main.tree_layer.visible, "Der Stammbaum ist unvollständig."):
+		return
 	print("STAMMBAUM OK: %d Kinder mit Porträt, Erbfolge vollständig" % rows)
-	print("INTRIGUETEST OK: eigenes Haus, Heirat, Beilager, Verführen, Mord, Entführung, Stammbaum, Speichern/Laden")
+	print("INTRIGUETEST OK: eigenes Haus, Heirat, Beilager, Verführen, Mord, Entführung, Stammbaum, Speichern/Laden; %d Prüfungen." % _checks)
 	get_tree().quit(0)
+
+func _check(condition: bool, message: String) -> bool:
+	_checks += 1
+	if condition:
+		return true
+	_fail(message)
+	return false

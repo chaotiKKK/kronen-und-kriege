@@ -12,6 +12,7 @@ var dev_before: int = 0
 var gold_before: int = 0
 var touch_pos := Vector2.ZERO
 var target_id: String = ""
+var _checks: int = 0
 
 func _ready() -> void:
 	main = load("res://scenes/Main.tscn").instantiate()
@@ -89,6 +90,8 @@ func _process(_delta: float) -> void:
 				var mp: Vector2 = (touch_pos - (fit2[1] as Vector2)) / float(fit2[0])
 				_fail("Grafschaft wurde nicht per ScreenTouch gewählt (selected='%s', erwartet '%s', Touch bei %s, MapView %s, fit %s, Punkt %s)" % [main.selected, target_id, str(touch_pos), str(main.map_view.size), str(fit2), str(mp)])
 				return
+			if not _check(main.selected == target_id, "Die Provinz wurde nicht per Touch gewählt."):
+				return
 			# Die rechte Spalte ist scrollbar; der Ausbau-Button kann unterhalb des
 			# Viewports liegen. Erst sichtbar scrollen, im nächsten Frame klicken.
 			_scroll_into_view(main.develop_btn)
@@ -111,5 +114,14 @@ func _process(_delta: float) -> void:
 			if not gold_after < gold_before:
 				_fail("Gold wurde nicht abgezogen (%d -> %d)" % [gold_before, gold_after])
 				return
-			print("TOUCHTEST OK: Provinz per InputEventScreenTouch gewählt, Ausbau per Touch ausgelöst (%d -> %d Entwicklung, Gold %d -> %d)." % [dev_before, dev_after, gold_before, gold_after])
+			if not _check(dev_after == dev_before + 1 and gold_after < gold_before, "Der Touch-Ausbau ist unvollständig."):
+				return
+			print("TOUCHTEST OK: Provinz per InputEventScreenTouch gewählt, Ausbau per Touch ausgelöst (%d -> %d Entwicklung, Gold %d -> %d); %d Prüfungen." % [dev_before, dev_after, gold_before, gold_after, _checks])
 			get_tree().quit(0)
+
+func _check(condition: bool, message: String) -> bool:
+	_checks += 1
+	if condition:
+		return true
+	_fail(message)
+	return false

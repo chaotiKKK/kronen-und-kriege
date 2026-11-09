@@ -7,9 +7,11 @@ config_version=5
 
 [application]
 
-config/name="Kronen und Kriege"
-config/version="1.3"
-config/description="Bronzezeit-Grand-Strategy für Android und Windows: eigene Dynastie, Hof, Familie und Intrigen ab 2000 v. Chr."
+config/name="Banger Queens"
+config/use_custom_user_dir=true
+config/custom_user_dir_name="Godot/app_userdata/Kronen und Kriege"
+config/version="1.5"
+config/description="Banger Queens: Dynastien und alternative Geschichte von 2000 v. Chr. bis 2200 n. Chr."
 run/main_scene="res://scenes/Loading.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 config/icon="res://icon.png"

@@ -3,7 +3,7 @@
 # Aufruf: bash tools/verify_android_apk.sh [APK]
 set -euo pipefail
 
-APK="${1:-F:/ck3-kronen-kriege.apk}"
+APK="${1:-F:/banger-queens.apk}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SDK="${ANDROID_SDK_ROOT:-/c/Users/HP/AppData/Local/Android/Sdk}"
 BT="${ANDROID_BUILD_TOOLS:-$SDK/build-tools/36.1.0}"
@@ -32,7 +32,7 @@ grep -q "Verified using v2 scheme (APK Signature Scheme v2): true" "$SIG" || { e
 grep -q "Number of signers: 1" "$SIG" || { echo "FEHLER: Kein eindeutiger Signer." >&2; exit 1; }
 grep -q "Signer #1 certificate SHA-256 digest:" "$SIG" || { echo "FEHLER: Zertifikatsdigest fehlt." >&2; exit 1; }
 
-grep -q "^package: name='org.example.kronen' versionCode='4' versionName='1.3'" "$BADGING" || { echo "FEHLER: Paketname/Version weicht ab." >&2; exit 1; }
+grep -q "^package: name='org.example.kronen' versionCode='6' versionName='1.5'" "$BADGING" || { echo "FEHLER: Paketname/Version weicht ab." >&2; exit 1; }
 grep -q "^sdkVersion:'24'" "$BADGING" || { echo "FEHLER: minSdk ist nicht 24." >&2; exit 1; }
 grep -q "^targetSdkVersion:'35'" "$BADGING" || { echo "FEHLER: targetSdk ist nicht 35." >&2; exit 1; }
 grep -q "^launchable-activity: name='com.godot.game.GodotApp'" "$BADGING" || { echo "FEHLER: Einstiegs-Activity fehlt." >&2; exit 1; }

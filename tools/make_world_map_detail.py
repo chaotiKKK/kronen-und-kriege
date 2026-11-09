@@ -1,8 +1,8 @@
 """Erzeugt die detaillierte Hauptweltkarte aus Natural-Earth-Vektoren.
 
 Gleiche Projektion wie tools/make_europe_map.py (equirectangular, 1200x760),
-aber vierfache Auflösung (4800x3040) mit Relief, Klimazonen, Biomkorn,
-Meerestiefe und Küstensaum. Die Silhouette bleibt deckungsgleich mit der
+aber vierfache Auflösung (4800x3040) mit Relief, Klimazonen, grober
+Biomtextur, Meerestiefe und Küstensaum. Die Silhouette bleibt deckungsgleich mit der
 Provinzgeometrie des Spiels.
 """
 from __future__ import annotations
@@ -82,11 +82,9 @@ def noise(rng, cells, size=(W, H), octaves=4):
     return acc / total
 
 
-def grain(rng, radius=1.0, amount=0.06):
-    raw = rng.normal(0.0, 1.0, (H, W)).astype(np.float32)
-    img = Image.fromarray(((raw * 0.5 + 0.5) * 255).astype(np.uint8))
-    soft = np.asarray(img.filter(ImageFilter.GaussianBlur(radius)), dtype=np.float32) / 255.0
-    return 1.0 + (soft - 0.5) * amount * 2.0
+def smoothstep(edge0, edge1, value):
+    t = np.clip((value - edge0) / (edge1 - edge0), 0.0, 1.0)
+    return t * t * (3.0 - 2.0 * t)
 
 
 def mix(a, b, t):
@@ -137,15 +135,19 @@ def main():
     desert_c = np.array([0.80, 0.69, 0.45])
     rock = np.array([0.49, 0.45, 0.39])
     snow_c = np.array([0.88, 0.91, 0.94])
-    bands = [(35.0, desert_c), (42.0, steppe_c), (50.0, grass),
-             (57.0, forest_c), (63.0, tundra_c), (68.0, snow_c)]
+    bands = [(35.0, desert_c, "dry"), (42.0, steppe_c, "dry"), (50.0, grass, "temperate"),
+             (57.0, forest_c, "temperate"), (63.0, tundra_c, "cold"), (68.0, snow_c, "cold")]
     weight_sum = np.zeros((H, W), dtype=np.float32)
+    dry_weight = np.zeros((H, W), dtype=np.float32)
     ground = np.zeros((H, W, 3), dtype=np.float32)
-    for center, color in bands:
+    for center, color, climate in bands:
         w = np.exp(-((lat - center) / 3.4) ** 2).astype(np.float32)
         ground += color * w[..., None]
         weight_sum += w
+        if climate == "dry":
+            dry_weight += w
     ground /= weight_sum[..., None]
+    dry_weight /= weight_sum
 
     moisture = noise(rng, 8, (W, H), 5)
     forest = np.clip((moisture - 0.46) * 2.8, 0.0, 1.0)
@@ -154,9 +156,27 @@ def main():
     ground = mix(ground, rock, np.clip((height - 0.34) * 1.8, 0.0, 0.45))
     snow_high = np.clip((height - 0.52) * 3.0, 0.0, 1.0) * 0.65
     snow_low = np.clip((lat - 67.0) / 3.5, 0.0, 1.0)
-    ground = mix(ground, snow_c, np.clip(snow_high + snow_low, 0.0, 1.0))
-    ground = ground * shade[..., None] * grain(rng, 0.9, 0.15)[..., None]
-    ground = ground * (0.90 + 0.20 * grain(rng, 4.5, 0.14))[..., None]
+    snow_cover = np.clip(snow_high + snow_low, 0.0, 1.0)
+    ground = mix(ground, snow_c, snow_cover)
+
+    # Grobe Biomtextur statt Pixelkorn. Die Muster liegen bei 25-340 Quellpixeln
+    # und bleiben damit auch bei 4x Zoom sichtbar und ruhig. Ein eigener
+    # Generator hält Höhen, Küsten und Klimafarben gegenüber dem alten Stand fest.
+    texture_rng = np.random.default_rng(911)
+    broad_patch = noise(texture_rng, 14, (W, H), 3) - 0.5
+    meadow_patch = noise(texture_rng, 46, (W, H), 3) - 0.5
+    canopy = smoothstep(0.48, 0.70, noise(texture_rng, 40, (W, H), 3)) - 0.5
+    tufts = smoothstep(0.50, 0.74, noise(texture_rng, 64, (W, H), 2)) - 0.5
+    dry_wave = np.sin((xs * 0.058 + ys * 0.026) + (noise(texture_rng, 22, (W, H), 2) - 0.5) * 3.2)
+    # Schwellenmuster auf Mittelwert null ziehen, damit die Klimafarben nicht
+    # systematisch dunkler werden. Die alte Grain-Formel hob das Land um 10 % an.
+    canopy -= float(canopy.mean())
+    tufts -= float(tufts.mean())
+    ground = ground * shade[..., None] * 1.10
+    ground = ground * (1.0 + broad_patch * 0.110 + meadow_patch * 0.070)[..., None]
+    ground = ground * (1.0 + canopy[..., None] * forest[..., None] * 0.140)
+    ground = ground * (1.0 + tufts[..., None] * (0.75 + forest[..., None] * 0.25) * 0.160)
+    ground = ground * (1.0 + dry_wave[..., None] * dry_weight[..., None] * 0.040)
 
     # Küstensaum auf dem Land
     sand = np.clip((4.0 - coast_dist) / 4.0, 0.0, 1.0) * land
@@ -169,7 +189,8 @@ def main():
     deep = np.array([0.045, 0.12, 0.19])
     t = depth[..., None]
     sea = np.where(t < 0.5, shallow * (1 - t * 2) + mid * (t * 2), mid * (2 - t * 2) + deep * (t * 2 - 1))
-    sea = sea * (1.0 + (noise(rng, 200, (W, H), 2) - 0.5)[..., None] * 0.06)
+    swell = noise(texture_rng, 24, (W, H), 3) - 0.5
+    sea = sea * (1.0 + swell[..., None] * 0.065)
 
     out = ground * land[..., None] + sea * (1.0 - land)[..., None]
 

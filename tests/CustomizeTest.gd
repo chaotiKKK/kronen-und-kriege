@@ -7,6 +7,7 @@ extends Node
 var main
 var frames := 0
 var done := false
+var _checks := 0
 
 func _ready() -> void:
 	main = load("res://scenes/Main.tscn").instantiate()
@@ -44,6 +45,8 @@ func _run() -> void:
 	if main.custom_layer == null or not main.custom_layer.visible:
 		_fail("Klick auf das Porträt öffnet die Werkstatt nicht")
 		return
+	if not _check(main.custom_layer != null and main.custom_layer.visible, "Die Werkstatt ist nach dem Porträtklick nicht sichtbar."):
+		return
 
 	main._custom_house_changed("Haus Aria")
 	main._custom_name_changed("Ari")
@@ -72,6 +75,8 @@ func _run() -> void:
 	if int(g.house()["ruler"]["martial"]) != original_stat + 1:
 		_fail("Charakterwert wurde nicht verändert")
 		return
+	if not _check(str(g.house()["name"]) == "Haus Aria" and str(g.house()["ruler"]["name"]) == "Ari" and str(g.house()["ruler"]["gender"]) == "f" and int(g.house()["ruler"]["age"]) == 42 and int(g.house()["ruler"]["portrait"]) == 7 and int(g.house().get("crest", -1)) == 4 and g.house()["color"] == new_color and int(g.house()["ruler"]["martial"]) == original_stat + 1, "Die Werkstattänderungen sind unvollständig."):
+		return
 
 	main._custom_apply()
 	if main.custom_layer.visible:
@@ -80,6 +85,8 @@ func _run() -> void:
 	if main.portrait_rect.texture != main.PORTRAITS[7] or main.crest_rect.texture != main.CRESTS[4]:
 		_fail("Hofpanel zeigt nicht das gewählte Porträt/Wappen")
 		return
+	if not _check(not main.custom_layer.visible and main.portrait_rect.texture == main.PORTRAITS[7] and main.crest_rect.texture == main.CRESTS[4], "Übernehmen schließt die Werkstatt nicht korrekt."):
+		return
 	var snapshot: Dictionary = g.snapshot()
 	g.restore(snapshot)
 	if str(g.house()["name"]) != "Haus Aria" or int(g.house().get("crest", -1)) != 4:
@@ -87,6 +94,8 @@ func _run() -> void:
 		return
 	if str(g.house()["ruler"]["name"]) != "Ari" or int(g.house()["ruler"]["portrait"]) != 7:
 		_fail("Herrscher übersteht Speichern und Laden nicht")
+		return
+	if not _check(str(g.house()["name"]) == "Haus Aria" and int(g.house().get("crest", -1)) == 4 and str(g.house()["ruler"]["name"]) == "Ari" and int(g.house()["ruler"]["portrait"]) == 7, "Der Werkstattzustand übersteht Speichern/Laden nicht."):
 		return
 
 	var before_cancel: String = str(g.house()["name"])
@@ -99,5 +108,14 @@ func _run() -> void:
 	if int(g.house()["ruler"]["portrait"]) != 7 or int(g.house().get("crest", -1)) != 4:
 		_fail("Abbrechen beschädigt Porträt oder Wappen")
 		return
-	print("CUSTOMIZETEST OK: Porträt-Klick, Wappen, Hausfarbe, Name, Geschlecht, Alter und Werte angepasst; Speichern/Laden und Abbrechen geprüft (alt: %s/%d/%d)." % [original_house, original_portrait, original_crest])
+	if not _check(str(g.house()["name"]) == before_cancel and int(g.house()["ruler"]["portrait"]) == 7 and int(g.house().get("crest", -1)) == 4, "Abbrechen stellt den Werkstattzustand nicht wieder her."):
+		return
+	print("CUSTOMIZETEST OK: Porträt-Klick, Wappen, Hausfarbe, Name, Geschlecht, Alter und Werte angepasst; Speichern/Laden und Abbrechen geprüft (alt: %s/%d/%d); %d Prüfungen." % [original_house, original_portrait, original_crest, _checks])
 	get_tree().quit(0)
+
+func _check(condition: bool, message: String) -> bool:
+	_checks += 1
+	if condition:
+		return true
+	_fail(message)
+	return false

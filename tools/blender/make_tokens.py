@@ -1,9 +1,13 @@
 """Headless-Blender-Generator für alle prozeduralen Assets von "Kronen und Kriege".
 
 Ein Aufruf rendert den kompletten Satz:
-  * 17 Karten-Token (9 Gelände, 3 Gebäude, 5 Einheiten)  256x256 RGBA, isometrisch
+  * 50 Karten-Token (9 Gelände, 3 Gebäude, 5 Einheiten, 3 Vermächtnisse,
+    4 Ratsrollen, 3 Vertragsstufen, 3 Reliquien, 3 Glaubenssymbole und
+    17 Welle-10-Motive für Ketzerei, Reform und heilige Kriege) 256x256 RGBA,
+    isometrisch
   * 12 Charakterporträts                                 512x512, Brustbild
   * 8 Ereignisbilder                                     960x540, Szene mit Vorder-/Hintergrund
+  * 1 Hofhallen-Kulisse                                1280x720, opake Szene
 und schreibt assets/asset_manifest.json mit Dateiliste, Zielgrößen, Deckungs-
 korridoren und der Zuordnung zu den Schlüsseln aus dem Spielcode.
 
@@ -12,11 +16,17 @@ Alle Meshes entstehen aus Primitiven — keine Fremdassets, keine CK3-Daten.
 Aufruf (Blender 5.2, background):
     "C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" \
         --background --python tools/blender/make_tokens.py
+
+Nur die neuen Welle-10-Token rendern (bestehende Bilder bleiben unberührt):
+    "C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" \
+        --background --python tools/blender/make_tokens.py -- --wave10-only
 """
 
 import json
 import math
 import os
+import shutil
+import sys
 
 import bpy
 
@@ -25,11 +35,25 @@ ASSETS = os.path.abspath(os.path.join(ROOT, "..", "..", "assets"))
 TOKEN_DIR = os.path.join(ASSETS, "ui", "tokens")
 PORTRAIT_DIR = os.path.join(ASSETS, "ui", "portraits")
 EVENT_DIR = os.path.join(ASSETS, "ui", "events")
+COURT_DIR = os.path.join(ASSETS, "ui", "court")
+FAITH_DIR = os.path.join(ASSETS, "ui", "faith")
 MANIFEST_PATH = os.path.join(ASSETS, "asset_manifest.json")
+BUILD_DIR = os.path.abspath(os.path.join(ROOT, "..", "..", "build", "wave10_faith"))
 
 RES_TOKEN = 256
 RES_PORTRAIT = 512
 EVENT_SIZE = (960, 540)
+COURT_SIZE = (1280, 720)
+
+WAVE10_TOKEN_NAMES = [
+    "faith_heresy_low", "faith_heresy_mid", "faith_heresy_high",
+    "faith_reform_0", "faith_reform_1", "faith_reform_2", "faith_reform_3",
+    *["faith_holy_war_%d" % i for i in range(10)],
+]
+
+FAITH_KEY_SUFFIXES = ["sun", "moon", "earth"] + [
+    name[len("faith_"):] for name in WAVE10_TOKEN_NAMES
+]
 
 PALETTE = {
     "grass": (0.24, 0.42, 0.16),
@@ -74,6 +98,16 @@ PALETTE = {
     "silhouette": (0.05, 0.04, 0.04),
     "ember": (1.00, 0.62, 0.22),
     "backdrop": (0.58, 0.55, 0.50),
+    "house_0": (0.68, 0.30, 0.20),
+    "house_1": (0.22, 0.38, 0.62),
+    "house_2": (0.24, 0.50, 0.30),
+    "house_3": (0.76, 0.56, 0.20),
+    "house_4": (0.18, 0.50, 0.52),
+    "house_5": (0.44, 0.28, 0.58),
+    "house_6": (0.72, 0.60, 0.20),
+    "house_7": (0.34, 0.40, 0.48),
+    "house_8": (0.46, 0.52, 0.26),
+    "house_9": (0.52, 0.18, 0.28),
 }
 
 
@@ -301,6 +335,316 @@ def unit_fleet():
     box((-0.14, 0.0, 0.58), (0.16, 0.02, 0.14), "cloth")
 
 
+# --- Karten-Token: Dynastie-Vermächtnisse --------------------------------
+
+def legacy_war():
+    disc("stone")
+    ring((0.0, 0.0, 0.18), 0.72, 0.055, "gold")
+    box((0.0, 0.0, 0.54), (0.08, 0.08, 0.92), "steel_dark")
+    cone((0.0, 0.0, 1.06), 0.12, 0.0, 0.24, "steel", vertices=4)
+    ball((-0.30, 0.02, 0.56), 0.29, "cloth", scale=(1.0, 0.28, 1.0))
+    ball((-0.30, -0.08, 0.56), 0.10, "gold", scale=(1.0, 0.20, 1.0))
+    box((0.30, 0.0, 0.56), (0.10, 0.08, 0.96), "steel",
+        rot=(0.0, 0.0, -0.35))
+    box((0.30, 0.0, 0.18), (0.36, 0.10, 0.09), "gold",
+        rot=(0.0, 0.0, -0.35))
+
+
+def legacy_crown():
+    disc("stone")
+    ring((0.0, 0.0, 0.18), 0.72, 0.055, "gold")
+    box((0.0, 0.0, 0.44), (1.06, 0.56, 0.30), "gold")
+    for x in (-0.36, 0.0, 0.36):
+        cone((x, 0.0, 0.78), 0.13, 0.02, 0.36, "gold", vertices=4)
+        ball((x, 0.0, 0.98), 0.055, "ember")
+    box((0.0, 0.0, 0.27), (1.28, 0.72, 0.12), "gold")
+    ball((0.0, -0.20, 0.48), 0.14, "cloth", scale=(1.0, 0.35, 1.0))
+
+
+def legacy_guile():
+	disc("stone")
+	ring((0.0, 0.0, 0.18), 0.72, 0.055, "gold")
+	ball((0.0, -0.04, 0.64), 0.34, "gold", scale=(1.0, 0.24, 1.25))
+	for side in (-1.0, 1.0):
+		ball((side * 0.13, -0.13, 0.70), 0.075, "hair_black",
+			scale=(1.2, 0.45, 0.55))
+	cone((0.0, -0.16, 0.54), 0.05, 0.0, 0.20, "gold", vertices=8,
+		rot=(math.radians(90), 0.0, 0.0))
+	box((0.31, 0.0, 0.55), (0.07, 0.07, 1.02), "steel_dark",
+		rot=(0.0, 0.0, -0.38))
+	box((0.31, 0.0, 0.16), (0.34, 0.09, 0.07), "gold",
+		rot=(0.0, 0.0, -0.38))
+
+
+# --- Karten-Token: Rat und Vasallenverträge -----------------------------
+
+def council_marshal():
+	disc("stone")
+	ring((0.0, 0.0, 0.18), 0.72, 0.055, "gold")
+	ball((0.0, 0.0, 0.58), 0.34, "steel", scale=(1.0, 0.28, 1.1))
+	box((0.0, -0.02, 0.58), (0.055, 0.06, 0.62), "gold")
+	box((0.31, 0.0, 0.56), (0.07, 0.07, 1.02), "steel_dark", rot=(0.0, 0.0, -0.35))
+	cone((0.31, 0.0, 1.10), 0.10, 0.0, 0.18, "gold", vertices=4)
+	box((-0.34, 0.0, 0.54), (0.08, 0.08, 0.90), "wood", rot=(0.0, 0.0, 0.35))
+	box((-0.42, 0.0, 0.82), (0.36, 0.04, 0.20), "cloth", rot=(0.0, 0.0, 0.35))
+
+
+def council_chancellor():
+	disc("stone")
+	ring((0.0, 0.0, 0.18), 0.72, 0.055, "gold")
+	box((0.0, 0.0, 0.46), (0.86, 0.18, 0.68), "linen")
+	for z in (0.28, 0.42, 0.56):
+		box((0.0, -0.08, z), (0.72, 0.02, 0.025), "gold")
+	ball((0.02, -0.12, 0.42), 0.12, "gold")
+	box((0.38, 0.0, 0.64), (0.04, 0.04, 0.78), "steel_dark", rot=(0.0, 0.0, 0.28))
+	box((0.50, 0.0, 1.02), (0.22, 0.02, 0.12), "steel", rot=(0.0, 0.0, 0.28))
+
+
+def council_steward():
+	disc("stone")
+	ring((0.0, 0.0, 0.18), 0.72, 0.055, "gold")
+	box((0.0, 0.0, 0.35), (0.92, 0.52, 0.34), "wood")
+	box((0.0, 0.0, 0.58), (0.96, 0.56, 0.10), "gold")
+	for x in (-0.32, 0.0, 0.32):
+		box((x, -0.02, 0.36), (0.04, 0.54, 0.24), "gold")
+	ring((-0.08, -0.10, 0.70), 0.18, 0.035, "gold", rot=(math.radians(90), 0.0, 0.0))
+	box((0.16, -0.10, 0.64), (0.30, 0.04, 0.06), "gold")
+
+
+def council_spymaster():
+	disc("stone")
+	ring((0.0, 0.0, 0.18), 0.72, 0.055, "gold")
+	ball((0.0, -0.02, 0.64), 0.40, "silhouette", scale=(1.0, 0.50, 1.12))
+	box((0.0, -0.18, 0.60), (0.48, 0.08, 0.26), "silhouette")
+	for side in (-1.0, 1.0):
+		ball((side * 0.14, -0.30, 0.73), 0.055, "gold", scale=(1.1, 0.35, 0.7))
+	box((0.0, -0.30, 0.54), (0.22, 0.03, 0.025), "hair_black")
+
+
+def contract_0():
+	disc("grass_dark")
+	ring((0.0, 0.0, 0.18), 0.72, 0.055, "gold")
+	box((0.0, 0.0, 0.40), (0.72, 0.50, 0.30), "linen")
+	box((0.0, 0.0, 0.62), (0.86, 0.60, 0.08), "wood", rot=(0.0, 0.0, 0.10))
+	for side in (-1.0, 1.0):
+		box((side * 0.24, -0.10, 0.28), (0.08, 0.08, 0.32), "wood")
+	ball((0.30, -0.16, 0.30), 0.10, "leaf")
+	ball((-0.30, -0.14, 0.26), 0.08, "gold")
+
+
+def contract_1():
+	disc("stone")
+	ring((0.0, 0.0, 0.18), 0.72, 0.055, "gold")
+	box((0.0, 0.0, 0.50), (0.70, 0.12, 0.52), "linen", rot=(0.0, 0.0, 0.05))
+	for z in (0.38, 0.52, 0.66):
+		box((0.0, -0.10, z), (0.54, 0.02, 0.025), "steel_dark")
+	ball((-0.18, -0.14, 0.42), 0.10, "gold")
+	ball((0.18, -0.14, 0.42), 0.10, "gold")
+	box((0.0, -0.10, 0.30), (0.26, 0.04, 0.055), "gold")
+
+
+def contract_2():
+	disc("stone")
+	ring((0.0, 0.0, 0.18), 0.72, 0.055, "gold")
+	box((0.0, 0.0, 0.46), (0.84, 0.50, 0.12), "cloth")
+	box((0.0, 0.02, 0.62), (0.06, 0.06, 0.96), "steel_dark", rot=(0.0, 0.0, 0.20))
+	box((0.0, 0.02, 0.18), (0.30, 0.08, 0.08), "gold", rot=(0.0, 0.0, 0.20))
+	for x in (-0.30, -0.18, -0.06):
+		ball((x, -0.12, 0.54), 0.045, "gold")
+	box((-0.26, 0.0, 0.78), (0.32, 0.04, 0.20), "cloth", rot=(0.0, 0.0, 0.30))
+
+
+def relic_crown():
+    disc("stone")
+    ring((0.0, 0.0, 0.18), 0.72, 0.055, "gold")
+    box((0.0, 0.0, 0.44), (1.02, 0.48, 0.28), "gold")
+    box((0.0, 0.0, 0.28), (1.20, 0.58, 0.10), "gold")
+    for x in (-0.36, 0.0, 0.36):
+        cone((x, 0.0, 0.76), 0.13, 0.015, 0.38, "gold", vertices=4)
+        ball((x, 0.0, 0.98), 0.055, "ember")
+    for x in (-0.24, 0.24):
+        ball((x, -0.25, 0.45), 0.075, "cloth", scale=(1.0, 0.35, 1.0))
+    ball((0.0, -0.25, 0.49), 0.10, "steel", scale=(1.0, 0.35, 1.0))
+
+
+def relic_blade():
+    disc("stone")
+    ring((0.0, 0.0, 0.18), 0.72, 0.055, "gold")
+    box((0.0, 0.0, 0.70), (0.12, 0.035, 1.02), "steel")
+    cone((0.0, 0.0, 1.30), 0.11, 0.0, 0.26, "steel", vertices=4)
+    box((0.0, 0.0, 0.22), (0.56, 0.10, 0.08), "gold")
+    box((0.0, 0.0, 0.08), (0.12, 0.12, 0.28), "trunk")
+    ball((0.0, 0.0, -0.04), 0.09, "gold")
+    box((-0.25, 0.0, 0.42), (0.30, 0.02, 0.52), "garment_red",
+        rot=(0.0, 0.0, 0.25))
+
+
+def relic_seal():
+    disc("stone")
+    ring((0.0, 0.0, 0.18), 0.72, 0.055, "gold")
+    disc("cloth", radius=0.50, z=0.26, depth=0.06)
+    disc("gold", radius=0.38, z=0.32, depth=0.06)
+    bpy.ops.mesh.primitive_cylinder_add(vertices=32, radius=0.19, depth=0.24,
+                                        location=(0.0, 0.0, 0.48))
+    _finish(bpy.context.active_object, "steel_dark")
+    box((0.0, 0.0, 0.64), (0.26, 0.09, 0.08), "gold")
+    box((0.0, 0.0, 0.30), (0.08, 0.34, 0.03), "garment_red", rot=(0.0, 0.0, 0.30))
+    for x in (-0.27, 0.27):
+        box((x, 0.0, 0.34), (0.16, 0.03, 0.22), "garment_red",
+            rot=(0.0, 0.0, -0.30))
+
+
+def faith_sun():
+    disc("stone")
+    ring((0.0, 0.0, 0.18), 0.72, 0.055, "gold")
+    disc("gold", radius=0.48, z=0.30, depth=0.10)
+    for i in range(12):
+        ang = math.radians(i * 30)
+        box((math.sin(ang) * 0.68, math.cos(ang) * 0.68, 0.31),
+            (0.10, 0.30, 0.07), "gold", rot=(0.0, 0.0, -ang))
+    ball((0.0, 0.0, 0.43), 0.15, "ember")
+    ring((0.0, 0.0, 0.41), 0.28, 0.025, "steel")
+
+
+def faith_moon():
+    disc("stone")
+    ring((0.0, 0.0, 0.18), 0.72, 0.055, "gold")
+    ring((0.0, 0.0, 0.40), 0.42, 0.14, "steel")
+    ball((0.20, -0.06, 0.42), 0.34, "stone", scale=(1.0, 1.0, 0.65))
+    ball((-0.20, 0.24, 0.44), 0.055, "garment_white")
+    ball((0.10, 0.38, 0.44), 0.040, "garment_white")
+    ball((0.38, -0.20, 0.44), 0.030, "garment_white")
+    box((-0.42, -0.28, 0.30), (0.32, 0.06, 0.08), "cloth",
+        rot=(0.0, 0.0, math.radians(24)))
+
+
+def faith_earth():
+    disc("grass_dark")
+    ring((0.0, 0.0, 0.18), 0.72, 0.055, "gold")
+    box((-0.32, 0.10, 0.46), (0.32, 0.24, 0.72), "stone")
+    box((-0.32, 0.10, 0.82), (0.40, 0.30, 0.10), "stone_light")
+    for x, y in ((-0.08, -0.20), (0.10, -0.14), (0.28, -0.24)):
+        box((x, y, 0.42), (0.05, 0.05, 0.58), "trunk")
+        cone((x, y, 0.73), 0.12, 0.015, 0.20, "dry", vertices=6)
+        cone((x, y, 0.84), 0.10, 0.012, 0.18, "gold", vertices=6)
+    disc("soil", radius=0.22, z=0.22, depth=0.04, loc=(0.16, -0.18, 0.0))
+    for x in (-0.52, 0.48):
+        ball((x, 0.30, 0.30), 0.08, "leaf")
+
+
+def _faith_heresy(level):
+    disc("stone")
+    ring((0.0, 0.0, 0.18), 0.72, 0.055, "gold" if level > 0 else "steel")
+    if level == 0:
+        disc("steel_dark", radius=0.40, z=0.28, depth=0.10)
+        for i in range(8):
+            ang = math.radians(i * 45)
+            box((math.sin(ang) * 0.54, math.cos(ang) * 0.54, 0.34),
+                (0.07, 0.20, 0.05), "gold", rot=(0.0, 0.0, -ang))
+        box((0.0, 0.0, 0.36), (0.05, 0.54, 0.04), "silhouette",
+            rot=(0.0, 0.0, 0.55))
+        ball((0.0, 0.0, 0.42), 0.09, "ember")
+    elif level == 1:
+        ring((0.0, 0.0, 0.34), 0.43, 0.08, "cloth")
+        for i in range(4):
+            ang = math.radians(i * 90 + 45)
+            box((math.sin(ang) * 0.52, math.cos(ang) * 0.52, 0.34),
+                (0.10, 0.24, 0.06), "steel_dark", rot=(0.0, 0.0, -ang))
+        box((-0.10, 0.03, 0.37), (0.05, 0.45, 0.04), "silhouette",
+            rot=(0.0, 0.0, -0.35))
+        ball((0.0, 0.0, 0.43), 0.12, "ember")
+    else:
+        disc("silhouette", radius=0.50, z=0.28, depth=0.08)
+        ring((0.0, 0.0, 0.31), 0.48, 0.07, "garment_red")
+        for i in range(7):
+            ang = math.radians(i * 51.4)
+            cone((math.sin(ang) * 0.44, math.cos(ang) * 0.44, 0.72),
+                 0.13, 0.0, 0.34, "ember", vertices=4)
+        for ang in (-0.45, 0.30):
+            box((0.0, 0.0, 0.40), (0.05, 0.62, 0.04), "cloth",
+                rot=(0.0, 0.0, ang))
+        ball((0.0, 0.0, 0.46), 0.14, "ember")
+
+
+def faith_heresy_low():
+    _faith_heresy(0)
+
+
+def faith_heresy_mid():
+    _faith_heresy(1)
+
+
+def faith_heresy_high():
+    _faith_heresy(2)
+
+
+def _faith_reform(level):
+    disc("stone")
+    ring((0.0, 0.0, 0.18), 0.72, 0.055, "gold")
+    box((0.0, 0.0, 0.22), (0.82, 0.46, 0.14), "stone_light")
+    box((0.0, 0.0, 0.60), (0.12, 0.12, 0.86), "gold")
+    for i in range(level):
+        ring((0.0, 0.0, 0.42 + i * 0.20), 0.26, 0.028, "ember")
+    for i in range(level):
+        x = -0.34 + i * 0.23
+        box((x, 0.0, 0.48), (0.05, 0.05, 0.62), "linen")
+        ball((x, 0.0, 0.82), 0.07, "ember")
+    if level == 0:
+        box((0.0, -0.18, 0.34), (0.34, 0.06, 0.22), "linen")
+        box((0.0, -0.22, 0.34), (0.05, 0.03, 0.26), "cloth")
+        ball((0.0, -0.24, 0.34), 0.045, "gold")
+    elif level == 1:
+        ring((0.0, 0.0, 0.92), 0.18, 0.025, "gold")
+        ball((0.0, 0.0, 1.04), 0.06, "ember")
+    elif level == 2:
+        for x in (-0.42, 0.42):
+            box((x, 0.0, 0.42), (0.06, 0.08, 0.54), "stone_light")
+            ball((x, 0.0, 0.74), 0.06, "ember")
+        ring((0.0, 0.0, 0.94), 0.20, 0.03, "gold")
+    else:
+        for i in range(8):
+            ang = math.radians(i * 45)
+            box((math.sin(ang) * 0.54, math.cos(ang) * 0.54, 0.42),
+                (0.06, 0.28, 0.05), "gold", rot=(0.0, 0.0, -ang))
+        ring((0.0, 0.0, 0.96), 0.22, 0.03, "ember")
+        ball((0.0, 0.0, 1.12), 0.10, "ember")
+
+
+def faith_reform_0():
+    _faith_reform(0)
+
+
+def faith_reform_1():
+    _faith_reform(1)
+
+
+def faith_reform_2():
+    _faith_reform(2)
+
+
+def faith_reform_3():
+    _faith_reform(3)
+
+
+def _faith_holy_war(index):
+    color = "house_%d" % index
+    disc("stone")
+    ring((0.0, 0.0, 0.18), 0.72, 0.055, "gold")
+    box((0.0, 0.0, 0.82), (0.08, 0.08, 1.28), "trunk")
+    cone((0.0, 0.0, 1.58), 0.10, 0.0, 0.24, "gold", vertices=4)
+    box((0.0, -0.02, 1.00), (0.94, 0.07, 0.64), color)
+    box((0.0, -0.08, 1.34), (1.02, 0.04, 0.07), "gold")
+    box((0.0, -0.08, 0.66), (1.02, 0.04, 0.07), "gold")
+    for x in (-0.49, 0.49):
+        box((x, -0.08, 1.00), (0.06, 0.04, 0.64), "gold")
+    ball((0.0, -0.14, 1.00), 0.15, "gold", scale=(1.0, 0.45, 1.0))
+    box((0.0, -0.18, 1.00), (0.05, 0.03, 0.42), "steel", rot=(0.0, 0.0, 0.65))
+    box((0.0, -0.18, 1.00), (0.05, 0.03, 0.42), "steel", rot=(0.0, 0.0, -0.65))
+    for x in (-0.32, 0.32):
+        ball((x, -0.15, 1.16), 0.045, "gold")
+    disc("gold", radius=0.20, z=0.24, depth=0.03, loc=(0.0, 0.42, 0.0))
+
+
 TOKENS = [
     ("terrain_plains", terrain_plains),
     ("terrain_farmland", terrain_farmland),
@@ -318,7 +662,29 @@ TOKENS = [
     ("unit_knight", unit_knight),
     ("unit_archer", unit_archer),
     ("unit_siege", unit_siege),
-    ("unit_fleet", unit_fleet),
+    ("unit_fleet", unit_fleet),	("legacy_war", legacy_war),
+	("legacy_crown", legacy_crown),
+	("legacy_guile", legacy_guile),
+	("council_marshal", council_marshal),
+	("council_chancellor", council_chancellor),
+	("council_steward", council_steward),
+	("council_spymaster", council_spymaster),
+	("contract_0", contract_0),
+	("contract_1", contract_1),    ("contract_2", contract_2),
+    ("relic_crown", relic_crown),
+    ("relic_blade", relic_blade),
+    ("relic_seal", relic_seal),
+    ("faith_sun", faith_sun),
+    ("faith_moon", faith_moon),
+    ("faith_earth", faith_earth),
+    ("faith_heresy_low", faith_heresy_low),
+    ("faith_heresy_mid", faith_heresy_mid),
+    ("faith_heresy_high", faith_heresy_high),
+    ("faith_reform_0", faith_reform_0),
+    ("faith_reform_1", faith_reform_1),
+    ("faith_reform_2", faith_reform_2),
+    ("faith_reform_3", faith_reform_3),
+    *[("faith_holy_war_%d" % i, (lambda i=i: _faith_holy_war(i))) for i in range(10)],
 ]
 
 
@@ -795,6 +1161,46 @@ def event_fever():
     ball((-2.8, 3.2, 1.33), 0.10, "ember")
 
 
+def court_hall():
+    _floor("stone")
+    _backdrop("sky_dusk", y=16.0)
+    # Rote Läuferachse zum Thron
+    box((0.0, 4.2, 0.02), (2.2, 11.2, 0.05), "garment_red")
+    for side in (-1.0, 1.0):
+        for y in (2.0, 5.4, 8.8):
+            cone((side * 3.35, y, 2.20), 0.34, 0.42, 4.40, "stone_light", vertices=16)
+            box((side * 3.35, y, 0.30), (0.92, 0.92, 0.34), "stone")
+            box((side * 3.35, y, 4.48), (0.92, 0.92, 0.30), "gold")
+        box((side * 3.35, 5.4, 4.72), (0.88, 7.2, 0.28), "stone_light")
+        box((side * 4.62, 8.3, 2.35), (0.10, 0.10, 4.70), "trunk")
+        box((side * 4.12, 8.3, 4.34), (1.05, 0.05, 1.35), "garment_red")
+    # Thronpodest und Rückwand
+    box((0.0, 9.6, 0.28), (4.4, 2.2, 0.56), "stone_light")
+    box((0.0, 10.4, 2.10), (4.2, 0.28, 3.80), "stone_light")
+    box((0.0, 9.95, 1.05), (2.5, 1.5, 0.34), "gold")
+    box((0.0, 9.85, 2.25), (2.1, 0.30, 2.70), "garment_red")
+    box((0.0, 9.55, 1.82), (1.42, 1.05, 0.22), "gold")
+    # Thron
+    box((0.0, 9.25, 0.88), (1.55, 1.0, 0.42), "gold")
+    box((0.0, 9.45, 1.88), (1.55, 0.24, 2.05), "gold")
+    box((0.0, 9.30, 1.18), (1.18, 0.82, 0.22), "garment_red")
+    # Herrscher und Hofstaat
+    _figure(0.0, 8.55, 1.25, "garment_red")
+    ball((0.0, 8.55, 2.20), 0.20, "skin_mid")
+    cone((0.0, 8.55, 2.42), 0.21, 0.21, 0.10, "gold", vertices=16)
+    _figure(-1.75, 6.55, 1.65, "garment_blue")
+    _figure(1.75, 6.55, 1.65, "garment_green")
+    _figure(-2.45, 4.3, 1.65, "silhouette")
+    _figure(2.45, 4.3, 1.65, "silhouette")
+    # Kerzen und Reliquiennischen
+    for side in (-1.0, 1.0):
+        for y in (4.0, 7.0):
+            box((side * 2.35, y, 0.72), (0.12, 0.12, 1.30), "trunk")
+            ball((side * 2.35, y, 1.42), 0.10, "ember")
+        box((side * 2.55, 9.8, 2.42), (0.40, 0.14, 0.56), "gold")
+        ball((side * 2.55, 9.72, 2.46), 0.16, "cloth", scale=(1.0, 0.35, 1.0))
+
+
 EVENTS = [
     ("event_court_reception", event_court_reception, "sky_dusk"),
     ("event_battle", event_battle, "sky_warm"),
@@ -905,6 +1311,64 @@ def event_scene(world_color):
     return scene
 
 
+def faith_temple():
+    _floor("stone")
+    _backdrop("sky_dusk", y=16.0)
+    box((0.0, 4.0, 0.02), (2.4, 11.8, 0.05), "garment_blue")
+    for side in (-1.0, 1.0):
+        for y in (2.2, 5.6, 9.0):
+            cone((side * 3.35, y, 2.30), 0.34, 0.46, 4.60, "stone_light", vertices=16)
+            box((side * 3.35, y, 0.30), (0.96, 0.96, 0.34), "stone")
+            box((side * 3.35, y, 4.68), (0.96, 0.96, 0.32), "gold")
+        box((side * 3.35, 5.6, 4.92), (0.92, 7.6, 0.28), "stone_light")
+    box((0.0, 9.8, 0.32), (4.8, 2.4, 0.64), "stone_light")
+    box((0.0, 10.7, 2.30), (4.4, 0.30, 4.10), "stone")
+    box((0.0, 10.45, 2.35), (2.2, 0.18, 2.40), "garment_blue")
+    ring((0.0, 9.95, 3.20), 0.78, 0.07, "gold")
+    disc("gold", radius=0.62, z=3.18, depth=0.10, loc=(0.0, 9.95, 3.18))
+    for i in range(8):
+        ang = math.radians(i * 45)
+        box((math.sin(ang) * 0.92, 9.95 + math.cos(ang) * 0.92, 3.18),
+            (0.08, 0.24, 0.06), "gold", rot=(0.0, 0.0, -ang))
+    box((0.0, 8.8, 0.76), (2.6, 1.2, 0.30), "stone_light")
+    box((0.0, 8.8, 1.02), (2.0, 0.9, 0.18), "cloth")
+    _figure(0.0, 8.0, 1.55, "garment_white")
+    ball((0.0, 8.0, 2.42), 0.19, "skin_mid")
+    for side in (-1.0, 1.0):
+        _figure(side * 2.35, 4.5, 1.65, "garment_blue" if side < 0 else "garment_green")
+        box((side * 2.35, 4.5, 0.82), (0.12, 0.12, 1.12), "trunk")
+        ball((side * 2.35, 4.5, 1.45), 0.10, "ember")
+    for y in (4.0, 7.0):
+        box((-2.55, y, 1.10), (0.16, 0.16, 1.40), "gold")
+        ball((-2.55, y, 1.84), 0.09, "ember")
+
+
+def court_scene():
+    scene = _base_scene()
+    scene.cycles.samples = 36
+    scene.render.resolution_x = COURT_SIZE[0]
+    scene.render.resolution_y = COURT_SIZE[1]
+    scene.render.film_transparent = False
+    _world(scene, PALETTE["sky_dusk"], 0.48)
+    _camera(scene, (0.0, -8.6, 2.45), (84.0, 0.0, 0.0), lens=36.0)
+    _sun(scene, 2.5, (56.0, 8.0, -28.0))
+    _area(scene, 300.0, (-3.8, -2.8, 3.8), (66.0, 0.0, -38.0), 8.0)
+    return scene
+
+
+def faith_scene():
+    scene = _base_scene()
+    scene.cycles.samples = 36
+    scene.render.resolution_x = COURT_SIZE[0]
+    scene.render.resolution_y = COURT_SIZE[1]
+    scene.render.film_transparent = False
+    _world(scene, PALETTE["sky_dusk"], 0.42)
+    _camera(scene, (0.0, -8.6, 2.45), (84.0, 0.0, 0.0), lens=36.0)
+    _sun(scene, 2.3, (56.0, 8.0, -28.0))
+    _area(scene, 260.0, (-3.8, -2.8, 3.8), (66.0, 0.0, -38.0), 8.0)
+    return scene
+
+
 def clear_meshes():
     for obj in list(bpy.data.objects):
         if obj.type in ("MESH", "LIGHT", "CAMERA"):
@@ -920,12 +1384,16 @@ def render_to(scene, path):
 
 
 def main():
-    for d in (TOKEN_DIR, PORTRAIT_DIR, EVENT_DIR):
+    wave10_only = "--wave10-only" in sys.argv
+    for d in (TOKEN_DIR, PORTRAIT_DIR, EVENT_DIR, COURT_DIR, FAITH_DIR, BUILD_DIR):
         os.makedirs(d, exist_ok=True)
 
-    tokens = []
+    tokens = [name for name, _builder in TOKENS]
+    render_names = set(WAVE10_TOKEN_NAMES) if wave10_only else set(tokens)
     scene = token_scene()
     for name, builder in TOKENS:
+        if name not in render_names:
+            continue
         clear_meshes()
         _world(scene, (0.55, 0.55, 0.58), 0.30)
         _camera(scene, (3.4, -3.4, 3.2), (57.0, 0.0, 45.0), ortho=2.55)
@@ -934,12 +1402,32 @@ def main():
         builder()
         path = os.path.join(TOKEN_DIR, name + ".png")
         render_to(scene, path)
-        tokens.append(name)
         print("TOKEN %s" % name, flush=True)
 
-    portraits = []
+    for name in WAVE10_TOKEN_NAMES:
+        source = os.path.join(TOKEN_DIR, name + ".png")
+        if not os.path.exists(source):
+            raise RuntimeError("Welle-10-Token fehlt nach dem Render: %s" % source)
+        shutil.copyfile(source, os.path.join(BUILD_DIR, name + ".png"))
+    build_manifest = {
+        "generated_by": "tools/blender/make_tokens.py",
+        "blender": "5.2.1 LTS",
+        "source_dir": "assets/ui/tokens",
+        "files": [
+            {"name": name, "build": "build/wave10_faith/%s.png" % name,
+             "source": "assets/ui/tokens/%s.png" % name}
+            for name in WAVE10_TOKEN_NAMES
+        ],
+    }
+    with open(os.path.join(BUILD_DIR, "manifest.json"), "w", encoding="utf-8") as fh:
+        json.dump(build_manifest, fh, indent=2, ensure_ascii=False)
+        fh.write("\n")
+    print("WAVE 10 BUILD: %d neue Token in build/wave10_faith" % len(WAVE10_TOKEN_NAMES),
+          flush=True)
+
+    portraits = [cfg["name"] for cfg in PORTRAITS]
     scene = portrait_scene()
-    for cfg in PORTRAITS:
+    for cfg in ([] if wave10_only else PORTRAITS):
         clear_meshes()
         _world(scene, (0.60, 0.57, 0.52), 1.0)
         _camera(scene, (0.0, -3.05, 1.20), (90.0, 0.0, 0.0), lens=85.0)
@@ -948,12 +1436,11 @@ def main():
         portrait(cfg)
         path = os.path.join(PORTRAIT_DIR, cfg["name"] + ".png")
         render_to(scene, path)
-        portraits.append(cfg["name"])
         print("PORTRAIT %s" % cfg["name"], flush=True)
 
-    events = []
+    events = [name for name, _builder, _world_color in EVENTS]
     scene = event_scene("sky_dusk")
-    for name, builder, world_color in EVENTS:
+    for name, builder, world_color in ([] if wave10_only else EVENTS):
         clear_meshes()
         _world(scene, PALETTE[world_color], 0.42)
         _camera(scene, (0.0, -8.0, 2.30), (84.0, 0.0, 0.0), lens=38.0)
@@ -962,8 +1449,30 @@ def main():
         builder()
         path = os.path.join(EVENT_DIR, name + ".png")
         render_to(scene, path)
-        events.append(name)
         print("EVENT %s" % name, flush=True)
+
+    if not wave10_only:
+        scene = court_scene()
+        clear_meshes()
+        _world(scene, PALETTE["sky_dusk"], 0.48)
+        _camera(scene, (0.0, -8.6, 2.45), (84.0, 0.0, 0.0), lens=36.0)
+        _sun(scene, 2.5, (56.0, 8.0, -28.0))
+        _area(scene, 300.0, (-3.8, -2.8, 3.8), (66.0, 0.0, -38.0), 8.0)
+        court_hall()
+        court_path = os.path.join(COURT_DIR, "court_hall.png")
+        render_to(scene, court_path)
+        print("SCENE court_hall", flush=True)
+
+        scene = faith_scene()
+        clear_meshes()
+        _world(scene, PALETTE["sky_dusk"], 0.42)
+        _camera(scene, (0.0, -8.6, 2.45), (84.0, 0.0, 0.0), lens=36.0)
+        _sun(scene, 2.3, (56.0, 8.0, -28.0))
+        _area(scene, 260.0, (-3.8, -2.8, 3.8), (66.0, 0.0, -38.0), 8.0)
+        faith_temple()
+        faith_path = os.path.join(FAITH_DIR, "faith_temple.png")
+        render_to(scene, faith_path)
+        print("SCENE faith_temple", flush=True)
 
     manifest = {
         "generated_by": "tools/blender/make_tokens.py",
@@ -987,6 +1496,18 @@ def main():
                 "coverage": [0.97, 1.0],
                 "files": ["assets/ui/events/%s.png" % n for n in events],
             },
+            "scenes": {
+                "dir": "assets/ui/court",
+                "size": [COURT_SIZE[0], COURT_SIZE[1]],
+                "coverage": [0.97, 1.0],
+                "files": ["assets/ui/court/court_hall.png"],
+            },
+            "faith_scenes": {
+                "dir": "assets/ui/faith",
+                "size": [COURT_SIZE[0], COURT_SIZE[1]],
+                "coverage": [0.97, 1.0],
+                "files": ["assets/ui/faith/faith_temple.png"],
+            },
         },
         "key_map": [
             *[{"code": "terrain.%s" % k, "asset": "assets/ui/tokens/terrain_%s.png" % k}
@@ -999,6 +1520,17 @@ def main():
             {"code": "unit.knight", "asset": "assets/ui/tokens/unit_knight.png"},
             {"code": "unit.siege", "asset": "assets/ui/tokens/unit_siege.png"},
             {"code": "unit.fleet", "asset": "assets/ui/tokens/unit_fleet.png"},
+            {"code": "legacy.war", "asset": "assets/ui/tokens/legacy_war.png"},
+            {"code": "legacy.crown", "asset": "assets/ui/tokens/legacy_crown.png"},
+            {"code": "legacy.guile", "asset": "assets/ui/tokens/legacy_guile.png"},
+            *[{"code": "council.%s" % k, "asset": "assets/ui/tokens/council_%s.png" % k}
+              for k in ("marshal", "chancellor", "steward", "spymaster")],
+            *[{"code": "contract.%s" % k, "asset": "assets/ui/tokens/contract_%s.png" % k}
+              for k in ("0", "1", "2")],
+            *[{"code": "relic.%s" % k, "asset": "assets/ui/tokens/relic_%s.png" % k}
+              for k in ("crown", "blade", "seal")],
+            *[{"code": "faith.%s" % k, "asset": "assets/ui/tokens/faith_%s.png" % k}
+              for k in FAITH_KEY_SUFFIXES],
             {"code": "event.hoftag", "asset": "assets/ui/events/event_court_reception.png"},
             {"code": "event.hochzeit", "asset": "assets/ui/events/event_wedding.png"},
             {"code": "event.kloster", "asset": "assets/ui/events/event_monastery.png"},
@@ -1019,7 +1551,7 @@ def main():
         json.dump(manifest, fh, indent=2, ensure_ascii=False)
         fh.write("\n")
 
-    print("ASSETS OK: %d Token, %d Porträts, %d Ereignisse" %
+    print("ASSETS OK: %d Token, %d Porträts, %d Ereignisse, 1 Hofkulisse, 1 Tempelkulisse" %
           (len(tokens), len(portraits), len(events)), flush=True)
 
 

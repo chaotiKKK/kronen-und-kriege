@@ -1,10 +1,11 @@
 extends Control
-## Zeichnet die hinterlegte Europakarte mit den 49 Provinzflächen. Die echten
-## Küstenlinien liegen als vorgenerierte Karte darunter; Grenzen und Beschriftung
-## werden aus den Spieldaten gezeichnet.
+## Zeichnet Beschriftungen, Auswahlbedienung und Legende über dem
+## zwischengespeicherten Kartenunterbau aus MapBase.gd. Der Unterbau wird nur
+## bei Daten-/Modus-/Auswahlwechsel neu gezeichnet und beim Pan/Zoom verschoben.
 
 signal province_selected(province_id: String)
 signal map_mode_changed(mode: String)
+signal province_activated(province_id: String)
 
 const MAP_MODES := ["political", "terrain", "duchy", "kingdom", "development", "war"]
 const MODE_TITLES := {
@@ -14,6 +15,14 @@ const MODE_TITLES := {
 	"kingdom": "Reiche",
 	"development": "Entwicklung",
 	"war": "Krieg",
+}
+const MODE_HINTS := {
+	"political": "Reichs- und Grafschaftsgrenzen",
+	"terrain": "Gelände, Flüsse und Versorgung",
+	"duchy": "Herzogtümer und ihre Grenzen",
+	"kingdom": "Königreiche und Reichsgrenzen",
+	"development": "Entwicklung der Grafschaften",
+	"war": "Belagerungen, Flotten und Kriegsstand",
 }
 const TERRAIN_ORDER := ["plains", "farmland", "forest", "hills", "mountains", "marsh", "coast", "steppe", "heath"]
 const TITLE_COLORS := [
@@ -41,7 +50,9 @@ const SEAS := [
 ]
 
 const MAP_SIZE := Vector2(1200, 760)
-const EUROPE := preload("res://assets/map/europe_detail.png")
+const MapBaseScript = preload("res://scripts/MapBase.gd")
+const MARKER_CASTLE := preload("res://assets/map/generated/marker_castle.png")
+const MARKER_BANNER := preload("res://assets/map/generated/marker_banner.png")
 const INK := Color(0.12, 0.09, 0.05)
 const CREAM := Color(1.0, 0.96, 0.86)
 const GOLD := Color(0.86, 0.68, 0.32)
@@ -49,20 +60,39 @@ const LABEL_BG := Color(0.08, 0.06, 0.03, 0.48)
 
 var game = null
 var selected: String = ""
+var hovered: String = ""
 var map_mode: String = "political"
+var legend_visible := false
 var crests: Array = []
 var _edge_neighbor: Dictionary = {}
 var _game_id: int = -1
 var zoom: float = 1.0
 var pan := Vector2.ZERO
 var _dragging := false
+var _hover_pos := Vector2.ZERO
 var labels_drawn: int = 0
+## Audit der tatsächlich gezeichneten 3D-Marker. Wird in jedem Draw neu gefüllt
+## und dient dem Fenstertest als Nachweis des realen Draw-Pfads.
+var capital_markers_drawn: Array = []
+var kingdom_banners_drawn: Array = []
+var empire_banners_drawn: Array = []
+## Audit der tatsächlich gezeichneten Flottenmarker. Wird in jedem Draw neu
+## gefüllt und dient dem Fenstertest als Nachweis des realen Draw-Pfads.
+var fleet_markers_drawn: Array = []
 var _terrain_tex: Dictionary = {}
 var _building_tex: Dictionary = {}
 var _unit_tex: Dictionary = {}
+var _base
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	_base = MapBaseScript.new()
+	_base.host = self
+	_base.size = MAP_SIZE
+	add_child(_base)
+	resized.connect(_sync_base_transform)
+	mouse_exited.connect(_on_mouse_exited)
+	_sync_base_transform()
 	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	for i in 9:
@@ -77,16 +107,19 @@ func _ready() -> void:
 		var btex = load("res://assets/ui/tokens/building_%s.png" % key)
 		if btex != null:
 			_building_tex[str(key)] = btex
-	for key in ["levy", "archer", "knight", "siege"]:
+	for key in ["levy", "archer", "knight", "siege", "fleet"]:
 		var utex = load("res://assets/ui/tokens/unit_%s.png" % key)
 		if utex != null:
 			_unit_tex[str(key)] = utex
 
 func set_game(g) -> void:
 	game = g
+	hovered = ""
 	if game != null and game.get_instance_id() != _game_id:
 		_game_id = game.get_instance_id()
 		_rebuild_edge_cache()
+	if _base != null:
+		_base.queue_redraw()
 	queue_redraw()
 
 func set_mode(mode: String) -> void:
@@ -95,6 +128,8 @@ func set_mode(mode: String) -> void:
 		queue_redraw()
 		return
 	map_mode = clean
+	if _base != null:
+		_base.queue_redraw()
 	queue_redraw()
 	map_mode_changed.emit(map_mode)
 
@@ -103,6 +138,17 @@ func mode_title() -> String:
 
 func select(id: String) -> void:
 	selected = id
+	if _base != null:
+		_base.queue_redraw()
+	queue_redraw()
+
+func hover_at(pos: Vector2) -> void:
+	_hover_pos = pos
+	var id: String = _province_at(pos)
+	if id == hovered:
+		return
+	hovered = id
+	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if hovered != "" else Control.CURSOR_ARROW
 	queue_redraw()
 
 func set_crest_texture(index: int, tex: Texture2D) -> void:
@@ -118,6 +164,19 @@ func _fit() -> Array:
 	var s: float = fit_s * zoom
 	var off: Vector2 = (size - MAP_SIZE * s) * 0.5 + pan
 	return [s, off]
+
+func _sync_base_transform() -> void:
+	if _base == null:
+		return
+	var fit := _fit()
+	_base.position = fit[1]
+	_base.scale = Vector2(float(fit[0]), float(fit[0]))
+
+func rivers() -> Array:
+	return RIVERS
+
+func seas() -> Array:
+	return SEAS
 
 func _clamp_pan() -> void:
 	var fit_s: float = min(size.x / MAP_SIZE.x, size.y / MAP_SIZE.y)
@@ -147,11 +206,24 @@ func zoom_by(factor: float, pivot = null) -> void:
 	var base: Vector2 = (size - MAP_SIZE * s) * 0.5
 	pan = p - before * s - base
 	_clamp_pan()
+	_sync_base_transform()
 	queue_redraw()
 
 func reset_view() -> void:
 	zoom = 1.0
 	pan = Vector2.ZERO
+	_sync_base_transform()
+	queue_redraw()
+
+func center_on(map_point: Vector2) -> void:
+	var fit_s: float = min(size.x / MAP_SIZE.x, size.y / MAP_SIZE.y)
+	if fit_s <= 0.0:
+		return
+	var s: float = fit_s * zoom
+	var base: Vector2 = (size - MAP_SIZE * s) * 0.5
+	pan = size * 0.5 - map_point * s - base
+	_clamp_pan()
+	_sync_base_transform()
 	queue_redraw()
 
 func _centroid(poly: PackedVector2Array) -> Vector2:
@@ -210,9 +282,9 @@ func _rebuild_edge_cache() -> void:
 						break
 				_edge_neighbor["%s|%d|%d" % [p["id"], pi, i]] = found
 
-func _pick_at(pos: Vector2) -> void:
+func _province_at(pos: Vector2) -> String:
 	if game == null:
-		return
+		return ""
 	var fit := _fit()
 	var s: float = fit[0]
 	var off: Vector2 = fit[1]
@@ -231,80 +303,74 @@ func _pick_at(pos: Vector2) -> void:
 				candidates.append([absf(area), str(p["id"])])
 	if not candidates.is_empty():
 		candidates.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
-		selected = str(candidates[0][1])
-		province_selected.emit(selected)
-		queue_redraw()
+		return str(candidates[0][1])
+	return ""
+
+func _pick_at(pos: Vector2) -> void:
+	if game == null:
+		return
+	var id: String = _province_at(pos)
+	if id == "":
+		if selected != "":
+			selected = ""
+			province_selected.emit("")
+			queue_redraw()
+		return
+	selected = id
+	hovered = id
+	_hover_pos = pos
+	province_selected.emit(selected)
+	queue_redraw()
 
 func _draw() -> void:
 	var fit := _fit()
 	var s: float = fit[0]
 	var off: Vector2 = fit[1]
-	draw_set_transform(off, 0.0, Vector2(s, s))
-	draw_texture_rect(EUROPE, Rect2(Vector2.ZERO, MAP_SIZE), false)
-	# Kompass und Schiff als Kartenmöbel
-	draw_arc(Vector2(1116, 96), 38, 0, TAU, 32, Color(0.76, 0.65, 0.44, 0.55), 1.5)
-	for k in 8:
-		var a: float = k * TAU / 8.0
-		draw_line(Vector2(1116, 96) + Vector2(cos(a), sin(a)) * 25, Vector2(1116, 96) + Vector2(cos(a), sin(a)) * 52, Color(0.76, 0.65, 0.44, 0.5), 1.0)
-	draw_line(Vector2(1116, 44), Vector2(1116, 62), Color(0.88, 0.75, 0.48, 0.8), 2.0)
-	var hull := PackedVector2Array([Vector2(74, 700), Vector2(142, 700), Vector2(130, 722), Vector2(86, 722)])
-	draw_colored_polygon(hull, Color(0.42, 0.28, 0.14, 0.9))
-	draw_line(Vector2(108, 700), Vector2(108, 668), Color(0.55, 0.40, 0.20, 0.9), 2.0)
-	draw_colored_polygon(PackedVector2Array([Vector2(110, 670), Vector2(140, 692), Vector2(110, 696)]), Color(0.84, 0.76, 0.57, 0.9))
-
+	fleet_markers_drawn.clear()
+	capital_markers_drawn.clear()
+	kingdom_banners_drawn.clear()
+	empire_banners_drawn.clear()
+	_sync_base_transform()
 	if game == null:
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		draw_rect(Rect2(off, MAP_SIZE * s), Color(0.72, 0.58, 0.34, 0.5), false, 3.0)
 		return
-
-	# Provinzflächen: je nach Modus politisch, Gelände, Titel, Entwicklung oder Krieg.
-	for p in game.provinces:
-		var base: Color = _fill_color(p)
-		for part in _province_parts(p):
-			draw_colored_polygon(part, base)
-	if map_mode == "terrain":
-		_draw_terrain_details()
-
-	# Grenzen: Provinz < Herzogtum < Königreich < Reich < Küste
-	for p in game.provinces:
-		var parts: Array = _province_parts(p)
-		for pi in parts.size():
-			var pts: PackedVector2Array = parts[pi]
-			for i in pts.size():
-				var a: Vector2 = pts[i]
-				var b: Vector2 = pts[(i + 1) % pts.size()]
-				var nid: String = str(_edge_neighbor.get("%s|%d|%d" % [p["id"], pi, i], ""))
-				var q: Dictionary = game.province(nid) if nid != "" else {}
-				var col := Color(0.16, 0.11, 0.07, 0.55)
-				var width := 1.0
-				if q.is_empty():
-					col = Color(0.12, 0.09, 0.05, 0.95)
-					width = 2.4
-				elif str(p["empire"]) != str(q["empire"]):
-					col = Color(0.64, 0.18, 0.13, 0.95)
-					width = 5.0
-				elif int(p["owner"]) != int(q["owner"]):
-					col = Color(0.98, 0.84, 0.45, 0.95)
-					width = 4.0
-				elif str(p["kingdom"]) != str(q["kingdom"]):
-					col = Color(0.72, 0.52, 0.22, 0.95)
-					width = 3.2
-				elif str(p["duchy"]) != str(q["duchy"]):
-					col = Color(0.43, 0.30, 0.14, 0.9)
-					width = 2.1
-				draw_line(a, b, col, width, true)
-
-	# Auswahl
-	if selected != "":
-		var sel: Dictionary = game.province(selected)
-		if not sel.is_empty():
-			for part in _province_parts(sel):
-				draw_colored_polygon(part, Color(1.0, 0.92, 0.62, 0.18))
-				var outline: PackedVector2Array = part.duplicate()
-				outline.append(part[0])
-				draw_polyline(outline, Color(1.0, 0.90, 0.55), 3.2, true)
-
+	_draw_hover_highlight(s, off)
+	_draw_infrastructure(s, off)
 	_draw_labels(s, off)
+
+func infrastructure_segments() -> Array:
+	var segments: Array = []
+	if game == null:
+		return segments
+	for road in game.road_segments():
+		var a: Dictionary = game.province(str(road.from))
+		var b: Dictionary = game.province(str(road.to))
+		if a.is_empty() or b.is_empty():
+			continue
+		segments.append({"a": _label_point(a), "b": _label_point(b), "state": road.state, "months": road.months})
+	return segments
+
+func _draw_infrastructure(s: float, off: Vector2) -> void:
+	for segment in infrastructure_segments():
+		var a: Vector2 = off + segment.a * s
+		var b: Vector2 = off + segment.b * s
+		var width: float = clampf(2.0 * s, 2.5, 6.0)
+		if segment.state == "complete":
+			draw_line(a, b, Color(0.12, 0.08, 0.035, 0.92), width + 3.0, true)
+			draw_line(a, b, Color(0.95, 0.81, 0.48), width, true)
+			draw_line(a, b, Color(1.0, 0.94, 0.74), 1.0, true)
+		else:
+			var length: float = a.distance_to(b)
+			if length < 1.0:
+				continue
+			var direction: Vector2 = (b - a) / length
+			for distance in range(0, int(length), 14):
+				var start: Vector2 = a + direction * float(distance)
+				var end: Vector2 = a + direction * minf(float(distance + 8), length)
+				draw_line(start, end, Color(0.98, 0.72, 0.25), width, true)
+		for endpoint in [a, b]:
+			draw_circle(endpoint, width + 1.5, Color(0.12, 0.08, 0.035))
+			draw_circle(endpoint, width - 0.5, Color(0.98, 0.85, 0.52))
 
 func _draw_labels(s: float, off: Vector2) -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
@@ -315,6 +381,10 @@ func _draw_labels(s: float, off: Vector2) -> void:
 	var fs_title := 16 if s < 0.9 else 18
 	var fs_owner := 10 if s < 0.9 else 11
 	var fs_label := 9 if s >= 1.1 else (8 if s >= 0.62 else 7)
+
+	# Die Blender-Marker sitzen an den Halte- und Königreichssitzen. Sie werden
+	# vor den Titeln eingeplant, damit die Beschriftung nicht auf ihnen landet.
+	_draw_3d_markers(s, off, occupied, inner)
 
 	# Neun Königreichstitel; sie bekommen zuerst Platz.
 	var groups: Array = []
@@ -363,13 +433,18 @@ func _draw_labels(s: float, off: Vector2) -> void:
 			box.position.x = clampf(box.position.x, inner.position.x + 2, inner.end.x - w - 2)
 			box.position.y = clampf(box.position.y, inner.position.y + 2, inner.end.y - h - 2)
 		occupied.append(box)
-		draw_rect(box, Color(0.07, 0.05, 0.03, 0.83), true)
-		draw_rect(box, Color(0.86, 0.68, 0.32, 0.92), false, 1.2)
+		# Titel schweben wie auf einer historischen Karte über dem Gelände:
+		# Kontur statt deckender Kästen, dazu eine schmale Hausfarben-Marke.
 		var tx := box.position.x + (w - tw) * 0.5
-		var ty := box.position.y + float(fs_title) + 1.0
+		var ty := box.position.y + float(fs_title) + 2.0
+		var hcol: Color = game.houses[int(p["owner"])].get("color", GOLD)
+		draw_rect(Rect2(box.position.x + 1, box.position.y + 9, 3, float(fs_title) - 2), Color(hcol.r, hcol.g, hcol.b, 0.92), true)
+		draw_string_outline(font, Vector2(tx, ty), title, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_title, 4, Color(0.025, 0.018, 0.010, 0.9))
 		draw_string(font, Vector2(tx, ty), title, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_title, CREAM)
 		var ox := box.position.x + (w - ow) * 0.5
-		draw_string(font, Vector2(ox, ty + float(fs_owner) + 2.0), house_name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_owner, Color(0.96, 0.86, 0.62))
+		var oy := ty + float(fs_owner) + 2.0
+		draw_string_outline(font, Vector2(ox, oy), house_name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_owner, 2, Color(0.025, 0.018, 0.010, 0.92))
+		draw_string(font, Vector2(ox, oy), house_name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_owner, Color(0.98, 0.87, 0.62))
 
 	# Wappen der neun Hauptstädte, danach die Provinznamen.
 	for p in game.provinces:
@@ -436,54 +511,134 @@ func _draw_labels(s: float, off: Vector2) -> void:
 		if not placed:
 			continue
 		occupied.append(box)
-		draw_rect(box, LABEL_BG, true)
 		var txt := Vector2(box.position.x + 2, box.position.y + float(fs_label) + 1)
-		draw_string(font, txt + Vector2(1, 1), name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_label, Color(0, 0, 0, 0.75))
+		draw_string_outline(font, txt, name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_label, 2, Color(0.02, 0.015, 0.01, 0.9))
 		draw_string(font, txt, name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_label,
 			Color(1.0, 0.86, 0.48) if str(p["id"]) == selected else Color(1.0, 0.97, 0.88))
+		if str(p["id"]) == selected:
+			draw_line(txt + Vector2(0, 2), txt + Vector2(w, 2), Color(1.0, 0.80, 0.34, 0.95), 1.2, true)
 		drawn += 1
 	labels_drawn = drawn
 
 	if map_mode == "war":
 		_draw_war_markers(s, off, font)
 
-	# Auswahlkarte mit Land, Provinz, Gelände, Hauptstadtstatus und Besitzer
-	if selected != "":
-		var p: Dictionary = game.province(selected)
-		if not p.is_empty():
-			var owner: String = str(game.houses[int(p["owner"])]["name"])
-			var cap := "ja" if bool(p.get("capital", false)) else "nein"
-			var terrain_name: String = str(p.get("terrain_name", "Ebenen"))
-			var terrain_def: int = int(p.get("terrain_defense", 0))
-			var supply: int = int(p.get("terrain_supply", 6))
-			var lines := [
-				str(p["name"]),
-				"%s · %s" % [str(p["kingdom_name"]), str(p["empire_name"])],
-				str(p["duchy_name"]),
-				"Gelände: %s · Entwicklung: %d/10" % [terrain_name, int(p.get("dev", 1))],
-				"Truppen: %d · Geländeverteidigung: %+d%% · Versorgung: %d" % [int(p.get("levy", 0)), terrain_def, supply * 100],
-				"Besitzer: %s · Hauptstadt: %s" % [owner, cap],
-			]
-			var box_w := 338.0
-			var box_h := 108.0
-			var anchor: Vector2 = _label_point(p) * s + off
-			var box := Rect2(anchor + Vector2(-box_w * 0.5, 14), Vector2(box_w, box_h))
-			box.position.x = clampf(box.position.x, map_rect.position.x + 4, map_rect.end.x - box_w - 4)
-			box.position.y = clampf(box.position.y, map_rect.position.y + 4, map_rect.end.y - box_h - 4)
-			draw_rect(box, Color(0.08, 0.06, 0.03, 0.95), true)
-			draw_rect(box, GOLD, false, 1.5)
-			var swatch: Color = p.get("terrain_color", Color(0.47, 0.54, 0.30))
-			draw_rect(Rect2(box.position + Vector2(box_w - 25, 9), Vector2(16, 16)), swatch, true)
-			draw_rect(Rect2(box.position + Vector2(box_w - 25, 9), Vector2(16, 16)), CREAM, false, 1.0)
-			draw_string(font, box.position + Vector2(8, 21), lines[0], HORIZONTAL_ALIGNMENT_LEFT, box_w - 40, 14, CREAM)
-			draw_string(font, box.position + Vector2(8, 36), lines[1], HORIZONTAL_ALIGNMENT_LEFT, box_w - 16, 9, Color(0.96, 0.86, 0.64))
-			draw_string(font, box.position + Vector2(8, 48), lines[2], HORIZONTAL_ALIGNMENT_LEFT, box_w - 16, 9, Color(0.84, 0.76, 0.58))
-			draw_string(font, box.position + Vector2(8, 60), lines[3], HORIZONTAL_ALIGNMENT_LEFT, box_w - 16, 9, Color(0.84, 0.76, 0.58))
-			draw_string(font, box.position + Vector2(8, 72), lines[4], HORIZONTAL_ALIGNMENT_LEFT, box_w - 16, 9, Color(0.98, 0.82, 0.42))
-			draw_string(font, box.position + Vector2(8, 84), lines[5], HORIZONTAL_ALIGNMENT_LEFT, box_w - 16, 9, Color(0.92, 0.88, 0.78))
-
-	_draw_legend(map_rect, font)
+	if legend_visible:
+		_draw_legend(map_rect, font)
 	draw_rect(map_rect, Color(0.72, 0.58, 0.34, 0.5), false, 3.0)
+	_draw_hover_tooltip(font)
+
+func marker_textures_loaded() -> bool:
+	return MARKER_CASTLE != null and MARKER_BANNER != null
+
+func marker_scale_for(s: float) -> float:
+	# Marker wachsen mit der Karte, werden bei 4x Zoom aber gedeckelt, damit
+	# die Symbole keine Provinzflächen überdecken.
+	return clampf(s, 0.95, 1.28)
+
+func marker_specs() -> Array:
+	var out: Array = []
+	if game == null:
+		return out
+	var imperial: Dictionary = {}
+	for p in game.provinces:
+		if not bool(p.get("capital", false)):
+			continue
+		var empire := str(p["empire"])
+		if not imperial.has(empire) or int(p.get("dev", 1)) > int(imperial[empire]["dev"]):
+			imperial[empire] = {"id": str(p["id"]), "dev": int(p.get("dev", 1))}
+	for p in game.provinces:
+		if not bool(p.get("capital", false)):
+			continue
+		var seat: Dictionary = imperial.get(str(p["empire"]), {})
+		out.append({
+			"id": str(p["id"]),
+			"name": str(p["name"]),
+			"pos": _label_point(p),
+			"kingdom": str(p["kingdom"]),
+			"kingdom_name": str(p["kingdom_name"]),
+			"empire": str(p["empire"]),
+			"empire_name": str(p["empire_name"]),
+			"imperial": str(p["id"]) == str(seat.get("id", "")),
+		})
+	return out
+
+func _clamp_marker_rect(rect: Rect2, inner: Rect2) -> Rect2:
+	rect.position.x = clampf(rect.position.x, inner.position.x + 1.0, inner.end.x - rect.size.x - 1.0)
+	rect.position.y = clampf(rect.position.y, inner.position.y + 1.0, inner.end.y - rect.size.y - 1.0)
+	return rect
+
+func _draw_3d_markers(s: float, off: Vector2, occupied: Array, inner: Rect2) -> void:
+	if game == null or not marker_textures_loaded():
+		return
+	var ms := marker_scale_for(s)
+	var specs := marker_specs()
+	for spec in specs:
+		var pos: Vector2 = (spec["pos"] as Vector2) * s + off
+		var castle_size := Vector2(27.0, 27.0) * ms
+		var castle_rect := _clamp_marker_rect(Rect2(
+			pos + Vector2(-castle_size.x * 0.5, 18.0 * ms - castle_size.y),
+			castle_size), inner)
+		var banner_size := Vector2(22.0, 32.0) * ms
+		var banner_rect := _clamp_marker_rect(Rect2(
+			pos + Vector2(11.0 * ms, 18.0 * ms - banner_size.y),
+			banner_size), inner)
+		var shade_pos := Vector2(pos.x, castle_rect.end.y - 2.0 * ms)
+		draw_circle(shade_pos, 10.0 * ms, Color(0.035, 0.025, 0.015, 0.32))
+		if bool(spec.get("imperial", false)):
+			var halo := banner_rect.get_center()
+			draw_circle(halo, 15.0 * ms, Color(0.94, 0.70, 0.24, 0.14))
+			draw_arc(halo, 15.0 * ms, 0.0, TAU, 28, Color(0.95, 0.75, 0.28, 0.90), 1.7 * ms, true)
+		draw_texture_rect(MARKER_CASTLE, castle_rect, false, Color(1, 1, 1, 0.98))
+		draw_texture_rect(MARKER_BANNER, banner_rect, false, Color(1, 1, 1, 0.98))
+		occupied.append(castle_rect.grow(1.0))
+		occupied.append(banner_rect.grow(1.0))
+		capital_markers_drawn.append(str(spec["id"]))
+		kingdom_banners_drawn.append(str(spec["id"]))
+		if bool(spec.get("imperial", false)):
+			empire_banners_drawn.append(str(spec["id"]))
+
+func _draw_hover_highlight(s: float, off: Vector2) -> void:
+	if game == null or hovered == "" or _dragging:
+		return
+	var p: Dictionary = game.province(hovered)
+	if p.is_empty():
+		return
+	for part in _province_parts(p):
+		var screen := PackedVector2Array()
+		for point in part:
+			screen.append(point * s + off)
+		draw_colored_polygon(screen, Color(1.0, 0.90, 0.55, 0.12))
+		var outline: PackedVector2Array = screen.duplicate()
+		outline.append(screen[0])
+		draw_polyline(outline, Color(1.0, 0.91, 0.62, 0.95), 2.2, true)
+
+func _draw_hover_tooltip(font: Font) -> void:
+	if game == null or hovered == "" or _dragging:
+		return
+	var p: Dictionary = game.province(hovered)
+	if p.is_empty():
+		return
+	var owner: String = str(game.houses[int(p["owner"])]["name"])
+	var w := 286.0
+	var h := 92.0
+	var pos: Vector2 = _hover_pos + Vector2(18, 18)
+	if pos.x + w > size.x - 8:
+		pos.x = _hover_pos.x - w - 18
+	if pos.y + h > size.y - 8:
+		pos.y = _hover_pos.y - h - 18
+	pos.x = clampf(pos.x, 8, maxf(8, size.x - w - 8))
+	pos.y = clampf(pos.y, 8, maxf(8, size.y - h - 8))
+	var box := Rect2(pos, Vector2(w, h))
+	draw_rect(Rect2(box.position + Vector2(4, 4), box.size), Color(0, 0, 0, 0.36), true)
+	draw_rect(box, Color(0.055, 0.040, 0.024, 0.96), true)
+	draw_rect(Rect2(box.position, Vector2(5, h)), Color(0.88, 0.68, 0.30, 0.98), true)
+	draw_rect(box, Color(0.70, 0.53, 0.25, 0.92), false, 1.0)
+	draw_string(font, pos + Vector2(14, 21), str(p["name"]), HORIZONTAL_ALIGNMENT_LEFT, w - 24, 15, CREAM)
+	draw_string(font, pos + Vector2(14, 39), "%s · %s" % [owner, str(p.get("terrain_name", "Ebenen"))], HORIZONTAL_ALIGNMENT_LEFT, w - 24, 10, Color(0.96, 0.84, 0.60))
+	draw_string(font, pos + Vector2(14, 56), "%s · %s" % [str(p["kingdom_name"]), str(p["duchy_name"])], HORIZONTAL_ALIGNMENT_LEFT, w - 24, 9, Color(0.82, 0.78, 0.68))
+	draw_string(font, pos + Vector2(14, 73), "Entwicklung %d/10 · Aufgebot %d · Gelände %+d%%" % [int(p.get("dev", 1)), int(p.get("levy", 0)), int(p.get("terrain_defense", 0))], HORIZONTAL_ALIGNMENT_LEFT, w - 24, 9, Color(0.98, 0.83, 0.44))
+	draw_string(font, pos + Vector2(14, 86), "Klick wählt · Doppelklick öffnet die Provinzseite", HORIZONTAL_ALIGNMENT_LEFT, w - 24, 8, Color(0.68, 0.64, 0.56))
 
 func _fill_color(p: Dictionary) -> Color:
 	var base: Color
@@ -517,60 +672,6 @@ func _terrain_info(key: String) -> Dictionary:
 		return game.data.terrain_info(key)
 	return {"name": key, "color": Color(0.47, 0.54, 0.30)}
 
-func _draw_terrain_details() -> void:
-	var font := ThemeDB.fallback_font
-	for river in RIVERS:
-		var line := PackedVector2Array()
-		for point in river["points"]:
-			line.append(point)
-		draw_polyline(line, Color(0.16, 0.43, 0.57, 0.80), 2.6, true)
-		if line.size() > 0:
-			draw_circle(line[line.size() - 1], 3.2, Color(0.22, 0.50, 0.62, 0.62))
-		if line.size() > 1:
-			var mid: Vector2 = line[int(line.size() / 2)]
-			draw_string(font, mid + Vector2(4, -4), str(river["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.84, 0.93, 0.92, 0.82))
-	for sea in SEAS:
-		draw_string(font, sea["pos"], str(sea["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.88, 0.91, 0.84, 0.72))
-	for p in game.provinces:
-		var pos: Vector2 = _label_point(p) + Vector2(0, -10)
-		var kind: String = str(p.get("terrain", "plains"))
-		var token: Texture2D = _terrain_tex.get(kind)
-		if token != null:
-			draw_texture_rect(token, Rect2(pos - Vector2(11, 11), Vector2(22, 22)), false, Color(1, 1, 1, 0.94))
-		else:
-			_draw_terrain_icon(kind, pos, Color(0.09, 0.07, 0.04, 0.52))
-
-func _draw_terrain_icon(kind: String, pos: Vector2, col: Color) -> void:
-	match kind:
-		"mountains":
-			draw_colored_polygon(PackedVector2Array([pos + Vector2(-8, 4), pos + Vector2(-2, -6), pos + Vector2(4, 4)]), col)
-			draw_colored_polygon(PackedVector2Array([pos + Vector2(-1, 4), pos + Vector2(5, -3), pos + Vector2(10, 4)]), col)
-		"forest":
-			for dx in [-6.0, 0.0, 6.0]:
-				draw_colored_polygon(PackedVector2Array([pos + Vector2(dx, 4), pos + Vector2(dx - 4, -2), pos + Vector2(dx + 4, -2)]), col)
-				draw_line(pos + Vector2(dx, 4), pos + Vector2(dx, 7), col, 1.2)
-		"hills":
-			draw_arc(pos + Vector2(-4, 3), 5.0, PI, TAU, 8, col, 1.4)
-			draw_arc(pos + Vector2(4, 3), 4.0, PI, TAU, 8, col, 1.4)
-		"marsh":
-			for dx in [-5.0, 0.0, 5.0]:
-				draw_line(pos + Vector2(dx, 5), pos + Vector2(dx, -4), col, 1.2)
-				draw_line(pos + Vector2(dx, -4), pos + Vector2(dx + 2, -1), col, 1.0)
-		"coast":
-			for dy in [-3.0, 3.0]:
-				draw_arc(pos + Vector2(0, dy), 6.0, 0.15, PI - 0.15, 8, col, 1.2)
-		"farmland":
-			for dy in [-4.0, 0.0, 4.0]:
-				draw_line(pos + Vector2(-7, dy), pos + Vector2(7, dy), col, 1.1)
-		"steppe":
-			for dx in [-5.0, 0.0, 5.0]:
-				draw_line(pos + Vector2(dx, 4), pos + Vector2(dx + 3, -4), col, 1.1)
-		"heath":
-			for dx in [-5.0, 0.0, 5.0]:
-				draw_circle(pos + Vector2(dx, 1), 1.2, col)
-		_:
-			draw_circle(pos, 1.5, col)
-
 func _draw_war_markers(s: float, off: Vector2, font: Font) -> void:
 	for p in game.provinces:
 		var siege: int = int(p.get("siege", 0))
@@ -586,6 +687,34 @@ func _draw_war_markers(s: float, off: Vector2, font: Font) -> void:
 			draw_circle(pos, 12.0, Color(0.55, 0.10, 0.06, 0.92))
 			draw_arc(pos, 12.0, 0.0, TAU, 20, Color(1.0, 0.83, 0.44, 0.95), 1.5, true)
 			draw_string(font, pos + Vector2(-10, 4), "%d%%" % siege, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1.0, 0.96, 0.86))
+	# Flotten stehen im Kriegsmodus an ihrem Heimathafen oder vor der blockierten
+	# Küste. Der Ring trägt die Hausfarbe, die Zahl die Schiffszahl.
+	for house_index in game.houses.size():
+		var house_color: Color = game.houses[house_index].get("color", Color(0.7, 0.5, 0.2))
+		for fleet in game.houses[house_index].get("fleets", []):
+			var station: Dictionary = game.province(str(fleet.get("station", "")))
+			if station.is_empty():
+				continue
+			var pos: Vector2 = _label_point(station) * s + off + Vector2(0, 22)
+			if int(station.get("siege", 0)) > 0:
+				pos += Vector2(20, 0)
+			var token: Texture2D = _unit_tex.get("fleet")
+			var ring_color := Color(house_color.r, house_color.g, house_color.b, 0.95)
+			var ships: int = int(fleet.get("ships", 0))
+			var token_rect := Rect2(pos - Vector2(14, 14), Vector2(28, 28))
+			var label_pos := pos + Vector2(16, 4)
+			fleet_markers_drawn.append({
+				"house": house_index, "province": str(station["id"]), "ships": ships,
+				"label": "%d" % ships, "pos": pos, "ring_color": ring_color,
+				"ring_radius": 15.0, "token_rect": token_rect, "label_pos": label_pos,
+				"token_path": token.resource_path if token != null else "",
+			})
+			if token != null:
+				draw_texture_rect(token, token_rect, false)
+			else:
+				draw_circle(pos, 11.0, Color(0.20, 0.36, 0.44, 0.94))
+			draw_arc(pos, 15.0, 0.0, TAU, 20, ring_color, 2.0, true)
+			draw_string(font, label_pos, "%d" % ships, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1.0, 0.96, 0.86))
 
 func _legend_rows() -> Array:
 	match map_mode:
@@ -620,8 +749,8 @@ func _draw_legend(map_rect: Rect2, font: Font) -> void:
 	elif map_mode == "development":
 		h = 78.0
 	elif map_mode == "war":
-		h = 96.0
-	var box := Rect2(map_rect.position + Vector2(10, map_rect.size.y - h - 10), Vector2(w, h))
+		h = 118.0
+	var box := Rect2(map_rect.position + Vector2(12, 92), Vector2(w, h))
 	draw_rect(box, Color(0.06, 0.05, 0.03, 0.89), true)
 	draw_rect(box, Color(0.72, 0.57, 0.30, 0.92), false, 1.0)
 	draw_string(font, box.position + Vector2(8, 15), "KARTE · %s" % mode_title(), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.98, 0.86, 0.58))
@@ -657,6 +786,9 @@ func _draw_legend(map_rect: Rect2, font: Font) -> void:
 		draw_string(font, box.position + Vector2(52, 62), "Reichsgrenze", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.92, 0.88, 0.78))
 		draw_line(box.position + Vector2(12, 79), box.position + Vector2(42, 79), Color(0.98, 0.84, 0.45, 0.95), 4.0)
 		draw_string(font, box.position + Vector2(52, 83), "Besitzerwechsel", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.92, 0.88, 0.78))
+		draw_circle(box.position + Vector2(14, 100), 7.0, Color(0.20, 0.36, 0.44, 0.94))
+		draw_arc(box.position + Vector2(14, 100), 7.0, 0.0, TAU, 16, Color(0.86, 0.68, 0.32, 0.95), 1.5, true)
+		draw_string(font, box.position + Vector2(28, 104), "Flotte / Blockade", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.92, 0.88, 0.78))
 	else:
 		var rows: Array = _legend_rows()
 		for i in rows.size():
@@ -664,7 +796,7 @@ func _draw_legend(map_rect: Rect2, font: Font) -> void:
 			var yy: float = 31.0 + i * 16.0
 			draw_line(box.position + Vector2(12, yy), box.position + Vector2(42, yy), row[1], float(row[2]))
 			draw_string(font, box.position + Vector2(52, yy + 4), str(row[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.92, 0.88, 0.78))
-		draw_string(font, box.position + Vector2(8, h - 8), "Klick/Touch wählt · Rad/Pinch zoomt", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.76, 0.70, 0.58))
+		draw_string(font, box.position + Vector2(8, h - 8), "Klick wählt · Doppelklick öffnet · Rechtsklick schließt", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.76, 0.70, 0.58))
 
 func _gui_input(event: InputEvent) -> void:
 	if game == null:
@@ -674,17 +806,31 @@ func _gui_input(event: InputEvent) -> void:
 			zoom_by(1.18 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 0.85, event.position)
 			accept_event()
 			return
+		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+			_dragging = false
+			selected = ""
+			hovered = ""
+			province_selected.emit("")
+			queue_redraw()
+			accept_event()
+			return
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			_dragging = event.pressed
 			if event.pressed:
 				_pick_at(event.position)
+				if event.double_click and selected != "":
+					province_activated.emit(selected)
 				accept_event()
 		return
-	if event is InputEventMouseMotion and _dragging:
-		pan += event.relative
-		_clamp_pan()
-		queue_redraw()
-		accept_event()
+	if event is InputEventMouseMotion:
+		if _dragging:
+			pan += event.relative
+			_clamp_pan()
+			_sync_base_transform()
+			queue_redraw()
+			accept_event()
+			return
+		hover_at(event.position)
 		return
 	if event is InputEventScreenTouch:
 		_dragging = event.pressed
@@ -695,5 +841,13 @@ func _gui_input(event: InputEvent) -> void:
 	if event is InputEventScreenDrag and _dragging:
 		pan += event.relative
 		_clamp_pan()
+		_sync_base_transform()
 		queue_redraw()
 		accept_event()
+
+func _on_mouse_exited() -> void:
+	if hovered == "":
+		return
+	hovered = ""
+	mouse_default_cursor_shape = Control.CURSOR_ARROW
+	queue_redraw()

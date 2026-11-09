@@ -89,6 +89,25 @@ def code_keys():
     buildings = re.findall(r'if key == "([a-z_]+)"', m.group(1)) if m else []
     keys["building"] = buildings
 
+    m = re.search(r"const LEGACY_TRACKS := \{(.*?)\n\}", game, re.S)
+    keys["legacy"] = re.findall(r'"([a-z_]+)":\s*\{"name"', m.group(1)) if m else []
+
+    m = re.search(r"const COUNCIL_OFFICES := \{(.*?)\n\}", game, re.S)
+    keys["council"] = re.findall(r'"([a-z_]+)":\s*\{"name"', m.group(1)) if m else []
+
+    m = re.search(r"const VASSAL_CONTRACTS := \[(.*?)\n\]", game, re.S)
+    keys["contract"] = re.findall(r'"id":\s*"([0-9]+)"', m.group(1)) if m else []
+
+    m = re.search(r"const RELIC_ORDER := \[(.*?)\]", game)
+    keys["relic"] = re.findall(r'"([a-z_]+)"', m.group(1)) if m else []
+
+    m = re.search(r"const FAITH_ORDER := \[(.*?)\]", game)
+    keys["faith"] = re.findall(r'"([a-z_]+)"', m.group(1)) if m else []
+
+    m = re.search(r"const FAITH_TOKEN_ORDER := \[(.*?)\]", game, re.S)
+    if m:
+        keys["faith"].extend(re.findall(r'"([a-z_0-9]+)"', m.group(1)))
+
     m = re.search(r"static func events\(\) -> Array:(.*?)\n\nstatic func", data, re.S)
     events = re.findall(r'"id": "([a-z_]+)"', m.group(1)) if m else []
     keys["event"] = events

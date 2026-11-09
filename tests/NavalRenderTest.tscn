@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/NavalRenderTest.gd" id="1_navalrender"]
+
+[node name="NavalRenderTest" type="Node"]
+script = ExtResource("1_navalrender")

@@ -23,6 +23,7 @@ var tip_index: int = 0
 var done: bool = false
 var load_failed: bool = false
 var loaded_ok: bool = false
+var main_scene: PackedScene
 
 func _ready() -> void:
 	_build()
@@ -35,9 +36,8 @@ func _ready() -> void:
 	tw.tween_property(self, "modulate:a", 1.0, 0.7)
 
 func _load_main() -> void:
-	var main_scene := load(MAIN_PATH) as PackedScene
+	main_scene = load(MAIN_PATH) as PackedScene
 	loaded_ok = main_scene != null
-	main_scene = null
 	if not loaded_ok:
 		load_failed = true
 		status.text = "Laden fehlgeschlagen. Bitte das Spiel neu starten."
@@ -103,7 +103,7 @@ func _build() -> void:
 	bar.add_theme_stylebox_override("fill", fill)
 	wrap.add_child(bar)
 
-	percent = _label("0 %", 13, Color(0.82, 0.69, 0.46))
+	percent = _label("Hauptszene wird geladen · 0 s", 13, Color(0.82, 0.69, 0.46))
 	percent.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(percent)
 
@@ -113,14 +113,14 @@ func _build() -> void:
 	tip.custom_minimum_size = Vector2(640, 38)
 	box.add_child(tip)
 
-	var version := _label("v1.3 · Bronzezeit · 2000 v. Chr.", 12, Color(0.64, 0.54, 0.38))
+	var version := _label("Banger Queens · 2000 v. Chr. – 2200 n. Chr.", 12, Color(0.64, 0.54, 0.38))
 	version.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	version.offset_left = 24
 	version.offset_top = -30
 	version.offset_right = 360
 	version.offset_bottom = -10
 	add_child(version)
-	var hint := _label("Bronzezeit · Grand Strategy", 12, Color(0.64, 0.54, 0.38))
+	var hint := _label("Eine Geschichte. Dein Vermächtnis.", 12, Color(0.64, 0.54, 0.38))
 	hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
 	hint.offset_left = -300
 	hint.offset_top = -30
@@ -142,14 +142,12 @@ func _process(delta: float) -> void:
 	if load_failed:
 		return
 
-	var target: float = 100.0 if loaded_ok else 88.0 * clampf(elapsed / 1.9, 0.0, 1.0)
-	shown = lerpf(shown, target, 1.0 - pow(0.002, delta))
-	if target - shown < 0.6:
-		shown = target
-	bar.value = shown
-	percent.text = "%d %%" % int(round(shown))
+	# Der synchrone Loader liefert keine Zwischenwerte. Nur Status und Laufzeit.
+	bar.visible = loaded_ok
+	bar.value = 100.0 if loaded_ok else 0.0
+	percent.text = "%s · %d s" % ["Hauptszene geladen" if loaded_ok else "Hauptszene wird geladen", int(elapsed)]
 
-	if loaded_ok and elapsed >= 2.4 and shown >= 96.0:
+	if loaded_ok and elapsed >= 2.4:
 		_finish()
 
 func _finish() -> void:
@@ -160,5 +158,5 @@ func _finish() -> void:
 	var tw := create_tween()
 	tw.tween_property(self, "modulate:a", 0.0, 0.45)
 	tw.tween_callback(func():
-		get_tree().change_scene_to_file(MAIN_PATH)
+		get_tree().change_scene_to_packed(main_scene)
 	)

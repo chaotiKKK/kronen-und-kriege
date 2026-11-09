@@ -6,9 +6,10 @@ extends RefCounted
 ##   source   Quellsystem für den Beleg
 ##   target   Zieldomäne für den Beleg
 ##   state    konkrete Zustandsgröße, z. B. "provinces[alba].levy"
-##   kind     gold | prestige | legitimacy | levy | opinion | building | heir |
-##            scandal | dev | defense | siege | faction_power | faction_loyalty |
-##            law | ruler_stat | truce
+##   kind     gold | prestige | legitimacy | renown | legacy | levy | opinion |
+##            vassal_opinion | council_intrigue | court_grandeur | faith_piety |
+##            building | heir | scandal | dev | defense | siege | faction_power |
+##            faction_loyalty | law | ruler_stat | truce
 ##   house    Hausindex (Default: Spieler)
 ##   amount   ganze Zahl; building, heir und law ignorieren sie
 ##   province Provinz-ID für levy/building/dev/defense/siege
@@ -60,6 +61,11 @@ func _read(host, effect: Dictionary):
 			return int(host.houses[house_index]["prestige"])
 		"legitimacy":
 			return int(host.houses[house_index]["legitimacy"])
+		"renown":
+			return int(host.houses[house_index].get("renown", 0))
+		"legacy":
+			var legacy_track: String = str(effect.get("legacy", ""))
+			return int((host.houses[house_index].get("legacies", {}) as Dictionary).get(legacy_track, 0))
 		"levy":
 			var province: Dictionary = host.province(str(effect.get("province", "")))
 			return int(province.get("levy", 0))
@@ -68,6 +74,22 @@ func _read(host, effect: Dictionary):
 			if index >= 0 and index < host.opinion.size():
 				return int(host.opinion[index])
 			return 0
+		"vassal_opinion":
+			var vassals: Array = host.houses[house_index].get("vassals", [])
+			var vassal_index: int = int(effect.get("index", -1))
+			if vassal_index >= 0 and vassal_index < vassals.size():
+				return int(vassals[vassal_index].get("opinion", 50))
+			return 0
+		"council_intrigue":
+			return int((host.houses[house_index].get("council_effects", {}) as Dictionary).get("intrigue", 0))
+		"court_grandeur":
+			return int((host.houses[house_index].get("court", {}) as Dictionary).get("grandeur", 0))
+		"faith_piety":
+			return int((host.houses[house_index].get("faith", {}) as Dictionary).get("piety", 0))
+		"faith_heresy":
+			return int((host.houses[house_index].get("faith", {}) as Dictionary).get("heresy", 0))
+		"faith_reform":
+			return int((host.houses[house_index].get("faith", {}) as Dictionary).get("reform", 0))
 		"building":
 			var province: Dictionary = host.province(str(effect.get("province", "")))
 			if province.is_empty():
@@ -109,6 +131,17 @@ func _write(host, effect: Dictionary, before):
 		"legitimacy":
 			host.houses[house_index]["legitimacy"] = clampi(int(before) + amount, 0, 100)
 			return int(host.houses[house_index]["legitimacy"])
+		"renown":
+			host.houses[house_index]["renown"] = maxi(0, int(before) + amount)
+			return int(host.houses[house_index]["renown"])
+		"legacy":
+			var legacy_track: String = str(effect.get("legacy", ""))
+			if legacy_track == "":
+				return before
+			var legacy_map: Dictionary = host.houses[house_index].get("legacies", {})
+			legacy_map[legacy_track] = clampi(int(before) + amount, 0, 3)
+			host.houses[house_index]["legacies"] = legacy_map
+			return int(legacy_map[legacy_track])
 		"levy":
 			var province: Dictionary = host.province(str(effect.get("province", "")))
 			if province.is_empty():
@@ -121,6 +154,38 @@ func _write(host, effect: Dictionary, before):
 				return before
 			host.opinion[index] = clampi(int(before) + amount, -100, 100)
 			return int(host.opinion[index])
+		"vassal_opinion":
+			var vassals: Array = host.houses[house_index].get("vassals", [])
+			var vassal_index: int = int(effect.get("index", -1))
+			if vassal_index < 0 or vassal_index >= vassals.size():
+				return before
+			vassals[vassal_index]["opinion"] = clampi(int(before) + amount, 0, 100)
+			return int(vassals[vassal_index]["opinion"])
+		"council_intrigue":
+			var council_effects: Dictionary = host.houses[house_index].get("council_effects", {})
+			council_effects["intrigue"] = clampi(int(before) + amount, 0, 10)
+			host.houses[house_index]["council_effects"] = council_effects
+			return int(council_effects["intrigue"])
+		"court_grandeur":
+			var court: Dictionary = host.houses[house_index].get("court", {})
+			court["grandeur"] = clampi(int(before) + amount, 0, 100)
+			host.houses[house_index]["court"] = court
+			return int(court["grandeur"])
+		"faith_piety":
+			var faith: Dictionary = host.houses[house_index].get("faith", {})
+			faith["piety"] = clampi(int(before) + amount, 0, 100)
+			host.houses[house_index]["faith"] = faith
+			return int(faith["piety"])
+		"faith_heresy":
+			var heresy_faith: Dictionary = host.houses[house_index].get("faith", {})
+			heresy_faith["heresy"] = clampi(int(before) + amount, 0, 100)
+			host.houses[house_index]["faith"] = heresy_faith
+			return int(heresy_faith["heresy"])
+		"faith_reform":
+			var reform_faith: Dictionary = host.houses[house_index].get("faith", {})
+			reform_faith["reform"] = clampi(int(before) + amount, 0, 3)
+			host.houses[house_index]["faith"] = reform_faith
+			return int(reform_faith["reform"])
 		"building":
 			var province: Dictionary = host.province(str(effect.get("province", "")))
 			if province.is_empty():

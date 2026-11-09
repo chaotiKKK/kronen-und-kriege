@@ -2,10 +2,10 @@
 
 > Dokumentversion: 1.3
 > Stand: 2026-11-08
-> Gültig für: Version 1.3, Builds `F:\ck3-kronen-kriege.exe` und `F:\ck3-kronen-kriege.apk` aus dem Arbeitsbaum auf `8af9c8f` (Versionssprung auf 1.3 uncommittet); nicht das GitHub-Release `89846de4fcdf4c9fef3f11b1c9fbe6041c4a2634`.
+> Gültig für: Version 1.3, Windows-Build `F:\ck3-kronen-kriege.exe` aus sauberem HEAD `193cfc7`; Android-APK `F:\ck3-kronen-kriege.apk` unverändert aus `8af9c8f`; nicht das GitHub-Release `89846de4fcdf4c9fef3f11b1c9fbe6041c4a2634`.
 > Geltungsbereich: Windows x86_64 und Android (`arm64-v8a`, `armeabi-v7a`)
-> **Status: Windows-Lauf am 2026-11-08 gegen den 1.3-Build durchgeführt; Ergebnis BESTANDEN.** P01–P12, alle drei Roundtrips und der KI-Beleg (AI2+AI3) sind belegt; Belege unter `build/verify/manual-build-d2cc-v2/`. Der Lauf am 2026-11-07 auf dem 1.2-Build bleibt als Historie dokumentiert. Der frühere Android-Befund „extern blockiert“ ist widerlegt und im [Android-Bericht](manual-acceptance-android-visual.md) korrigiert. Die Android-APK 1.3 ist auf `emulator-5554` (AVD `fhd36`, Android 16) mit Host-GPU (`-gpu host`, NVIDIA) installiert und rendert dort sichtbar: Ladebildschirm bei 82 % und Hauptmenü, `MAIN_READY version=1.3`, kein FATAL. Der frühere SwiftShader-Start scheitert an `GL_MAX_FRAGMENT_UNIFORM_VECTORS (261)`. Auf einem realen Gerät wurde sie nicht installiert; der Android-30-Minuten-Lauf und die reale Sichtprüfung bleiben offen.
-> **Windows:** [Laufprotokoll 2026-11-08](#windows-lauf-2026-11-08) — **BESTANDEN** auf dem 1.3-Build (`d2cc6508d07c65cb64e786a029736e4c04ad17f800736c6ac2f3c38f0826ec72`, `113.718.904 Bytes`, `14:00:57`). Älterer Beleg: [Lauf 2026-11-07](#windows-lauf-2026-11-07) auf dem 1.2-Build (`951c65bd4e04f97f8b607ae4bb153b2c2de3fe4a45c1620d32704754eb1a3121`, `113.716.840 Bytes`, `17:08:59`). **Android:** Emulator-Smoke-Test auf `emulator-5554` mit Host-GPU **BESTANDEN** (Ladebildschirm + Hauptmenü); der 30-Minuten-Lauf und reale Hardware bleiben offen. Die Force-Stops kamen aus einer lokalen Bash-Schleife, nicht aus einem externen ADB-Treiber.
+> **Status: Windows-Lauf am 2026-11-08 gegen den aktuellen 1.3-Build durchgeführt; Ergebnis BESTANDEN.** P01–P12, alle drei Roundtrips und der KI-Beleg (AI2+AI3) sind belegt; Belege unter `build/verify/manual-build-922eb13/` und `build/verify/windows-start-current.log`. Der Lauf am 2026-11-07 auf dem 1.2-Build bleibt als Historie dokumentiert. Der frühere Android-Befund „extern blockiert“ ist widerlegt und im [Android-Bericht](manual-acceptance-android-visual.md) korrigiert. Die Android-APK 1.3 ist auf `emulator-5554` (AVD `fhd36`, Android 16) mit Host-GPU (`-gpu host`, NVIDIA) installiert und rendert dort sichtbar: Ladebildschirm bei 82 % und Hauptmenü, `MAIN_READY version=1.3`, kein FATAL. Der frühere SwiftShader-Start scheitert an `GL_MAX_FRAGMENT_UNIFORM_VECTORS (261)`. Auf einem realen Gerät wurde sie nicht installiert; der Android-30-Minuten-Lauf und die reale Sichtprüfung bleiben offen.
+> **Windows:** [Laufprotokoll 2026-11-08](#windows-lauf-2026-11-08) — **BESTANDEN** auf dem 1.3-Build (`922eb13b62b8150a065f5132cd4506142fc44ad057692b7e740f0fd31ec1d6b1`, `138.795.936 Bytes`, `21:33:43`). Älterer Beleg: [Lauf 2026-11-07](#windows-lauf-2026-11-07) auf dem 1.2-Build (`951c65bd4e04f97f8b607ae4bb153b2c2de3fe4a45c1620d32704754eb1a3121`, `113.716.840 Bytes`, `17:08:59`). **Android:** Emulator-Smoke-Test auf `emulator-5554` mit Host-GPU **BESTANDEN** (Ladebildschirm + Hauptmenü); der 30-Minuten-Lauf und reale Hardware bleiben offen. Die Force-Stops sind im historischen Gerätelog `build/verify/manual-old-113147/logs/force-stop-source.log` dokumentiert; eine externe ADB-Blockade ist nicht belegt.
 
 ## Zweck
 
@@ -21,17 +21,17 @@ Die automatisierten Tests bleiben eigenständig. Insbesondere ersetzt dieses Pro
 |---|---|---|
 | Artefakt | `F:\ck3-kronen-kriege.exe` | `F:\ck3-kronen-kriege.apk` bzw. installierte App |
 | Version | `1.3.0.0` | `versionName 1.3`, `versionCode 4` |
-| Build-Commit | Arbeitsbaum auf `8af9c8f` (Versionssprung auf 1.3 uncommittet) | derselbe Arbeitsbaum |
-| SHA-256 | `d2cc6508d07c65cb64e786a029736e4c04ad17f800736c6ac2f3c38f0826ec72` | `3b17118a9ea7d4e307fec735b58cc4b46dcc459d4ca49a4edac30f71037dbbbf` |
-| Größe | `113.718.904 Bytes` | `180.708.021 Bytes` |
-| Zeitstempel | `2026-11-08 14:00:57` (CET) | `2026-11-08 14:02:14` (CET) |
+| Build-Commit | `193cfc7516fb0b24c3e39c7627536a5e4e95af84` (sauberer HEAD) | `8af9c8f` (unveränderte APK) |
+| SHA-256 | `922eb13b62b8150a065f5132cd4506142fc44ad057692b7e740f0fd31ec1d6b1` | `3b17118a9ea7d4e307fec735b58cc4b46dcc459d4ca49a4edac30f71037dbbbf` |
+| Größe | `138.795.936 Bytes` | `180.708.021 Bytes` |
+| Zeitstempel | `2026-11-08 21:33:43` (CET) | `2026-11-08 14:02:14` (CET) |
 | Paket | — | `org.example.kronen` |
 | Start | `F:\ck3-kronen-kriege.exe` | Launcher-Icon oder `org.example.kronen/com.godot.game.GodotApp` |
 | Anzeige | Fenster oder `F11` Vollbild | Landscape (`window/handheld/orientation=0`), entsperrter Bildschirm |
 
 Der veröffentlichte Referenzstand auf GitHub ist `git rev-parse v1.2^{}` (Commit `89846de4fcdf4c9fef3f11b1c9fbe6041c4a2634`). Release 1.3 ist lokal gebaut, aber nicht veröffentlicht. Für diesen Lauf zählt ausschließlich der Hash der Dateien unter `F:`.
 
-Erwartet: Windows `d2cc6508d07c65cb64e786a029736e4c04ad17f800736c6ac2f3c38f0826ec72` bei `113.718.904 Bytes` und Zeitstempel `2026-11-08 14:00:57`; Android `3b17118a9ea7d4e307fec735b58cc4b46dcc459d4ca49a4edac30f71037dbbbf` bei `180.708.021 Bytes`. Weicht der Hash oder die SHA-256 der Binärdatei ab, wird **nicht** getestet: Preflight fehlgeschlagen.
+Erwartet: Windows `922eb13b62b8150a065f5132cd4506142fc44ad057692b7e740f0fd31ec1d6b1` bei `138.795.936 Bytes` und Zeitstempel `2026-11-08 21:33:43`; Android `3b17118a9ea7d4e307fec735b58cc4b46dcc459d4ca49a4edac30f71037dbbbf` bei `180.708.021 Bytes`. Weicht der Hash oder die SHA-256 der Binärdatei ab, wird **nicht** getestet: Preflight fehlgeschlagen.
 
 ### Zeit, Tempo und Ausgangszustand
 
@@ -214,44 +214,44 @@ Mindestens zwei **verschiedene** Präfixe `AI2`, `AI3` oder `AI4` müssen ausgeg
 ## Windows-Lauf 2026-11-08
 
 - **Gerät:** Windows x86_64, Fenster `Kronen und Kriege`, EXE `F:\ck3-kronen-kriege.exe`.
-- **Build:** `1.3.0.0`, SHA-256 `d2cc6508d07c65cb64e786a029736e4c04ad17f800736c6ac2f3c38f0826ec72`, `113.718.904 Bytes`, Zeitstempel `2026-11-08 14:00:57` (CET); `MAIN_READY version=1.3`.
-- **Start:** `14:45:16` Uhr, **geplantes Ende:** `15:15:16` Uhr, **tatsächliches Ende:** `15:15:17` Uhr (30:01 Wanduhrzeit).
-- **Startzustand:** `Haus Sequana`, Hartung 2000 v. Chr., Gold 130, Prestige 6, Legitimität 50, Erbe `Epona`, 0 Ansprüche, 0 Armeen.
-- **Ereignisse im Lauf:** `14:46:22` „Schlicht bleiben“ (+5 Prestige); `15:00:18` „Verweigern“ (+35 Gold, −12 Prestige).
-- **Ausgangs-Save:** `saves/ai-start.json` um `14:45:47` (00:31).
-- **Roundtrip 1:** `14:49:47` (04:31), `saves/roundtrip1-before.json`, Save/Load ohne Diff (Gold 228, Prestige 11, Legitimität 50, Erbfolge `Jüngster`, sechs eigene Provinzen).
-- **Roundtrip 2:** `14:59:47` (14:31), `saves/roundtrip2-before.json`, Save/Load ohne Diff.
-- **Roundtrip 3:** `15:09:47` (24:31), `saves/roundtrip3-before.json`, Save/Load ohne Diff.
+- **Build:** `1.3.0.0`, SHA-256 `922eb13b62b8150a065f5132cd4506142fc44ad057692b7e740f0fd31ec1d6b1`, `138.795.936 Bytes`, Zeitstempel `2026-11-08 21:33:43` (CET); `MAIN_READY version=1.3`, Startfenster `1618x945`.
+- **Start:** `21:34:29` Uhr, **geplantes Ende:** `22:04:29` Uhr, **tatsächliches Ende:** `22:04:31` Uhr (30:02 Wanduhrzeit).
+- **Startzustand:** `Haus Sequana`, Hartung 2000 v. Chr., Gold 130, Prestige 6, Legitimität 50, Erbe `Epona`, 0 Ansprüche, 0 Armeen, Erbfolge `Ältester`, Steuersatz `1/2`.
+- **Ereignis im Lauf:** `21:35:35` „Verkaufen“.
+- **Ausgangs-Save:** `saves/ai-start.json` um `21:35:00` (00:31).
+- **Roundtrip 1:** `21:39:00` (04:31), `saves/roundtrip1-before.json`, Save/Load ohne Diff (Gold 273, Prestige 6, Legitimität 50, Erbfolge `Jüngster`, sechs eigene Provinzen).
+- **Roundtrip 2:** `21:48:59` (14:30), `saves/roundtrip2-before.json`, Save/Load ohne Diff (Gold 113, Prestige 16, Legitimität 55).
+- **Roundtrip 3:** `21:59:00` (24:31), `saves/roundtrip3-before.json`, Save/Load ohne Diff (Gold 23, eine Armee, ein Anspruch).
 - **Aktionen:** P01–P12 vollständig ausgeführt und **PASS**; Zeiten und beobachtete Wirkung in der Tabelle unten.
-- **KI-Beleg:** **AI2** (Haus 3, 5 und 7: Steuersatz 1 → 2) und **AI3** (Haus 5 und Haus 7 haben geheiratet); zwei verschiedene KI-Kanten.
-- **Automatisierte Gegenprüfung:** `FullDepthTest` headless am `2026-11-08` um `15:38` gegen genau diesen Stand: `FULLDEPTHTEST OK … 57 Prüfungen`, Exit 0, keine Fehlerzeile. Beleg: `build/verify/final-fulldepth-check-1.3.log`; die K6-Zusicherung `truce_until(1) > _now()` steht in `tests/FullDepthTest.gd:290`.
-- **Automatisierte Gegenprüfung (Systemtiefe):** `SystemicDepthTest` headless am `2026-11-08` um `15:52` gegen genau diesen Stand: `SYSTEMICDEPTHTEST OK … 38 Prüfungen`, Exit 0, keine Fehlerzeile, alle fünf Negativkontrollen ohne Zieländerung. Beleg: `build/verify/systemicdepth-check-1.3.log`.
-- **Ende:** `ai-end.json` und die Screenshots um `15:15:17`; der Prozess endete nach `run_end 2026-11-08T15:15:17 status=BESTANDEN`.
-- **Befehl:** `powershell -NoProfile -ExecutionPolicy Bypass -File tools/run_acceptance.ps1 -Exe "F:\ck3-kronen-kriege.exe" -Project "" -Out "C:/Crusader Kings III/mobile-godot/build/verify/manual-build-d2cc-v2"`.
-- **Beleg:** `build/verify/manual-build-d2cc-v2/` mit `acceptance-result.json`, `acceptance.log`, `run.out.log`, `run.err.log`, `saves/` und `screens/`.
+- **KI-Beleg:** **AI2** (Haus 3, 4 und 7: Steuersatz 1 → 2) und **AI3** (Haus 5 und Haus 7 haben geheiratet); zwei verschiedene KI-Kanten.
+- **Automatisierte Gegenprüfung:** `FullDepthTest` headless am `2026-11-08` um `22:05` gegen genau diesen Stand: `FULLDEPTHTEST OK … 74 Prüfungen`, Exit 0, keine Fehlerzeile. Beleg: `build/verify/acceptance-FullDepthTest.log`; die K6-Zusicherung `truce_until(1) > _now()` steht in `tests/FullDepthTest.gd:290`.
+- **Automatisierte Gegenprüfung (Systemtiefe):** `SystemicDepthTest` headless am `2026-11-08` um `22:05` gegen genau diesen Stand: `SYSTEMICDEPTHTEST OK … 38 Prüfungen`, Exit 0, keine Fehlerzeile, alle fünf Negativkontrollen ohne Zieländerung. Beleg: `build/verify/acceptance-SystemicDepthTest.log`.
+- **Ende:** `ai-end.json` und die Screenshots um `22:04:30`/`22:04:31`; der Prozess endete nach `run_end 2026-11-08T22:04:31 status=BESTANDEN`.
+- **Befehl:** `powershell -NoProfile -ExecutionPolicy Bypass -File tools/run_acceptance.ps1 -Exe "F:\ck3-kronen-kriege.exe" -Project "" -Out "C:/Crusader Kings III/mobile-godot/build/verify/manual-build-922eb13"`.
+- **Beleg:** `build/verify/manual-build-922eb13/` mit `acceptance-result.json`, `acceptance.log`, `run.out.log`, `run.err.log`, `saves/` und `screens/`.
 - **Screenshots:** `screens/win-043-05.png`, `win-043-10.png`, `win-043-15.png`, `win-043-20.png`, `win-043-25.png`, `win-042-3000.png` und `win-042-3000-preview.png` (Endstand).
 - **Logs:** `run.out.log` enthält `MAIN_READY version=1.3` und den vollständigen Driver-Lauf; `run.err.log` enthält nur die nicht kritische Windows-Common-Controls-Warnung. Keine `ERROR`-, `SCRIPT ERROR`-, Exception- oder Crash-Zeile.
 - **Ergebnis:** **BESTANDEN**.
 
 | ID | Zeit | Aktion | Beobachtete Wirkung | Kante | P/F |
 |---|---|---|---|---|---|
-| P01 | 14:46:01 | `Herrschaft` → `Rat` → `Marschall` → `Wechseln` | Marschallwechsel; `Hattusa trainiert Lugdunum (+8 Truppen)` | H1 | PASS |
-| P02 | 14:46:16 | `Herrschaft` → `Gesetz` → `Erbfolge: Ältester` | Erbfolge `Ältester` → `Jüngster`; Gold 130 unverändert | H2 | PASS |
-| P03 | 14:50:16 | `Herrschaft` → `Gesetz` → `Steuersatz` | Steuersatz `1/2` → `2/2`; Gold 228 unverändert | H3 | PASS |
-| P04 | 14:50:31 | `Lugdunum` → `Bauen` → `Markt` | `Lugdunum` Markt Stufe 0 → 1; Gold 228 → 168 | H4 | PASS |
-| P05 | 14:55:17 | `Lugdunum` → `Bauen` → `Kaserne` | `Lugdunum` Kaserne Stufe 0 → 1; Gold 168 → 98 | H5 | PASS |
-| P06 | 14:55:19 | `Heiraten (30 Gold)` → Picker → freies Ziel | Gemahl/in `Gadir`; Legitimität 50 → 55 | D5 | PASS |
-| P07 | 15:00:21 | Fremde Nachbarprovinz → `Anspruch schmieden` | `etruria` (Haus Latium): Ansprüche 0 → 1; Gold 220 → 180; `Angreifen` aktiv | K2 | PASS |
-| P08 | 15:00:24 | Eigene Provinz → `Armee aufstellen` | Armeen 0 → 1; Gold 180 → 130 | K3 | PASS |
-| P09 | 15:05:16 | Zielprovinz → `Belagerung vorantreiben` | `etruria` Belagerung 0 % → 28 % | K4 | PASS |
-| P10 | 15:05:18 | Zielprovinz → `Frieden schließen` | Haus Latium: Waffenstillstand bis 49; Meinung 0 → 10 | K6 | PASS |
-| P11 | 15:10:16 | Anderes Haus → `Geheimnis aufdecken` → `ausnutzen` | Haus Unetice: Haltung 60 → 45; Ansprüche 1 → 2 | D7, D8 | PASS |
-| P12 | 15:05:20 | Friedensziel → `Angreifen` prüfen | `etruria`: `Angreifen` disabled=true; Waffenstillstand bis 49 (jetzt 25) | K7 | PASS |
-| AI-01 | 15:15:17 | Save-Diff KI | `AI2: Haus 3 Steuersatz 1 → 2`; `AI2: Haus 5 Steuersatz 1 → 2`; `AI2: Haus 7 Steuersatz 1 → 2` | AI2 | PASS |
-| AI-02 | 15:15:17 | Save-Diff KI | `AI3: Haus 5 hat geheiratet`; `AI3: Haus 7 hat geheiratet` | AI3 | PASS |
-| T-01 | 15:38 | `FullDepthTest` headless (`res://tests/FullDepthTest.tscn`) | `FULLDEPTHTEST OK: …; 57 Prüfungen`, Exit 0, 0 Fehlerzeilen; K6-Zusicherung `truce_until(1) > _now()` (Zeile 290) | H3–H8, D1–D8, K1–K7, AI2–AI5 | PASS |
-| T-02 | 15:52 | `SystemicDepthTest` headless (`res://tests/SystemicDepthTest.tscn`) | `SYSTEMICDEPTHTEST OK: …; 38 Prüfungen`, Exit 0, 0 Fehlerzeilen; fünf Negativkontrollen ohne Zieländerung | H1, H2, H5, D5, AI1 | PASS |
-| **Abschluss** | **30:00** | **Gerät/Datum:** Windows, 2026-11-08 | 12/12 Aktionen, 3/3 Roundtrips ohne Diff, AI2+AI3 | — | PASS |
+| P01 | 21:35:14 | `Herrschaft` → `Rat` → `Marschall` → `Wechseln` | Marschallwechsel; `Sigrun trainiert Lugdunum (+11 Truppen)` | H1 | PASS |
+| P02 | 21:35:30 | `Herrschaft` → `Gesetz` → `Erbfolge: Ältester` | Erbfolge `Ältester` → `Jüngster`; Gold 130 unverändert | H2 | PASS |
+| P03 | 21:39:30 | `Herrschaft` → `Gesetz` → `Steuersatz` | Steuersatz `1/2` → `2/2`; Gold 273 unverändert | H3 | PASS |
+| P04 | 21:39:44 | `Lugdunum` → `Bauen` → `Markt` | `Lugdunum` Markt Stufe 0 → 1; Gold 273 → 213 | H4 | PASS |
+| P05 | 21:44:29 | `Lugdunum` → `Bauen` → `Kaserne` | `Lugdunum` Kaserne Stufe 0 → 1; Gold 213 → 143 | H5 | PASS |
+| P06 | 21:44:32 | `Heiraten (30 Gold)` → Picker → freies Ziel | Gemahl/in `Midas`; Legitimität 50 → 55 | D5 | PASS |
+| P07 | 21:49:30 | Fremde Nachbarprovinz → `Anspruch schmieden` | `etruria` (Haus Latium): Ansprüche 0 → 1; Gold 113 → 73; `Angreifen` aktiv | K2 | PASS |
+| P08 | 21:49:32 | Eigene Provinz → `Armee aufstellen` | Armeen 0 → 1; Gold 73 → 23 | K3 | PASS |
+| P09 | 21:54:30 | Zielprovinz → `Belagerung vorantreiben` | `etruria` Belagerung 0 % → 27 % | K4 | PASS |
+| P10 | 21:54:31 | Zielprovinz → `Frieden schließen` | Haus Latium: Waffenstillstand bis 37; Meinung 0 → 10 | K6 | PASS |
+| P11 | 21:59:30 | Anderes Haus → `Geheimnis aufdecken` → `ausnutzen` | Haus Unetice: Haltung 60 → 45; Ansprüche 1 → 2 | D7, D8 | PASS |
+| P12 | 21:54:33 | Friedensziel → `Angreifen` prüfen | `etruria`: `Angreifen` disabled=true; Waffenstillstand bis 37 (jetzt 13) | K7 | PASS |
+| AI-01 | 22:04:31 | Save-Diff KI | `AI2: Haus 3 Steuersatz 1 → 2`; `AI2: Haus 4 Steuersatz 1 → 2`; `AI2: Haus 7 Steuersatz 1 → 2` | AI2 | PASS |
+| AI-02 | 22:04:31 | Save-Diff KI | `AI3: Haus 5 hat geheiratet`; `AI3: Haus 7 hat geheiratet` | AI3 | PASS |
+| T-01 | 22:05 | `FullDepthTest` headless (`res://tests/FullDepthTest.tscn`) | `FULLDEPTHTEST OK: …; 74 Prüfungen`, Exit 0, 0 Fehlerzeilen; K6-Zusicherung `truce_until(1) > _now()` (Zeile 290) | H3–H8, D1–D8, K1–K7, AI2–AI5 | PASS |
+| T-02 | 22:05 | `SystemicDepthTest` headless (`res://tests/SystemicDepthTest.tscn`) | `SYSTEMICDEPTHTEST OK: …; 38 Prüfungen`, Exit 0, 0 Fehlerzeilen; fünf Negativkontrollen ohne Zieländerung | H1, H2, H5, D5, AI1 | PASS |
+| **Abschluss** | **30:00** | **Gerät/Datum:** Windows, 2026-11-08 | 12/12 Aktionen, 3/3 Roundtrips ohne Diff, AI-Pass (AI2+AI3), `status=BESTANDEN` | — | PASS |
 
 ## Windows-Lauf 2026-11-07
 

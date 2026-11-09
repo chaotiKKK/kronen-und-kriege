@@ -2,6 +2,8 @@ extends Node
 ## Prüft die erzeugte Europakarte: 49 Grafschaften, gültige Flächen,
 ## Gelände, 29 Herzogtümer, 9 Königreiche, 3 Reiche und Nachbarschaften.
 
+var _checks: int = 0
+
 func _ready() -> void:
 	var data = load("res://scripts/Data.gd")
 	var ps: Array = data.provinces()
@@ -48,9 +50,33 @@ func _ready() -> void:
 		if (adj[p["id"]] as Array).is_empty():
 			empty.append(p["id"])
 	print("ADJ=%d EMPTY=%s" % [adj.size(), ", ".join(empty)])
-	if bad > 0 or ps.size() != 49 or kingdoms.size() != 9 or duchies.size() < 20 or empires.size() != 3 or terrains.size() != 9 or data.COUNTY_TERRAIN.size() != 49 or not empty.is_empty():
-		print("MAPDATATEST FAIL")
-		get_tree().quit(1)
+	if not _check(bad == 0, "Mindestens eine Provinz ist geometrisch oder im Gelände ungültig."):
 		return
-	print("MAPDATATEST OK")
+	if not _check(ps.size() == 49, "Die Karte hat %d statt 49 Provinzen." % ps.size()):
+		return
+	if not _check(kingdoms.size() == 9, "Die Karte hat %d statt 9 Königreiche." % kingdoms.size()):
+		return
+	if not _check(duchies.size() >= 20, "Die Karte hat nur %d Herzogtümer." % duchies.size()):
+		return
+	if not _check(empires.size() == 3, "Die Karte hat %d statt 3 Reiche." % empires.size()):
+		return
+	if not _check(terrains.size() == 9, "Es fehlen Geländetypen: %d von 9." % terrains.size()):
+		return
+	if not _check(data.COUNTY_TERRAIN.size() == 49, "COUNTY_TERRAIN enthält %d statt 49 Einträge." % data.COUNTY_TERRAIN.size()):
+		return
+	if not _check(adj.size() == 49, "Die Adjazenz hat %d statt 49 Einträge." % adj.size()):
+		return
+	if not _check(empty.is_empty(), "Provinzen ohne Nachbarn: %s" % ", ".join(empty)):
+		return
+	print("MAPDATATEST OK: %d Provinzen, %d Königreiche, %d Herzogtümer, %d Reiche, %d Gelände; %d Prüfungen." % [
+		ps.size(), kingdoms.size(), duchies.size(), empires.size(), terrains.size(), _checks
+	])
 	get_tree().quit(0)
+
+func _check(condition: bool, message: String) -> bool:
+	_checks += 1
+	if condition:
+		return true
+	print("MAPDATATEST FAIL: " + message)
+	get_tree().quit(1)
+	return false

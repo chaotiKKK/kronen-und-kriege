@@ -702,7 +702,7 @@ func event_layer_close() -> void:
 
 func _month_index() -> int:
 	var game = main.game
-	return (int(game.year) - (-2000)) * 12 + int(game.month)
+	return game.calendar_index() + 1
 
 func _start_values() -> Dictionary:
 	var game = main.game

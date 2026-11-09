@@ -56,6 +56,8 @@ static func terrain_for(province_id: String) -> String:
 static var _province_cache: Array = []
 static var _adjacency_cache: Dictionary = {}
 static var _geometry_cache: Dictionary = {}
+static var _coastal_cache: Dictionary = {}
+static var _coast_image: Image = null
 
 static func empires() -> Array:
 	return [
@@ -416,6 +418,103 @@ static func _min_distance(a: PackedVector2Array, b: PackedVector2Array) -> float
 		for q in b:
 			best = minf(best, p.distance_to(q))
 	return best
+
+## Eine Provinz ist Küste, wenn mindestens eine Polygonkante zu keinem
+## Nachbarn gehört. Dieselbe Kante zeichnet MapBase als Meeresküste; damit
+## stimmen Seekrieg und Kartenbild ohne zusätzliche Seazonen überein.
+static func is_coastal(province_id: String) -> bool:
+	if _coastal_cache.is_empty():
+		_build_coastal_cache()
+	return bool(_coastal_cache.get(province_id, false))
+
+static func coastal_provinces() -> Array:
+	if _coastal_cache.is_empty():
+		_build_coastal_cache()
+	var out: Array = []
+	for key in _coastal_cache.keys():
+		if bool(_coastal_cache[key]):
+			out.append(str(key))
+	return out## Die gebackene Europakarte enthält das Meer als dunkelblaue Fläche. Eine
+## Provinz ist Küste, wenn eine ihrer Grenzkanten unmittelbar an diese Fläche
+## stößt. Der Test läuft nur einmal und ist unabhängig von der Polygonteilung
+## benachbarter Grafschaften.
+static func _build_coastal_cache() -> void:
+	var ps: Array = provinces()
+	for p in ps:
+		var coast := false
+		for part in _parts(p):
+			for i in (part as PackedVector2Array).size():
+				var a: Vector2 = part[i]
+				var b: Vector2 = part[(i + 1) % (part as PackedVector2Array).size()]
+				var midpoint := (a + b) * 0.5
+				var normal: Vector2 = (b - a).orthogonal().normalized()
+				for side in [-1.0, 1.0]:
+					if _is_sea_at(midpoint + normal * side * 2.0) or _is_sea_at(midpoint + normal * side * 5.0):
+						coast = true
+						break
+				if coast:
+					break
+			if coast:
+				break
+		_coastal_cache[str(p["id"])] = coast
+
+static func _is_sea_at(point: Vector2) -> bool:
+	var img := _coast_map_image()
+	if img == null:
+		return false
+	var x: int = roundi(point.x)
+	var y: int = roundi(point.y)
+	if x < 0 or y < 0 or x >= img.get_width() or y >= img.get_height():
+		return false
+	var c: Color = img.get_pixel(x, y)
+	return c.b > c.r + 0.04 and c.b > 0.10 and c.g < 0.45
+
+static func _coast_map_image() -> Image:
+	if _coast_image != null:
+		return _coast_image
+	var tex = load("res://assets/map/europe_detail.png")
+	if tex == null:
+		return null
+	var img: Image = tex.get_image()
+	if img == null:
+		return null
+	if img.is_compressed():
+		var err: int = img.decompress()
+		if err != OK:
+			return null
+	if img.get_width() != 1200 or img.get_height() != 760:
+		img.resize(1200, 760, Image.INTERPOLATE_BILINEAR)
+	_coast_image = img
+	return _coast_image
+
+static func _parts(p: Dictionary) -> Array:
+	var out: Array = []
+	var raw = p.get("parts", [])
+	if raw is Array:
+		for part in raw:
+			if part is PackedVector2Array and (part as PackedVector2Array).size() >= 3:
+				out.append(part)
+	if out.is_empty():
+		var pts: PackedVector2Array = p.get("points", PackedVector2Array())
+		if pts.size() >= 3:
+			out.append(pts)
+	return out
+
+static func _has_vertex(poly: PackedVector2Array, point: Vector2) -> bool:
+	for p in poly:
+		if p.distance_squared_to(point) < 1.8:
+			return true
+	return false
+
+static func _point_near_polyline(poly: PackedVector2Array, point: Vector2, max_dist: float) -> bool:
+	var limit := max_dist * max_dist
+	for i in poly.size():
+		var a: Vector2 = poly[i]
+		var b: Vector2 = poly[(i + 1) % poly.size()]
+		var closest := Geometry2D.get_closest_point_to_segment(point, a, b)
+		if closest.distance_squared_to(point) <= limit:
+			return true
+	return false
 
 static func kingdom_neighbours() -> Dictionary:
 	return {

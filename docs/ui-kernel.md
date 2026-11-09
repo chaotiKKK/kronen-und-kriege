@@ -1,9 +1,9 @@
 # UiKernel-Zuschnitt
 
-> Dokumentversion: 1.3
-> Stand: 2026-11-06
+> Dokumentversion: 1.5
+> Stand: 2026-11-09
 > Status: UiKernel-Extraktion abgeschlossen
-> Gültig für Save-Schema: 4
+> Gültig für Save-Schema: 10
 
 ## Problem
 
@@ -90,6 +90,14 @@ Regeln:
 | `force_marry` | `kernel.dispatch({"id":"force_marry"})` | `game.force_marry_captive()` | `spouse`, `captive`, `opinion` |
 | `apply_event` | `_choose(index)` → `kernel.dispatch` | `game.apply_event(option)` | Ereigniswirkungen |
 | `set_speed` | `_set_speed(value)` → `kernel.dispatch` | `game.speed = value` | nur UI/`speed` |
+| `forge_relic` | `_forge_relic(id)` → `kernel.dispatch` | `game.forge_relic(id)` | `court.relics`, `gold`, `prestige`, `legitimacy`/`levy`/`council_effects` über R1–R3 |
+| `upgrade_court_hall` | `_upgrade_court_hall()` → `kernel.dispatch` | `game.upgrade_court_hall()` | `court.hall`, `court.grandeur`, `gold`, `prestige` über R4 |
+| `pilgrimage` | `_pilgrimage()` → `kernel.dispatch` | `game.pilgrimage()` | `faith.piety`, `faith.church_power`, `gold` |
+| `consecrate_site` | `_consecrate_site(id)` → `kernel.dispatch` | `game.consecrate_site(id)` | `faith.holy_sites`, `faith.piety`, `faith.church_power`, `gold`, `prestige` über F4 |
+| `convert_faith` | `_convert_faith(confession)` → `kernel.dispatch` | `game.convert_faith(confession)` | `faith.confession`, `faith.church_power`, `gold`, `prestige`, `vassals[].opinion` |
+| `suppress_heresy` | `_suppress_heresy()` → `kernel.dispatch` | `game.suppress_heresy()` | `faith.heresy`, `gold`, `prestige` |
+| `reform_faith` | `_reform_faith()` → `kernel.dispatch` | `game.reform_faith()` | `faith.reform`, `faith.heresy`, `faith.church_power`, `gold`, `prestige`, `vassals[].opinion` |
+| `declare_holy_war` | `_declare_holy_war(target)` → `kernel.dispatch` | `game.declare_holy_war(target)` | `faith.holy_war`, `claims`, `gold`, `piety`, `prestige`, `vassals[].opinion` |
 | `save` | `kernel.dispatch({"id":"save"})` | `Main._save()` über Handler | Datei |
 | `load` | `kernel.dispatch({"id":"load"})` | `Main._load()` über Handler | Datei |
 | `council_assign` | `_cycle_council(office)` → `kernel.dispatch` | `game.assign_council(office, index)` | `council`, indirekt `levy` über H1 |
@@ -120,10 +128,12 @@ Der Kernel führt den Stapel als flüchtigen UI-Zustand. `set_base_modal()` setz
 | `event` | offenes Ereignis | Optionsknopf | ja, genau eine Option |
 | `family_tree` | Stammbaum | Schließen | nein |
 | `herrschaft` | Herrschaftsbutton | Schließen | ja, Rat, Gesetz und Bau über `Game`-Kommandos |
+| `hof` | Hof-&-Reliquien-Button | Schließen | ja, Schmieden und Hallenausbau über `Game`-Kommandos |
+| `glaube` | Glaube-&-Kirche-Button | Schließen | ja, Wallfahrt, Weihe, Bekehrung, Ketzergericht, Reform und heiliger Krieg über `Game`-Kommandos |
 
 `game_over` ist ein eigenes Overlay (`over_layer`) und wird aus dem autoritativen `game.game_over` gerendert; es ist kein Eintrag im Stapel. „Neues Spiel“ ruft `_show_start()` auf und setzt den Stapel auf `start` zurück.
 
-`Escape` schließt den obersten Eintrag für `herrschaft`, `customizer`, `create` und `new_game`. `picker`, `family_tree` und `event` haben sichtbare Schließen- beziehungsweise Wahlknöpfe; das Ereignis muss über eine Option aufgelöst werden. Nach `load` wird der Stapel auf `game` zurückgesetzt. Der Stapel wird **nicht** gespeichert.
+`Escape` schließt den obersten Eintrag für `glaube`, `hof`, `herrschaft`, `customizer`, `create` und `new_game`. `picker`, `family_tree` und `event` haben sichtbare Schließen- beziehungsweise Wahlknöpfe; das Ereignis muss über eine Option aufgelöst werden. Nach `load` wird der Stapel auf `game` zurückgesetzt. Der Stapel wird **nicht** gespeichert.
 
 ## Umgesetzte Extraktion
 
@@ -149,10 +159,13 @@ Die weitergehende Aufteilung der in `Main.gd` aufgebauten Panels in eigene Klass
 
 Die UiKernel-Extraktion ist abgeschlossen. `Main.gd` bleibt Composition Root und Renderer; `UiKernel.gd` hält Auswahl und Modalstapel und routet alle Spielkommandos; `ViewModelBuilder.gd` liefert ausschließlich Anzeigezeichenketten und Flags. `Game.gd` bleibt autoritativ, `SaveGame.gd` bleibt für das Schema zuständig. Die Dateioperationen für Speichern und Laden bleiben in `Main.gd` und werden vom Kernel nur über Handler aufgerufen.
 
-Regressionslauf vom 2026-11-06 (Godot 4.5.stable, Logs unter `build/verify/uikernel/`):
+Der Herrschaftsbildschirm routet `vassal_contract` (Vasall und Zielstufe) und `council_resolution` (Beschluss-ID) als echte Kommandos über den `UiKernel`; `council_assign` wechselt die Ratsbesetzung. Der Hofbildschirm routet `forge_relic` (Reliquien-ID) und `upgrade_court_hall` über denselben Kernel; `ViewModelBuilder.court()` liefert nur Anzeigezeichenketten, Token-Schlüssel, Kosten und `can_*`-Flags. Der Digest meldet `court_grandeur`, `court_hall` und die Reliquienzahl. Der Glaubensbildschirm routet `pilgrimage`, `consecrate_site` (Provinz-ID), `convert_faith` (Konfession), `suppress_heresy`, `reform_faith` und `declare_holy_war` (Zielhaus) über denselben Kernel; `ViewModelBuilder.faith()` liefert nur Anzeigezeichenketten, Token-Schlüssel, Kosten und `can_*`-Flags. Der Digest meldet `confession`, `faith_piety`, `church_power`, `holy_sites`, `faith_heresy`, `faith_reform` und `holy_war_target`.
 
-- Headless: `MapDataTest`, `MapTest`, `HouseTest`, `HousePlayTest`, `IntrigueTest`, `CustomizeTest`, `PortraitTest`, `SaveMigrationTest`, `SystemicDepthTest`, `FullDepthTest`, `StoryTest` — alle grün.
-- Mit Fenster/Rendering: `TouchTest` (echter `InputEventScreenTouch`) und `ShotTest` (fünf Bilder, 1280×720) — beide grün.
+Regressionslauf vom 2026-11-09 (Godot 4.5.stable):
+
+- Headless: `MapDataTest`, `MapTest`, `HouseTest`, `HousePlayTest`, `IntrigueTest`, `CustomizeTest`, `PortraitTest`, `SaveMigrationTest`, `DynastyTest`, `DynastyUiTest`, `CouncilTest`, `CouncilUiTest`, `CourtTest`, `CourtUiTest`, `FaithTest`, `FaithUiTest`, `SystemicDepthTest`, `FullDepthTest`, `StoryTest`, `EventArtTest`, `NavalTest`, `UiKernelTest`, `TickBench` — alle grün.
+- Mit Fenster/Rendering: `TouchTest`, `ShotTest`, `TitleShot`, `NavalRenderTest`, `MapPerfTest`, `FaithShotTest` — alle grün.
+- Sammellauf: `bash tools/run_all_tests.sh`, 30 Suiten, Exit 0; Logs und `run_all_summary.tsv` unter `build/tests/`.
 - `UiKernelTest` — 35 Prüfungen, grün.
 
-Die Testversion 1.3 ist aus dem aktuellen Stand gebaut (Artefakte unter `F:`, Hashes im README) und am 2026-11-08 im Windows-30-Minuten-Lauf bestanden (12/12 Aktionen, 3/3 Roundtrips, AI2+AI3; Beleg `build/verify/manual-build-d2cc-v2/`), aber noch nicht veröffentlicht; auf GitHub verteilt wird weiterhin 1.2: <https://github.com/chaotiKKK/kronen-und-kriege/releases/tag/v1.2>. `repo-compare/` blieb unverändert. Der Quellstand liegt auf `main`.
+Die Testversion 1.3 ist aus dem aktuellen Stand gebaut (Artefakte unter `F:`, Hashes im README) und am 2026-11-08 im Windows-30-Minuten-Lauf bestanden (12/12 Aktionen, 3/3 Roundtrips, AI2+AI3; Beleg `build/verify/manual-build-922eb13/`), aber noch nicht veröffentlicht; auf GitHub verteilt wird weiterhin 1.2: <https://github.com/chaotiKKK/kronen-und-kriege/releases/tag/v1.2>. `repo-compare/` blieb unverändert. Der Quellstand liegt auf `main`.

@@ -1,0 +1,92 @@
+{
+  "generator": "tools/gen_map_assets.py",
+  "blender_generator": "tools/blender/gen_map_assets.py",
+  "geometry_export": "tools/export_map_geometry.gd",
+  "projection": {
+    "size": [
+      1200,
+      760
+    ],
+    "raster": [
+      2400,
+      1520
+    ]
+  },
+  "source": [
+    "data/europe_geometry.json",
+    "scripts/Data.gd: provinces(), COUNTY_TERRAIN, 49 Grafschaften",
+    "assets/map/generated/heightmap.png"
+  ],
+  "license": "Eigene prozedurale Projekt-Assets. Keine CK3-Dateien, keine Fremdassets.",
+  "blender": "blender.exe (headless, Cycles CPU)",
+  "godot": "C:\\Crusader Kings III\\mobile-godot\\.tools\\godot.exe",
+  "assets": [
+    {
+      "path": "assets/map/generated/heightmap.png",
+      "role": "16-bit-fähiges 8-bit-Höhenfeld, 2400x1520",
+      "bytes": 178827,
+      "sha256": "f7b9359ddeb6b7276f499185d39676476e29b894ceebda45a521dee3fc0d4cb8",
+      "size": [
+        2400,
+        1520
+      ],
+      "mode": "L"
+    },
+    {
+      "path": "assets/map/generated/normal_map.png",
+      "role": "Tangent-Space-Normalmap aus dem Höhenfeld, 2400x1520",
+      "bytes": 766008,
+      "sha256": "26d356f2ca205fba31e540d1eeea536a40367eef8a0ed8f4f563ac38d1b28218",
+      "size": [
+        2400,
+        1520
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/map/generated/relief_shaded.png",
+      "role": "Blender-Cycles-Shaded-Relief, 2400x1520 RGB, per Multiply im Renderer",
+      "bytes": 1408674,
+      "sha256": "b9d14c84134dc31723b9cf118d3a485d5d2437cfdc1b758b9556f48ea85b82f4",
+      "size": [
+        2400,
+        1520
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "assets/map/generated/marker_castle.png",
+      "role": "Blender-Render der Burg-Halte, 256x256 RGBA",
+      "bytes": 38770,
+      "sha256": "0ef32b4767e152ef3f4585636cbbb89dd48ee1507bf2db22938a8f22e9ff0e2b",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/map/generated/marker_banner.png",
+      "role": "Blender-Render des Königreichsbanners, 256x256 RGBA",
+      "bytes": 26156,
+      "sha256": "475f6e8e95109c220a6eb7d93d7ab10b97b66c2816c232256484ea54faa278c1",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "path": "assets/map/generated/marker_castle.glb",
+      "role": "Low-Poly-Burg-Mesh aus Blender 5.2, GLB",
+      "bytes": 69232,
+      "sha256": "7b2aeeca0f6e6adb8bc47adcce697668c4d938c1e59072500aa6c810e3c78fcc"
+    },
+    {
+      "path": "assets/map/generated/marker_banner.glb",
+      "role": "Low-Poly-Banner-Mesh aus Blender 5.2, GLB",
+      "bytes": 77136,
+      "sha256": "f8fb937ca4c9b93b063e30f378c526060ea4976469636bceb3cdadb6b5094d3e"
+    }
+  ]
+}

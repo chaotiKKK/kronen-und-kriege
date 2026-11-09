@@ -5,9 +5,11 @@ des Godot-Ports — ohne Fremdassets, ohne CK3-Material, ohne manuelle Nacharbei
 
 | Familie | Anzahl | Format | Inhalt |
 |---|---|---|---|
-| Karten-Token | 17 | 256×256 RGBA, transparent | 9 Geländetypen, 3 Gebäude, 5 Einheiten |
+| Karten-Token | 33 | 256×256 RGBA, transparent | 9 Geländetypen, 3 Gebäude, 5 Einheiten, 3 Vermächtnisse, 4 Ratsrollen, 3 Vertragsstufen, 3 Reliquien, 3 Glaubens-Token |
 | Charakterporträts | 12 | 512×512 | Brustbilder vor neutralem Grund |
 | Ereignisbilder | 8 | 960×540 | Hofempfang, Hochzeit, Tempelgründung, Gabe, Ernte, Händler, Schlacht, Fieber |
+| Hofkulisse | 1 | 1280×720 | opake Hofhalle mit Thron, Säulen, Läufer und Reliquiennischen |
+| Tempelkulisse | 1 | 1280×720 | opake Tempelhalle mit Altar, Säulen, Sonnenscheibe und Kultfiguren |
 
 ## Erzeugen
 
@@ -17,8 +19,16 @@ des Godot-Ports — ohne Fremdassets, ohne CK3-Material, ohne manuelle Nacharbei
 cd .tools && APPDATA="$PWD/appdata" ./godot.exe --headless --path .. --import
 ```
 
-Der Blender-Lauf rendert alle 37 Bilder und schreibt `assets/asset_manifest.json`;
-sein letzter Ausgabesatz ist `ASSETS OK: 17 Token, 12 Porträts, 8 Ereignisse`.
+Der Blender-Lauf rendert alle 55 Bilder und schreibt `assets/asset_manifest.json`;
+sein letzter Ausgabesatz ist `ASSETS OK: 33 Token, 12 Porträts, 8 Ereignisse, 1 Hofkulisse, 1 Tempelkulisse`.
+Die Welle-6-Motive sind `council_marshal`, `council_chancellor`,
+`council_steward`, `council_spymaster` sowie `contract_0`, `contract_1` und
+`contract_2`. Welle 7 ergänzt `relic_crown`, `relic_blade`, `relic_seal` und die
+opake Kulisse `court_hall`. Welle 8 ergänzt `faith_sun`, `faith_moon`,
+`faith_earth` und die opake Kulisse `faith_temple`; das Manifest enthält 41
+Keymap-Einträge. Welle 9 nutzt diese drei Token und die Tempelkulisse unverändert
+und fügt keine neuen Bilder hinzu; der Satz bleibt bei 55 Bildern, 36 Code-Schlüsseln
+und 33 Token.
 Der Godot-Import ist Pflicht und nach **jedem** Neu-Rendern zu wiederholen, weil
 sonst die importierten `.ctex` veralten.
 
@@ -65,14 +75,15 @@ Geprüft wird:
 3. **Inhalt** — Bounding-Box mindestens 10 % der Fläche, mindestens 24 Farben,
    mittlere Standardabweichung ≥ 6 (fängt flaue oder leere Renders ab).
 4. **Schlüsselabgleich** — liest `TERRAIN_TYPES` aus `scripts/Data.gd`,
-   die Zweige von `building_cost()` aus `scripts/Game.gd` und die `"id"`-Werte aus
-   `Data.gd` `events()`. Jeder gefundene Schlüssel braucht ein Asset aus `key_map`
-   oder einen Eintrag in `open` mit Begründung; ein Tippfehler in `open` fällt auf.
+   die Zweige von `building_cost()` und `LEGACY_TRACKS` aus `scripts/Game.gd`
+   sowie die `"id"`-Werte aus `Data.gd` `events()`. Jeder gefundene Schlüssel
+   braucht ein Asset aus `key_map` oder einen Eintrag in `open` mit Begründung;
+   ein Tippfehler in `open` fällt auf.
 5. **Bestand** — die zwölf bestehenden `assets/portraits/portrait_N.png` müssen
    weiterhin vorhanden sein.
 
-Aktueller Stand: 37 Bilddateien, 20 Code-Schlüssel (terrain=9, building=3,
-event=8), Exit 0. Die Ereigniszuordnung prüft zusätzlich
+Aktueller Stand: 55 Bilddateien, 36 Code-Schlüssel (terrain=9, building=3,
+legacy=3, council=4, contract=3, relic=3, faith=3, event=8), Exit 0. Die Ereigniszuordnung prüft zusätzlich
 `tests/EventArtTest.tscn`: acht Ereignisse, acht eindeutige Dateien, acht
 Cache-Treffer, ein leeres Manifest-`open` und der Vektor-Fallback; zuletzt
 98 Prüfungen, Exit 0.
@@ -84,11 +95,11 @@ Grundbestands wurde zuvor bestanden:
 
 | Schritt | Ergebnis |
 |---|---|
-| Ein Aufruf `blender --background --python tools/blender/make_tokens.py` | Exit 0, `ASSETS OK: 17 Token, 12 Porträts, 8 Ereignisse` |
-| Zählung danach | 17 / 12 / 8 PNG, Manifest mit denselben Zahlen |
+| Ein Aufruf `blender --background --python tools/blender/make_tokens.py` | Exit 0, `ASSETS OK: 33 Token, 12 Porträts, 8 Ereignisse, 1 Hofkulisse, 1 Tempelkulisse` |
+| Zählung danach | 33 / 12 / 8 / 1 / 1 PNG, Manifest mit denselben Zahlen |
 | Erneuter vollständiger Lauf nach der Erweiterung | Exit 0, gleiche Zahlen, keine Reste — jede PNG-Datei steht im Manifest |
-| `python tools/verify_assets.py` | Exit 0, 37 Dateien, 20 Code-Schlüssel |
-| `godot --headless --import` | Exit 0, 17 / 12 / 8 `.import` |
+| `python tools/verify_assets.py` | Exit 0, 55 Dateien, 36 Code-Schlüssel |
+| `godot --headless --import` | Exit 0, 33 / 12 / 8 / 1 / 1 `.import` |
 
 Das Prüfskript ist als Tor belegt — jede gezielte Verletzung endet mit Exit 1:
 
@@ -110,7 +121,14 @@ wieder Exit 0, und es bleiben keine Testreste.
 | `terrain_*` (9) | `Data.gd` `TERRAIN_TYPES` |
 | `building_*` (3) | `Game.gd` `building_cost()` |
 | `unit_levy`, `unit_archer`, `unit_knight`, `unit_siege` | `Game.army_composition()`: Armeestärke je 55/25/15 % auf Fußvolk, Bogenschützen, Reiterei, dazu ein Belagerungsgerät je 100 Mann |
-| `unit_fleet` | fertiger Token für ein künftiges Seekriegs-System; im Manifest zugeordnet |
+| `unit_fleet` | `Game.raise_fleet()` und `Game.blockade()`: Flotten im Hafen und vor blockierten Küsten; `MapView` und Provinzseite nutzen denselben Token |
+| `legacy_war` | `Game.LEGACY_TRACKS["war"]`, `legacy_war_multiplier()`, `raise_army()` und `attack()` |
+| `legacy_crown` | `Game.LEGACY_TRACKS["crown"]`, `_apply_legacy_income()` und `unlock_legacy()` |
+| `legacy_guile` | `Game.LEGACY_TRACKS["guile"]` und `_chance()` für Intrigen |
+| `relic_crown`, `relic_blade`, `relic_seal` | `Game.RELIC_ORDER`, `forge_relic()` und der Hofbildschirm |
+| `court_hall` | `Main.TEX_COURT` und der Hofbildschirm |
+| `faith_sun`, `faith_moon`, `faith_earth` | `Game.FAITH_ORDER`, `faith_confession_info()` und der Glaubensbildschirm |
+| `faith_temple` | `Main.TEX_FAITH` und der Glaubensbildschirm |
 | `event_court_reception` | `hoftag` |
 | `event_wedding` | `hochzeit` |
 | `event_monastery` | `kloster` |
@@ -120,9 +138,9 @@ wieder Exit 0, und es bleiben keine Testreste.
 | `event_battle` | `grenzstreit` |
 | `event_fever` | `krankheit` |
 
-Die Offen-Liste im Manifest ist leer. Der Flotten-Token ist als Asset vorhanden
-und zugeordnet; ein Seekrieg als Spielsystem ist noch nicht implementiert.
-Fußvolk, Bogenschützen, Reiterei und Belagerung sind über
+Die Offen-Liste im Manifest ist leer. Der Flotten-Token ist als Asset vorhanden,
+zugeordnet und über Küstenerkennung, Blockade und Seeschlacht an das Spiel
+angebunden. Fußvolk, Bogenschützen, Reiterei und Belagerung sind über
 `Game.army_composition()` an die Armeestärke gebunden und erscheinen als
 Token-Zeile im Chronik-Abschnitt „Armee & Krieg“.
 Jedes der acht Ereignisse löst über `EVENT_ART_KEYS` eine eigene, vorhandene
@@ -164,23 +182,33 @@ Verdrahtet:
 
 - **Karte** (`scripts/MapView.gd`): Gelände-Token markieren die Provinzen im
   Modus „Gelände“; Hauptstädte tragen Gebäude-Token, im Kriegsmodus erscheinen
-  Belagerungs-Token. Die Legende nutzt dieselben Token; fehlt eines, greift die
-  Vektorform als Rückfall.
+  Belagerungs- und Flotten-Token mit Hausfarbe und Schiffszahl. Die Legende
+  nutzt dieselben Token; fehlt eines, greift die Vektorform als Rückfall.
 - **Provinzseite** (`scripts/Main.gd`): Gelände-Token als Provinzillustration,
-  Besitzerwappen, Herrscherporträt, drei Gebäude-Token mit Stufe, Truppen-Token,
-  Nachbarliste und die Aktionen Ausbauen, Werben, Angreifen und Herrschaft. Das
-  Hofpanel bietet zusätzlich eine Kurzansicht mit Token, Wappen und Aufgebot.
+  Besitzerwappen, Herrscherporträt, drei Gebäude-Token mit Stufe, Truppen- und
+  Flotten-Token, Blockadestatus, Nachbarliste und die Aktionen Ausbauen, Werben,
+  Angreifen und Herrschaft. Das Hofpanel bietet zusätzlich eine Kurzansicht mit
+  Token, Wappen und Aufgebot.
 - **Ereignis-Panel** (`scripts/Main.gd`, `ViewModelBuilder.gd`): alle acht
   Ereignisse erhalten ihr eigenes Render über die feste Zuordnung
   `EVENT_ART_KEYS`; beim Öffnen erklingt `open.wav`. Fehlt ein Bild, zeichnet
   `scripts/EventArtFallback.gd` eine Vektorlandschaft statt einer leeren Fläche.
 - **Chronik**: Die Armeestärke erscheint als gemischte Token-Zeile aus Fußvolk,
   Bogenschützen, Reiterei und Belagerung.
+- **Herrschaft/Dynastie**: Ruhm, drei Zweige, Stufe, Effekt und Kosten werden
+  angezeigt; die drei neuen Token liegen in `assets/ui/tokens/legacy_*.png`
+  und werden über `unlock_legacy()` freigeschaltet.
+
+Seekrieg ist als Küstensystem umgesetzt: `Data.is_coastal()` erkennt Häfen über
+die gebackene Meereskante, `Game.raise_fleet()` stellt Flotten auf,
+`Game.blockade()` führt Seeschlachten und sechsmonatige Blockaden, die jährlich
+Unterhalt kosten und monatlich Beute sowie Aufgebotsdruck erzeugen. KI-Häuser
+nutzen dieselben APIs. `tests/NavalTest.tscn` prüft den gesamten Pfad inklusive
+Schema-6-Roundtrip.
 
 Offen:
 
-- Keine offenen Assets im Manifest. Der Seekrieg als Spielsystem fehlt weiterhin;
-  der Flotten-Token ist dafür bereits vorbereitet.
+- Keine offenen Assets im Manifest.
 
 Nach jeder UI-Änderung ist ein frischer Windows-Lauf mit
 `tools/verify_windows_start.ps1` nötig; der Lauf prüft Fenster, Render-Frame,

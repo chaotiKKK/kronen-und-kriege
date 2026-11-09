@@ -92,6 +92,12 @@ func _route(id: String, command: Dictionary) -> Dictionary:
 	var refresh: Array = FULL_REFRESH.duplicate()
 	var log_result := true
 	match id:
+		"continue_sandbox":
+			raw = game.continue_sandbox()
+		"research":
+			raw = game.start_research(str(command.get("innovation", "")))
+		"road":
+			raw = game.build_road(selection, str(command.get("to", "")))
 		"develop":
 			raw = game.develop(selection)
 		"recruit":
@@ -148,6 +154,30 @@ func _route(id: String, command: Dictionary) -> Dictionary:
 		"set_tax":
 			var current_tax := int(game.house()["laws"]["tax"])
 			raw = game.set_law("tax", str((current_tax + 1) % 3))
+		"legacy":
+			raw = game.unlock_legacy(str(command.get("track", "")))
+		"vassal_contract":
+			raw = game.change_vassal_contract(int(command.get("vassal", -1)), int(command.get("level", -1)))
+		"council_resolution":
+			raw = game.enact_council_resolution(str(command.get("resolution", "")))
+		"forge_relic":
+			raw = game.forge_relic(str(command.get("relic", "")))
+		"upgrade_court_hall":
+			raw = game.upgrade_court_hall()
+		"upgrade_court_amenity":
+			raw = game.upgrade_court_amenity(str(command.get("amenity", "")))
+		"pilgrimage":
+			raw = game.pilgrimage()
+		"consecrate_site":
+			raw = game.consecrate_site(str(command.get("province", "")))
+		"convert_faith":
+			raw = game.convert_faith(str(command.get("confession", "")))
+		"suppress_heresy":
+			raw = game.suppress_heresy()
+		"reform_faith":
+			raw = game.reform_faith()
+		"declare_holy_war":
+			raw = game.declare_holy_war(int(command.get("target", -1)))
 		"claim":
 			if selection == "":
 				return _blocked("invalid", "Keine Provinz gewählt.")
@@ -160,6 +190,14 @@ func _route(id: String, command: Dictionary) -> Dictionary:
 			if selection == "":
 				return _blocked("invalid", "Keine Provinz gewählt.")
 			raw = game.advance_siege(selection)
+		"fleet":
+			if selection == "":
+				return _blocked("invalid", "Keine Provinz gewählt.")
+			raw = game.raise_fleet(selection)
+		"blockade":
+			if selection == "":
+				return _blocked("invalid", "Keine Provinz gewählt.")
+			raw = game.blockade(selection)
 		"peace":
 			var peace_target := target_house()
 			if peace_target < 0:
@@ -235,6 +273,23 @@ func _digest() -> Dictionary:
 		"gold": int(h["gold"]),
 		"prestige": int(h["prestige"]),
 		"legitimacy": int(h["legitimacy"]),
+		"renown": int(h.get("renown", 0)),
+		"vassal_opinion": game.vassal_opinion_avg(),
+		"intrigue_bonus": game.council_intrigue_percent(),
+		"court_grandeur": game.court_grandeur(),
+		"court_expected": game.court_expected_grandeur(),
+		"court_expectation_delta": game.court_expectation_delta(),
+		"court_hall": game.court_hall_level(),
+		"court_amenities": game.court_amenity_total(),
+		"court_upkeep": game.court_amenity_upkeep(),
+		"relics": game.court_relics().size(),
+		"confession": game.faith_confession(),
+		"faith_piety": game.faith_piety(),
+		"church_power": game.faith_church_power(),
+		"faith_heresy": game.faith_heresy(),
+		"faith_reform": game.faith_reform(),
+		"holy_war_target": game.faith_holy_war_target(),
+		"holy_sites": game.faith_site_count(),
 	}
 	if selection != "":
 		var p: Dictionary = game.province(selection)

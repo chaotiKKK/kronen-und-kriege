@@ -5,15 +5,19 @@ extends Control
 const DataScript = preload("res://scripts/Data.gd")
 const GameScript = preload("res://scripts/Game.gd")
 const MapViewScript = preload("res://scripts/MapView.gd")
+const WorldMiniMapScript = preload("res://scripts/WorldMiniMap.gd")
 const FamilyTreeScript = preload("res://scripts/FamilyTree.gd")
 const BannerGeneratorScript = preload("res://scripts/BannerGenerator.gd")
 const UiKernelScript = preload("res://scripts/UiKernel.gd")
 const ViewModelBuilder = preload("res://scripts/ViewModelBuilder.gd")
 const AcceptanceDriverScript = preload("res://scripts/AcceptanceDriver.gd")
+const ModernInterfaceScript = preload("res://scripts/ModernInterface.gd")
 
 const TEX_CARD = preload("res://assets/ui/card.png")
 const TEX_BUTTON = preload("res://assets/ui/button.png")
 const TEX_TITLE = preload("res://assets/ui/bq_beta_title.jpg")
+const TEX_COURT = preload("res://assets/ui/court/court_hall.png")
+const TEX_FAITH = preload("res://assets/ui/faith/faith_temple.png")
 
 const SETTINGS_PATH := "user://einstellungen.cfg"
 const RESOLUTIONS := [[1280, 720], [1600, 900], [1920, 1080]]
@@ -29,17 +33,28 @@ const EVENT_ART_KEYS := {
 	"krankheit": "event_fever",
 }
 
-const INK := Color(0.16, 0.11, 0.07)
-const INK_SOFT := Color(0.32, 0.24, 0.15)
-const CREAM := Color(0.98, 0.94, 0.84)
+const INK := Color("edf3f5")
+const INK_SOFT := Color("afbfca")
+const CREAM := Color("edf3f5")
 
 var game
 var kernel
 var map_view
 var map_mode_buttons: Dictionary = {}
+var top_crest: TextureRect
+var top_realm_label: Label
+var top_world_label: Label
+var map_header_title: Label
+var map_header_meta: Label
+var side_panel: PanelContainer
+var side_toggle_btn: Button
+var legend_button: Button
+var minimap
+var _side_hidden := false
 var date_label: Label
 var gold_label: Label
 var prestige_label: Label
+var renown_label: Label
 var crest_rect: TextureRect
 var portrait_rect: TextureRect
 var title_label: Label
@@ -88,6 +103,31 @@ var tree_list: VBoxContainer
 var rule_layer: Control
 var rule_title: Label
 var rule_body: VBoxContainer
+var research_label: Label
+var infrastructure_layer: Control
+var infrastructure_body: VBoxContainer
+var research_buttons: Dictionary = {}
+var road_buttons: VBoxContainer
+var sandbox_button: Button
+var court_layer: Control
+var court_title: Label
+var court_body: VBoxContainer
+var court_hall_preview: TextureRect
+var court_hall_stage_label: Label
+var court_hall_stats_label: Label
+var court_hall_pips: HBoxContainer
+var court_expectation_label: Label
+var court_expectation_track: Control
+var court_amenity_pips: Array = []
+var court_amenity_buttons: Dictionary = {}
+var faith_layer: Control
+var faith_title: Label
+var faith_body: VBoxContainer
+var faith_heresy_icon: TextureRect
+var faith_reform_icon: TextureRect
+var faith_war_marker: PanelContainer
+var faith_war_marker_icon: TextureRect
+var faith_war_marker_label: Label
 var custom_layer: Control
 var custom_name: LineEdit
 var custom_house: LineEdit
@@ -117,6 +157,8 @@ var settings := {
 	"resolution": 1,
 	"vsync": 1,
 	"ui_scale": 1.0,
+	"ui_theme": 0,
+	"text_scale": 1.0,
 	"music": 55,
 	"sfx": 75,
 	"muted": false,
@@ -135,6 +177,8 @@ var opt_resolution: OptionButton
 var opt_vsync: OptionButton
 var opt_ui_scale: HSlider
 var opt_ui_scale_label: Label
+var opt_theme: OptionButton
+var opt_text_scale: OptionButton
 var opt_music: HSlider
 var opt_music_label: Label
 var opt_sfx: HSlider
@@ -179,12 +223,16 @@ func _ready() -> void:
 	_load_assets()
 	_setup_audio_buses()
 	_load_settings()
+	ModernInterfaceScript.appearance = int(settings["ui_theme"])
+	ModernInterfaceScript.text_scale = float(settings["text_scale"])
 	_apply_display_settings(false)
 	# Headless-Tests brauchen keinen Audio-Stream; die Wiedergabe kann beim
 	# harten Test-Quit eine Ressource offen halten.
 	if DisplayServer.get_name() != "headless":
 		_load_audio()
 	_build()
+	var modern = ModernInterfaceScript.new()
+	modern.install(self)
 	_show_start()
 	_apply_audio_settings()
 	var args := OS.get_cmdline_user_args()
@@ -192,7 +240,7 @@ func _ready() -> void:
 		var driver = AcceptanceDriverScript.new()
 		add_child(driver)
 		driver.begin(self, args)
-	print("MAIN_READY version=1.3")
+	print("MAIN_READY version=1.5")
 
 func _stop_audio() -> void:
 	# Die laufende Ambient-Wiedergabe kann beim Engine-Shutdown eine Ressource
@@ -285,6 +333,8 @@ func _load_settings() -> void:
 	settings["resolution"] = clampi(int(cf.get_value("bild", "aufloesung", 1)), 0, RESOLUTIONS.size() - 1)
 	settings["vsync"] = clampi(int(cf.get_value("bild", "vsync", 1)), 0, 2)
 	settings["ui_scale"] = clampf(float(cf.get_value("bild", "ui_scale", 1.0)), 0.8, 1.2)
+	settings["ui_theme"] = clampi(int(cf.get_value("bild", "ui_theme", 0)), 0, 2)
+	settings["text_scale"] = clampf(float(cf.get_value("bild", "text_scale", 1.0)), 1.0, 2.0)
 	settings["music"] = clampi(int(cf.get_value("ton", "musik", 55)), 0, 100)
 	settings["sfx"] = clampi(int(cf.get_value("ton", "effekte", 75)), 0, 100)
 	settings["muted"] = bool(cf.get_value("ton", "stumm", false))
@@ -298,6 +348,8 @@ func _save_settings() -> void:
 	cf.set_value("bild", "aufloesung", int(settings["resolution"]))
 	cf.set_value("bild", "vsync", int(settings["vsync"]))
 	cf.set_value("bild", "ui_scale", float(settings["ui_scale"]))
+	cf.set_value("bild", "ui_theme", int(settings["ui_theme"]))
+	cf.set_value("bild", "text_scale", float(settings["text_scale"]))
 	cf.set_value("ton", "musik", int(settings["music"]))
 	cf.set_value("ton", "effekte", int(settings["sfx"]))
 	cf.set_value("ton", "stumm", bool(settings["muted"]))
@@ -362,10 +414,15 @@ func _load_assets() -> void:
 		if t3 != null:
 			ICONS[n] = t3
 	TOKENS.clear()
-	for n in ["terrain_plains", "terrain_farmland", "terrain_forest", "terrain_hills", "terrain_mountains", "terrain_marsh", "terrain_coast", "terrain_steppe", "terrain_heath", "building_barracks", "building_walls", "building_market", "unit_levy", "unit_archer", "unit_knight", "unit_siege", "unit_fleet"]:
+	for n in ["terrain_plains", "terrain_farmland", "terrain_forest", "terrain_hills", "terrain_mountains", "terrain_marsh", "terrain_coast", "terrain_steppe", "terrain_heath", "building_barracks", "building_walls", "building_market", "unit_levy", "unit_archer", "unit_knight", "unit_siege", "unit_fleet", "legacy_war", "legacy_crown", "legacy_guile", "council_marshal", "council_chancellor", "council_steward", "council_spymaster", "contract_0", "contract_1", "contract_2", "relic_crown", "relic_blade", "relic_seal", "faith_sun", "faith_moon", "faith_earth"]:
 		var tex = load("res://assets/ui/tokens/%s.png" % n)
 		if tex != null:
 			TOKENS[n] = tex
+	for key in GameScript.FAITH_TOKEN_ORDER:
+		var token_name := "faith_%s" % str(key)
+		var token_tex = load("res://assets/ui/tokens/%s.png" % token_name)
+		if token_tex != null:
+			TOKENS[token_name] = token_tex
 	EVENT_ARTS.clear()
 	for n in EVENT_ART_KEYS.values():
 		var tex = load("res://assets/ui/events/%s.png" % n)
@@ -374,36 +431,18 @@ func _load_assets() -> void:
 
 # --- Stile ---------------------------------------------------------------
 
-func _card_style(cm: int = 18) -> StyleBoxTexture:
-	var sb := StyleBoxTexture.new()
-	sb.texture = TEX_CARD
-	sb.texture_margin_left = 24
-	sb.texture_margin_right = 24
-	sb.texture_margin_top = 24
-	sb.texture_margin_bottom = 24
-	sb.content_margin_left = cm
-	sb.content_margin_right = cm
-	sb.content_margin_top = cm - 4
-	sb.content_margin_bottom = cm - 4
-	return sb
+func _card_style(cm: int = 18) -> StyleBoxFlat:
+	return ModernInterfaceScript.surface(ModernInterfaceScript.PANEL, cm)
 
-func _btn_style(bright: float) -> StyleBoxTexture:
-	var sb := StyleBoxTexture.new()
-	sb.texture = TEX_BUTTON
-	sb.texture_margin_left = 14
-	sb.texture_margin_right = 14
-	sb.texture_margin_top = 12
-	sb.texture_margin_bottom = 12
-	sb.content_margin_left = 12
-	sb.content_margin_right = 12
-	sb.content_margin_top = 6
-	sb.content_margin_bottom = 6
-	sb.modulate_color = Color(bright, bright, bright)
-	return sb
+func _btn_style(bright: float) -> StyleBoxFlat:
+	return ModernInterfaceScript.surface(Color(0.11, 0.21, 0.27).lightened(maxf(0, bright - 1.0) * 0.4), 12)
 
 func _flat(bg: Color, line := Color(0, 0, 0, 0), width: int = 0) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = bg
+	if bg.r > bg.b * 1.3 and bg.g < 0.3:
+		bg = Color(0.075, 0.14, 0.19, bg.a)
+	sb.set_meta("atlas_bg", bg)
+	sb.bg_color = ModernInterfaceScript._surface_color(bg)
 	if width > 0:
 		sb.border_width_left = width
 		sb.border_width_right = width
@@ -418,7 +457,8 @@ func _flat(bg: Color, line := Color(0, 0, 0, 0), width: int = 0) -> StyleBoxFlat
 
 func _field_style() -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.95, 0.88, 0.71)
+	sb.set_meta("atlas_bg", Color("101e2b"))
+	sb.bg_color = ModernInterfaceScript._surface_color(Color("101e2b"))
 	sb.border_width_left = 2
 	sb.border_width_right = 2
 	sb.border_width_top = 2
@@ -433,19 +473,21 @@ func _field_style() -> StyleBoxFlat:
 func _label(text: String, px: int, col := INK) -> Label:
 	var l := Label.new()
 	l.text = text
-	l.add_theme_font_size_override("font_size", px)
-	l.add_theme_color_override("font_color", col)
+	l.set_meta("atlas_color", col)
+	l.set_meta("atlas_font_size", px)
+	l.add_theme_font_size_override("font_size", int(round(px * ModernInterfaceScript.text_scale)))
+	l.add_theme_color_override("font_color", ModernInterfaceScript.readable(col))
 	return l
 
 func _button(text: String, cb: Callable, icon_name := "") -> Button:
 	var b := Button.new()
 	b.text = text
-	b.custom_minimum_size = Vector2(0, 46)
+	b.custom_minimum_size = Vector2(0, 50)
 	b.add_theme_font_size_override("font_size", 16)
-	b.add_theme_color_override("font_color", CREAM)
-	b.add_theme_color_override("font_hover_color", Color(1, 1, 1))
-	b.add_theme_color_override("font_pressed_color", Color(0.86, 0.80, 0.68))
-	b.add_theme_color_override("font_disabled_color", Color(0.50, 0.44, 0.36))
+	b.add_theme_color_override("font_color", ModernInterfaceScript.readable(CREAM))
+	b.add_theme_color_override("font_hover_color", ModernInterfaceScript.readable(Color.WHITE))
+	b.add_theme_color_override("font_pressed_color", ModernInterfaceScript.readable(CREAM))
+	b.add_theme_color_override("font_disabled_color", ModernInterfaceScript.readable(Color("8fa4b2")))
 	b.add_theme_stylebox_override("normal", _btn_style(1.0))
 	b.add_theme_stylebox_override("hover", _btn_style(1.18))
 	b.add_theme_stylebox_override("pressed", _btn_style(0.82))
@@ -499,6 +541,7 @@ func _spacer() -> Control:
 
 func _build() -> void:
 	var back := ColorRect.new()
+	back.set_meta("atlas_background", true)
 	back.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	back.color = Color(0.07, 0.06, 0.05)
 	add_child(back)
@@ -508,34 +551,58 @@ func _build() -> void:
 	root.add_theme_constant_override("separation", 0)
 	add_child(root)
 
-	# Kopfzeile
+	# Kopfzeile: Haus, Zeit, Ressourcen und Zeitsteuerung wie eine Weltkarten-Leiste.
 	var top := PanelContainer.new()
-	top.custom_minimum_size = Vector2(0, 62)
-	top.add_theme_stylebox_override("panel", _flat(Color(0.14, 0.10, 0.07), Color(0.55, 0.40, 0.18), 2))
+	top.custom_minimum_size = Vector2(0, 64)
+	top.add_theme_stylebox_override("panel", _flat(Color(0.075, 0.055, 0.035), Color(0.62, 0.46, 0.22), 2))
 	root.add_child(top)
 	var top_row := HBoxContainer.new()
-	top_row.add_theme_constant_override("separation", 16)
+	top_row.add_theme_constant_override("separation", 9)
 	top.add_child(top_row)
-	date_label = _label("2000 v. Chr.", 20, CREAM)
-	top_row.add_child(date_label)
+	var realm_block := HBoxContainer.new()
+	realm_block.add_theme_constant_override("separation", 8)
+	top_row.add_child(realm_block)
+	top_crest = TextureRect.new()
+	top_crest.custom_minimum_size = Vector2(38, 46)
+	top_crest.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	top_crest.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	realm_block.add_child(top_crest)
+	var realm_text := VBoxContainer.new()
+	realm_text.add_theme_constant_override("separation", 0)
+	realm_block.add_child(realm_text)
+	top_world_label = _label("WELTKARTE · 2000 V. CHR.", 9, Color(0.92, 0.72, 0.35))
+	realm_text.add_child(top_world_label)
+	top_realm_label = _label("Haus Wessex", 17, CREAM)
+	realm_text.add_child(top_realm_label)
+	var date_box := PanelContainer.new()
+	date_box.add_theme_stylebox_override("panel", _flat(Color(0.11, 0.08, 0.05, 0.92), Color(0.42, 0.31, 0.16), 1))
+	top_row.add_child(date_box)
+	date_label = _label("Hartung 2000 v. Chr.", 16, Color(0.98, 0.86, 0.56))
+	date_box.add_child(date_label)
 	top_row.add_child(_spacer())
-	gold_label = _label("Gold: 0", 19, Color(0.96, 0.80, 0.38))
-	top_row.add_child(gold_label)
-	prestige_label = _label("Prestige: 0", 19, Color(0.76, 0.86, 0.98))
-	top_row.add_child(prestige_label)
+	var res_box := HBoxContainer.new()
+	res_box.add_theme_constant_override("separation", 13)
+	top_row.add_child(res_box)
+	gold_label = _label("Gold: 0", 15, Color(0.98, 0.82, 0.38))
+	res_box.add_child(gold_label)
+	prestige_label = _label("Prestige: 0", 15, Color(0.78, 0.88, 1.0))
+	res_box.add_child(prestige_label)
+	renown_label = _label("Ruhm: 0", 15, Color(0.95, 0.74, 0.44))
+	res_box.add_child(renown_label)
 	top_row.add_child(_spacer())
 	sound_btn = Button.new()
 	sound_btn.text = "Ton an"
-	sound_btn.custom_minimum_size = Vector2(76, 40)
-	sound_btn.add_theme_font_size_override("font_size", 13)
+	sound_btn.custom_minimum_size = Vector2(60, 34)
+	sound_btn.add_theme_font_size_override("font_size", 11)
 	sound_btn.add_theme_color_override("font_color", CREAM)
 	sound_btn.add_theme_stylebox_override("normal", _flat(Color(0.10, 0.07, 0.05, 0.8), Color(0.50, 0.38, 0.18), 1))
+	sound_btn.add_theme_stylebox_override("hover", _flat(Color(0.20, 0.14, 0.08, 0.95), Color(0.86, 0.68, 0.34), 1))
 	sound_btn.pressed.connect(_toggle_sound)
 	top_row.add_child(sound_btn)
 	var options_btn := Button.new()
 	options_btn.text = "Optionen"
-	options_btn.custom_minimum_size = Vector2(94, 40)
-	options_btn.add_theme_font_size_override("font_size", 13)
+	options_btn.custom_minimum_size = Vector2(72, 34)
+	options_btn.add_theme_font_size_override("font_size", 11)
 	options_btn.add_theme_color_override("font_color", CREAM)
 	options_btn.add_theme_stylebox_override("normal", _flat(Color(0.10, 0.07, 0.05, 0.8), Color(0.50, 0.38, 0.18), 1))
 	options_btn.add_theme_stylebox_override("hover", _flat(Color(0.20, 0.14, 0.08, 0.95), Color(0.86, 0.68, 0.34), 1))
@@ -546,13 +613,17 @@ func _build() -> void:
 		var names := ["Pause", "x1", "x2", "x3"]
 		var b := Button.new()
 		b.text = names[i]
-		b.custom_minimum_size = Vector2(66, 40)
-		b.add_theme_font_size_override("font_size", 15)
+		b.custom_minimum_size = Vector2(44, 34)
+		b.add_theme_font_size_override("font_size", 13)
+		b.add_theme_color_override("font_color", CREAM)
+		b.add_theme_stylebox_override("normal", _flat(Color(0.10, 0.07, 0.05, 0.8), Color(0.46, 0.35, 0.18), 1))
+		b.add_theme_stylebox_override("hover", _flat(Color(0.20, 0.14, 0.08, 0.95), Color(0.86, 0.68, 0.34), 1))
+		b.add_theme_stylebox_override("pressed", _flat(Color(0.28, 0.20, 0.10, 0.98), Color(0.96, 0.78, 0.38), 2))
 		b.pressed.connect(_set_speed.bind(i))
 		speed_buttons.append(b)
 		top_row.add_child(b)
 
-	# Inhalt: Karte + Log
+	# Inhalt: Die Karte ist die Hauptfläche; der Hof liegt als Seitenpanel daneben.
 	var row := HBoxContainer.new()
 	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	row.add_theme_constant_override("separation", 0)
@@ -570,55 +641,129 @@ func _build() -> void:
 	map_view = MapViewScript.new()
 	map_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	map_view.province_selected.connect(_on_province_selected)
+	map_view.province_activated.connect(_on_province_activated)
 	map_view.map_mode_changed.connect(_on_map_mode_changed)
 	map_wrap.add_child(map_view)
-	var map_tools := HBoxContainer.new()
-	map_tools.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	map_tools.offset_left = -162
-	map_tools.offset_top = 8
-	map_tools.offset_right = -8
-	map_tools.offset_bottom = 48
-	map_tools.add_theme_constant_override("separation", 6)
-	map_wrap.add_child(map_tools)
-	map_tools.add_child(_map_tool("−", func(): map_view.zoom_by(0.8)))
-	map_tools.add_child(_map_tool("+", func(): map_view.zoom_by(1.25)))
-	map_tools.add_child(_map_tool("1:1", func(): map_view.reset_view()))
 
-	var mode_bar := HBoxContainer.new()
-	mode_bar.custom_minimum_size = Vector2(0, 38)
-	mode_bar.add_theme_constant_override("separation", 5)
-	mode_bar.add_child(_label("Karte", 12, Color(0.46, 0.35, 0.20)))
+	# HUD-Plaketten und Werkzeuge schweben über der Karte; die Karte bleibt
+	# bis zum Rand bedienbar und muss nicht mehr in feste Leisten eingepasst werden.
+	var hud := Control.new()
+	hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	map_wrap.add_child(hud)
+	var map_header := PanelContainer.new()
+	map_header.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	map_header.offset_left = 12
+	map_header.offset_top = 12
+	map_header.offset_right = 296
+	map_header.offset_bottom = 78
+	map_header.add_theme_stylebox_override("panel", _flat(Color(0.045, 0.035, 0.022, 0.88), Color(0.68, 0.51, 0.24, 0.86), 1))
+	hud.add_child(map_header)
+	var mh_box := VBoxContainer.new()
+	mh_box.add_theme_constant_override("separation", 1)
+	map_header.add_child(mh_box)
+	map_header_title = _label("WELTKARTE · POLITIK", 15, CREAM)
+	map_header_title.clip_text = true
+	mh_box.add_child(map_header_title)
+	map_header_meta = _label("49 Grafschaften · 9 Königreiche · 3 Reiche", 10, Color(0.88, 0.80, 0.64))
+	map_header_meta.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	mh_box.add_child(map_header_meta)
+
+	var ticker := PanelContainer.new()
+	ticker.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	ticker.offset_left = -140
+	ticker.offset_top = 12
+	ticker.offset_right = 140
+	ticker.offset_bottom = 42
+	ticker.add_theme_stylebox_override("panel", _flat(Color(0.06, 0.045, 0.028, 0.84), Color(0.42, 0.32, 0.17, 0.72), 1))
+	hud.add_child(ticker)
+	log_label = _label("", 10, Color(0.92, 0.86, 0.72))
+	log_label.clip_text = true
+	log_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	ticker.add_child(log_label)
+
+	var map_tools := HBoxContainer.new()
+	map_tools.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	map_tools.offset_left = -282
+	map_tools.offset_top = 12
+	map_tools.offset_right = -12
+	map_tools.offset_bottom = 46
+	map_tools.add_theme_constant_override("separation", 4)
+	hud.add_child(map_tools)
+	var zoom_out := _map_tool("−", func(): map_view.zoom_by(0.8))
+	zoom_out.custom_minimum_size = Vector2(44, 34)
+	zoom_out.tooltip_text = "Herauszoomen (−)"
+	map_tools.add_child(zoom_out)
+	var zoom_in := _map_tool("+", func(): map_view.zoom_by(1.25))
+	zoom_in.custom_minimum_size = Vector2(44, 34)
+	zoom_in.tooltip_text = "Hineinzoomen (+)"
+	map_tools.add_child(zoom_in)
+	var reset_btn := _map_tool("⌂", func(): map_view.reset_view())
+	reset_btn.custom_minimum_size = Vector2(44, 34)
+	reset_btn.tooltip_text = "Kartenausschnitt zurücksetzen (0)"
+	map_tools.add_child(reset_btn)
+	legend_button = _map_tool("Legende", _toggle_map_legend)
+	legend_button.custom_minimum_size = Vector2(64, 34)
+	legend_button.toggle_mode = true
+	legend_button.add_theme_font_size_override("font_size", 10)
+	legend_button.tooltip_text = "Kartenlegende ein-/ausblenden (L)"
+	legend_button.add_theme_stylebox_override("pressed", _flat(Color(0.30, 0.22, 0.10, 0.98), Color(0.96, 0.78, 0.38), 2))
+	map_tools.add_child(legend_button)
+	side_toggle_btn = _map_tool("Hof", _toggle_side_panel)
+	side_toggle_btn.custom_minimum_size = Vector2(44, 34)
+	side_toggle_btn.toggle_mode = true
+	side_toggle_btn.button_pressed = true
+	side_toggle_btn.tooltip_text = "Hofpanel ein-/ausblenden (H)"
+	side_toggle_btn.add_theme_stylebox_override("pressed", _flat(Color(0.30, 0.22, 0.10, 0.98), Color(0.96, 0.78, 0.38), 2))
+	map_tools.add_child(side_toggle_btn)
+
+	var mode_bar := PanelContainer.new()
+	mode_bar.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	mode_bar.offset_left = -592
+	mode_bar.offset_top = -180
+	mode_bar.offset_right = -12
+	mode_bar.offset_bottom = -140
+	mode_bar.add_theme_stylebox_override("panel", _flat(Color(0.05, 0.038, 0.024, 0.90), Color(0.58, 0.44, 0.22, 0.84), 1))
+	hud.add_child(mode_bar)
+	var mode_row := HBoxContainer.new()
+	mode_row.add_theme_constant_override("separation", 4)
+	mode_bar.add_child(mode_row)
+	mode_row.add_child(_label("KARTE", 9, Color(0.92, 0.72, 0.35)))
+	var mode_index := 0
 	for mode in MapViewScript.MAP_MODES:
+		mode_index += 1
 		var mb := _map_tool(_map_mode_title(str(mode)), Callable(self, "_set_map_mode").bind(str(mode)))
-		mb.custom_minimum_size = Vector2(74, 34)
+		mb.custom_minimum_size = Vector2(66, 30)
 		mb.toggle_mode = true
-		mb.add_theme_font_size_override("font_size", 12)
+		mb.add_theme_font_size_override("font_size", 10)
+		mb.tooltip_text = "%d · %s — %s" % [mode_index, _map_mode_title(str(mode)), str(MapViewScript.MODE_HINTS.get(str(mode), ""))]
 		mb.add_theme_stylebox_override("pressed", _flat(Color(0.30, 0.22, 0.10, 0.98), Color(0.96, 0.78, 0.38), 2))
 		map_mode_buttons[str(mode)] = mb
-		mode_bar.add_child(mb)
+		mode_row.add_child(mb)
 	var chronicle_btn := _map_tool("Chronik", Callable(self, "_show_chronicle"))
-	chronicle_btn.custom_minimum_size = Vector2(78, 34)
-	chronicle_btn.add_theme_font_size_override("font_size", 12)
-	mode_bar.add_child(chronicle_btn)
-	left.add_child(mode_bar)
+	chronicle_btn.custom_minimum_size = Vector2(64, 30)
+	chronicle_btn.add_theme_font_size_override("font_size", 10)
+	mode_row.add_child(chronicle_btn)
+	mode_row.add_child(_map_tool("Forschung", Callable(self, "_show_infrastructure")))
+
+	minimap = WorldMiniMapScript.new()
+	minimap.host = map_view
+	minimap.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	minimap.offset_left = -212
+	minimap.offset_top = -138
+	minimap.offset_right = -12
+	minimap.offset_bottom = -12
+	map_wrap.add_child(minimap)
 	_sync_map_mode_buttons()
 
-	var log_panel := PanelContainer.new()
-	log_panel.custom_minimum_size = Vector2(0, 92)
-	log_panel.add_theme_stylebox_override("panel", _flat(Color(0.10, 0.08, 0.06), Color(0.35, 0.26, 0.13), 1))
-	left.add_child(log_panel)
-	log_label = _label("", 13, Color(0.88, 0.84, 0.74))
-	log_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	log_panel.add_child(log_label)
-
 	# Hofpanel
-	var side := PanelContainer.new()
-	side.custom_minimum_size = Vector2(430, 0)
-	side.add_theme_stylebox_override("panel", _card_style(12))
-	row.add_child(side)
+	side_panel = PanelContainer.new()
+	side_panel.custom_minimum_size = Vector2(380, 0)
+	side_panel.add_theme_stylebox_override("panel", _card_style(12))
+	row.add_child(side_panel)
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	side.add_child(scroll)
+	side_panel.add_child(scroll)
 	var side_box := VBoxContainer.new()
 	side_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	side_box.add_theme_constant_override("separation", 7)
@@ -666,6 +811,23 @@ func _build() -> void:
 	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	side_box.add_child(hint_label)
 
+	_build_infrastructure_layer()
+	research_label = _label("", 12, INK_SOFT)
+	research_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	infrastructure_body.add_child(research_label)
+	for innovation in ["surveying", "road_building"]:
+		var research_button := _button("", func(): _dispatch({"id": "research", "innovation": innovation}), "scroll")
+		research_button.custom_minimum_size.y = 48
+		research_buttons[innovation] = research_button
+		infrastructure_body.add_child(research_button)
+	road_buttons = VBoxContainer.new()
+	road_buttons.add_theme_constant_override("separation", 6)
+	infrastructure_body.add_child(road_buttons)
+	sandbox_button = _button("Als Sandbox fortsetzen", func(): _dispatch({"id": "continue_sandbox"}), "crown")
+	sandbox_button.visible = false
+	infrastructure_body.add_child(sandbox_button)
+	side_box.add_child(_button("Forschung & Verkehrswege", _show_infrastructure, "scroll"))
+
 	# Provinz-Kurzansicht mit Gelände-Token und Besitzerwappen.
 	province_side_panel = VBoxContainer.new()
 	province_side_panel.add_theme_constant_override("separation", 4)
@@ -697,6 +859,9 @@ func _build() -> void:
 	province_open.custom_minimum_size = Vector2(0, 36)
 	province_open.add_theme_font_size_override("font_size", 13)
 	province_side_panel.add_child(province_open)
+	# Die Auswahl steht direkt unter dem Hofkopf und nicht mehr am Ende des
+	# langen Rollbereichs. So bleibt sie beim Kartenklick sofort sichtbar.
+	side_box.move_child(province_side_panel, 1)
 
 	develop_btn = _button("Ausbauen  (50 Gold)", func(): _dispatch({"id": "develop"}), "gold")
 	recruit_btn = _button("Truppen werben  (30 Gold)", func(): _dispatch({"id": "recruit"}), "sword")
@@ -724,10 +889,14 @@ func _build() -> void:
 	side_box.add_child(force_btn)
 	court_btn = _button("Hof halten  (40 Gold)", func(): _dispatch({"id": "court"}), "crown")
 	side_box.add_child(court_btn)
+	side_box.add_child(_button("Hof & Reliquien", _show_court, "crown"))
+	side_box.add_child(_button("Glaube & Kirche", _show_faith, "crown"))
 	side_box.add_child(_button("Herrschaft", _show_rule, "crown"))
 	side_box.add_child(_button("Spiel speichern", func(): _dispatch({"id": "save"}), "scroll"))
 	side_box.add_child(_button("Spielstand laden", func(): _dispatch({"id": "load"}), "scroll"))
 	_build_rule_layer()
+	_build_court_layer()
+	_build_faith_layer()
 
 	# Ereignis-Overlay
 	event_layer = Control.new()
@@ -737,22 +906,24 @@ func _build() -> void:
 	add_child(event_layer)
 	var dim := ColorRect.new()
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	dim.color = Color(0, 0, 0, 0.66)
+	dim.color = Color(0.02, 0.04, 0.06, 0.16)
 	event_layer.add_child(dim)
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	event_layer.add_child(center)
 	var card := PanelContainer.new()
 	card.custom_minimum_size = Vector2(720, 0)
-	var event_card_style := _card_style(22)
-	event_card_style.content_margin_bottom = 38
+	var event_card_style := ModernInterfaceScript.surface(Color(0, 0, 0, 0), 20)
+	event_card_style.set_border_width_all(0)
+	event_card_style.content_margin_bottom = 18
 	card.add_theme_stylebox_override("panel", event_card_style)
 	center.add_child(card)
 	var card_box := VBoxContainer.new()
 	card_box.add_theme_constant_override("separation", 8)
 	card.add_child(card_box)
 	var event_art_frame := Control.new()
-	event_art_frame.custom_minimum_size = Vector2(660, 148)
+	event_art_frame.custom_minimum_size = Vector2(400, 100)
+	event_art_frame.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	event_art_frame.clip_contents = true
 	card_box.add_child(event_art_frame)
 	event_art_fallback = EventArtFallbackScript.new()
@@ -763,10 +934,20 @@ func _build() -> void:
 	event_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	event_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	event_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var rounded_image := ShaderMaterial.new()
+	rounded_image.shader = preload("res://shaders/event_portrait.gdshader")
+	event_art.material = rounded_image
+	event_art.resized.connect(func(): rounded_image.set_shader_parameter("rect_size", event_art.size))
 	event_art_frame.add_child(event_art)
 	event_title = _label("", 23, INK)
+	event_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	event_title.add_theme_constant_override("outline_size", 7)
+	event_title.add_theme_color_override("font_outline_color", Color(0.015, 0.035, 0.05, 0.95))
 	card_box.add_child(event_title)
 	event_text = _label("", 16, INK_SOFT)
+	event_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	event_text.add_theme_constant_override("outline_size", 5)
+	event_text.add_theme_color_override("font_outline_color", Color(0.015, 0.035, 0.05, 0.95))
 	event_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	card_box.add_child(event_text)
 	event_buttons = VBoxContainer.new()
@@ -841,7 +1022,7 @@ func _build() -> void:
 	title_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	title_menu.add_child(title_status)
 
-	var version := _label("v1.3 · Bronzezeit · 2000 v. Chr.", 12, Color(0.72, 0.60, 0.42))
+	var version := _label("Banger Queens · 2000 v. Chr. – 2200 n. Chr.", 12, Color(0.72, 0.60, 0.42))
 	version.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	version.offset_left = 24
 	version.offset_top = -32
@@ -1170,10 +1351,13 @@ func _refresh_province_side() -> void:
 	province_side_icon.texture = TOKENS.get("terrain_%s" % str(p.get("terrain", "plains")))
 	province_side_crest.texture = _crest_for_house(int(p["owner"]))
 	province_side_title.text = str(p["name"])
-	province_side_meta.text = "%s · %s\nAufgebot %d · Entwicklung %d/10" % [
+	var side_meta := "%s · %s\nAufgebot %d · Entwicklung %d/10" % [
 		str(p.get("terrain_name", "Ebenen")), str(game.houses[int(p["owner"])]["name"]),
 		int(p.get("levy", 0)), int(p.get("dev", 1)),
 	]
+	if int(p.get("blockade", 0)) > 0:
+		side_meta += "\nBlockade: %d Monate" % int(p["blockade"])
+	province_side_meta.text = side_meta
 
 func _crest_for_house(index: int) -> Texture2D:
 	if game == null or index < 0 or index >= game.houses.size():
@@ -1221,6 +1405,14 @@ func _refresh_province_page() -> void:
 		int(p.get("dev", 1)), int(p.get("levy", 0)), "ja" if bool(p.get("capital", false)) else "nein"
 	], 12, INK_SOFT))
 	province_info.add_child(_label("Besitzer: %s · Haltung %+d" % [str(owner["name"]), int(game.opinion[owner_i])], 12, INK_SOFT))
+	if int(p.get("blockade", 0)) > 0:
+		var blockader: int = int(p.get("blockade_owner", -1))
+		var blockader_name := "unbekannt"
+		if blockader >= 0 and blockader < game.houses.size():
+			blockader_name = str(game.houses[blockader]["name"])
+		province_info.add_child(_label("Blockade durch %s · noch %d Monate" % [blockader_name, int(p["blockade"])], 12, INK_SOFT))
+	if is_coastal_province(selected):
+		province_info.add_child(_label("Küstenprovinz · Flotten können hier anlegen und blockieren", 11, INK_SOFT))
 	for c in province_buildings.get_children():
 		province_buildings.remove_child(c)
 		c.queue_free()
@@ -1241,6 +1433,9 @@ func _refresh_province_page() -> void:
 		province_troops.remove_child(c)
 		c.queue_free()
 	province_troops.add_child(_army_tokens(int(p.get("levy", 0))))
+	var station_fleet := _fleet_at(selected)
+	if not station_fleet.is_empty():
+		province_troops.add_child(_fleet_tokens(station_fleet))
 	var neighbours: Array = []
 	for nid in game.neighbours(selected):
 		var q: Dictionary = game.province(str(nid))
@@ -1383,6 +1578,23 @@ func _build_options_layer() -> void:
 	var bild_hint := _label("Auflösung und Vollbild gelten sofort; die Oberfläche bleibt bei 1280 × 720 lesbar.", 11, INK_SOFT)
 	bild_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	bild.add_child(bild_hint)
+	opt_theme = _drop_option(["Dunkler Atlas", "Hoher Kontrast", "Heller Atlas"])
+	opt_theme.select(int(settings["ui_theme"]))
+	opt_theme.item_selected.connect(func(index: int):
+		if has_meta("modern_interface"):
+			get_meta("modern_interface").set_appearance(index)
+			_save_settings()
+	)
+	bild.add_child(_option_row("Lesbarkeitsthema", opt_theme))
+	opt_text_scale = _drop_option(["100 %", "125 %", "150 %", "200 %"])
+	var text_sizes := [1.0, 1.25, 1.5, 2.0]
+	opt_text_scale.select(maxi(0, text_sizes.find(float(settings["text_scale"]))))
+	opt_text_scale.item_selected.connect(func(index: int):
+		if has_meta("modern_interface"):
+			get_meta("modern_interface").set_text_scale(float(text_sizes[index]))
+			_save_settings()
+	)
+	bild.add_child(_option_row("Textgröße", opt_text_scale))
 
 	var ton: VBoxContainer = options_sections["ton"]
 	opt_muted = _check_option("Ton aktiv")
@@ -2116,6 +2328,10 @@ func _show_start() -> void:
 			b.add_theme_constant_override("icon_max_width", 26)
 		start_box.add_child(b)
 	start_layer.visible = true
+	if court_layer != null:
+		court_layer.visible = false
+	if faith_layer != null:
+		faith_layer.visible = false
 	if newgame_layer != null:
 		newgame_layer.visible = false
 	if title_status != null:
@@ -2174,6 +2390,10 @@ func _create_begin() -> void:
 	pick_layer.visible = false
 	tree_layer.visible = false
 	rule_layer.visible = false
+	if court_layer != null:
+		court_layer.visible = false
+	if faith_layer != null:
+		faith_layer.visible = false
 	if custom_layer != null:
 		custom_layer.visible = false
 	refresh()
@@ -2192,6 +2412,10 @@ func _start(index: int) -> void:
 	pick_layer.visible = false
 	tree_layer.visible = false
 	rule_layer.visible = false
+	if court_layer != null:
+		court_layer.visible = false
+	if faith_layer != null:
+		faith_layer.visible = false
 	if custom_layer != null:
 		custom_layer.visible = false
 	refresh()
@@ -2222,11 +2446,64 @@ func _sync_map_mode_buttons() -> void:
 	for mode in map_mode_buttons.keys():
 		var b: Button = map_mode_buttons[mode]
 		b.button_pressed = str(mode) == map_view.map_mode
+	_refresh_map_header()
 
 func _on_province_selected(id: String) -> void:
 	kernel.select_province(id)
 	selected = kernel.selection
+	if map_view != null and map_view.selected != selected:
+		map_view.select(selected)
 	refresh()
+
+func _on_province_activated(id: String) -> void:
+	if id != "" and selected == id:
+		_show_province()
+
+func _toggle_map_legend() -> void:
+	if map_view == null:
+		return
+	map_view.legend_visible = not map_view.legend_visible
+	map_view.queue_redraw()
+	if legend_button != null:
+		legend_button.set_pressed_no_signal(map_view.legend_visible)
+
+func _toggle_side_panel() -> void:
+	if side_panel == null:
+		return
+	_side_hidden = not _side_hidden
+	side_panel.visible = not _side_hidden
+	if side_toggle_btn != null:
+		side_toggle_btn.set_pressed_no_signal(not _side_hidden)
+
+func _refresh_map_header() -> void:
+	if map_header_title == null or map_view == null:
+		return
+	map_header_title.text = "WELTKARTE · %s" % _map_mode_title(str(map_view.map_mode)).to_upper()
+	if game == null:
+		return
+	if top_world_label != null:
+		top_world_label.text = "BANGER QUEENS · %s" % ("%d v. Chr." % -game.year if game.year < 0 else "%d n. Chr." % game.year)
+	if selected != "":
+		var p: Dictionary = game.province(selected)
+		if not p.is_empty():
+			map_header_meta.text = "%s · %s\n%s · Entw. %d · Aufgebot %d" % [
+				str(p["name"]), str(game.houses[int(p["owner"])]["name"]),
+				str(p.get("terrain_name", "Ebenen")), int(p.get("dev", 1)), int(p.get("levy", 0)),
+			]
+			return
+	var h: Dictionary = game.house()
+	map_header_meta.text = "%d Grafschaften · %d Königreiche · %d Reiche\nHaus %s · %s" % [
+		game.provinces.size(), _count_distinct("kingdom"), _count_distinct("empire"),
+		str(h.get("name", "Haus")), str(game.date_text()),
+	]
+
+func _count_distinct(key: String) -> int:
+	var seen := {}
+	if game == null:
+		return 0
+	for p in game.provinces:
+		seen[str(p.get(key, ""))] = true
+	return seen.size()
 
 func _set_speed(value: int) -> void:
 	_dispatch({"id": "set_speed", "value": value})
@@ -2365,6 +2642,10 @@ func _load() -> bool:
 	event_layer.visible = false
 	tree_layer.visible = false
 	rule_layer.visible = false
+	if court_layer != null:
+		court_layer.visible = false
+	if faith_layer != null:
+		faith_layer.visible = false
 	if custom_layer != null:
 		custom_layer.visible = false
 	start_layer.visible = false
@@ -2401,6 +2682,7 @@ func refresh() -> void:
 	date_label.text = str(vm["date"])
 	gold_label.text = str(vm["gold"])
 	prestige_label.text = str(vm["prestige"])
+	renown_label.text = str(vm["renown"])
 	for i in speed_buttons.size():
 		var b: Button = speed_buttons[i]
 		b.modulate = Color(1, 1, 1) if int(vm["speed"]) == i else Color(0.60, 0.60, 0.66)
@@ -2417,6 +2699,11 @@ func refresh() -> void:
 	info_label.text = str(vm["info"])
 	family_label.text = str(vm["family"])
 	hint_label.text = str(vm["hint"])
+	if top_crest != null:
+		top_crest.texture = crest_rect.texture
+	if top_realm_label != null:
+		top_realm_label.text = str(vm["title"])
+	_refresh_map_header()
 
 	var buttons: Dictionary = vm["buttons"]
 	develop_btn.disabled = not bool(buttons["develop"])
@@ -2433,18 +2720,130 @@ func refresh() -> void:
 	ransom_btn.disabled = not bool(buttons["ransom"])
 	force_btn.disabled = not bool(buttons["force"])
 
-	log_label.text = str(vm["log"])
+	var log_lines: PackedStringArray = str(vm["log"]).split("\n")
+	log_label.text = str(log_lines[log_lines.size() - 1]) if not log_lines.is_empty() else ""
+	log_label.tooltip_text = str(vm["log"])
 	if bool(vm["has_event"]) and not event_layer.visible:
 		_show_event()
 	if tree_layer.visible:
 		_refresh_tree()
 	if rule_layer != null and rule_layer.visible:
 		_refresh_rule()
+	if court_layer != null and court_layer.visible:
+		_refresh_court()
+	if faith_layer != null and faith_layer.visible:
+		_refresh_faith()
 	over_layer.visible = bool(vm["game_over"])
 	_refresh_province_side()
 	_refresh_province_page()
+	_refresh_infrastructure()
+	if has_meta("modern_interface"):
+		get_meta("modern_interface").refresh_summary()
 	if chronicle_layer != null and chronicle_layer.visible:
 		_fill_chronicle()
+
+func _build_infrastructure_layer() -> void:
+	infrastructure_layer = Control.new()
+	infrastructure_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	infrastructure_layer.mouse_filter = Control.MOUSE_FILTER_STOP
+	infrastructure_layer.visible = false
+	add_child(infrastructure_layer)
+	var dim := ColorRect.new()
+	dim.color = Color(0.02, 0.025, 0.03, 0.55)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	infrastructure_layer.add_child(dim)
+	var panel := PanelContainer.new()
+	panel.anchor_left = 0.55
+	panel.anchor_top = 0.03
+	panel.anchor_right = 0.99
+	panel.anchor_bottom = 0.97
+	panel.add_theme_stylebox_override("panel", _card_style(16))
+	infrastructure_layer.add_child(panel)
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 12)
+	panel.add_child(body)
+	var header := HBoxContainer.new()
+	body.add_child(header)
+	var title := _label("Forschung & Verkehrswege", 21, INK)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	header.add_child(title)
+	var close := _button("Schließen", _hide_infrastructure, "")
+	close.custom_minimum_size.y = 48
+	header.add_child(close)
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	body.add_child(scroll)
+	infrastructure_body = VBoxContainer.new()
+	infrastructure_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	infrastructure_body.add_theme_constant_override("separation", 12)
+	scroll.add_child(infrastructure_body)
+
+func _show_infrastructure() -> void:
+	if game == null:
+		return
+	kernel.push_modal("infrastructure")
+	_refresh_infrastructure()
+	move_child(infrastructure_layer, get_child_count() - 1)
+	infrastructure_layer.visible = true
+
+func _hide_infrastructure() -> void:
+	kernel.pop_modal("infrastructure")
+	infrastructure_layer.visible = false
+
+func _refresh_infrastructure() -> void:
+	var research: Dictionary = game.house().research
+	var active := str(research.active)
+	if active == "":
+		research_label.text = "Wissen entwickeln und Verkehrswege auf der Karte bauen. Straßenhandel: +%d Gold/Jahr." % game.road_income()
+	else:
+		var info: Dictionary = GameScript.InfrastructureScript.INNOVATIONS[active]
+		research_label.text = "%s · noch %d Monate · %d von %d Monaten abgeschlossen" % [info.name, research.months, int(info.months) - int(research.months), info.months]
+	if game.calendar_index() >= 50399 and not game.campaign_sandbox:
+		research_label.text = "Die Kampagnenzeit bis 2200 ist erreicht. Mit ‚Als Sandbox fortsetzen‘ läuft dein Spielstand weiter."
+	for choice in game.research_choices():
+		var button: Button = research_buttons[choice.id]
+		button.text = "%s · %d Gold · %d Monate" % [choice.name, choice.gold, choice.months]
+		if research.known.has(choice.id):
+			button.text = str(choice.name) + " · Erforscht"
+		button.disabled = str(choice.reason) != ""
+		button.tooltip_text = str(choice.reason)
+	for child in road_buttons.get_children():
+		road_buttons.remove_child(child)
+		child.queue_free()
+	var province: Dictionary = game.province(selected)
+	if province.is_empty():
+		var select_hint := _label("Wähle auf der Karte eine eigene Provinz. Hier erscheinen anschließend baubare Verbindungen zu deinen Nachbarn.", 14, INK_SOFT)
+		select_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		road_buttons.add_child(select_hint)
+	if not province.is_empty() and int(province.owner) == game.player:
+		for neighbor_id in game.neighbours(selected):
+			var neighbor: Dictionary = game.province(str(neighbor_id))
+			if neighbor.is_empty() or int(neighbor.owner) != game.player:
+				continue
+			var target := str(neighbor_id)
+			var reason: String = game.road_blocker(selected, target)
+			var button := _button("Straße nach %s · 30 Gold" % neighbor.name, func(): _dispatch({"id": "road", "to": target}), "gold")
+			button.custom_minimum_size.y = 48
+			button.set_meta("to", target)
+			button.disabled = reason != ""
+			button.tooltip_text = reason if reason != "" else "Bauzeit: 3 Monate. Danach +2 Gold jährlich bei gemeinsamem Besitz."
+			road_buttons.add_child(button)
+			if reason != "":
+				var explanation := _label(reason, 12, INK_SOFT)
+				explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				road_buttons.add_child(explanation)
+	for road in game.road_segments():
+		if int(road.builder) != game.player:
+			continue
+		var state: String = "Fertig" if road.state == "complete" else "Bau: noch %d Monate" % road.months
+		if road.state == "building" and (int(game.province(str(road.from)).owner) != game.player or int(game.province(str(road.to)).owner) != game.player):
+			state = "Bau pausiert · Besitz verloren"
+		var label := _label("%s – %s\n%s" % [game.province(str(road.from)).name, game.province(str(road.to)).name, state], 12, INK_SOFT)
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		road_buttons.add_child(label)
+	sandbox_button.visible = game.calendar_index() >= 50399 and not game.campaign_sandbox
 
 func _build_rule_layer() -> void:
 	rule_layer = Control.new()
@@ -2486,6 +2885,505 @@ func _build_rule_layer() -> void:
 	rule_body.add_theme_constant_override("separation", 6)
 	scroll.add_child(rule_body)
 
+func _build_court_layer() -> void:
+	court_layer = Control.new()
+	court_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	court_layer.visible = false
+	court_layer.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(court_layer)
+	var art := TextureRect.new()
+	art.texture = TEX_COURT
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	court_layer.add_child(art)
+	var shade := ColorRect.new()
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0.03, 0.02, 0.015, 0.44)
+	shade.mouse_filter = Control.MOUSE_FILTER_STOP
+	court_layer.add_child(shade)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	court_layer.add_child(center)
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(900, 0)
+	var card_style: StyleBoxFlat = _card_style(16)
+	card_style.content_margin_top = 22
+	card.add_theme_stylebox_override("panel", card_style)
+	center.add_child(card)
+	var box := VBoxContainer.new()
+	box.custom_minimum_size = Vector2(850, 0)
+	box.add_theme_constant_override("separation", 8)
+	card.add_child(box)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	box.add_child(head)
+	court_title = _label("Hof & Reliquien", 24, INK)
+	court_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(court_title)
+	var close := _button("Schließen", _hide_court, "")
+	close.custom_minimum_size = Vector2(120, 38)
+	head.add_child(close)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 550)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	box.add_child(scroll)
+	court_body = VBoxContainer.new()
+	court_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	court_body.add_theme_constant_override("separation", 6)
+	scroll.add_child(court_body)
+
+func _show_court() -> void:
+	if game == null:
+		return
+	kernel.push_modal("hof")
+	court_layer.visible = true
+	_refresh_court()
+	_play_open()
+
+func _hide_court() -> void:
+	kernel.pop_modal("hof")
+	if court_layer != null:
+		court_layer.visible = false
+	if faith_layer != null:
+		faith_layer.visible = false
+
+func _clear_court_body() -> void:
+	court_hall_preview = null
+	court_hall_stage_label = null
+	court_hall_stats_label = null
+	court_hall_pips = null
+	court_expectation_label = null
+	court_expectation_track = null
+	court_amenity_pips = []
+	court_amenity_buttons = {}
+	for child in court_body.get_children():
+		court_body.remove_child(child)
+		child.queue_free()
+
+func _refresh_court() -> void:
+	if game == null or court_body == null:
+		return
+	_clear_court_body()
+	var vm: Dictionary = ViewModelBuilder.court(game)
+	court_title.text = str(vm["title"])
+	court_body.add_child(_label(str(vm["summary"]), 14, INK_SOFT))
+	court_body.add_child(_label(str(vm["benefit"]), 12, INK_SOFT))
+	court_body.add_child(HSeparator.new())
+	court_body.add_child(_label("Reliquien", 18, INK))
+	court_body.add_child(_label("Jede Reliquie ist einzigartig. Schmieden kostet Gold und Prestige; die Wirkung bleibt dauerhaft.", 11, INK_SOFT))
+	for relic in vm["relics"]:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		var icon := TextureRect.new()
+		icon.custom_minimum_size = Vector2(58, 58)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture = TOKENS.get(str(relic["icon"]))
+		icon.tooltip_text = "Reliquien-Token aus der Blender-Pipeline"
+		row.add_child(icon)
+		var text := _label("%s\n%s" % [str(relic["name"]), str(relic["effect"])], 12, INK_SOFT)
+		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		row.add_child(text)
+		var forge := _button(str(relic["button_text"]), Callable(self, "_forge_relic").bind(str(relic["id"])), "")
+		forge.custom_minimum_size = Vector2(190, 40)
+		forge.disabled = bool(relic["disabled"])
+		row.add_child(forge)
+		court_body.add_child(row)
+	court_body.add_child(HSeparator.new())
+	var hall_row := HBoxContainer.new()
+	hall_row.name = "HofhallenVorschau"
+	hall_row.add_theme_constant_override("separation", 14)
+	var frame_style := _flat(Color(0.08, 0.06, 0.04, 0.96), Color(0.55, 0.40, 0.20), 2)
+	frame_style.content_margin_left = 4
+	frame_style.content_margin_right = 4
+	frame_style.content_margin_top = 4
+	frame_style.content_margin_bottom = 4
+	var frame := PanelContainer.new()
+	frame.custom_minimum_size = Vector2(390, 240)
+	frame.add_theme_stylebox_override("panel", frame_style)
+	hall_row.add_child(frame)
+	var preview_stack := Control.new()
+	preview_stack.custom_minimum_size = Vector2(382, 232)
+	preview_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.add_child(preview_stack)
+	court_hall_preview = TextureRect.new()
+	court_hall_preview.texture = TEX_COURT
+	court_hall_preview.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	court_hall_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	court_hall_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	court_hall_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	preview_stack.add_child(court_hall_preview)
+	var overlay := PanelContainer.new()
+	overlay.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	overlay.offset_left = 6
+	overlay.offset_top = -70
+	overlay.offset_right = -6
+	overlay.offset_bottom = -6
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var overlay_style := _flat(Color(0.03, 0.02, 0.012, 0.86), Color(0.62, 0.46, 0.24, 0.9), 1)
+	overlay_style.content_margin_left = 6
+	overlay_style.content_margin_right = 6
+	overlay_style.content_margin_top = 4
+	overlay_style.content_margin_bottom = 4
+	overlay.add_theme_stylebox_override("panel", overlay_style)
+	preview_stack.add_child(overlay)
+	var overlay_box := VBoxContainer.new()
+	overlay_box.add_theme_constant_override("separation", 2)
+	overlay.add_child(overlay_box)
+	court_expectation_label = _label(str(vm["expectation_text"]), 10, Color(1.0, 0.89, 0.63))
+	overlay_box.add_child(court_expectation_label)
+	court_expectation_track = Control.new()
+	court_expectation_track.custom_minimum_size = Vector2(0, 7)
+	court_expectation_track.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay_box.add_child(court_expectation_track)
+	var track_bg := ColorRect.new()
+	track_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	track_bg.color = Color(0.16, 0.12, 0.07, 0.95)
+	track_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	court_expectation_track.add_child(track_bg)
+	var corridor := ColorRect.new()
+	corridor.anchor_left = clampf(float(int(vm["expected"]) - 5) / 100.0, 0.0, 1.0)
+	corridor.anchor_right = clampf(float(int(vm["expected"]) + 5) / 100.0, 0.0, 1.0)
+	corridor.anchor_bottom = 1.0
+	corridor.offset_top = 1
+	corridor.offset_bottom = -1
+	corridor.color = Color(0.78, 0.58, 0.22, 0.28)
+	corridor.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	court_expectation_track.add_child(corridor)
+	var fill := ColorRect.new()
+	fill.anchor_right = clampf(float(int(vm["grandeur"])) / 100.0, 0.0, 1.0)
+	fill.anchor_bottom = 1.0
+	fill.offset_top = 1
+	fill.offset_bottom = -1
+	fill.color = Color(0.82, 0.61, 0.23, 0.96)
+	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	court_expectation_track.add_child(fill)
+	var target_marker := ColorRect.new()
+	target_marker.anchor_left = clampf(float(int(vm["expected"])) / 100.0, 0.0, 1.0)
+	target_marker.anchor_right = target_marker.anchor_left
+	target_marker.anchor_bottom = 1.0
+	target_marker.offset_left = -1
+	target_marker.offset_right = 1
+	target_marker.color = Color(1.0, 0.88, 0.52)
+	target_marker.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	court_expectation_track.add_child(target_marker)
+	var amenity_pips_row := HBoxContainer.new()
+	amenity_pips_row.add_theme_constant_override("separation", 8)
+	overlay_box.add_child(amenity_pips_row)
+	for amenity in vm["amenities"]:
+		var group := VBoxContainer.new()
+		group.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		group.add_theme_constant_override("separation", 1)
+		amenity_pips_row.add_child(group)
+		group.add_child(_label("%s %s" % [str(amenity["name"]), str(amenity["level_text"])], 9, Color(1.0, 0.92, 0.74)))
+		var pips := HBoxContainer.new()
+		pips.add_theme_constant_override("separation", 2)
+		for i in int(amenity["max"]):
+			var pip := PanelContainer.new()
+			pip.custom_minimum_size = Vector2(22, 4)
+			var pip_style := _flat(Color(0.84, 0.64, 0.24, 0.96) if i < int(amenity["level"]) else Color(0.34, 0.25, 0.14, 0.8), Color(0.16, 0.11, 0.06, 0.8), 1)
+			pip_style.content_margin_left = 0
+			pip_style.content_margin_right = 0
+			pip_style.content_margin_top = 0
+			pip_style.content_margin_bottom = 0
+			pip.add_theme_stylebox_override("panel", pip_style)
+			pips.add_child(pip)
+		group.add_child(pips)
+		court_amenity_pips.append(pips)
+	var hall_info := VBoxContainer.new()
+	hall_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hall_info.add_theme_constant_override("separation", 4)
+	hall_row.add_child(hall_info)
+	court_hall_stage_label = _label("Hofhalle · Stufe %d/%d" % [int(vm["hall"]), int(vm["hall_max"])], 19, INK)
+	hall_info.add_child(court_hall_stage_label)
+	court_hall_stats_label = _label("Hofpracht %d/100 · Reliquien %d/%d" % [
+		int(vm["grandeur"]), int(vm["relics_owned"]), int(vm["relics_total"])
+	], 12, INK_SOFT)
+	hall_info.add_child(court_hall_stats_label)
+	court_hall_pips = HBoxContainer.new()
+	court_hall_pips.add_theme_constant_override("separation", 4)
+	for i in int(vm["hall_max"]):
+		var pip := PanelContainer.new()
+		pip.custom_minimum_size = Vector2(54, 8)
+		var pip_style := _flat(Color(0.78, 0.58, 0.22, 0.96) if i < int(vm["hall"]) else Color(0.48, 0.36, 0.20, 0.34), Color(0.30, 0.20, 0.10, 0.75), 1)
+		pip_style.content_margin_left = 0
+		pip_style.content_margin_right = 0
+		pip_style.content_margin_top = 0
+		pip_style.content_margin_bottom = 0
+		pip.add_theme_stylebox_override("panel", pip_style)
+		court_hall_pips.add_child(pip)
+	hall_info.add_child(court_hall_pips)
+	hall_info.add_child(_label("Hofausstattung · %d G/Jahr Unterhalt" % int(vm["amenity_upkeep"]), 10, INK_SOFT))
+	for amenity in vm["amenities"]:
+		var amenity_row := HBoxContainer.new()
+		amenity_row.add_theme_constant_override("separation", 6)
+		var amenity_name := _label("%s %s" % [str(amenity["name"]), str(amenity["level_text"])], 11, INK)
+		amenity_name.custom_minimum_size = Vector2(92, 0)
+		amenity_row.add_child(amenity_name)
+		var amenity_effect := _label(str(amenity["effect"]), 9, INK_SOFT)
+		amenity_effect.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		amenity_effect.tooltip_text = "%s · Unterhalt %d G/Jahr" % [str(amenity["effect"]), int(amenity["upkeep"])]
+		amenity_row.add_child(amenity_effect)
+		var amenity_button := _button(str(amenity["button_text"]), Callable(self, "_upgrade_court_amenity").bind(str(amenity["id"])), "")
+		amenity_button.custom_minimum_size = Vector2(118, 27)
+		amenity_button.disabled = not bool(amenity["can_upgrade"])
+		amenity_row.add_child(amenity_button)
+		court_amenity_buttons[str(amenity["id"])] = amenity_button
+		hall_info.add_child(amenity_row)
+	var spacer := Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	hall_info.add_child(spacer)
+	var hall_button := _button(str(vm["hall_button"]), _upgrade_court_hall, "")
+	hall_button.custom_minimum_size = Vector2(0, 36)
+	hall_button.disabled = bool(vm["hall_maxed"]) or not bool(vm["can_upgrade_hall"])
+	hall_info.add_child(hall_button)
+	court_body.add_child(hall_row)
+
+func _forge_relic(relic_id: String) -> void:
+	_dispatch({"id": "forge_relic", "relic": relic_id})
+
+func _upgrade_court_hall() -> void:
+	_dispatch({"id": "upgrade_court_hall"})
+
+func _upgrade_court_amenity(amenity_id: String) -> void:
+	_dispatch({"id": "upgrade_court_amenity", "amenity": amenity_id})
+
+func _build_faith_layer() -> void:
+	faith_layer = Control.new()
+	faith_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	faith_layer.visible = false
+	faith_layer.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(faith_layer)
+	var art := TextureRect.new()
+	art.texture = TEX_FAITH
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	faith_layer.add_child(art)
+	var shade := ColorRect.new()
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0.02, 0.03, 0.04, 0.58)
+	shade.mouse_filter = Control.MOUSE_FILTER_STOP
+	faith_layer.add_child(shade)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	faith_layer.add_child(center)
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(900, 0)
+	card.add_theme_stylebox_override("panel", _card_style(16))
+	center.add_child(card)
+	var box := VBoxContainer.new()
+	box.custom_minimum_size = Vector2(850, 0)
+	box.add_theme_constant_override("separation", 8)
+	card.add_child(box)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	box.add_child(head)
+	faith_title = _label("Glaube & Kirche", 24, INK)
+	faith_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(faith_title)
+	var close := _button("Schließen", _hide_faith, "")
+	close.custom_minimum_size = Vector2(120, 38)
+	head.add_child(close)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 540)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	box.add_child(scroll)
+	faith_body = VBoxContainer.new()
+	faith_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	faith_body.add_theme_constant_override("separation", 6)
+	scroll.add_child(faith_body)
+
+func _show_faith() -> void:
+	if game == null:
+		return
+	kernel.push_modal("glaube")
+	faith_layer.visible = true
+	_refresh_faith()
+	_play_open()
+
+func _hide_faith() -> void:
+	kernel.pop_modal("glaube")
+	if faith_layer != null:
+		faith_layer.visible = false
+
+func _clear_faith_body() -> void:
+	faith_heresy_icon = null
+	faith_reform_icon = null
+	faith_war_marker = null
+	faith_war_marker_icon = null
+	faith_war_marker_label = null
+	for child in faith_body.get_children():
+		faith_body.remove_child(child)
+		child.queue_free()
+
+func _refresh_faith() -> void:
+	if game == null or faith_body == null:
+		return
+	_clear_faith_body()
+	var vm: Dictionary = ViewModelBuilder.faith(game)
+	faith_title.text = str(vm["title"])
+	faith_body.add_child(_label(str(vm["summary"]), 14, INK_SOFT))
+	faith_body.add_child(_label(str(vm["benefit"]), 12, INK_SOFT))
+	faith_body.add_child(HSeparator.new())
+	var current: Dictionary = vm["confession"]
+	var current_row := HBoxContainer.new()
+	current_row.add_theme_constant_override("separation", 10)
+	var current_icon := TextureRect.new()
+	current_icon.custom_minimum_size = Vector2(64, 64)
+	current_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	current_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	current_icon.texture = TOKENS.get(str(current.get("icon", "")))
+	current_row.add_child(current_icon)
+	var current_text := _label("%s · %s\n%s" % [str(current.get("name", "—")), str(current.get("doctrine", "")), str(current.get("effect", ""))], 13, INK_SOFT)
+	current_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	current_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	current_row.add_child(current_text)
+	faith_body.add_child(current_row)
+	var pilgrimage := _button("Wallfahrt · %d Gold · +%d Frömmigkeit" % [int(vm["pilgrimage_cost"]), int(vm["pilgrimage_piety"])], _pilgrimage, "")
+	pilgrimage.custom_minimum_size = Vector2(0, 42)
+	pilgrimage.disabled = not bool(vm["can_pilgrimage"])
+	faith_body.add_child(pilgrimage)
+	faith_body.add_child(HSeparator.new())
+	var heresy_row := HBoxContainer.new()
+	heresy_row.add_theme_constant_override("separation", 10)
+	faith_heresy_icon = TextureRect.new()
+	faith_heresy_icon.custom_minimum_size = Vector2(64, 64)
+	faith_heresy_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	faith_heresy_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	faith_heresy_icon.texture = TOKENS.get(str(vm["heresy_icon"]))
+	heresy_row.add_child(faith_heresy_icon)
+	var heresy_text := _label("Ketzerei · %d/100\nJährliche Veränderung %+d. Ab 40 Ketzerei sinkt die Legitimität, ab 30 die Vasallenmeinung." % [int(vm["heresy"]), int(vm["heresy_growth"])], 12, INK_SOFT)
+	heresy_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	heresy_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	heresy_row.add_child(heresy_text)
+	faith_body.add_child(heresy_row)
+	var suppress := _button(str(vm["suppress_text"]), _suppress_heresy, "")
+	suppress.custom_minimum_size = Vector2(0, 38)
+	suppress.disabled = not bool(vm["can_suppress"])
+	faith_body.add_child(suppress)
+	faith_body.add_child(HSeparator.new())
+	var reform_row := HBoxContainer.new()
+	reform_row.add_theme_constant_override("separation", 10)
+	faith_reform_icon = TextureRect.new()
+	faith_reform_icon.custom_minimum_size = Vector2(60, 60)
+	faith_reform_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	faith_reform_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	faith_reform_icon.texture = TOKENS.get(str(vm["reform_icon"]))
+	reform_row.add_child(faith_reform_icon)
+	var reform_text := _label("Reformbewegung · Stufe %d/%d\nJede Stufe gibt +%d Kirchenmacht und senkt den jährlichen Ketzerei-Zuwachs um %d." % [int(vm["reform"]), int(vm["reform_max"]), game.FAITH_REFORM_POWER, game.FAITH_REFORM_HERESY_DRIFT], 12, INK_SOFT)
+	reform_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	reform_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	reform_row.add_child(reform_text)
+	faith_body.add_child(reform_row)
+	var reform := _button(str(vm["reform_text"]), _reform_faith, "")
+	reform.custom_minimum_size = Vector2(0, 38)
+	reform.disabled = not bool(vm["can_reform"])
+	faith_body.add_child(reform)
+	faith_body.add_child(HSeparator.new())
+	faith_body.add_child(_label("Heiliger Krieg", 18, INK))
+	if int(vm["holy_war_target"]) >= 0:
+		faith_war_marker = PanelContainer.new()
+		faith_war_marker.custom_minimum_size = Vector2(0, 68)
+		faith_war_marker.add_theme_stylebox_override("panel", _card_style(8))
+		var marker_row := HBoxContainer.new()
+		marker_row.add_theme_constant_override("separation", 10)
+		faith_war_marker_icon = TextureRect.new()
+		faith_war_marker_icon.custom_minimum_size = Vector2(60, 60)
+		faith_war_marker_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		faith_war_marker_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		faith_war_marker_icon.texture = TOKENS.get(str(vm["holy_war_icon"]))
+		marker_row.add_child(faith_war_marker_icon)
+		faith_war_marker_label = _label("Kriegsziel: %s · %s\nHauptstadt %s · noch %d Monate · Anspruch %d Monate\nSieg: +%d Prestige, +%d Legitimität." % [str(vm["holy_war_target_name"]), str(vm["holy_war_confession"]), str(vm["holy_war_capital"]), int(vm["holy_war_months"]), int(vm["holy_war_claim_months"]), game.FAITH_HOLY_WAR_PRESTIGE, game.FAITH_HOLY_WAR_LEGITIMACY], 12, INK_SOFT)
+		faith_war_marker_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		faith_war_marker_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		marker_row.add_child(faith_war_marker_label)
+		faith_war_marker.add_child(marker_row)
+		faith_body.add_child(faith_war_marker)
+	else:
+		faith_body.add_child(_label("Ein heiliger Krieg erhebt Anspruch auf die Hauptstadt eines Andersgläubigen oder Ketzers und nutzt die bestehenden Kriegskanten K1/K2.", 11, INK_SOFT))
+	for target in vm["holy_war_targets"]:
+		var war_row := HBoxContainer.new()
+		war_row.add_theme_constant_override("separation", 8)
+		var war_icon := TextureRect.new()
+		war_icon.custom_minimum_size = Vector2(42, 42)
+		war_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		war_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		war_icon.texture = TOKENS.get(str(target["icon"]))
+		war_row.add_child(war_icon)
+		var war_text := _label("%s · %s · Hauptstadt %s · Ketzerei %d/100" % [str(target["name"]), str(target["confession"]), str(target["capital"]), int(target["heresy"])], 11, INK_SOFT)
+		war_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		war_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		war_row.add_child(war_text)
+		var war_button := _button(str(target["button_text"]), Callable(self, "_declare_holy_war").bind(int(target["index"])), "")
+		war_button.custom_minimum_size = Vector2(245, 38)
+		war_button.disabled = bool(target["disabled"]) or int(vm["holy_war_target"]) >= 0
+		war_row.add_child(war_button)
+		faith_body.add_child(war_row)
+	faith_body.add_child(HSeparator.new())
+	faith_body.add_child(_label("Konfessionen", 18, INK))
+	faith_body.add_child(_label("Ein Wechsel kostet Gold und Prestige und beunruhigt die Vasallen.", 11, INK_SOFT))
+	for confession in vm["confessions"]:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		var icon := TextureRect.new()
+		icon.custom_minimum_size = Vector2(52, 52)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture = TOKENS.get(str(confession["icon"]))
+		row.add_child(icon)
+		var text := _label("%s · %s\n%s" % [str(confession["name"]), str(confession["doctrine"]), str(confession["effect"])], 12, INK_SOFT)
+		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		row.add_child(text)
+		var change := _button(str(confession["button_text"]), Callable(self, "_convert_faith").bind(str(confession["id"])), "")
+		change.custom_minimum_size = Vector2(185, 40)
+		change.disabled = bool(confession["disabled"])
+		row.add_child(change)
+		faith_body.add_child(row)
+	faith_body.add_child(HSeparator.new())
+	faith_body.add_child(_label("Heilige Stätten · %d/%d" % [int(vm["sites"].size()), int(game.FAITH_MAX_SITES)], 18, INK))
+	if vm["sites"].is_empty():
+		faith_body.add_child(_label("Noch keine Stätte geweiht. Jede Stätte gibt jährlich Prestige und Kirchenmacht.", 11, INK_SOFT))
+	else:
+		for site in vm["sites"]:
+			faith_body.add_child(_label("◆ %s" % str(site["name"]), 12, INK_SOFT))
+	var options_title := _label("Eigene Provinzen weihen · %d Gold · %d Frömmigkeit" % [int(vm["site_cost_gold"]), int(vm["site_cost_piety"])], 12, INK_SOFT)
+	faith_body.add_child(options_title)
+	for option in vm["site_options"]:
+		var option_row := HBoxContainer.new()
+		option_row.add_theme_constant_override("separation", 8)
+		var name_label := _label(str(option["name"]), 12, INK)
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		option_row.add_child(name_label)
+		var consecrate := _button(str(option["button_text"]), Callable(self, "_consecrate_site").bind(str(option["id"])), "")
+		consecrate.custom_minimum_size = Vector2(190, 38)
+		consecrate.disabled = bool(option["disabled"])
+		option_row.add_child(consecrate)
+		faith_body.add_child(option_row)
+
+func _pilgrimage() -> void:
+	_dispatch({"id": "pilgrimage"})
+
+func _convert_faith(confession: String) -> void:
+	_dispatch({"id": "convert_faith", "confession": confession})
+
+func _consecrate_site(province_id: String) -> void:
+	_dispatch({"id": "consecrate_site", "province": province_id})
+
+func _suppress_heresy() -> void:
+	_dispatch({"id": "suppress_heresy"})
+
+func _reform_faith() -> void:
+	_dispatch({"id": "reform_faith"})
+
+func _declare_holy_war(target: int) -> void:
+	_dispatch({"id": "declare_holy_war", "target": target})
+
 func _show_rule() -> void:
 	if game == null:
 		return
@@ -2511,18 +3409,77 @@ func _refresh_rule() -> void:
 	rule_title.text = str(vm["title"])
 	rule_body.add_child(_label(str(vm["summary"]), 13, INK_SOFT))
 	rule_body.add_child(_label(str(vm["faction"]), 12, INK_SOFT))
+	rule_body.add_child(HSeparator.new())
+	rule_body.add_child(_label("Vasallenverträge", 18, INK))
+	rule_body.add_child(_label("Steuern %d Gold/Jahr · Aufgebot +%d · durchschnittliche Meinung %d" % [
+		int(vm["vassal_tax"]), int(vm["vassal_levy"]), int(vm["vassal_opinion"])], 11, INK_SOFT))
+	for vassal in vm["vassals"]:
+		var vassal_row := HBoxContainer.new()
+		vassal_row.add_theme_constant_override("separation", 8)
+		var contract_icon := TextureRect.new()
+		contract_icon.custom_minimum_size = Vector2(46, 46)
+		contract_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		contract_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		contract_icon.texture = TOKENS.get(str(vassal["icon"]))
+		contract_icon.tooltip_text = "Vertrags-Token aus der Blender-Pipeline"
+		vassal_row.add_child(contract_icon)
+		var vassal_text := _label("%s · %s Stufe %d/%d\n%s\n%s" % [
+			str(vassal["name"]), str(vassal["contract"]), int(vassal["level"]), int(vassal["max"]),
+			str(vassal["effect"]), str(vassal["next_effect"])], 11, INK_SOFT)
+		vassal_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		vassal_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		vassal_row.add_child(vassal_text)
+		var lower_button := _button(str(vassal["lower_text"]), Callable(self, "_change_vassal_contract").bind(int(vassal["index"]), int(vassal["lower_level"])), "")
+		lower_button.custom_minimum_size = Vector2(78, 38)
+		lower_button.disabled = not bool(vassal["can_lower"])
+		vassal_row.add_child(lower_button)
+		var raise_button := _button(str(vassal["raise_text"]), Callable(self, "_change_vassal_contract").bind(int(vassal["index"]), int(vassal["next_level"])), "")
+		raise_button.custom_minimum_size = Vector2(142, 38)
+		raise_button.disabled = not bool(vassal["can_raise"])
+		vassal_row.add_child(raise_button)
+		rule_body.add_child(vassal_row)
+	rule_body.add_child(HSeparator.new())
 	rule_body.add_child(_label("Rat", 18, INK))
 	for office in vm["offices"]:
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
-		var row_label := _label(str(office["text"]), 13, INK_SOFT)
+		var office_icon := TextureRect.new()
+		office_icon.custom_minimum_size = Vector2(42, 42)
+		office_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		office_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		office_icon.texture = TOKENS.get(str(office["icon"]))
+		office_icon.tooltip_text = "Rats-Token aus der Blender-Pipeline"
+		row.add_child(office_icon)
+		var row_label := _label("%s\n%s · Stimme: %s" % [str(office["text"]), str(office["effect"]), str(office["vote"])], 12, INK_SOFT)
 		row_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		row.add_child(row_label)
 		var change := _button("Wechseln", Callable(self, "_cycle_council").bind(str(office["id"])), "")
 		change.custom_minimum_size = Vector2(110, 36)
 		row.add_child(change)
 		rule_body.add_child(row)
 	rule_body.add_child(_label(str(vm["training"]), 11, INK_SOFT))
+	rule_body.add_child(_label(str(vm["council_intrigue"]), 11, INK_SOFT))
+	rule_body.add_child(_label("Ratssitz-Stimmen · Mehrheit 3/4, Schlüsselamt muss zustimmen", 11, INK_SOFT))
+	for resolution in vm["resolutions"]:
+		var resolution_row := HBoxContainer.new()
+		resolution_row.add_theme_constant_override("separation", 8)
+		var resolution_icon := TextureRect.new()
+		resolution_icon.custom_minimum_size = Vector2(38, 38)
+		resolution_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		resolution_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		resolution_icon.texture = TOKENS.get(str(resolution["icon"]))
+		resolution_row.add_child(resolution_icon)
+		var resolution_text := _label("%s · %s\n%s\n%s" % [
+			str(resolution["name"]), str(resolution["votes_text"]), str(resolution["effect"]), str(resolution["cost_text"])], 11, INK_SOFT)
+		resolution_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		resolution_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		resolution_row.add_child(resolution_text)
+		var enact := _button("Beschließen", Callable(self, "_enact_council_resolution").bind(str(resolution["id"])), "")
+		enact.custom_minimum_size = Vector2(112, 38)
+		enact.disabled = not bool(resolution["can_enact"])
+		resolution_row.add_child(enact)
+		rule_body.add_child(resolution_row)
 	rule_body.add_child(HSeparator.new())
 	rule_body.add_child(_label("Gesetz", 18, INK))
 	var law_button := _button(str(vm["law"]), _toggle_succession, "")
@@ -2530,6 +3487,30 @@ func _refresh_rule() -> void:
 	var tax_button := _button(str(vm["tax"]), _toggle_tax, "")
 	rule_body.add_child(tax_button)
 	rule_body.add_child(_label(str(vm["heir"]), 12, INK_SOFT))
+	rule_body.add_child(HSeparator.new())
+	rule_body.add_child(_label("Dynastie · Ruhm %d" % int(vm["renown_value"]), 18, INK))
+	rule_body.add_child(_label(str(vm["renown_hint"]), 11, INK_SOFT))
+	for legacy in vm["legacies"]:
+		var legacy_row := HBoxContainer.new()
+		legacy_row.add_theme_constant_override("separation", 8)
+		var legacy_icon := TextureRect.new()
+		legacy_icon.custom_minimum_size = Vector2(46, 46)
+		legacy_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		legacy_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		legacy_icon.texture = TOKENS.get(str(legacy["icon"]))
+		legacy_icon.tooltip_text = "Vermächtnis-Token aus der Blender-Pipeline"
+		legacy_row.add_child(legacy_icon)
+		var legacy_text := _label("%s · Stufe %d/%d\n%s" % [str(legacy["name"]), int(legacy["level"]), int(legacy["max"]), str(legacy["effect"])], 11, INK_SOFT)
+		legacy_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		legacy_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		legacy_row.add_child(legacy_text)
+		var legacy_button := _button(
+			"Maximalstufe" if bool(legacy["maxed"]) else "Stufe %d · %d Ruhm" % [int(legacy["level"]) + 1, int(legacy["cost"])],
+			Callable(self, "_unlock_legacy").bind(str(legacy["id"])), "")
+		legacy_button.custom_minimum_size = Vector2(150, 42)
+		legacy_button.disabled = bool(legacy["maxed"]) or bool(legacy["disabled"])
+		legacy_row.add_child(legacy_button)
+		rule_body.add_child(legacy_row)
 	rule_body.add_child(HSeparator.new())
 	rule_body.add_child(_label("Krieg und Diplomatie", 18, INK))
 	rule_body.add_child(_label(str(vm["target"]), 12, INK_SOFT))
@@ -2542,6 +3523,26 @@ func _refresh_rule() -> void:
 	var siege_button := _button("Belagerung vorantreiben", _advance_siege, "")
 	siege_button.disabled = bool(vm["siege_disabled"])
 	rule_body.add_child(siege_button)
+	var fleet_row := HBoxContainer.new()
+	fleet_row.add_theme_constant_override("separation", 8)
+	var fleet_icon := TextureRect.new()
+	fleet_icon.custom_minimum_size = Vector2(44, 44)
+	fleet_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	fleet_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	fleet_icon.texture = TOKENS.get("unit_fleet")
+	fleet_icon.tooltip_text = "Flotten-Token aus der Blender-Pipeline"
+	fleet_row.add_child(fleet_icon)
+	var fleet_label := _label(str(vm["fleet"]), 12, INK_SOFT)
+	fleet_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	fleet_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	fleet_row.add_child(fleet_label)
+	rule_body.add_child(fleet_row)
+	var fleet_button := _button("Flotte aufstellen (60 Gold)", _raise_fleet, "")
+	fleet_button.disabled = bool(vm["fleet_disabled"])
+	rule_body.add_child(fleet_button)
+	var blockade_button := _button("Küste blockieren (6 Monate)", _blockade_coast, "")
+	blockade_button.disabled = bool(vm["blockade_disabled"])
+	rule_body.add_child(blockade_button)
 	var peace_button := _button("Frieden schließen (24 Monate)", _make_peace, "")
 	peace_button.disabled = bool(vm["peace_disabled"])
 	rule_body.add_child(peace_button)
@@ -2581,6 +3582,12 @@ func _refresh_rule() -> void:
 func _cycle_council(office: String) -> void:
 	_dispatch({"id": "council_assign", "office": office})
 
+func _change_vassal_contract(vassal_index: int, target_level: int) -> void:
+	_dispatch({"id": "vassal_contract", "vassal": vassal_index, "level": target_level})
+
+func _enact_council_resolution(resolution_id: String) -> void:
+	_dispatch({"id": "council_resolution", "resolution": resolution_id})
+
 func _toggle_succession() -> void:
 	_dispatch({"id": "law_succession"})
 
@@ -2590,6 +3597,9 @@ func _build_system(key: String) -> void:
 func _toggle_tax() -> void:
 	_dispatch({"id": "set_tax"})
 
+func _unlock_legacy(track: String) -> void:
+	_dispatch({"id": "legacy", "track": track})
+
 func _fabricate_claim() -> void:
 	_dispatch({"id": "claim"})
 
@@ -2598,6 +3608,12 @@ func _raise_army() -> void:
 
 func _advance_siege() -> void:
 	_dispatch({"id": "siege"})
+
+func _raise_fleet() -> void:
+	_dispatch({"id": "fleet"})
+
+func _blockade_coast() -> void:
+	_dispatch({"id": "blockade"})
 
 func _make_peace() -> void:
 	_dispatch({"id": "peace"})
@@ -2611,6 +3627,33 @@ func _expose_secret() -> void:
 var chronicle_layer: Control
 var chronicle_body: VBoxContainer
 var _chronicle_span: int = 60
+
+func is_coastal_province(province_id: String) -> bool:
+	if game == null:
+		return false
+	return game.is_coastal(province_id)
+
+func _fleet_at(province_id: String) -> Dictionary:
+	if game == null:
+		return {}
+	for h in game.houses:
+		for fleet in h.get("fleets", []):
+			if str(fleet.get("station", "")) == province_id:
+				return fleet
+	return {}
+
+func _fleet_tokens(fleet: Dictionary) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	var icon := TextureRect.new()
+	icon.custom_minimum_size = Vector2(38, 38)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.texture = TOKENS.get("unit_fleet")
+	icon.tooltip_text = "Flotte"
+	row.add_child(icon)
+	row.add_child(_label("%d Schiffe" % int(fleet.get("ships", 0)), 10, INK_SOFT))
+	return row
 
 func _army_tokens(strength: int) -> HBoxContainer:
 	var row := HBoxContainer.new()
@@ -2881,12 +3924,17 @@ func _show_event() -> void:
 	var vm: Dictionary = ViewModelBuilder.event(game)
 	event_title.text = str(vm["title"])
 	event_text.text = str(vm["text"])
+	var outline := Color(0.015, 0.035, 0.05, 0.95) if ModernInterfaceScript.appearance != 2 else Color(1, 1, 1, 0.95)
+	event_title.add_theme_color_override("font_outline_color", outline)
+	event_text.add_theme_color_override("font_outline_color", outline)
 	var art_key: String = str(EVENT_ART_KEYS.get(str(vm.get("id", "")), ""))
 	_apply_event_art(art_key)
 	for c in event_buttons.get_children():
 		event_buttons.remove_child(c)
 		c.queue_free()
 	var options: Array = vm["options"]
+	var tags := RegEx.new()
+	tags.compile("\\[[^\\]]*\\]")
 	for i in options.size():
 		var opt: Dictionary = options[i]
 		var row := VBoxContainer.new()
@@ -2895,20 +3943,17 @@ func _show_event() -> void:
 		var cut := label.find("  (")
 		if cut > 0:
 			label = label.substr(0, cut)
-		var choose := _button(label, Callable(self, "_choose").bind(i), "")
-		choose.custom_minimum_size = Vector2(0, 40)
+		var effects: String = tags.sub(str(opt["chips"]), "", true)
+		var choose := _button(label + ("\n" + effects if effects != "" else ""), Callable(self, "_choose").bind(i), "")
+		choose.custom_minimum_size = Vector2(0, 64)
 		row.add_child(choose)
-		var chips := RichTextLabel.new()
-		chips.bbcode_enabled = true
-		chips.fit_content = true
-		chips.scroll_active = false
-		chips.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		chips.add_theme_font_size_override("normal_font_size", 12)
-		chips.text = str(opt["chips"])
-		row.add_child(chips)
 		event_buttons.add_child(row)
 	kernel.push_modal("event")
 	event_layer.visible = true
+	if has_meta("modern_interface"):
+		get_meta("modern_interface")._scale_text(event_layer)
+		get_meta("modern_interface")._fit_dialogs()
+		get_meta("modern_interface").call_deferred("_fit_dialogs")
 	_play_open()
 
 # --- Zeitlauf ------------------------------------------------------------
@@ -2916,6 +3961,17 @@ func _show_event() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		var top: String = kernel.top_modal()
+		if top == "infrastructure":
+			_hide_infrastructure()
+			get_viewport().set_input_as_handled()
+			return
+		if top == "game" and selected != "":
+			selected = ""
+			if map_view != null:
+				map_view.select("")
+			refresh()
+			get_viewport().set_input_as_handled()
+			return
 		if top == "optionen":
 			_hide_options()
 			get_viewport().set_input_as_handled()
@@ -2926,6 +3982,14 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 		if top == "provinz":
 			_hide_province()
+			get_viewport().set_input_as_handled()
+			return
+		if top == "hof":
+			_hide_court()
+			get_viewport().set_input_as_handled()
+			return
+		if top == "glaube":
+			_hide_faith()
 			get_viewport().set_input_as_handled()
 			return
 		if top == "herrschaft":
@@ -2949,6 +4013,44 @@ func _unhandled_input(event: InputEvent) -> void:
 		_apply_display_settings(true)
 		_save_settings()
 		_refresh_options()
+		return
+	if event is InputEventKey and event.pressed and not event.echo and game != null and kernel.top_modal() == "game" and not _text_input_active():
+		var handled := true
+		match event.keycode:
+			KEY_1:
+				_set_map_mode("political")
+			KEY_2:
+				_set_map_mode("terrain")
+			KEY_3:
+				_set_map_mode("duchy")
+			KEY_4:
+				_set_map_mode("kingdom")
+			KEY_5:
+				_set_map_mode("development")
+			KEY_6:
+				_set_map_mode("war")
+			KEY_M:
+				var modes: Array = MapViewScript.MAP_MODES
+				var idx: int = modes.find(str(map_view.map_mode))
+				_set_map_mode(str(modes[(idx + 1) % modes.size()]))
+			KEY_0:
+				map_view.reset_view()
+			KEY_EQUAL, KEY_PLUS:
+				map_view.zoom_by(1.18)
+			KEY_MINUS:
+				map_view.zoom_by(0.85)
+			KEY_H:
+				_toggle_side_panel()
+			KEY_L:
+				_toggle_map_legend()
+			_:
+				handled = false
+		if handled:
+			get_viewport().set_input_as_handled()
+
+func _text_input_active() -> bool:
+	var focus := get_viewport().gui_get_focus_owner()
+	return focus is LineEdit or focus is TextEdit
 
 func _process(delta: float) -> void:
 	if game == null or game.game_over:
@@ -2962,6 +4064,8 @@ func _process(delta: float) -> void:
 	if accum >= interval:
 		accum = 0.0
 		game.advance_month()
+		if game.calendar_index() >= 50399 and not game.campaign_sandbox:
+			_show_infrastructure()
 		if bool(settings["autosave"]) and game.month == 1:
 			_write_save()
 		refresh()

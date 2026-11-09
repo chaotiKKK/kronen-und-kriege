@@ -2,7 +2,7 @@
 
 > Status: **Entwurf, nicht veröffentlicht.** Tag, Push, Upload und Freigabe stehen aus.
 > Stand: 2026-11-08
-> Quellstand der Builds: Arbeitsbaum auf `8af9c8f` mit uncommittetem Versionssprung auf 1.3. Doku-HEAD: `bbb0f27` auf `main` (ein Commit nicht gepusht); dieser Entwurf ist noch uncommittet.
+> Quellstand: Windows-Build aus sauberem HEAD `193cfc7516fb0b24c3e39c7627536a5e4e95af84`; Android-APK unverändert aus `8af9c8f`. Doku-HEAD: `193cfc7` auf `main`; dieser Entwurf ist noch uncommittet.
 > Artefakte: `F:\ck3-kronen-kriege.exe` und `F:\ck3-kronen-kriege.apk`
 > Vorherige Veröffentlichung: `v1.2` (Commit `89846de4fcdf4c9fef3f11b1c9fbe6041c4a2634`), bleibt unverändert.
 
@@ -28,7 +28,7 @@ Bronzezeit-Grand-Strategy für Windows und Android. Diese Testversion bringt das
 **SHA-256**
 
 ```
-d2cc6508d07c65cb64e786a029736e4c04ad17f800736c6ac2f3c38f0826ec72  ck3-kronen-kriege.exe
+922eb13b62b8150a065f5132cd4506142fc44ad057692b7e740f0fd31ec1d6b1  ck3-kronen-kriege.exe
 3b17118a9ea7d4e307fec735b58cc4b46dcc459d4ca49a4edac30f71037dbbbf  ck3-kronen-kriege.apk
 ```
 
@@ -39,34 +39,48 @@ d2cc6508d07c65cb64e786a029736e4c04ad17f800736c6ac2f3c38f0826ec72  ck3-kronen-kri
 | | Windows | Android |
 |---|---|---|
 | Datei | `F:\ck3-kronen-kriege.exe` | `F:\ck3-kronen-kriege.apk` |
-| Größe | 113.718.904 Bytes | 180.708.021 Bytes |
-| SHA-256 | `d2cc6508d07c65cb64e786a029736e4c04ad17f800736c6ac2f3c38f0826ec72` | `3b17118a9ea7d4e307fec735b58cc4b46dcc459d4ca49a4edac30f71037dbbbf` |
-| Zeitstempel | `2026-11-08 14:00:57` (CET) | `2026-11-08 14:02:14` (CET) |
+| Größe | 138.795.936 Bytes | 180.708.021 Bytes |
+| SHA-256 | `922eb13b62b8150a065f5132cd4506142fc44ad057692b7e740f0fd31ec1d6b1` | `3b17118a9ea7d4e307fec735b58cc4b46dcc459d4ca49a4edac30f71037dbbbf` |
+| Zeitstempel | `2026-11-08 21:33:43` (CET) | `2026-11-08 14:02:14` (CET) |
 | Version | `1.3.0.0` | `versionName 1.3`, `versionCode 4` |
 | Signatur | — | APK Signature Scheme v2, ein Signer, Debug-Zertifikat `da3c6296…`; `zipalign -c 4` ok |
 | Plattform | x86_64, Fenster oder `F11` | minSdk 24, targetSdk 35, `arm64-v8a`/`armeabi-v7a` |
 
 ## Nachweise
 
-- **Windows-Startcheck:** `WINDOWSTART OK`, Fenster `1298x765`, Titel „Kronen und Kriege“, Sichtbarkeit und nichtleerer Render-Frame geprüft, `MAIN_READY version=1.3`, Exit 0, keine Fehlerzeilen. Beleg: `build/verify/exe-1.3.log`.
+- **Windows-Startcheck:** `WINDOWSTART OK`, Fenster `1618x945`, Titel „Kronen und Kriege“, Sichtbarkeit und nichtleerer Render-Frame geprüft, `MAIN_READY version=1.3`, Exit 0, keine Fehlerzeilen. Beleg: `build/verify/windows-start-current.log`.
 - **Android-Paketprüfung:** `ANDROID_APK OK`, Paket `org.example.kronen`, Version 1.3/4, minSdk 24, targetSdk 35, beide ABIs, V2-Signatur, `zipalign` ok. Beleg: `build/verify/apk-1.3.log`.
-- **30-Minuten-Abnahme Windows, 2026-11-08:** `14:45:16–15:15:17` (30:01), `status=BESTANDEN`; 12/12 Aktionen, 3/3 Roundtrips ohne Save-Diff, KI-Kanten AI2+AI3, 0 Fehlerzeilen. Beleg: `build/verify/manual-build-d2cc-v2/`, Protokoll: [manual-acceptance.md](manual-acceptance.md#windows-lauf-2026-11-08).
-- **Automatisierte Tiefentests:** `FullDepthTest` 57 Prüfungen (`build/verify/final-fulldepth-check-1.3.log`, 2026-11-08 15:38), `SystemicDepthTest` 38 Prüfungen (`build/verify/systemicdepth-check-1.3.log`, 2026-11-08 15:52), beide grün.
+- **30-Minuten-Abnahme Windows, 2026-11-08:** `21:34:29–22:04:31` (30:02), `status=BESTANDEN`; 12/12 Aktionen, 3/3 Roundtrips ohne Save-Diff, AI-Pass (KI-Kanten AI2+AI3), 0 Fehlerzeilen. Beleg: `build/verify/manual-build-922eb13/acceptance-result.json`, Protokoll: [manual-acceptance.md](manual-acceptance.md#windows-lauf-2026-11-08).
+- **Automatisierte Tiefentests:** `FullDepthTest` 74 Prüfungen (`build/verify/acceptance-FullDepthTest.log`, 2026-11-08 22:05), `SystemicDepthTest` 38 Prüfungen (`build/verify/acceptance-SystemicDepthTest.log`, 2026-11-08 22:05), beide grün.
 
-## Abgleich mit dem Trockenlauf (2026-11-08)
+## Trockenlauf gegen den aktuellen Export (2026-11-08)
 
-`bash tools/publish_github_release.sh --dry-run` lief zweimal; Ausgaben unter `build/verify/release-dryrun.log` und `build/verify/release-dryrun-dirty.log`.
+`bash tools/publish_github_release.sh --dry-run` wurde auf einer temporären, separaten Arbeitskopie des Release-Commits `193cfc7` gegen den aktuellen Export ausgeführt: **Exit 0**, ohne Commit, Push oder Upload. Die Kopie war nicht Teil des Datensatzes, wurde nach dem Lauf entfernt und ist kein Belegpfad. Der Arbeitsbaum selbst wurde nicht getrockenlaufen; der uncommittete Doku-Diff war nicht Teil des Laufs und ändert keine Assets.
 
 | Prüfung | Ergebnis |
 |---|---|
-| Im aktuellen Baum (vier Doku-Dateien geändert) | **Exit 1**: „Arbeitsbaum ist nicht sauber“ — der Entwurf muss vorher committet werden |
-| Auf sauberem Snapshot bei `38a4b28` | **Exit 0**, kein Push, kein Upload |
-| Repository | `chaotiKKK/kronen-und-kriege` |
-| Version / Tag | `1.3` / `v1.3` auf `38a4b28`; Tag existiert noch nicht |
+| Quellstand | `193cfc7516fb0b24c3e39c7627536a5e4e95af84` auf `main`; Tag `v1.3` existiert noch nicht |
 | APK-Prüfung | `ANDROID_APK OK`, V2, ein Signer, `zipalign ok`, versionCode 4/versionName 1.3 |
-| Hashes | EXE `d2cc6508…`, APK `3b17118a…` — identisch mit diesem Entwurf und mit `F:` |
+| Hashes | EXE `922eb13b…`, APK `3b17118a…` — identisch mit `F:` |
+| Ausgabe | `DRY RUN: Es wird nichts gepusht oder hochgeladen.` |
+| Beleg | `build/verify/release-dryrun-current.log` |
 
-**Einzige Abweichung:** Die Skript-Notizen sind kürzer als dieser Entwurf (kein „Neu in 1.3“, keine Einschränkungen, keine Nachweise) und listen die APK vor der EXE. Hashes, Größen und Downloads stimmen überein, sodass nur der kuratierte Text nach dem Publish nachgezogen werden muss.
+Die Skript-Notizen sind kürzer als dieser Entwurf (kein „Neu in 1.3“, keine Einschränkungen, keine Nachweise) und listen die APK vor der EXE. Die Hashes und Downloads stimmen überein; der kuratierte Text wird nach dem Publish per `gh release edit v1.3 --notes-file <datei>` nachgezogen. Der im Log technisch auftretende `REPORT_DIR=`-Eintrag zeigt auf die gelöschte temporäre Kopie; er ist kein Release-Beleg und wird nicht als Pfadangabe verwendet. Beleg ist der Log selbst mit den Exit-0-Zeilen, Hashes und Release-Notizen.
+
+## Evidenzbereinigung (2026-11-08)
+
+Die beiden nicht getrackten Logs `build/verify/exe-1.3.log` und `build/verify/release-dryrun.log` wurden entfernt. Sie dokumentierten den überholten Windows-1.3-Build mit dem alten Hash und waren weder im Dateinamen noch im Inhalt als historische Evidenz gekennzeichnet. Als scheinbar aktuelle Belege hätten sie den Datensatz verfälscht; eine Umbenennung als „historisch“ hätte keinen zusätzlichen Prüfwert geboten, weil der frühere Lauf durch den aktuellen Trockenlaufbeleg und die aktuelle Abnahme ersetzt ist. Der frühere `release-dryrun-dirty.log` und überholte Run-/Tiefentest-Logs wurden aus demselben Grund entfernt.
+
+Die zentralen aktuellen Release-Belege sind:
+
+- `build/verify/apk-1.3.log`
+- `build/verify/windows-start-current.log`
+- `build/verify/manual-build-922eb13/acceptance-result.json`
+- `build/verify/acceptance-FullDepthTest.log`
+- `build/verify/acceptance-SystemicDepthTest.log`
+- `build/verify/release-dryrun-current.log`
+
+Die historische 1.2-Evidenz wurde nicht angetastet: `build/verify/manual-build-951c/` mit `acceptance-result.json` und den Screenshots bleibt vorhanden. Der Android-Bericht verweist für den historischen Force-Stop-Befund auf `build/verify/manual-old-113147/logs/force-stop-source.log`; auch dieser Pfad existiert.
 
 ## Bekannte Einschränkungen
 
@@ -79,7 +93,7 @@ d2cc6508d07c65cb64e786a029736e4c04ad17f800736c6ac2f3c38f0826ec72  ck3-kronen-kri
 
 ### 0. Voraussetzungen
 
-- [x] Die Release-Vorbereitung liegt auf `main`; aktueller HEAD ist `bbb0f27`, ein Commit nicht gepusht.
+- [x] Die Release-Vorbereitung liegt auf `main`; aktueller HEAD ist `193cfc7`, die Doku-Änderungen sind noch uncommittet.
 - [x] Arbeitsbaum sauber bis auf diesen Entwurf; `build/` und `.tools/` sind ignoriert.
 - [x] Windows-Abnahme, Startcheck, APK-Prüfung und Tiefentests bestanden.
 - [ ] **Freigabe des Eigentümers zur Veröffentlichung** — ohne diese Freigabe wird nichts gepusht, getaggt oder hochgeladen.
@@ -90,10 +104,10 @@ d2cc6508d07c65cb64e786a029736e4c04ad17f800736c6ac2f3c38f0826ec72  ck3-kronen-kri
 - [ ] `git status --porcelain` liefert keine Ausgabe.
 - [ ] `git log --oneline -8` zeigt ausschließlich die erwarteten Release-Commits.
 - [ ] Hashes gegen die Dateien unter `F:` prüfen:
-      `sha256sum "F:/ck3-kronen-kriege.exe" "F:/ck3-kronen-kriege.apk"` → `d2cc6508…` / `3b17118a…`
+      `sha256sum "F:/ck3-kronen-kriege.exe" "F:/ck3-kronen-kriege.apk"` → `922eb13b…` / `3b17118a…`
 - [ ] `gh auth status` ist angemeldet; Zielrepo ist `chaotiKKK/kronen-und-kriege`.
-- [ ] Trockenlauf: `bash tools/publish_github_release.sh --dry-run` — prüft APK-Signatur, zeigt Tag, Notizen und Prüfsummen, ändert nichts.
-- [ ] Notizen oben gegen den Trockenlauf abgleichen (Wortlaut, Hashes, keine Android-Behauptung).
+- [x] Trockenlauf: `bash tools/publish_github_release.sh --dry-run` auf einer temporären Arbeitskopie des Release-Commits `193cfc7` — Exit 0, Beleg `build/verify/release-dryrun-current.log`.
+- [x] Notizen oben gegen den Trockenlauf abgleichen (Wortlaut, Hashes, keine Android-Behauptung).
 
 ### 2. Veröffentlichen (nur nach Freigabe, ein Schritt)
 

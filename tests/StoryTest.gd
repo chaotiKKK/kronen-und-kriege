@@ -54,8 +54,8 @@ func _ready() -> void:
 	_check(_seen.size() >= 10, "Zu wenige verschiedene Systemkanten: %d." % _seen.size())
 	if _failed:
 		return
-	print("STORYTEST OK: 120 Monate, %d Entscheidungen, %d Speicher-Roundtrips, %d Kanten (D/K/AI: %d/%d/%d), Chronik %d Zeilen." % [
-		_decisions, _saves, _seen.size(), dynastic, war, ai, g.log_lines.size()
+	print("STORYTEST OK: 120 Monate, %d Entscheidungen, %d Speicher-Roundtrips, %d Kanten (D/K/AI: %d/%d/%d), Chronik %d Zeilen; %d Prüfungen." % [
+		_decisions, _saves, _seen.size(), dynastic, war, ai, g.log_lines.size(), _checks
 	])
 	get_tree().quit(0)
 

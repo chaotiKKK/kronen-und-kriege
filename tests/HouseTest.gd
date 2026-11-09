@@ -7,6 +7,7 @@ extends Node
 var main
 var frames: int = 0
 var played: Array = []
+var _checks: int = 0
 
 func _ready() -> void:
 	main = load("res://scenes/Main.tscn").instantiate()
@@ -28,6 +29,8 @@ func _process(_delta: float) -> void:
 		_fail("Startmenü bietet nur %d Häuser an, mindestens 3 sind nötig" % entries)
 		return
 	print("Startmenü: %d Häuser wählbar" % entries)
+	if not _check(entries >= 3, "Das Startmenü bietet weniger als drei Häuser."):
+		return
 
 	for idx in [2, 4, 5]:
 		main._start(idx)
@@ -53,9 +56,18 @@ func _process(_delta: float) -> void:
 		played.append("%s (%s, %d Provinz(e))" % [
 			main.game.house()["name"], main.game.house()["ruler"]["name"], owned.size()
 		])
+		if not _check(int(main.game.player) == idx and not owned.is_empty() and int(main.game.house()["gold"]) < gold_before, "Haus %d wurde nicht vollständig gespielt." % idx):
+			return
 
 	if played.size() < 3:
 		_fail("Nur %d Häuser gespielt" % played.size())
 		return
-	print("HOUSETEST OK: %d europäische Häuser gespielt: %s" % [played.size(), ", ".join(played)])
+	print("HOUSETEST OK: %d europäische Häuser gespielt: %s; %d Prüfungen." % [played.size(), ", ".join(played), _checks])
 	get_tree().quit(0)
+
+func _check(condition: bool, message: String) -> bool:
+	_checks += 1
+	if condition:
+		return true
+	_fail(message)
+	return false

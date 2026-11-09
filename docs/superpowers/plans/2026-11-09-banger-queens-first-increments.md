@@ -24,12 +24,12 @@
 
 **Dateien:** neu `scripts/CampaignCalendar.gd`, `tests/CampaignTest.gd/.tscn`; ändern `scripts/Game.gd`, `scripts/SaveGame.gd`, `scripts/Main.gd`, `scripts/AcceptanceDriver.gd`, `project.godot`, `export_presets.cfg`, `tools/run_all_tests.sh`.
 
-**Schnittstelle:** `CampaignCalendar.to_index(year: int, month: int) -> int`, `from_index(index: int) -> Dictionary`, `next_month(year: int, month: int) -> Dictionary`; nullbasiert, Startindex 0; `Game._now()` bleibt die gemeinsame Fristquelle. `year/month` bleiben als Legacy-Fassade erhalten.
+**Schnittstelle:** `CampaignCalendar.to_index(year: int, month: int) -> int`, `from_index(index: int) -> Dictionary`; nullbasiert, Startindex 0; `Game._now()` bleibt die gemeinsame Fristquelle und liefert für Altfristen Index plus eins. `year/month` bleiben als Legacy-Fassade erhalten.
 
 - [ ] Roter Integrationstest: `g.year = -1; g.month = 12; g.advance_month(); assert(g.year == 1 and g.month == 1)`; Nachweis einer Jahreswirkung genau einmal, 2-Monats-Frist über den Übergang und Save-Roundtrip.
 - [ ] Minimal implementieren: statt `year += 1` `year = 1 if year == -1 else year + 1`; Kalenderfunktion `(year + 2000 - (1 if year > 0 else 0)) * 12 + month - 1`; alle absoluten Uhrzugriffe über Kalender vereinheitlichen.
 - [ ] Grenztests: `to_index(-2000,1)==0`, `to_index(-1,12)==23999`, `to_index(1,1)==24000`, `to_index(2200,12)==50399`; 50.400 eindeutige Hin-/Rückumrechnungen. Ungültiges Jahr 0 oder Monat außerhalb 1..12 wird abgelehnt.
-- [ ] Migration testen und implementieren: nächstes unbenutztes Schema; Altjahr 0→1 und 1→2; einsbasierte absolute Altfristen/Chronikwerte −1; relative Dauern unverändert. Aktuelle Datums-/Index-Widersprüche werden abgewiesen.
+- [x] Migration testen und implementieren: Schema 12; Altjahr 0→1 und 1→2; einsbasierte absolute Altfristen/Chronikwerte über `_now()` kompatibel halten; relative Dauern unverändert. Aktuelle Datums-/Index-Widersprüche werden abgewiesen.
 - [ ] Regulärer Endmonat stoppt Zeitlauf und bietet „Als Sandbox fortsetzen“; Sandbox-Flag persistieren. Zeitfortschritt muss nach dem letzten Monatszustand anhalten, nicht eine Sekunde lang automatisch darüber hinauslaufen.
 - [ ] Sichtbaren Namen und Dateinamen ändern; Paketkennung `org.example.kronen`, vorhandene Signatur und `user://`-Speicherort erhalten. Kein neuer Test für bloße Beschriftung; tatsächlichen Appstart kontrollieren.
 - [ ] Passende Regressionen und vollständigen Suite-Lauf ausführen. BQ-01 separat im Prüfbericht abschließen.
