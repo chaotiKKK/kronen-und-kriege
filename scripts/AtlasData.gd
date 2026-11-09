@@ -3,7 +3,9 @@ extends RefCounted
 const DATA_PATH := "res://data/atlas.json"
 const MAP_SIZE := Vector2(1200, 760)
 const CELL_SIZE := 32.0
-const KIND_ZOOM := {"country": 1.0, "region": 2.0, "district": 6.0, "municipality": 24.0}
+const KIND_ZOOM := {"country": 1.0, "region": 2.0, "district": 6.0, "municipality": 24.0, "local_admin": 24.0}
+const KIND_DETAIL := {"country": 0, "region": 1, "district": 2, "municipality": 3, "local_admin": 3}
+const CITY_POPULATION_TIERS := [1000000, 350000, 80000, 20000]
 static var _shared: Dictionary = {}
 
 var features: Array = []
@@ -13,10 +15,12 @@ var sources: Array = []
 var error_message := ""
 var _geometry := PackedByteArray()
 var _paths: Dictionary = {}
-var _feature_grid: Dictionary = {}
+var _feature_grids: Dictionary = {}
 var _city_grid: Dictionary = {}
+var _city_tier_grids: Dictionary = {}
 var _lookup: Dictionary = {}
 var _search_index: Array = []
+var _administrative_coverage: Dictionary = {}
 
 func load_data() -> bool:
 	if not _shared.is_empty():
@@ -40,8 +44,11 @@ func load_data() -> bool:
 	features = []
 	cities = []
 	rivers = []
-	_feature_grid = {}
+	_feature_grids = {}
 	_city_grid = {}
+	_city_tier_grids = {}
+	for minimum_population in CITY_POPULATION_TIERS:
+		_city_tier_grids[minimum_population] = {}
 	_lookup = {}
 	_search_index = []
 	_paths = {}
@@ -56,7 +63,10 @@ func load_data() -> bool:
 		feature["kind"] = str(raw.get("kind", "region"))
 		var index := features.size()
 		features.append(feature)
-		_index_rect(_feature_grid, feature.bounds, index)
+		var kind: String = feature.kind
+		if not _feature_grids.has(kind):
+			_feature_grids[kind] = {}
+		_index_rect(_feature_grids[kind], feature.bounds, index)
 		_add_lookup(feature, 0)
 	for raw in parsed.get("cities", []):
 		if not (raw is Dictionary):
@@ -67,7 +77,12 @@ func load_data() -> bool:
 		city["population"] = int(raw.get("population", 0))
 		var index := cities.size()
 		cities.append(city)
-		_index_rect(_city_grid, Rect2(city.point, Vector2(0.001, 0.001)), index)
+		var city_rect := Rect2(city.point, Vector2(0.001, 0.001))
+		# Der Vollindex bleibt für die räumliche Auswahl aller Orte erhalten.
+		_index_rect(_city_grid, city_rect, index)
+		for minimum_population in CITY_POPULATION_TIERS:
+			if int(city.population) >= int(minimum_population):
+				_index_rect(_city_tier_grids[minimum_population], city_rect, index)
 		_add_lookup(city, int(city.population) + 1000000)
 	for raw in parsed.get("rivers", []):
 		if not (raw is Dictionary):
@@ -77,12 +92,14 @@ func load_data() -> bool:
 		river["paths"] = raw.get("paths", [])
 		rivers.append(river)
 	sources = parsed.get("sources", [])
+	_administrative_coverage = parsed.get("administrative_coverage", {})
 	if features.is_empty() or cities.is_empty():
 		error_message = "Der Atlas enthält keine vollständigen Orte und Gebiete."
 		return false
 	_shared = {"features": features, "cities": cities, "rivers": rivers, "sources": sources,
-		"geometry": _geometry, "paths": _paths, "feature_grid": _feature_grid,
-		"city_grid": _city_grid, "lookup": _lookup, "search_index": _search_index}
+		"geometry": _geometry, "paths": _paths, "feature_grids": _feature_grids,
+		"city_grid": _city_grid, "city_tier_grids": _city_tier_grids,
+		"lookup": _lookup, "search_index": _search_index, "administrative_coverage": _administrative_coverage}
 	return true
 
 func _restore_shared() -> void:
@@ -92,10 +109,15 @@ func _restore_shared() -> void:
 	sources = _shared.sources
 	_geometry = _shared.geometry
 	_paths = _shared.paths
-	_feature_grid = _shared.feature_grid
+	_feature_grids = _shared.feature_grids
 	_city_grid = _shared.city_grid
+	_city_tier_grids = _shared.city_tier_grids
 	_lookup = _shared.lookup
 	_search_index = _shared.search_index
+	_administrative_coverage = _shared.administrative_coverage
+
+func coverage_for_country(country: String) -> Dictionary:
+	return _administrative_coverage.get(country, {})
 
 func project(lon: float, lat: float) -> Vector2:
 	return Vector2((lon + 12.0) / 64.0 * 1200.0, (72.0 - lat) / 39.0 * 760.0)
@@ -120,12 +142,15 @@ func path(reference: Array) -> PackedVector2Array:
 
 func visible_features(rect: Rect2, zoom: float) -> Array:
 	var result: Array = []
-	for index in _query(_feature_grid, rect):
-		var feature: Dictionary = features[int(index)]
-		if zoom < float(KIND_ZOOM.get(str(feature.kind), 10.0)):
+	# Nicht sichtbare Ebenen werden vor der räumlichen Abfrage ausgelassen.
+	# So werden etwa Gemeinde-IDs bei einer Länderansicht gar nicht dedupliziert.
+	for kind in _feature_grids:
+		if zoom < float(KIND_ZOOM.get(str(kind), 10.0)):
 			continue
-		if feature.bounds.intersects(rect):
-			result.append(feature)
+		for index in _query(_feature_grids[kind], rect):
+			var feature: Dictionary = features[int(index)]
+			if feature.bounds.intersects(rect):
+				result.append(feature)
 	return result
 
 func visible_cities(rect: Rect2, zoom: float) -> Array:
@@ -139,7 +164,8 @@ func visible_cities(rect: Rect2, zoom: float) -> Array:
 	elif zoom < 8.0:
 		minimum_population = 20000
 	var result: Array = []
-	for index in _query(_city_grid, rect):
+	var grid: Dictionary = _city_grid if minimum_population == 0 else _city_tier_grids[minimum_population]
+	for index in _query(grid, rect):
 		var city: Dictionary = cities[int(index)]
 		if int(city.population) >= minimum_population and rect.has_point(city.point):
 			result.append(city)
@@ -185,20 +211,27 @@ func nearest_city(point: Vector2, radius: float = 8.0) -> Dictionary:
 func feature_at(point: Vector2, zoom: float = 16.0) -> Dictionary:
 	var result: Dictionary = {}
 	var smallest := INF
+	var deepest := -1
 	for feature in visible_features(Rect2(point - Vector2(0.001, 0.001), Vector2(0.002, 0.002)), zoom):
+		var detail := int(KIND_DETAIL.get(str(feature.kind), -1))
 		var area: float = feature.bounds.get_area()
-		if area >= smallest:
+		if detail < deepest or (detail == deepest and area >= smallest):
 			continue
+		var contained := false
 		for reference in feature.paths:
 			var ring := path(reference)
 			if ring.size() >= 3 and Geometry2D.is_point_in_polygon(point, ring):
-				result = feature
-				smallest = area
-				break
+				contained = not contained
+		if contained:
+			result = feature
+			smallest = area
+			deepest = detail
 	return result
 
 func _add_lookup(record: Dictionary, rank: int) -> void:
 	_lookup[str(record.get("id", ""))] = record
+	if not bool(record.get("name_known", true)):
+		return
 	_search_index.append({"text": _fold(str(record.get("name", ""))), "record": record, "rank": rank})
 
 func _index_rect(grid: Dictionary, rect: Rect2, index: int) -> void:

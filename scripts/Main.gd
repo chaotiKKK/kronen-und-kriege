@@ -2493,6 +2493,9 @@ func _refresh_map_header() -> void:
 		return
 	if top_world_label != null:
 		top_world_label.text = "BANGER QUEENS · %s" % ("%d v. Chr." % -game.year if game.year < 0 else "%d n. Chr." % game.year)
+	if selected.is_empty() and not map_view.atlas_location.is_empty():
+		map_header_meta.text = "%s · Referenzort\nAußerhalb der simulierten Spielgebiete" % map_view.atlas_location
+		return
 	if selected != "":
 		var p: Dictionary = game.province(selected)
 		if not p.is_empty():

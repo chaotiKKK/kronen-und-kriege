@@ -3,8 +3,8 @@
 # Aufruf: bash tools/verify_android_apk.sh [APK]
 set -euo pipefail
 
-APK="${1:-F:/banger-queens.apk}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+APK="${1:-$HERE/build/exports/banger-queens.apk}"
 SDK="${ANDROID_SDK_ROOT:-/c/Users/HP/AppData/Local/Android/Sdk}"
 BT="${ANDROID_BUILD_TOOLS:-$SDK/build-tools/36.1.0}"
 JDK="$HERE/.tools/jdk17"

@@ -26,6 +26,7 @@ from shapely import affinity
 from shapely.geometry import LineString, Point, Polygon, box, mapping, shape
 from shapely.ops import unary_union
 from shapely.strtree import STRtree
+from atlas_administration import natural_earth_role, bkg_unit_role, supplement
 
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / ".tools/atlas_sources"
@@ -48,6 +49,7 @@ RIVER_NAMES = {
 CITY_NAMES = {
     "DE": {"Munich": "München", "Cologne": "Köln", "Hanover": "Hannover", "Nuremberg": "Nürnberg"},
     "AT": {"Vienna": "Wien"},
+    "AM": {"Yerevan": "Jerewan"},
     "BE": {"Brussels": "Brüssel", "Antwerp": "Antwerpen", "Liège": "Lüttich", "Liege": "Lüttich"},
     "FR": {"Strasbourg": "Straßburg"},
     "RU": {"Moscow": "Moskau", "Saint Petersburg": "Sankt Petersburg"},
@@ -301,15 +303,25 @@ def feature_record(pool: GeometryPool, provinces: ProvinceIndex, geometry, *, fe
     point = projected.representative_point()
     center = (point.x, point.y)
     x0, y0, x1, y1 = projected.bounds
-    return {"id": feature_id, "name": str(name), "kind": kind, "parent_id": parent_id,
+    record = {"id": feature_id, "name": str(name), "kind": kind, "parent_id": parent_id,
             "province_id": provinces.resolve(center), "center": [round(v, 4) for v in center],
             "bounds": [round(v, 4) for v in (x0, y0, x1 - x0, y1 - y0)], "paths": refs,
             "country": country, "source": source, **extra}
+    if len(refs) > 32:
+        component_bounds = []
+        for coordinates in geometry_paths(projected):
+            points = list(coordinates)
+            xs, ys = [p[0] for p in points], [p[1] for p in points]
+            component_bounds.append([round(v, 4) for v in (min(xs), min(ys), max(xs) - min(xs), max(ys) - min(ys))])
+        if len(component_bounds) != len(refs):
+            raise ValueError("Component bounds and geometry paths disagree")
+        record["path_bounds"] = component_bounds
+    return record
 
 
 def build(refresh: bool = False):
     names = {
-        "countries": "ne_50m_admin_0_countries.geojson",
+        "countries": "ne_10m_admin_0_countries.geojson",
         "regions": "ne_10m_admin_1_states_provinces.geojson",
         "rivers": "ne_10m_rivers_lake_centerlines.geojson",
     }
@@ -331,17 +343,32 @@ def build(refresh: bool = False):
     pool = GeometryPool()
     provinces = ProvinceIndex(ROOT / "data/europe_geometry.json")
     features = []
+    country_geometries = {}
+    base_local_geometries = []
     country_codes = {}
+    reference_path = ROOT / "data/atlas_land_references.json"
+    reference_sources, reference_geometries, reference_issues = [], {}, {}
+    if reference_path.exists():
+        from atlas_land_references import load_references
+        references = json.loads(reference_path.read_text(encoding="utf-8"))
+        reference_sources = references["sources"]
+        reference_geometries = load_references(CACHE, reference_sources)
+        reference_issues = references.get("unresolved", {})
+        sources.extend(reference_sources)
+    reference_ids = {source["country"]: source["id"] for source in reference_sources}
     country_data = json.loads((CACHE / names["countries"]).read_text(encoding="utf-8"))
     for raw in country_data["features"]:
         p = props(raw)
         code = country_code(p)
         country_codes[p.get("adm0_a3", "")] = code
-        item = feature_record(pool, provinces, shape(raw["geometry"]), feature_id="country:" + code,
+        country_geometry = reference_geometries.get(code, shape(raw["geometry"]))
+        country_source = reference_ids.get(code, "natural-earth-countries")
+        item = feature_record(pool, provinces, country_geometry, feature_id="country:" + code,
             name=p.get("name_de") or p.get("name"), kind="country", parent_id="", country=code,
-            source="natural-earth-countries", tolerance=0.08)
+            source=country_source, tolerance=0.02 if code in reference_ids else 0.08)
         if item:
             features.append(item)
+            country_geometries[code] = valid_geometry(country_geometry).intersection(CLIP)
     region_data = json.loads((CACHE / names["regions"]).read_text(encoding="utf-8"))
     country_ids = {f["id"] for f in features}
     missing_countries = defaultdict(list)
@@ -352,12 +379,18 @@ def build(refresh: bool = False):
         if code == "DE":
             continue
         region_id = str(p.get("adm1_code") or p.get("iso_3166_2"))
+        role, unit_type = natural_earth_role(code, p)
+        if role is None:
+            continue
         item = feature_record(pool, provinces, shape(raw["geometry"]), feature_id="region:" + region_id,
             name=p.get("name_de") or p.get("name") or p.get("name_en") or region_id,
-            kind="region", parent_id="country:" + code, country=code,
-            source="natural-earth-regions", tolerance=0.05)
+            kind=role, parent_id="country:" + code, country=code,
+            source="natural-earth-regions", tolerance=0.05,
+            unit_type=unit_type, source_admin_level=1, source_admin_type=p.get("type_en"))
         if item:
             features.append(item)
+            if role == "municipality":
+                base_local_geometries.append((code, valid_geometry(shape(raw["geometry"])).intersection(CLIP), "natural-earth-regions"))
             if item["parent_id"] not in country_ids:
                 missing_countries[code].append(shape(raw["geometry"]))
                 missing_country_names[code] = {"ESB": "Dekelia", "WSB": "Akrotiri"}.get(code, p.get("admin") or p.get("name_de") or code)
@@ -370,6 +403,7 @@ def build(refresh: bool = False):
             source="natural-earth-regions", tolerance=0.08)
         if item:
             features.append(item)
+            country_geometries[code] = valid_geometry(unary_union(geometries)).intersection(CLIP)
 
     for layer, kind, tolerance in [("vg250_lan", "region", 0.03), ("vg250_krs", "district", 0.025),
                                     ("vg250_gem", "municipality", 0.02)]:
@@ -379,13 +413,31 @@ def build(refresh: bool = False):
         source["unique_ags_count"] = len(merged)
         for raw_feature in merged:
             p = raw_feature["properties"]
+            role, native_type = bkg_unit_role(kind, p)
             item = feature_record(pool, provinces, shape(raw_feature["geometry"]),
-                feature_id=administrative_id(kind, p["ags"]), name=p["gen"], kind=kind,
+                feature_id=administrative_id(kind, p["ags"]), name=p["gen"], kind=role,
                 parent_id=administrative_parent_id(kind, p["ags"]), country="DE", source="bkg-vg250",
-                tolerance=tolerance, ags=p["ags"])
+                tolerance=tolerance, ags=p["ags"], unit_type=native_type)
             if item:
                 features.append(item)
+                if kind == "municipality":
+                    base_local_geometries.append(("DE", shape(raw_feature["geometry"]).intersection(CLIP), source["id"]))
         print(f"Normalized {kind}: {len(merged)} official keys", flush=True)
+
+    added_sources, administrative_coverage, pending_sources = supplement(
+        features, pool, provinces, feature_record, country_geometries,
+        base_local_geometries, ROOT, CACHE, independent_reference_ids=reference_ids)
+    sources.extend(added_sources)
+    for country, entry in administrative_coverage.items():
+        entry["land_reference_source"] = reference_ids.get(country, "natural-earth-countries")
+        if country in reference_issues:
+            entry.update(reference_issue=reference_issues[country], status="reference_review",
+                         blocks_full_coverage_claim=True)
+    from atlas_terminal_authorities import apply_scopes, load_manifest, verify_evidence_receipts
+    verify_evidence_receipts(load_manifest(), CACHE)
+    source_map = {source["id"]: source for source in sources}
+    apply_scopes(features, administrative_coverage, source_map)
+    sources = list(source_map.values())
 
     cities = []
     with zipfile.ZipFile(city_path) as archive:
@@ -428,6 +480,8 @@ def build(refresh: bool = False):
     atlas = {"schema": 1, "projection": {"size": list(SIZE), "bounds": list(BOUNDS)},
              "geometry": "res://data/atlas_geometry.bin", "sources": sources,
              "features": features, "cities": cities, "rivers": rivers,
+             "administrative_coverage": administrative_coverage,
+             "pending_administrative_sources": pending_sources,
              "reference_geography": "Heutige geografische Referenz; keine behaupteten historischen Grenzen oder Gründungsdaten."}
     validate_atlas(atlas, pool)
     binary_path, json_path = ROOT / "data/atlas_geometry.bin", ROOT / "data/atlas.json"
@@ -447,8 +501,8 @@ def build(refresh: bool = False):
 def validate_atlas(atlas: dict, pool: GeometryPool):
     if len(pool.data) >= 100_000_000:
         raise ValueError("Geometry exceeds the 100 MB data budget")
-    if len(compact_json(atlas).encode("utf-8")) >= 15_000_000:
-        raise ValueError("Metadata exceeds the 15 MB data budget")
+    if len(compact_json(atlas).encode("utf-8")) >= 128_000_000:
+        raise ValueError("Metadata exceeds the 128 MB offline atlas budget")
     ids = [f["id"] for f in atlas["features"]]
     if len(ids) != len(set(ids)):
         raise ValueError("Duplicate feature identifier")
@@ -523,6 +577,28 @@ def write_documentation(atlas: dict, json_path: Path, binary_path: Path):
         "Ein Geodatentest belegt keine gerenderte Karte und keinen Android-Gerätelauf.", "",
         "| Builddatei | Bytes | SHA-256 |", "|---|---:|---|"]
     rows += [f"| `{path.relative_to(ROOT).as_posix()}` | {path.stat().st_size} | `{sha256_file(path)}` |" for path in (json_path, binary_path)]
+    rows += ["", "## Landesweise Abdeckung lokaler Verwaltung", "",
+        "Die Prozentwerte messen echte lokale Flächen gegen eine unabhängige Landreferenz im "
+        "Kartenausschnitt. 95 % ist der Prüfwert für geometrische Abdeckung, kein Nachweis einer "
+        "lückenlos aktuellen Verwaltungsreform. Quellabweichungen und ungeeignete Nenner bleiben gesperrt. "
+        "Gemeinden und native Ortsverwaltungen werden fachlich getrennt erhalten; mehr Referenzflächen "
+        "verändern die 49 Spielgebiete nicht.", "",
+        "| Gebiet | Name | Landabdeckung | Prüfstatus | Unabhängige Landreferenz |",
+        "|---|---|---:|---|---|"]
+    names = {f["country"]: f["name"] for f in atlas["features"] if f["kind"] == "country"}
+    status_names = {"complete": "Prüfwert erreicht", "gap": "Lücke", "source_review": "Quellprüfung offen", "reference_review": "Landreferenz ungeeignet", "single_jurisdiction": "Gebietsweite Verwaltung ohne zusätzliche Kommunalgliederung"}
+    reference_notes = []
+    for country, entry in sorted(atlas.get("administrative_coverage", {}).items()):
+        fraction_text = f"{100 * entry['fraction']:.2f} %" if entry.get("measurement_applicable", True) else "entfällt (Strukturklassifikation)"
+        rows.append(f"| {country} | {names.get(country, country)} | {fraction_text} | "
+                    f"{status_names.get(entry['status'], entry['status'])} | {entry.get('land_reference_source', '')} |")
+        if entry.get("reference_issue"):
+            reference_notes.append(f"{country}: {entry['reference_issue']}")
+    if reference_notes:
+        rows += ["", *reference_notes]
+    pending = atlas.get("pending_administrative_sources", [])
+    if pending:
+        rows += ["", "Noch nicht eingebettete Quellen: " + ", ".join(pending) + "."]
     (ROOT / "docs/atlas-sources.md").write_text("\n".join(rows) + "\n", encoding="utf-8")
 
 

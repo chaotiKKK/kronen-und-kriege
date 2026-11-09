@@ -1,11 +1,12 @@
 param(
-    [string]$Exe = "F:\banger-queens.exe",
+    [string]$Exe = "",
     [int]$WaitSeconds = 30,
     [switch]$GodotVerbose
 )
 
 $ErrorActionPreference = "Stop"
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+if ([string]::IsNullOrWhiteSpace($Exe)) { $Exe = Join-Path $root "build\exports\banger-queens.exe" }
 $outDir = Join-Path $root "build\verify"
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
@@ -209,10 +210,11 @@ if ($logText -notmatch "MAIN_READY") {
     throw "Hauptszene wurde nicht geladen (MAIN_READY fehlt im Log)."
 }
 
+$exeEventPattern = [Regex]::Escape([System.IO.Path]::GetFileName($Exe))
 $wer = @(Get-WinEvent -FilterHashtable @{LogName = "Application"; StartTime = $started} -ErrorAction SilentlyContinue |
     Where-Object {
         $_.ProviderName -in @("Application Error", "Windows Error Reporting") -and
-        $_.Message -match "ck3-kronen-kriege\.exe"
+        $_.Message -match $exeEventPattern
     })
 if ($wer.Count -gt 0) { throw "Windows-Crashspur fuer die EXE: $($wer[0].TimeCreated) / $($wer[0].ProviderName)" }
 

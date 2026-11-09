@@ -1,0 +1,686 @@
+{
+  "schema": 1,
+  "sources": [
+    {
+      "country": "AM",
+      "country_iso3": "ARM",
+      "scope_countries": [
+        "AM"
+      ],
+      "kind": "municipality",
+      "replacement_scope": "feature",
+      "merge_priority": 4,
+      "date": "2026-11-08T21:21:00Z",
+      "osm_timestamp": "2026-11-08T21:21:00Z",
+      "license": "ODbL-1.0",
+      "license_url": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "attribution": "© OpenStreetMap contributors; Geofabrik GmbH. ODbL1.0. Administrative roles checked against Armenian legislation; no official boundary certification.",
+      "files": [
+        {
+          "cache_file": "audit/armenia-current-2026/producer/gis_osm_adminareas_a_free_1.cpg",
+          "archive_member": "gis_osm_adminareas_a_free_1.cpg",
+          "url": "https://download.geofabrik.de/asia/armenia-261108-free.shp.zip",
+          "bytes": 6,
+          "sha256": "146d6789ffe033a5297c1ad046e6a62ee35319b86b021444f05b6ea2aa8a1f4a"
+        },
+        {
+          "cache_file": "audit/armenia-current-2026/producer/gis_osm_adminareas_a_free_1.dbf",
+          "archive_member": "gis_osm_adminareas_a_free_1.dbf",
+          "url": "https://download.geofabrik.de/asia/armenia-261108-free.shp.zip",
+          "bytes": 39457,
+          "sha256": "3c81640b851b63abc855702190c11039b28a72165ea5716a6ba1afa8344a477b"
+        },
+        {
+          "cache_file": "audit/armenia-current-2026/producer/gis_osm_adminareas_a_free_1.prj",
+          "archive_member": "gis_osm_adminareas_a_free_1.prj",
+          "url": "https://download.geofabrik.de/asia/armenia-261108-free.shp.zip",
+          "bytes": 144,
+          "sha256": "ffc9162903c37f0867d1e7f36c20036a165f7aa555dda24c1ae0ee4328d2977f"
+        },
+        {
+          "cache_file": "audit/armenia-current-2026/producer/gis_osm_adminareas_a_free_1.shp",
+          "archive_member": "gis_osm_adminareas_a_free_1.shp",
+          "url": "https://download.geofabrik.de/asia/armenia-261108-free.shp.zip",
+          "bytes": 1587004,
+          "sha256": "064b4813b7a67cd99488420ee55cfdb1cd0c5dd9cd8ce9d2a6621587f61f1d64"
+        },
+        {
+          "cache_file": "audit/armenia-current-2026/producer/gis_osm_adminareas_a_free_1.shx",
+          "archive_member": "gis_osm_adminareas_a_free_1.shx",
+          "url": "https://download.geofabrik.de/asia/armenia-261108-free.shp.zip",
+          "bytes": 2268,
+          "sha256": "43186415aa28dc53e78f099369255315b400062403d5dd051fa65c3e430a5d08"
+        },
+        {
+          "cache_file": "audit/armenia-current-2026/producer/README",
+          "archive_member": "README",
+          "url": "https://download.geofabrik.de/asia/armenia-261108-free.shp.zip",
+          "bytes": 652,
+          "sha256": "5cb090d056bbd94ffbd78fa43799d1bc8d25f87502ed4363061e77e055896f6c"
+        },
+        {
+          "cache_file": "audit/armenia-current-2026/current-law-consolidated.html",
+          "url": "https://www.arlis.am/hy/acts/231073",
+          "bytes": 1972398,
+          "sha256": "7fb4d97b98f511c16a15b516097df50cc6c51d6897ac9a8e32d4decee570811b"
+        },
+        {
+          "cache_file": "audit/armenia-current-2026/law-2026-09-17-HO454.html",
+          "url": "https://www.arlis.am/hy/acts/231060",
+          "bytes": 55427,
+          "sha256": "d8f2fa0885f56334857048c4b4363c7d5d8a5013ec0159fb4b053d634a703170"
+        },
+        {
+          "cache_file": "audit/armenia-current-2026/yerevan-districts.html",
+          "url": "https://www.yerevan.am/en/administrative-districts/",
+          "bytes": 58702,
+          "sha256": "ec2ef762b7cbae5292d5eb1f8e6263a3070d3bdceff991054543d65e1044e9f4"
+        },
+        {
+          "cache_file": "audit/armenia-current-2026/osm-relations-metadata-1.json",
+          "url": "https://api.openstreetmap.org/api/0.6/relations.json?relations=7814501,11992300,13404217,11788621,13404215,13404214,17140660,11788622,10852604,13404219,13404299,13404298,15394027,13404216,13404218,13404296,13404297,17073740,17074601,10869624,11543300,12001265,17087569,11788619,17128362,17128361,17134140,17137937,17137557,10860153,17140248,17140249,10860125,17140508,10921594,17140311,17074783,10866161,17137558,10860151",
+          "bytes": 44091,
+          "sha256": "7309176a4a360894ab5b636a6694eb750ff6a9d055abbd178be19152a6f80a63"
+        },
+        {
+          "cache_file": "audit/armenia-current-2026/osm-relations-metadata-2.json",
+          "url": "https://api.openstreetmap.org/api/0.6/relations.json?relations=13091914,11816846,11543305,10852603,10866160,17073665,10866159,10852606,11788620,13404250,13404220,17137783,12201442,10860152,10853043,10853045,10853046,10866162,11816843,17074782,10852605,10860123,10860124,17140552,11816842,10921609,10921611,10921610,17128406,11543307,11543306,10853044,11816844,11816845,364087,10853042",
+          "bytes": 50358,
+          "sha256": "8db8647523f2d30ece28737b7e2c4588f228a5dd0bc8f6991d0b1f0d76d46382"
+        },
+        {
+          "cache_file": "audit/armenia-current-2026/osm-Chambarak-10853047-full.json",
+          "url": "https://api.openstreetmap.org/api/0.6/relation/10853047/full.json",
+          "bytes": 600596,
+          "sha256": "53d4ba1a523722b13a60c18e5bb4796e8a48b6fed7b3472ff04fd7916c225915"
+        }
+      ],
+      "bytes": 4411103,
+      "sha256": "00b18c15f7618b893f8f4f5003512f95c7f88724bada72544040935fe3ad6a81",
+      "hash_scope": "SHA256 of canonical pinned input receipts; each original file has a separate exact SHA256",
+      "blocks_full_coverage_claim": true,
+      "official_role_date": "2026-09-19",
+      "role_evidence_urls": [
+        "https://www.arlis.am/hy/acts/231073",
+        "https://www.arlis.am/hy/acts/231060",
+        "https://www.yerevan.am/en/administrative-districts/"
+      ],
+      "unit_semantics": {
+        "source_unit_type": "Hamaynk / community; distinct capital administrative districts",
+        "municipal_authority_count": 62,
+        "meaning": "61 municipality features plus the coextensive municipal role of Yerevan; twelve districts are separate local_admin",
+        "geometry": "Original OSM polygons; exactly two enacted September2026 mergers dissolve source polygons without fabricated gap filling",
+        "coverage_status": "62 legal identities verified, not official cadastral boundary certification. Independent NaturalEarth baseline coverage93.1629%; gaps remain blocked."
+      },
+      "id": "geofabrik-AM-261108-qualified",
+      "url": "https://download.geofabrik.de/asia/armenia-261108-free.shp.zip",
+      "unit_type": "Համայնք / Community; Yerevan district roles explicitly separate",
+      "source_unit_count": 73,
+      "source_feature_count": 73,
+      "normalized_unit_count": 73,
+      "role_counts": {
+        "municipality": 60,
+        "local_admin": 12,
+        "region": 1
+      },
+      "municipal_authorities": 61
+    },
+    {
+      "country": "AM",
+      "country_iso3": "ARM",
+      "scope_countries": [
+        "AM"
+      ],
+      "kind": "municipality",
+      "replacement_scope": "feature",
+      "merge_priority": 4,
+      "date": "2026-11-08T21:21:00Z",
+      "osm_timestamp": "2026-11-08T21:21:00Z",
+      "license": "ODbL-1.0",
+      "license_url": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "attribution": "© OpenStreetMap contributors; Geofabrik GmbH. ODbL1.0. Administrative roles checked against Armenian legislation; no official boundary certification.",
+      "files": [
+        {
+          "cache_file": "audit/armenia-current-2026/producer/gis_osm_adminareas_a_free_1.cpg",
+          "archive_member": "gis_osm_adminareas_a_free_1.cpg",
+          "url": "https://download.geofabrik.de/asia/armenia-261108-free.shp.zip",
+          "bytes": 6,
+          "sha256": "146d6789ffe033a5297c1ad046e6a62ee35319b86b021444f05b6ea2aa8a1f4a"
+        },
+        {
+          "cache_file": "audit/armenia-current-2026/producer/gis_osm_adminareas_a_free_1.dbf",
+          "archive_member": "gis_osm_adminareas_a_free_1.dbf",
+          "url": "https://download.geofabrik.de/asia/armenia-261108-free.shp.zip",
+          "bytes": 39457,
+          "sha256": "3c81640b851b63abc855702190c11039b28a72165ea5716a6ba1afa8344a477b"
+        },
+        {
+          "cache_file": "audit/armenia-current-2026/producer/gis_osm_adminareas_a_free_1.prj",
+          "archive_member": "gis_osm_adminareas_a_free_1.prj",
+          "url": "https://download.geofabrik.de/asia/armenia-261108-free.shp.zip",
+          "bytes": 144,
+          "sha256": "ffc9162903c37f0867d1e7f36c20036a165f7aa555dda24c1ae0ee4328d2977f"
+        },
+        {
+          "cache_file": "audit/armenia-current-2026/producer/gis_osm_adminareas_a_free_1.shp",
+          "archive_member": "gis_osm_adminareas_a_free_1.shp",
+          "url": "https://download.geofabrik.de/asia/armenia-261108-free.shp.zip",
+          "bytes": 1587004,
+          "sha256": "064b4813b7a67cd99488420ee55cfdb1cd0c5dd9cd8ce9d2a6621587f61f1d64"
+        },
+        {
+          "cache_file": "audit/armenia-current-2026/producer/gis_osm_adminareas_a_free_1.shx",
+          "archive_member": "gis_osm_adminareas_a_free_1.shx",
+          "url": "https://download.geofabrik.de/asia/armenia-261108-free.shp.zip",
+          "bytes": 2268,
+          "sha256": "43186415aa28dc53e78f099369255315b400062403d5dd051fa65c3e430a5d08"
+        },
+        {
+          "cache_file": "audit/armenia-current-2026/producer/README",
+          "archive_member": "README",
+          "url": "https://download.geofabrik.de/asia/armenia-261108-free.shp.zip",
+          "bytes": 652,
+          "sha256": "5cb090d056bbd94ffbd78fa43799d1bc8d25f87502ed4363061e77e055896f6c"
+        },
+        {
+          "cache_file": "audit/armenia-current-2026/current-law-consolidated.html",
+          "url": "https://www.arlis.am/hy/acts/231073",
+          "bytes": 1972398,
+          "sha256": "7fb4d97b98f511c16a15b516097df50cc6c51d6897ac9a8e32d4decee570811b"
+        },
+        {
+          "cache_file": "audit/armenia-current-2026/law-2026-09-17-HO454.html",
+          "url": "https://www.arlis.am/hy/acts/231060",
+          "bytes": 55427,
+          "sha256": "d8f2fa0885f56334857048c4b4363c7d5d8a5013ec0159fb4b053d634a703170"
+        },
+        {
+          "cache_file": "audit/armenia-current-2026/yerevan-districts.html",
+          "url": "https://www.yerevan.am/en/administrative-districts/",
+          "bytes": 58702,
+          "sha256": "ec2ef762b7cbae5292d5eb1f8e6263a3070d3bdceff991054543d65e1044e9f4"
+        },
+        {
+          "cache_file": "audit/armenia-current-2026/osm-relations-metadata-1.json",
+          "url": "https://api.openstreetmap.org/api/0.6/relations.json?relations=7814501,11992300,13404217,11788621,13404215,13404214,17140660,11788622,10852604,13404219,13404299,13404298,15394027,13404216,13404218,13404296,13404297,17073740,17074601,10869624,11543300,12001265,17087569,11788619,17128362,17128361,17134140,17137937,17137557,10860153,17140248,17140249,10860125,17140508,10921594,17140311,17074783,10866161,17137558,10860151",
+          "bytes": 44091,
+          "sha256": "7309176a4a360894ab5b636a6694eb750ff6a9d055abbd178be19152a6f80a63"
+        },
+        {
+          "cache_file": "audit/armenia-current-2026/osm-relations-metadata-2.json",
+          "url": "https://api.openstreetmap.org/api/0.6/relations.json?relations=13091914,11816846,11543305,10852603,10866160,17073665,10866159,10852606,11788620,13404250,13404220,17137783,12201442,10860152,10853043,10853045,10853046,10866162,11816843,17074782,10852605,10860123,10860124,17140552,11816842,10921609,10921611,10921610,17128406,11543307,11543306,10853044,11816844,11816845,364087,10853042",
+          "bytes": 50358,
+          "sha256": "8db8647523f2d30ece28737b7e2c4588f228a5dd0bc8f6991d0b1f0d76d46382"
+        },
+        {
+          "cache_file": "audit/armenia-current-2026/osm-Chambarak-10853047-full.json",
+          "url": "https://api.openstreetmap.org/api/0.6/relation/10853047/full.json",
+          "bytes": 600596,
+          "sha256": "53d4ba1a523722b13a60c18e5bb4796e8a48b6fed7b3472ff04fd7916c225915"
+        }
+      ],
+      "bytes": 4411103,
+      "sha256": "00b18c15f7618b893f8f4f5003512f95c7f88724bada72544040935fe3ad6a81",
+      "hash_scope": "SHA256 of canonical pinned input receipts; each original file has a separate exact SHA256",
+      "blocks_full_coverage_claim": true,
+      "official_role_date": "2026-09-19",
+      "role_evidence_urls": [
+        "https://www.arlis.am/hy/acts/231073",
+        "https://www.arlis.am/hy/acts/231060",
+        "https://www.yerevan.am/en/administrative-districts/"
+      ],
+      "unit_semantics": {
+        "source_unit_type": "Hamaynk / community; distinct capital administrative districts",
+        "municipal_authority_count": 62,
+        "meaning": "61 municipality features plus the coextensive municipal role of Yerevan; twelve districts are separate local_admin",
+        "geometry": "Original OSM polygons; exactly two enacted September2026 mergers dissolve source polygons without fabricated gap filling",
+        "coverage_status": "62 legal identities verified, not official cadastral boundary certification. Independent NaturalEarth baseline coverage93.1629%; gaps remain blocked."
+      },
+      "id": "osm-api-AM-Chambarak-20261108",
+      "url": "https://api.openstreetmap.org/api/0.6/relation/10853047/34.json",
+      "unit_type": "Համայնք / Community; Yerevan district roles explicitly separate",
+      "source_unit_count": 1,
+      "source_feature_count": 1,
+      "normalized_unit_count": 1,
+      "role_counts": {
+        "municipality": 1
+      },
+      "municipal_authorities": 1
+    }
+  ],
+  "official_role_identities": [
+    {
+      "name": "Աշտարակ",
+      "legal_row": "1. Աշտարակ",
+      "first_settlement": "Աշտարակ քաղաք",
+      "table_index": 600,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Ապարան",
+      "legal_row": "2. Ապարան",
+      "first_settlement": "Ապարան քաղաք",
+      "table_index": 600,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Թալին",
+      "legal_row": "3. Թալին",
+      "first_settlement": "Թալին քաղաք",
+      "table_index": 600,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Ալագյազ",
+      "legal_row": "6. Ալագյազ",
+      "first_settlement": "Ալագյազ գյուղ",
+      "table_index": 600,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Մեծաձոր",
+      "legal_row": "13. Մեծաձոր",
+      "first_settlement": "Մեծաձոր գյուղ",
+      "table_index": 600,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Արևուտ",
+      "legal_row": "26. Արևուտ",
+      "first_settlement": "Արևուտ գյուղ",
+      "table_index": 600,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Ծաղկահովիտ",
+      "legal_row": "53. Ծաղկահովիտ",
+      "first_settlement": "Ծաղկահովիտ գյուղ",
+      "table_index": 600,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Շամիրամ",
+      "legal_row": "81. Շամիրամ",
+      "first_settlement": "Շամիրամ գյուղ",
+      "table_index": 600,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Արտաշատ",
+      "legal_row": "1. Արտաշատ",
+      "first_settlement": "Արտաշատ քաղաք",
+      "table_index": 601,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Արարատ",
+      "legal_row": "2. Արարատ",
+      "first_settlement": "Արարատ քաղաք",
+      "table_index": 601,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Մասիս",
+      "legal_row": "3. Մասիս",
+      "first_settlement": "Մասիս քաղաք",
+      "table_index": 601,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Վերին Դվին",
+      "legal_row": "92. Վերին Դվին",
+      "first_settlement": "Վերին Դվին գյուղ",
+      "table_index": 601,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Արմավիր",
+      "legal_row": "1. Արմավիր",
+      "first_settlement": "Արմավիր քաղաք",
+      "table_index": 602,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Վաղարշապատ",
+      "legal_row": "2. Վաղարշապատ",
+      "first_settlement": "Էջմիածին քաղաք",
+      "table_index": 602,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Մեծամոր",
+      "legal_row": "3. Մեծամոր",
+      "first_settlement": "Մեծամոր քաղաք",
+      "table_index": 602,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Բաղրամյան",
+      "legal_row": "29. Բաղրամյան",
+      "first_settlement": "Բաղրամյան գյուղ",
+      "table_index": 602,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Արաքս",
+      "legal_row": "33. Արաքս",
+      "first_settlement": "Գայ գյուղ",
+      "table_index": 602,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Փարաքար",
+      "legal_row": "94. Փարաքար",
+      "first_settlement": "Փարաքար գյուղ",
+      "table_index": 602,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Ֆերիկ",
+      "legal_row": "97. Ֆերիկ",
+      "first_settlement": "Ֆերիկ գյուղ",
+      "table_index": 602,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Գավառ",
+      "legal_row": "1. Գավառ",
+      "first_settlement": "Գավառ քաղաք",
+      "table_index": 603,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Ճամբարակ",
+      "legal_row": "2. Ճամբարակ",
+      "first_settlement": "Ճամբարակ քաղաք",
+      "table_index": 603,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Մարտունի",
+      "legal_row": "3. Մարտունի",
+      "first_settlement": "Մարտունի քաղաք",
+      "table_index": 603,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Սևան",
+      "legal_row": "4. Սևան",
+      "first_settlement": "Սևան քաղաք",
+      "table_index": 603,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Վարդենիս",
+      "legal_row": "5. Վարդենիս",
+      "first_settlement": "Վարդենիս քաղաք",
+      "table_index": 603,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Վանաձոր",
+      "legal_row": "1.Վանաձոր",
+      "first_settlement": "Վանաձոր քաղաք",
+      "table_index": 604,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Ալավերդի",
+      "legal_row": "2. Ալավերդի",
+      "first_settlement": "Ալավերդի քաղաք",
+      "table_index": 604,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Թումանյան",
+      "legal_row": "4. Թումանյան",
+      "first_settlement": "Թումանյան քաղաք",
+      "table_index": 604,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Սպիտակ",
+      "legal_row": "6. Սպիտակ",
+      "first_settlement": "Սպիտակ քաղաք",
+      "table_index": 604,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Ստեփանավան",
+      "legal_row": "7. Ստեփանավան",
+      "first_settlement": "Ստեփանավան քաղաք",
+      "table_index": 604,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Տաշիր",
+      "legal_row": "8. Տաշիր",
+      "first_settlement": "Տաշիր քաղաք",
+      "table_index": 604,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Լերմոնտովո",
+      "legal_row": "43. Լերմոնտովո",
+      "first_settlement": "Լերմոնտովո գյուղ",
+      "table_index": 604,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Ֆիոլետովո",
+      "legal_row": "113. Ֆիոլետովո",
+      "first_settlement": "Ֆիոլետովո գյուղ",
+      "table_index": 604,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Հրազդան",
+      "legal_row": "1. Հրազդան",
+      "first_settlement": "Հրազդան քաղաք",
+      "table_index": 605,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Աբովյան",
+      "legal_row": "2. Աբովյան",
+      "first_settlement": "Աբովյան քաղաք",
+      "table_index": 605,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Բյուրեղավան",
+      "legal_row": "3. Բյուրեղավան",
+      "first_settlement": "Բյուրեղավան քաղաք",
+      "table_index": 605,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Նաիրի",
+      "legal_row": "4. Նաիրի",
+      "first_settlement": "Եղվարդ քաղաք",
+      "table_index": 605,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Ծաղկաձոր",
+      "legal_row": "5. Ծաղկաձոր",
+      "first_settlement": "Ծաղկաձոր քաղաք",
+      "table_index": 605,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Նոր Հաճըն",
+      "legal_row": "6. Նոր Հաճըն",
+      "first_settlement": "Նոր Հաճն քաղաք",
+      "table_index": 605,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Չարենցավան",
+      "legal_row": "7. Չարենցավան",
+      "first_settlement": "Չարենցավան քաղաք",
+      "table_index": 605,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Ակունք",
+      "legal_row": "9. Ակունք",
+      "first_settlement": "Ակունք գյուղ",
+      "table_index": 605,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Արզնի",
+      "legal_row": "16. Արզնի",
+      "first_settlement": "Արզնի գյուղ",
+      "table_index": 605,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Գառնի",
+      "legal_row": "21. Գառնի",
+      "first_settlement": "Գառնի գյուղ",
+      "table_index": 605,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Ջրվեժ",
+      "legal_row": "57. Ջրվեժ",
+      "first_settlement": "Ջրվեժ գյուղ",
+      "table_index": 605,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Գյումրի",
+      "legal_row": "1. Գյումրի",
+      "first_settlement": "Գյումրի քաղաք",
+      "table_index": 606,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Արթիկ",
+      "legal_row": "2. Արթիկ",
+      "first_settlement": "Արթիկ քաղաք",
+      "table_index": 606,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Անի",
+      "legal_row": "3. Անի",
+      "first_settlement": "Մարալիկ քաղաք",
+      "table_index": 606,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Ախուրյան",
+      "legal_row": "7. Ախուրյան",
+      "first_settlement": "Ախուրյան գյուղ",
+      "table_index": 606,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Ամասիա",
+      "legal_row": "10. Ամասիա",
+      "first_settlement": "Ամասիա գյուղ",
+      "table_index": 606,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Աշոցք",
+      "legal_row": "15. Աշոցք",
+      "first_settlement": "Աշոցք գյուղ",
+      "table_index": 606,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Կապան",
+      "legal_row": "1. Կապան",
+      "first_settlement": "Կապան քաղաք",
+      "table_index": 607,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Գորիս",
+      "legal_row": "3. Գորիս",
+      "first_settlement": "Գորիս քաղաք",
+      "table_index": 607,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Մեղրի",
+      "legal_row": "5. Մեղրի",
+      "first_settlement": "Մեղրի քաղաք",
+      "table_index": 607,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Սիսիան",
+      "legal_row": "6. Սիսիան",
+      "first_settlement": "Սիսիան քաղաք",
+      "table_index": 607,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Քաջարան",
+      "legal_row": "7. Քաջարան",
+      "first_settlement": "Քաջարան քաղաք",
+      "table_index": 607,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Եղեգնաձոր",
+      "legal_row": "1. Եղեգնաձոր",
+      "first_settlement": "Եղեգնաձոր քաղաք",
+      "table_index": 608,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Ջերմուկ",
+      "legal_row": "2. Ջերմուկ",
+      "first_settlement": "Ջերմուկ քաղաք",
+      "table_index": 608,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Վայք",
+      "legal_row": "3. Վայք",
+      "first_settlement": "Վայք քաղաք",
+      "table_index": 608,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Իջևան",
+      "legal_row": "1. Իջևան",
+      "first_settlement": "Իջևան քաղաք",
+      "table_index": 609,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Բերդ",
+      "legal_row": "2. Բերդ",
+      "first_settlement": "Բերդ քաղաք",
+      "table_index": 609,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Դիլիջան",
+      "legal_row": "3. Դիլիջան",
+      "first_settlement": "Դիլիջան քաղաք",
+      "table_index": 609,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Նոյեմբերյան",
+      "legal_row": "4. Նոյեմբերյան",
+      "first_settlement": "Նոյեմբերյան քաղաք",
+      "table_index": 609,
+      "source": "https://www.arlis.am/hy/acts/231073"
+    },
+    {
+      "name": "Երևան",
+      "article": "6.1",
+      "source": "https://www.arlis.am/hy/acts/231073"
+    }
+  ],
+  "note": "Current legal identity set, partial geometric land coverage; original law text stays outside runtime manifests."
+}

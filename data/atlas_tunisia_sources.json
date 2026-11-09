@@ -1,0 +1,326 @@
+{
+  "schema": 1,
+  "sources": [
+    {
+      "id": "map-tunisia-municipalities-OSM20261016",
+      "country": "TN",
+      "country_iso3": "TUN",
+      "scope_countries": [
+        "TN"
+      ],
+      "kind": "municipality",
+      "unit_type": "Baladiya / Municipalité",
+      "merge_priority": 3,
+      "url": "https://github.com/Alaa-Taieb/map-tunisia/tree/2b704248c6105ceb2d8963ef9cfa052c683d0457",
+      "date": "2026-10-16T20:21:21Z",
+      "osm_timestamp": "2026-10-16T20:21:21Z",
+      "source_commit": "2b704248c6105ceb2d8963ef9cfa052c683d0457",
+      "producer": "Map Tunisia by Alaa Taieb",
+      "producer_report_generated": "2026-10-24T16:16:20Z",
+      "license": "ODbL-1.0",
+      "license_url": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "license_evidence_url": "https://raw.githubusercontent.com/Alaa-Taieb/map-tunisia/2b704248c6105ceb2d8963ef9cfa052c683d0457/LICENSE-DATA.md",
+      "attribution": "Map data © OpenStreetMap contributors · Map Tunisia by Alaa Taieb; ODbL 1.0",
+      "role_evidence_urls": [
+        "https://raw.githubusercontent.com/Alaa-Taieb/map-tunisia/2b704248c6105ceb2d8963ef9cfa052c683d0457/docs/methodology.md#9-municipalities"
+      ],
+      "source_boundary": "municipality",
+      "native_level": "OSM boundary=municipality; no admin_level",
+      "files": [
+        {
+          "cache_file": "audit/tunisia-municipal-2026/producer/data/source/tunisia-municipalities.geojson",
+          "producer_path": "data/source/tunisia-municipalities.geojson",
+          "url": "https://raw.githubusercontent.com/Alaa-Taieb/map-tunisia/2b704248c6105ceb2d8963ef9cfa052c683d0457/data/source/tunisia-municipalities.geojson",
+          "bytes": 6702026,
+          "sha256": "4db4db6a972077cb0cf3a0c470e4c70afdaea9760b18d6b09b76cd039fa90d55"
+        },
+        {
+          "cache_file": "audit/tunisia-municipal-2026/producer/data/attributes/municipalities.csv",
+          "producer_path": "data/attributes/municipalities.csv",
+          "url": "https://raw.githubusercontent.com/Alaa-Taieb/map-tunisia/2b704248c6105ceb2d8963ef9cfa052c683d0457/data/attributes/municipalities.csv",
+          "bytes": 24866,
+          "sha256": "59673998765cb574b3db3c902b3b8230002c13fd794372affcd04533c75110a7"
+        },
+        {
+          "cache_file": "audit/tunisia-municipal-2026/producer/data/source/municipalities-report.json",
+          "producer_path": "data/source/municipalities-report.json",
+          "url": "https://raw.githubusercontent.com/Alaa-Taieb/map-tunisia/2b704248c6105ceb2d8963ef9cfa052c683d0457/data/source/municipalities-report.json",
+          "bytes": 4382,
+          "sha256": "3d4098dad3851c814d1b1644a63818bf7c506d487f92d36ccc930945e49c8efc"
+        },
+        {
+          "cache_file": "audit/tunisia-municipal-2026/producer/data/source/extract-report.json",
+          "producer_path": "data/source/extract-report.json",
+          "url": "https://raw.githubusercontent.com/Alaa-Taieb/map-tunisia/2b704248c6105ceb2d8963ef9cfa052c683d0457/data/source/extract-report.json",
+          "bytes": 49643,
+          "sha256": "e90aa626107e0fa607ae33d717410392769385cb440defc8cb9660d87352f4dc"
+        },
+        {
+          "cache_file": "audit/tunisia-municipal-2026/producer/LICENSE-DATA.md",
+          "producer_path": "LICENSE-DATA.md",
+          "url": "https://raw.githubusercontent.com/Alaa-Taieb/map-tunisia/2b704248c6105ceb2d8963ef9cfa052c683d0457/LICENSE-DATA.md",
+          "bytes": 2276,
+          "sha256": "679dd574ae1a675d8988e56b75c0bc8108995e9d8b47742bafc4fbf74d2cabb2"
+        },
+        {
+          "cache_file": "audit/tunisia-municipal-2026/producer/docs/methodology.md",
+          "producer_path": "docs/methodology.md",
+          "url": "https://raw.githubusercontent.com/Alaa-Taieb/map-tunisia/2b704248c6105ceb2d8963ef9cfa052c683d0457/docs/methodology.md",
+          "bytes": 19642,
+          "sha256": "948562815c7afc01c2ca34ae7bf9ae716636960db38eb1a2e1670273cb442803"
+        },
+        {
+          "cache_file": "audit/tunisia-municipal-2026/producer/docs/accuracy.md",
+          "producer_path": "docs/accuracy.md",
+          "url": "https://raw.githubusercontent.com/Alaa-Taieb/map-tunisia/2b704248c6105ceb2d8963ef9cfa052c683d0457/docs/accuracy.md",
+          "bytes": 25798,
+          "sha256": "611ad9c8afaa297b59e18b9b62f83954b6bbed143c45fc7d4b2d8584a0b68a43"
+        },
+        {
+          "cache_file": "audit/tunisia-municipal-2026/producer/scripts/extract/municipalities.py",
+          "producer_path": "scripts/extract/municipalities.py",
+          "url": "https://raw.githubusercontent.com/Alaa-Taieb/map-tunisia/2b704248c6105ceb2d8963ef9cfa052c683d0457/scripts/extract/municipalities.py",
+          "bytes": 12131,
+          "sha256": "0381481d01f9ed1993e87929150120cbd4c4fd1b3368ecdf86f73bdb7a262d28"
+        }
+      ],
+      "bytes": 6840764,
+      "sha256": "1423f9731ecb6c70e01341a0b034499d81b0111670d30b014e282703fad41ba8",
+      "hash_scope": "SHA-256 of canonical ordered input receipts; each input also has its pinned SHA-256",
+      "source_unit_count": 338,
+      "source_feature_count": 338,
+      "normalized_unit_count": 338,
+      "units_intersecting_atlas_bbox": 335,
+      "atlas_bbox": [
+        -12,
+        33,
+        52,
+        72
+      ],
+      "source_name_duplicate_groups": [
+        {
+          "governorate": "TN-13",
+          "original_name": "Ben Arous",
+          "source_unit_ids": [
+            "municipality-7209941",
+            "municipality-7304421"
+          ]
+        },
+        {
+          "governorate": "TN-13",
+          "original_name": "Fouchana",
+          "source_unit_ids": [
+            "municipality-7209947",
+            "municipality-7209948"
+          ]
+        }
+      ],
+      "source_warnings": [
+        "2 OSM relations are named Ben Arous in TN-13: municipality-7209941, municipality-7304421",
+        "2 OSM relations are named Fouchana in TN-13: municipality-7209947, municipality-7209948"
+      ],
+      "upstream_geometry_corrections": [
+        {
+          "type": "overlap_to_smaller",
+          "osm_id": 7304421,
+          "name": "Ben Arous",
+          "area_km2": 6.468,
+          "given_to": [
+            {
+              "osm_id": 7209941,
+              "name": "Ben Arous"
+            }
+          ]
+        }
+      ],
+      "geometry_modified_by_importer": false,
+      "upstream_coverage_report": {
+        "land_area_km2": 155149.588,
+        "covered_km2": 151829.839,
+        "uncovered_km2": 3319.749,
+        "coverage": 0.9786,
+        "overlap_km2": 0.0,
+        "outside_land_km2": 0.0,
+        "uncovered_pieces": 171,
+        "invalid_geometries": 0,
+        "across_delegations": 20
+      },
+      "upstream_uncovered_examples": [
+        {
+          "area_km2": 1036.8,
+          "at": [
+            9.802,
+            34.854
+          ],
+          "governorate": "TN-43",
+          "delegations": [
+            "delegation-4361",
+            "delegation-4363"
+          ]
+        },
+        {
+          "area_km2": 565.0,
+          "at": [
+            10.681,
+            34.87
+          ],
+          "governorate": "TN-61",
+          "delegations": [
+            "delegation-3455",
+            "delegation-3460"
+          ]
+        },
+        {
+          "area_km2": 433.1,
+          "at": [
+            10.455,
+            34.53
+          ],
+          "governorate": "TN-61",
+          "delegations": [
+            "delegation-3465"
+          ]
+        },
+        {
+          "area_km2": 423.0,
+          "at": [
+            9.413,
+            34.986
+          ],
+          "governorate": "TN-43",
+          "delegations": [
+            "delegation-4351",
+            "delegation-4364"
+          ]
+        },
+        {
+          "area_km2": 351.4,
+          "at": [
+            10.409,
+            35.518
+          ],
+          "governorate": "TN-51",
+          "delegations": [
+            "delegation-3163",
+            "delegation-3164"
+          ]
+        },
+        {
+          "area_km2": 117.5,
+          "at": [
+            11.061,
+            35.225
+          ],
+          "governorate": "TN-53",
+          "delegations": [
+            "delegation-3358"
+          ]
+        },
+        {
+          "area_km2": 115.1,
+          "at": [
+            10.287,
+            35.861
+          ],
+          "governorate": "TN-51",
+          "delegations": [
+            "delegation-3157",
+            "delegation-3162",
+            "delegation-3163"
+          ]
+        },
+        {
+          "area_km2": 93.2,
+          "at": [
+            10.972,
+            35.592
+          ],
+          "governorate": "TN-52",
+          "delegations": [
+            "delegation-3258",
+            "delegation-3259"
+          ]
+        },
+        {
+          "area_km2": 80.8,
+          "at": [
+            9.672,
+            37.161
+          ],
+          "governorate": "TN-23",
+          "delegations": [
+            "delegation-1753",
+            "delegation-1759"
+          ]
+        },
+        {
+          "area_km2": 39.1,
+          "at": [
+            10.225,
+            36.92
+          ],
+          "governorate": "TN-12",
+          "delegations": [
+            "delegation-1252",
+            "delegation-1253"
+          ]
+        },
+        {
+          "area_km2": 24.9,
+          "at": [
+            10.147,
+            36.759
+          ],
+          "governorate": "TN-11",
+          "delegations": [
+            "delegation-1164",
+            "delegation-1166"
+          ]
+        },
+        {
+          "area_km2": 11.7,
+          "at": [
+            10.242,
+            36.79
+          ],
+          "governorate": "TN-13",
+          "delegations": [
+            "delegation-1358",
+            "delegation-1359"
+          ]
+        },
+        {
+          "area_km2": 7.5,
+          "at": [
+            8.934,
+            37.528
+          ],
+          "governorate": "TN-23",
+          "delegations": [
+            "delegation-1751"
+          ]
+        }
+      ],
+      "upstream_osm_pbf": {
+        "name": "OpenStreetMap",
+        "license": "ODbL-1.0",
+        "attribution": "© OpenStreetMap contributors",
+        "selector": "relations tagged boundary=municipality",
+        "url": "https://download.geofabrik.de/africa/tunisia-latest.osm.pbf",
+        "osm_timestamp": "2026-10-16T20:21:21Z",
+        "osm_date": "2026-10-16",
+        "sha256": "444dd6e1e64e1ab4626cde5e54d911876c7761b63f4624a98872421007f50429",
+        "bytes": 84231484
+      },
+      "blocks_full_coverage_claim": true,
+      "unit_semantics": {
+        "render_role": "municipality",
+        "source_unit_type": "Baladiya / Municipalité",
+        "join": "Source municipality-<OSM relation> identifier to producer CSV osm_relation; no name-based merge",
+        "hierarchy": "Municipalities are separate from delegations/imadas; source governorate retained without forced nesting",
+        "geometry": "Producer full-precision municipal GeoJSON unchanged. Producer clips to its land and subtracts one 6.468 km² overlap from relation 7304421; no importer repair or gap allocation.",
+        "coverage_status": "338 actual source relation polygons, not an official current municipality total. Producer gaps remain gaps; dated 2016/2018 counts are not completeness targets. Country coverage must be independently measured inside the atlas bbox."
+      }
+    }
+  ]
+}

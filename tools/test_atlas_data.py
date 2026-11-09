@@ -7,7 +7,7 @@ from pathlib import Path
 import struct
 import unittest
 
-from shapely.geometry import Polygon, mapping, shape
+from shapely.geometry import Polygon, MultiPolygon, box, mapping, shape
 
 ROOT = Path(__file__).resolve().parents[1]
 PIPELINE = ROOT / "tools/build_atlas_data.py"
@@ -32,6 +32,20 @@ class AtlasPipelineUnitTests(unittest.TestCase):
         berlin = atlas.project(13.41053, 52.52437)
         self.assertTrue(470 < berlin[0] < 485 and 375 < berlin[1] < 385)
 
+    def test_complex_feature_keeps_component_bounds_for_selective_rendering(self):
+        geometry = MultiPolygon([box(20 + i * 0.02, 60, 20.005 + i * 0.02, 60.005) for i in range(40)])
+        pool = atlas.GeometryPool()
+        provinces = atlas.ProvinceIndex(ROOT / "data/europe_geometry.json")
+        feature = atlas.feature_record(pool, provinces, geometry, feature_id="fixture:islands", name="Inseln",
+            kind="country", parent_id="", country="AX", source="fixture", tolerance=0)
+        self.assertIn("path_bounds", feature, "Complex coastlines need bounds before materialising all tiny or distant rings")
+        self.assertEqual(len(feature["path_bounds"]), len(feature["paths"]))
+        for reference, bounds in zip(feature["paths"], feature["path_bounds"]):
+            coordinates = [struct.unpack_from("<ff", pool.data, (reference[0] + index) * 8)
+                           for index in range(reference[1])]
+            self.assertTrue(all(bounds[0] - .001 <= x <= bounds[0] + bounds[2] + .001 and
+                                bounds[1] - .001 <= y <= bounds[1] + bounds[3] + .001 for x, y in coordinates))
+
     def test_projection_rejects_nonfinite_coordinate(self):
         with self.assertRaises(ValueError):
             atlas.project(float("nan"), 50)
@@ -43,7 +57,8 @@ class AtlasPipelineUnitTests(unittest.TestCase):
 
     def test_german_city_aliases_use_the_source_country(self):
         cases = [("Brussels", "BE", "Brüssel"), ("Liège", "BE", "Lüttich"),
-                 ("Strasbourg", "FR", "Straßburg"), ("Saint Petersburg", "RU", "Sankt Petersburg")]
+                 ("Strasbourg", "FR", "Straßburg"), ("Saint Petersburg", "RU", "Sankt Petersburg"),
+                 ("Yerevan", "AM", "Jerewan")]
         for original, country, expected in cases:
             with self.subTest(original=original, country=country):
                 normalize = getattr(atlas, "normalise_city_name", None)
@@ -119,7 +134,7 @@ class AtlasRealOutputTests(unittest.TestCase):
         self.assertEqual(len(self.binary) % 8, 0)
         point_count = len(self.binary) // 8
         self.assertLess(len(self.binary), 100_000_000)
-        self.assertLess(self.path.stat().st_size, 15_000_000)
+        self.assertLess(self.path.stat().st_size, 128_000_000)
         entities = self.data["features"] + self.data["rivers"]
         self.assertGreater(len(entities), 10_000)
         for entity in entities:
@@ -138,8 +153,8 @@ class AtlasRealOutputTests(unittest.TestCase):
         self.assertEqual(len(regions), 16)
         self.assertEqual(len({f["ags"] for f in regions}), 16)
         self.assertEqual({f["id"] for f in regions}, {"region:DE-%02d" % i for i in range(1, 17)})
-        districts = [f for f in fs if f["kind"] == "district"]
-        municipalities = [f for f in fs if f["kind"] == "municipality"]
+        districts = [f for f in fs if f["kind"] == "district" and f.get("country") == "DE"]
+        municipalities = [f for f in fs if f["kind"] == "municipality" and f.get("country") == "DE"]
         self.assertGreater(len(districts), 390)
         self.assertGreater(len(municipalities), 10_000)
         ids = {f["id"] for f in fs}

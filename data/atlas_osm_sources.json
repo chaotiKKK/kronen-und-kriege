@@ -1,0 +1,1086 @@
+{
+  "schema": 1,
+  "bounds": [
+    -12.0,
+    33.0,
+    52.0,
+    72.0
+  ],
+  "sources": [
+    {
+      "id": "osm-RU-admin8-20261109T200006Z",
+      "country": "RU",
+      "kind": "municipality",
+      "admin_level": 8,
+      "unit_type": "Kommunales Verwaltungsgebiet",
+      "url": "https://overpass-api.de/api/interpreter",
+      "endpoints": [
+        "https://api.openstreetmap.org/api/0.6/relation/1306580/full.json",
+        "https://api.openstreetmap.org/api/0.6/relation/1650682/full.json",
+        "https://api.openstreetmap.org/api/0.6/relation/339228/full.json",
+        "https://api.openstreetmap.org/api/0.6/relation/3403828/full.json",
+        "https://api.openstreetmap.org/api/0.6/relation/8852697/full.json",
+        "https://api.openstreetmap.org/api/0.6/relation/9286607/full.json",
+        "https://overpass-api.de/api/interpreter",
+        "https://overpass.private.coffee/api/interpreter"
+      ],
+      "date": "2026-11-09T20:00:06Z",
+      "license": "ODbL-1.0",
+      "license_url": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "attribution": "© OpenStreetMap contributors; Open Database License 1.0",
+      "normalizer_version": 1,
+      "source_unit_count": 3,
+      "metadata_unit_count": 121,
+      "prepared_area_count": 3,
+      "failed_geometry_count": 0,
+      "pending_geometry_count": 118,
+      "metadata_selections": [
+        "RU:pilot"
+      ],
+      "sha256": "f2155225323b8522efe6a1540ce318f6c7a47afbed3e0f36443d371a04ff7746",
+      "bytes": 14964,
+      "provenance_path": "provenance/f2155225323b8522efe6a1540ce318f6c7a47afbed3e0f36443d371a04ff7746.json",
+      "replacement_scope": "feature",
+      "blocks_full_coverage_claim": true,
+      "cache_directory": "osm-administration",
+      "feature_files": [
+        {
+          "path": "features/3ad991798cf7e1f7d539fa62a5c167d514d29dbcfa5f5ecfd29577f5fdca8e43.json.gz",
+          "sha256": "3ad991798cf7e1f7d539fa62a5c167d514d29dbcfa5f5ecfd29577f5fdca8e43",
+          "bytes": 11128,
+          "count": 2
+        },
+        {
+          "path": "features/208f5f4aacd810b1d760c835f03f54212e5ea47834c1aba3a3132e83f16a136e.json.gz",
+          "sha256": "208f5f4aacd810b1d760c835f03f54212e5ea47834c1aba3a3132e83f16a136e",
+          "bytes": 5242,
+          "count": 1
+        },
+        {
+          "path": "features/2d0c21f6812af9cb724b2652b9affd73adcbb02b843ceb4e054174aea7185c8e.json.gz",
+          "sha256": "2d0c21f6812af9cb724b2652b9affd73adcbb02b843ceb4e054174aea7185c8e",
+          "bytes": 2304,
+          "count": 2
+        },
+        {
+          "path": "features/d6be68b060b3eeabe4f4a4960c5fee575c34f31ac5054dfb5b2e3aae3e75a5b6.json.gz",
+          "sha256": "d6be68b060b3eeabe4f4a4960c5fee575c34f31ac5054dfb5b2e3aae3e75a5b6",
+          "bytes": 1892,
+          "count": 1
+        },
+        {
+          "path": "features/9ca5d8a9ed32bea7ba188d9a199b799fc3b078e08281007cce0ea1dc1cd11230.json.gz",
+          "sha256": "9ca5d8a9ed32bea7ba188d9a199b799fc3b078e08281007cce0ea1dc1cd11230",
+          "bytes": 5631,
+          "count": 4
+        },
+        {
+          "path": "features/0a20b805a9eaa94110654b83a4ddcb4e81b482e0421f7ceb92356487fbef7832.json.gz",
+          "sha256": "0a20b805a9eaa94110654b83a4ddcb4e81b482e0421f7ceb92356487fbef7832",
+          "bytes": 2247,
+          "count": 4
+        },
+        {
+          "path": "features/7986a920d4376865b65f9633cec7ef312fe58d16365853ac08fc101013554964.json.gz",
+          "sha256": "7986a920d4376865b65f9633cec7ef312fe58d16365853ac08fc101013554964",
+          "bytes": 1476,
+          "count": 2
+        },
+        {
+          "path": "features/1f79ee0fa2befa6ccd344984171a07394698338534a5fadaa6eee3549a2c0056.json.gz",
+          "sha256": "1f79ee0fa2befa6ccd344984171a07394698338534a5fadaa6eee3549a2c0056",
+          "bytes": 8895,
+          "count": 20
+        },
+        {
+          "path": "features/1a5eced57a8a82d320b0d9e389e76baa2c04957dfb44d076b2c5cf46f8ad8deb.json.gz",
+          "sha256": "1a5eced57a8a82d320b0d9e389e76baa2c04957dfb44d076b2c5cf46f8ad8deb",
+          "bytes": 21628,
+          "count": 20
+        },
+        {
+          "path": "features/5e3ac7ac97d5bfe430197eac7bae46d2360549f10cf7580f9abe6af9a65b3e17.json.gz",
+          "sha256": "5e3ac7ac97d5bfe430197eac7bae46d2360549f10cf7580f9abe6af9a65b3e17",
+          "bytes": 14895,
+          "count": 20
+        },
+        {
+          "path": "features/66476c31ed87511262d565c5b52f47cc58b689b95b7bba5aea0c2436a4d0197a.json.gz",
+          "sha256": "66476c31ed87511262d565c5b52f47cc58b689b95b7bba5aea0c2436a4d0197a",
+          "bytes": 25320,
+          "count": 20
+        },
+        {
+          "path": "features/692fc0bd43518e904f87ea4859f7b0296b43167014ad6bb9315d0708ddf88dba.json.gz",
+          "sha256": "692fc0bd43518e904f87ea4859f7b0296b43167014ad6bb9315d0708ddf88dba",
+          "bytes": 25434,
+          "count": 20
+        },
+        {
+          "path": "features/cf04f75e797a56557e797b22ba2d387604c4ff1830004f5845e300138bc0077f.json.gz",
+          "sha256": "cf04f75e797a56557e797b22ba2d387604c4ff1830004f5845e300138bc0077f",
+          "bytes": 22091,
+          "count": 20
+        }
+      ],
+      "raw_requests": [
+        {
+          "url": "https://overpass-api.de/api/interpreter",
+          "query_sha256": "22f6d5b6322b04238cb530fd755777e73079ee930bd8ce97717a2b8a0fe5e9c2",
+          "request_sha256": "8bb1f06405127f08c09b33d0d3844846b7b9c872fe78707fd4fae532e04bd7f7",
+          "path": "requests/8bb1f06405127f08c09b33d0d3844846b7b9c872fe78707fd4fae532e04bd7f7/e4cb19a8db3349faf1b6533e958767ccdac5d8e16b4f7a3392dd24851216ca6e.json",
+          "sha256": "e4cb19a8db3349faf1b6533e958767ccdac5d8e16b4f7a3392dd24851216ca6e",
+          "bytes": 400645,
+          "osm_timestamp": "2026-11-09T20:00:06Z",
+          "imported_from_verified_pilot": {
+            "path": ".tools/atlas_sources/osm-admin-pilot/raw_RU.json",
+            "sha256": "e4cb19a8db3349faf1b6533e958767ccdac5d8e16b4f7a3392dd24851216ca6e",
+            "http_status": 200,
+            "report": ".tools/atlas_sources/osm-admin-pilot/pilot_report.md"
+          }
+        },
+        {
+          "url": "https://api.openstreetmap.org/api/0.6/relation/339228/full.json",
+          "path": "api_requests/860220242ff9f0a8e9be1e4ba7388b80a67701d2295520eb150b766006f47233/962cfef7a141ddfa60cf98fa1b9d954723d4df1e7bad772c507a66091840b846.json",
+          "sha256": "962cfef7a141ddfa60cf98fa1b9d954723d4df1e7bad772c507a66091840b846",
+          "bytes": 60755,
+          "retrieved_at": "2026-11-09T20:25:17.365434+00:00",
+          "snapshot_contract": "Every returned element version must predate the pinned snapshot."
+        },
+        {
+          "url": "https://api.openstreetmap.org/api/0.6/relation/1306580/full.json",
+          "path": "api_requests/b0d4e26ebdc2c486b35b0120275d7c3d87feafd7cedd38372e45ea1a048a5cb5/c4d5e640f005c05a03eee88f9120eb0d8a29f08910c76849781867773cd67a7b.json",
+          "sha256": "c4d5e640f005c05a03eee88f9120eb0d8a29f08910c76849781867773cd67a7b",
+          "bytes": 216183,
+          "retrieved_at": "2026-11-09T20:25:18.789530+00:00",
+          "snapshot_contract": "Every returned element version must predate the pinned snapshot."
+        },
+        {
+          "url": "https://api.openstreetmap.org/api/0.6/relation/1650682/full.json",
+          "path": "api_requests/9baafb9c41c7b13e09f1bf2f5e64a64844336c47cd1255a494a9de4dd0b066d5/983198992f3b79314eabed9b7905d7a854be4e0a0d534ca5e6048f888aaa60ad.json",
+          "sha256": "983198992f3b79314eabed9b7905d7a854be4e0a0d534ca5e6048f888aaa60ad",
+          "bytes": 106457,
+          "retrieved_at": "2026-11-09T20:25:20.108097+00:00",
+          "snapshot_contract": "Every returned element version must predate the pinned snapshot."
+        },
+        {
+          "url": "https://overpass-api.de/api/interpreter",
+          "query_sha256": "795eba2573820dcb873d28a937696746339901f62fb991edab0fc212a1ba96e7",
+          "request_sha256": "def2352aa2f98b4e14317494c841574d42d538db7e04f9d62c247cc7c5e43c2e",
+          "path": "requests/def2352aa2f98b4e14317494c841574d42d538db7e04f9d62c247cc7c5e43c2e/44bd865fa488dfec7699596ddb4bee0e3beec34bd2010e2ecb729374c9753c49.json",
+          "sha256": "44bd865fa488dfec7699596ddb4bee0e3beec34bd2010e2ecb729374c9753c49",
+          "bytes": 57612,
+          "osm_timestamp": "2026-11-09T20:01:05Z",
+          "imported_from_verified_pilot": {
+            "path": ".tools/atlas_sources/osm-admin-pilot/raw_TR.json",
+            "sha256": "44bd865fa488dfec7699596ddb4bee0e3beec34bd2010e2ecb729374c9753c49",
+            "http_status": 200,
+            "report": ".tools/atlas_sources/osm-admin-pilot/pilot_report.md"
+          }
+        },
+        {
+          "url": "https://api.openstreetmap.org/api/0.6/relation/3403828/full.json",
+          "path": "api_requests/392450b0e273276f1462e06e897a8c8333628cf2e65dbc353f320f9fe9cd6837/d3b58dbdbbd6a882234a4bdbf9673bb1a21ffa380fe27d1e2f77d2b02745200c.json",
+          "sha256": "d3b58dbdbbd6a882234a4bdbf9673bb1a21ffa380fe27d1e2f77d2b02745200c",
+          "bytes": 31361,
+          "retrieved_at": "2026-11-09T20:25:21.435110+00:00",
+          "snapshot_contract": "Every returned element version must predate the pinned snapshot."
+        },
+        {
+          "url": "https://api.openstreetmap.org/api/0.6/relation/8852697/full.json",
+          "path": "api_requests/a038c1da29160728d9e45f71d8a73c7bd9c457f583bd627c01494e78a0bbe86b/34f707803e44c81d369e45693f31479230d79bb359e04628f339efa556214db7.json",
+          "sha256": "34f707803e44c81d369e45693f31479230d79bb359e04628f339efa556214db7",
+          "bytes": 14827,
+          "retrieved_at": "2026-11-09T20:25:22.638646+00:00",
+          "snapshot_contract": "Every returned element version must predate the pinned snapshot."
+        },
+        {
+          "url": "https://api.openstreetmap.org/api/0.6/relation/9286607/full.json",
+          "path": "api_requests/95b5e1b5dd8de50181aa5a7d10d1badc04f7588e995baa1c49bcd5daaf519726/c7f61bb98e72951a082252091f46611b5fbe43cd92769ae46004d44fd801eb38.json",
+          "sha256": "c7f61bb98e72951a082252091f46611b5fbe43cd92769ae46004d44fd801eb38",
+          "bytes": 37791,
+          "retrieved_at": "2026-11-09T20:25:23.841895+00:00",
+          "snapshot_contract": "Every returned element version must predate the pinned snapshot."
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "998930dfc39366ad78c96c413f8aefa55a2e13f67c69abd41691bd7f30981f18",
+          "request_sha256": "3ad4bea69daffdfda185e0ca7417dee7547b0ad29473d26ba4c98cd3994f387f",
+          "path": "requests/3ad4bea69daffdfda185e0ca7417dee7547b0ad29473d26ba4c98cd3994f387f/d431ef03eebd220365833dcd6910bcb09708063551d63b02a760f7afda98ab78.json",
+          "sha256": "d431ef03eebd220365833dcd6910bcb09708063551d63b02a760f7afda98ab78",
+          "bytes": 1513284,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "56c1acf5670af17a779a31df7598c9a504f633df69f695068c42e3d4843e42e8",
+          "request_sha256": "60f62a83f43ccd8e2d04b3046e304a0a42acc8374c2e8ee7001f436490a0d461",
+          "path": "requests/60f62a83f43ccd8e2d04b3046e304a0a42acc8374c2e8ee7001f436490a0d461/e8b48e373b2afdaac5b2394512c2e14765b00fe4a68f49c41510b407c072f17b.json",
+          "sha256": "e8b48e373b2afdaac5b2394512c2e14765b00fe4a68f49c41510b407c072f17b",
+          "bytes": 38778,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "15b96c945f3f8553d640023a505a2f9b367579e1e76a9102ded53eabef0ea16b",
+          "request_sha256": "a1b074cf9d4996ccfa83330334886444e59c594a95a584ab8663eb2630d457b5",
+          "path": "requests/a1b074cf9d4996ccfa83330334886444e59c594a95a584ab8663eb2630d457b5/fcdd096bdadaa27fc4d627906bd742c8e48b2b4415ec657a156c8389f1931464.json",
+          "sha256": "fcdd096bdadaa27fc4d627906bd742c8e48b2b4415ec657a156c8389f1931464",
+          "bytes": 15814,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "384b5dbf5e769fba278c4672062d8a00300a531514f6970402b780d966bd3183",
+          "request_sha256": "da0ef8a139cee7d89fd8ab488f7bee4e57ee84a80d9d7663e22bb67da20e4538",
+          "path": "requests/da0ef8a139cee7d89fd8ab488f7bee4e57ee84a80d9d7663e22bb67da20e4538/9aa2627a3044d76ee5246041e7f7145412cc7ac4b5ad84ace19c888da5145ed0.json",
+          "sha256": "9aa2627a3044d76ee5246041e7f7145412cc7ac4b5ad84ace19c888da5145ed0",
+          "bytes": 8613,
+          "osm_timestamp": "2026-07-15T15:22:01Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "081afc4fe30ebce8355cc8f13994c9f46a3ae92cfbdf3f2d59b31eba393460de",
+          "request_sha256": "7c20578c5d0e606d9f492a160f52204ea34512f43234e8c8d96a055272bffded",
+          "path": "requests/7c20578c5d0e606d9f492a160f52204ea34512f43234e8c8d96a055272bffded/c72cc04396258c5335c8906bc83b316e3e7e904a5fd0225158440b0f0022f80f.json",
+          "sha256": "c72cc04396258c5335c8906bc83b316e3e7e904a5fd0225158440b0f0022f80f",
+          "bytes": 81202,
+          "osm_timestamp": "2026-07-24T11:04:51Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "233386e120f4b6f2010982080777563867cca25ff68758155b91de5bd1d56ab4",
+          "request_sha256": "4364439b5abcbb615291962c4a9b77e1ecaff8b8b0ac7c41c85375ace24d92dc",
+          "path": "requests/4364439b5abcbb615291962c4a9b77e1ecaff8b8b0ac7c41c85375ace24d92dc/1938a3abc1b33c187b758ad54dc159a0dc534c4ed3247cdbbad9c9d19d45f341.json",
+          "sha256": "1938a3abc1b33c187b758ad54dc159a0dc534c4ed3247cdbbad9c9d19d45f341",
+          "bytes": 174048,
+          "osm_timestamp": "2026-07-15T15:22:01Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "65c7d7344f134a0c3395b24c1faab1c7da97d01565bca449cbce96a64c9016cf",
+          "request_sha256": "732aca4123fe476af37606a6b2a167ff7af8e8abd18b70f2b4138ee7e500e9ab",
+          "path": "requests/732aca4123fe476af37606a6b2a167ff7af8e8abd18b70f2b4138ee7e500e9ab/20d710519a8b0150b9faafe077b0e369092497c29e2f2d7c968bf648f0e91d33.json",
+          "sha256": "20d710519a8b0150b9faafe077b0e369092497c29e2f2d7c968bf648f0e91d33",
+          "bytes": 132609,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "c80c515b178ff2e10824738d13ac42568afd0256e7a95f3fa4a8e52d63b4c20e",
+          "request_sha256": "c1a4ee97d8c1ac295e25effd585f3c15b838af65ae100b456f043f22f12362cb",
+          "path": "requests/c1a4ee97d8c1ac295e25effd585f3c15b838af65ae100b456f043f22f12362cb/e83d8b47cd1f2f2a226fcb46c99c42f63054ef757136fd353858af9a206bbc5f.json",
+          "sha256": "e83d8b47cd1f2f2a226fcb46c99c42f63054ef757136fd353858af9a206bbc5f",
+          "bytes": 213182,
+          "osm_timestamp": "2026-07-28T02:16:18Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "4843503fbe8e141d901fdebc44cc130d92ae45702aa44330ed6bc8429df6a0d5",
+          "request_sha256": "7670b91689c86ac928fbde2e3fcdd000c0713efbea616e213338fb31838eb981",
+          "path": "requests/7670b91689c86ac928fbde2e3fcdd000c0713efbea616e213338fb31838eb981/b4951a01d8ac8557612fb0cf9976108e013d0a7a0df78d5c95d2cbacccef130e.json",
+          "sha256": "b4951a01d8ac8557612fb0cf9976108e013d0a7a0df78d5c95d2cbacccef130e",
+          "bytes": 206443,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "189684585d9ff034f8176a8c94a86c152662b68416bbab3548c3abf63c8e2e0b",
+          "request_sha256": "cb06f18b4ead28118dd122aeec2bdd560c0590eb83c7f0c78e51caefe65f1b56",
+          "path": "requests/cb06f18b4ead28118dd122aeec2bdd560c0590eb83c7f0c78e51caefe65f1b56/65d962e28af1d41c554f90ea83de2f46f316be3f5f4e7faf919993e759565530.json",
+          "sha256": "65d962e28af1d41c554f90ea83de2f46f316be3f5f4e7faf919993e759565530",
+          "bytes": 175437,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "fb3665ea0ae240143b3414503257bee6fede2f1179c995070e45784c693450ea",
+          "request_sha256": "106d97c6da678693da7b9acf51193ba43dc7653cb478328b1d9b56c8cdfb11df",
+          "path": "requests/106d97c6da678693da7b9acf51193ba43dc7653cb478328b1d9b56c8cdfb11df/7d05c7ade103a9aabe29a3a44736955084d13e9a0f4c6da38a9f70a8eacd18c8.json",
+          "sha256": "7d05c7ade103a9aabe29a3a44736955084d13e9a0f4c6da38a9f70a8eacd18c8",
+          "bytes": 339,
+          "osm_timestamp": "2026-07-15T15:22:01Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "f32ccd5341c93fda3a8513a94103f74c86dfb22ecb678e5b7dc370d676685b65",
+          "request_sha256": "a746ae9becdd20048b7861e73e106b2d033ecb8a7a80cefcc4c4ae6014a3481b",
+          "path": "requests/a746ae9becdd20048b7861e73e106b2d033ecb8a7a80cefcc4c4ae6014a3481b/ad30818e0c587f44c7e9cd413916cd4f3c4413cfd3006669d551a212d4657d71.json",
+          "sha256": "ad30818e0c587f44c7e9cd413916cd4f3c4413cfd3006669d551a212d4657d71",
+          "bytes": 1883123,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "eacd7cb137aba8ff3e5f7305fe65223647add845042e9557d86b82c30184f3b8",
+          "request_sha256": "5de979823c15b3c88f781e45f5b98e28ad01486c2c487e34d1500babc01dc70b",
+          "path": "requests/5de979823c15b3c88f781e45f5b98e28ad01486c2c487e34d1500babc01dc70b/d3baeabd877e98a1dce6985ebeca44f26531055dc905a8d341868600fb5bf931.json",
+          "sha256": "d3baeabd877e98a1dce6985ebeca44f26531055dc905a8d341868600fb5bf931",
+          "bytes": 339,
+          "osm_timestamp": "2026-07-24T11:04:51Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "ac4a2b7b005db8b2075dffac2604bda2529c61e0963e2590ec26ad4d1ae677cd",
+          "request_sha256": "4a2a68dcc8610ad57d958d0869244026b3ec22074b76f41b7b5f92643656d03f",
+          "path": "requests/4a2a68dcc8610ad57d958d0869244026b3ec22074b76f41b7b5f92643656d03f/1c7ab3d9adf4e870ec61fb6ec75ac354c1ee0be55e4b8c8cfc9f818d907ed8f7.json",
+          "sha256": "1c7ab3d9adf4e870ec61fb6ec75ac354c1ee0be55e4b8c8cfc9f818d907ed8f7",
+          "bytes": 283978,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "c7435913ab5414e8867d917697d237b1071f537dd1ef76c08c2205d9bbba5225",
+          "request_sha256": "e8f25101985b265c121d9027307137cd772b94485a1e7ffd8f4715bd26182986",
+          "path": "requests/e8f25101985b265c121d9027307137cd772b94485a1e7ffd8f4715bd26182986/05b330221a3c51b8ae5b1df6cc050b3b424ac21ef5192de10f924f92bd7ed4de.json",
+          "sha256": "05b330221a3c51b8ae5b1df6cc050b3b424ac21ef5192de10f924f92bd7ed4de",
+          "bytes": 2482040,
+          "osm_timestamp": "2026-06-01T08:52:28Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "d3b779d33ed2230aab30aea862172cf27cdfc4a4848b92a0302e97b093990b8b",
+          "request_sha256": "dcf09c075a35177d3c7803e4d8fdd43b2824c2cbeb9eec7c0a7e761e906332af",
+          "path": "requests/dcf09c075a35177d3c7803e4d8fdd43b2824c2cbeb9eec7c0a7e761e906332af/9ba48022240f2c639a794d5570f4b4b5a31ef4c4ef25bb8d054af900fc240f6a.json",
+          "sha256": "9ba48022240f2c639a794d5570f4b4b5a31ef4c4ef25bb8d054af900fc240f6a",
+          "bytes": 603702,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        }
+      ],
+      "failures": {},
+      "completed_tiles": [],
+      "total_tiles": 72,
+      "request_failures": {
+        "RU:pilot:metadata": "Command '['curl.exe', '--fail', '--location', '--silent', '--show-error', '--connect-timeout', '20', '--max-time', '210', '--get', '--retry', '2', '--retry-delay', '5', '--user-agent', 'BangerQueensAtlas/1.6 (bounded administrative data import)', '--data-urlencode', 'data@C:\\\\Crusader Kings III\\\\mobile-godot\\\\.tools\\\\atlas_sources\\\\osm-administration\\\\requests\\\\77664aecaf452c97c1fce2afe177cd6bd373cb15f1a4f7dc634a887a23084f81\\\\query.ql', '--output', 'C:\\\\Crusader Kings III\\\\mobile-godot\\\\.tools\\\\atlas_sources\\\\osm-administration\\\\requests\\\\77664aecaf452c97c1fce2afe177cd6bd373cb15f1a4f7dc634a887a23084f81\\\\response.tmp', 'https://overpass-api.de/api/interpreter']' returned non-zero exit status 22.",
+        "TR:tile-8:metadata": "Command '['curl.exe', '--fail', '--location', '--silent', '--show-error', '--connect-timeout', '20', '--max-time', '210', '--get', '--retry', '2', '--retry-delay', '5', '--user-agent', 'BangerQueensAtlas/1.6 (bounded administrative data import)', '--data-urlencode', 'data@C:\\\\Crusader Kings III\\\\mobile-godot\\\\.tools\\\\atlas_sources\\\\osm-administration\\\\requests\\\\3b27426eb708fd344cdd01633cfd882bd8ab9888dc97f864b5d86ae78850df36\\\\query.ql', '--output', 'C:\\\\Crusader Kings III\\\\mobile-godot\\\\.tools\\\\atlas_sources\\\\osm-administration\\\\requests\\\\3b27426eb708fd344cdd01633cfd882bd8ab9888dc97f864b5d86ae78850df36\\\\response.tmp', 'https://overpass.private.coffee/api/interpreter']' returned non-zero exit status 56."
+      },
+      "coverage_status": "Partial until a complete tile scan and country land-area audit are recorded.",
+      "parent_relationship": "Country selection proven by Overpass ISO area and atlas bbox; finer hierarchy unresolved."
+    },
+    {
+      "id": "osm-TR-admin7-20261109T200006Z",
+      "country": "TR",
+      "kind": "municipality",
+      "admin_level": 7,
+      "unit_type": "Belde",
+      "url": "https://overpass-api.de/api/interpreter",
+      "endpoints": [
+        "https://api.openstreetmap.org/api/0.6/relation/1306580/full.json",
+        "https://api.openstreetmap.org/api/0.6/relation/1650682/full.json",
+        "https://api.openstreetmap.org/api/0.6/relation/339228/full.json",
+        "https://api.openstreetmap.org/api/0.6/relation/3403828/full.json",
+        "https://api.openstreetmap.org/api/0.6/relation/8852697/full.json",
+        "https://api.openstreetmap.org/api/0.6/relation/9286607/full.json",
+        "https://overpass-api.de/api/interpreter",
+        "https://overpass.private.coffee/api/interpreter"
+      ],
+      "date": "2026-11-09T20:00:06Z",
+      "license": "ODbL-1.0",
+      "license_url": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "attribution": "© OpenStreetMap contributors; Open Database License 1.0",
+      "normalizer_version": 1,
+      "source_unit_count": 0,
+      "metadata_unit_count": 49,
+      "prepared_area_count": 0,
+      "failed_geometry_count": 0,
+      "pending_geometry_count": 49,
+      "metadata_selections": [
+        "TR:pilot",
+        "TR:tile-0",
+        "TR:tile-1",
+        "TR:tile-2",
+        "TR:tile-3",
+        "TR:tile-4",
+        "TR:tile-5",
+        "TR:tile-6",
+        "TR:tile-7"
+      ],
+      "sha256": "979decd1e763b18d6cb8efae1dd5aabb63d9f64f1ec79a7547e34b208ba4733e",
+      "bytes": 14964,
+      "provenance_path": "provenance/979decd1e763b18d6cb8efae1dd5aabb63d9f64f1ec79a7547e34b208ba4733e.json",
+      "replacement_scope": "feature",
+      "blocks_full_coverage_claim": true,
+      "cache_directory": "osm-administration",
+      "feature_files": [
+        {
+          "path": "features/3ad991798cf7e1f7d539fa62a5c167d514d29dbcfa5f5ecfd29577f5fdca8e43.json.gz",
+          "sha256": "3ad991798cf7e1f7d539fa62a5c167d514d29dbcfa5f5ecfd29577f5fdca8e43",
+          "bytes": 11128,
+          "count": 2
+        },
+        {
+          "path": "features/208f5f4aacd810b1d760c835f03f54212e5ea47834c1aba3a3132e83f16a136e.json.gz",
+          "sha256": "208f5f4aacd810b1d760c835f03f54212e5ea47834c1aba3a3132e83f16a136e",
+          "bytes": 5242,
+          "count": 1
+        },
+        {
+          "path": "features/2d0c21f6812af9cb724b2652b9affd73adcbb02b843ceb4e054174aea7185c8e.json.gz",
+          "sha256": "2d0c21f6812af9cb724b2652b9affd73adcbb02b843ceb4e054174aea7185c8e",
+          "bytes": 2304,
+          "count": 2
+        },
+        {
+          "path": "features/d6be68b060b3eeabe4f4a4960c5fee575c34f31ac5054dfb5b2e3aae3e75a5b6.json.gz",
+          "sha256": "d6be68b060b3eeabe4f4a4960c5fee575c34f31ac5054dfb5b2e3aae3e75a5b6",
+          "bytes": 1892,
+          "count": 1
+        },
+        {
+          "path": "features/9ca5d8a9ed32bea7ba188d9a199b799fc3b078e08281007cce0ea1dc1cd11230.json.gz",
+          "sha256": "9ca5d8a9ed32bea7ba188d9a199b799fc3b078e08281007cce0ea1dc1cd11230",
+          "bytes": 5631,
+          "count": 4
+        },
+        {
+          "path": "features/0a20b805a9eaa94110654b83a4ddcb4e81b482e0421f7ceb92356487fbef7832.json.gz",
+          "sha256": "0a20b805a9eaa94110654b83a4ddcb4e81b482e0421f7ceb92356487fbef7832",
+          "bytes": 2247,
+          "count": 4
+        },
+        {
+          "path": "features/7986a920d4376865b65f9633cec7ef312fe58d16365853ac08fc101013554964.json.gz",
+          "sha256": "7986a920d4376865b65f9633cec7ef312fe58d16365853ac08fc101013554964",
+          "bytes": 1476,
+          "count": 2
+        },
+        {
+          "path": "features/1f79ee0fa2befa6ccd344984171a07394698338534a5fadaa6eee3549a2c0056.json.gz",
+          "sha256": "1f79ee0fa2befa6ccd344984171a07394698338534a5fadaa6eee3549a2c0056",
+          "bytes": 8895,
+          "count": 20
+        },
+        {
+          "path": "features/1a5eced57a8a82d320b0d9e389e76baa2c04957dfb44d076b2c5cf46f8ad8deb.json.gz",
+          "sha256": "1a5eced57a8a82d320b0d9e389e76baa2c04957dfb44d076b2c5cf46f8ad8deb",
+          "bytes": 21628,
+          "count": 20
+        },
+        {
+          "path": "features/5e3ac7ac97d5bfe430197eac7bae46d2360549f10cf7580f9abe6af9a65b3e17.json.gz",
+          "sha256": "5e3ac7ac97d5bfe430197eac7bae46d2360549f10cf7580f9abe6af9a65b3e17",
+          "bytes": 14895,
+          "count": 20
+        },
+        {
+          "path": "features/66476c31ed87511262d565c5b52f47cc58b689b95b7bba5aea0c2436a4d0197a.json.gz",
+          "sha256": "66476c31ed87511262d565c5b52f47cc58b689b95b7bba5aea0c2436a4d0197a",
+          "bytes": 25320,
+          "count": 20
+        },
+        {
+          "path": "features/692fc0bd43518e904f87ea4859f7b0296b43167014ad6bb9315d0708ddf88dba.json.gz",
+          "sha256": "692fc0bd43518e904f87ea4859f7b0296b43167014ad6bb9315d0708ddf88dba",
+          "bytes": 25434,
+          "count": 20
+        },
+        {
+          "path": "features/cf04f75e797a56557e797b22ba2d387604c4ff1830004f5845e300138bc0077f.json.gz",
+          "sha256": "cf04f75e797a56557e797b22ba2d387604c4ff1830004f5845e300138bc0077f",
+          "bytes": 22091,
+          "count": 20
+        }
+      ],
+      "raw_requests": [
+        {
+          "url": "https://overpass-api.de/api/interpreter",
+          "query_sha256": "22f6d5b6322b04238cb530fd755777e73079ee930bd8ce97717a2b8a0fe5e9c2",
+          "request_sha256": "8bb1f06405127f08c09b33d0d3844846b7b9c872fe78707fd4fae532e04bd7f7",
+          "path": "requests/8bb1f06405127f08c09b33d0d3844846b7b9c872fe78707fd4fae532e04bd7f7/e4cb19a8db3349faf1b6533e958767ccdac5d8e16b4f7a3392dd24851216ca6e.json",
+          "sha256": "e4cb19a8db3349faf1b6533e958767ccdac5d8e16b4f7a3392dd24851216ca6e",
+          "bytes": 400645,
+          "osm_timestamp": "2026-11-09T20:00:06Z",
+          "imported_from_verified_pilot": {
+            "path": ".tools/atlas_sources/osm-admin-pilot/raw_RU.json",
+            "sha256": "e4cb19a8db3349faf1b6533e958767ccdac5d8e16b4f7a3392dd24851216ca6e",
+            "http_status": 200,
+            "report": ".tools/atlas_sources/osm-admin-pilot/pilot_report.md"
+          }
+        },
+        {
+          "url": "https://api.openstreetmap.org/api/0.6/relation/339228/full.json",
+          "path": "api_requests/860220242ff9f0a8e9be1e4ba7388b80a67701d2295520eb150b766006f47233/962cfef7a141ddfa60cf98fa1b9d954723d4df1e7bad772c507a66091840b846.json",
+          "sha256": "962cfef7a141ddfa60cf98fa1b9d954723d4df1e7bad772c507a66091840b846",
+          "bytes": 60755,
+          "retrieved_at": "2026-11-09T20:25:17.365434+00:00",
+          "snapshot_contract": "Every returned element version must predate the pinned snapshot."
+        },
+        {
+          "url": "https://api.openstreetmap.org/api/0.6/relation/1306580/full.json",
+          "path": "api_requests/b0d4e26ebdc2c486b35b0120275d7c3d87feafd7cedd38372e45ea1a048a5cb5/c4d5e640f005c05a03eee88f9120eb0d8a29f08910c76849781867773cd67a7b.json",
+          "sha256": "c4d5e640f005c05a03eee88f9120eb0d8a29f08910c76849781867773cd67a7b",
+          "bytes": 216183,
+          "retrieved_at": "2026-11-09T20:25:18.789530+00:00",
+          "snapshot_contract": "Every returned element version must predate the pinned snapshot."
+        },
+        {
+          "url": "https://api.openstreetmap.org/api/0.6/relation/1650682/full.json",
+          "path": "api_requests/9baafb9c41c7b13e09f1bf2f5e64a64844336c47cd1255a494a9de4dd0b066d5/983198992f3b79314eabed9b7905d7a854be4e0a0d534ca5e6048f888aaa60ad.json",
+          "sha256": "983198992f3b79314eabed9b7905d7a854be4e0a0d534ca5e6048f888aaa60ad",
+          "bytes": 106457,
+          "retrieved_at": "2026-11-09T20:25:20.108097+00:00",
+          "snapshot_contract": "Every returned element version must predate the pinned snapshot."
+        },
+        {
+          "url": "https://overpass-api.de/api/interpreter",
+          "query_sha256": "795eba2573820dcb873d28a937696746339901f62fb991edab0fc212a1ba96e7",
+          "request_sha256": "def2352aa2f98b4e14317494c841574d42d538db7e04f9d62c247cc7c5e43c2e",
+          "path": "requests/def2352aa2f98b4e14317494c841574d42d538db7e04f9d62c247cc7c5e43c2e/44bd865fa488dfec7699596ddb4bee0e3beec34bd2010e2ecb729374c9753c49.json",
+          "sha256": "44bd865fa488dfec7699596ddb4bee0e3beec34bd2010e2ecb729374c9753c49",
+          "bytes": 57612,
+          "osm_timestamp": "2026-11-09T20:01:05Z",
+          "imported_from_verified_pilot": {
+            "path": ".tools/atlas_sources/osm-admin-pilot/raw_TR.json",
+            "sha256": "44bd865fa488dfec7699596ddb4bee0e3beec34bd2010e2ecb729374c9753c49",
+            "http_status": 200,
+            "report": ".tools/atlas_sources/osm-admin-pilot/pilot_report.md"
+          }
+        },
+        {
+          "url": "https://api.openstreetmap.org/api/0.6/relation/3403828/full.json",
+          "path": "api_requests/392450b0e273276f1462e06e897a8c8333628cf2e65dbc353f320f9fe9cd6837/d3b58dbdbbd6a882234a4bdbf9673bb1a21ffa380fe27d1e2f77d2b02745200c.json",
+          "sha256": "d3b58dbdbbd6a882234a4bdbf9673bb1a21ffa380fe27d1e2f77d2b02745200c",
+          "bytes": 31361,
+          "retrieved_at": "2026-11-09T20:25:21.435110+00:00",
+          "snapshot_contract": "Every returned element version must predate the pinned snapshot."
+        },
+        {
+          "url": "https://api.openstreetmap.org/api/0.6/relation/8852697/full.json",
+          "path": "api_requests/a038c1da29160728d9e45f71d8a73c7bd9c457f583bd627c01494e78a0bbe86b/34f707803e44c81d369e45693f31479230d79bb359e04628f339efa556214db7.json",
+          "sha256": "34f707803e44c81d369e45693f31479230d79bb359e04628f339efa556214db7",
+          "bytes": 14827,
+          "retrieved_at": "2026-11-09T20:25:22.638646+00:00",
+          "snapshot_contract": "Every returned element version must predate the pinned snapshot."
+        },
+        {
+          "url": "https://api.openstreetmap.org/api/0.6/relation/9286607/full.json",
+          "path": "api_requests/95b5e1b5dd8de50181aa5a7d10d1badc04f7588e995baa1c49bcd5daaf519726/c7f61bb98e72951a082252091f46611b5fbe43cd92769ae46004d44fd801eb38.json",
+          "sha256": "c7f61bb98e72951a082252091f46611b5fbe43cd92769ae46004d44fd801eb38",
+          "bytes": 37791,
+          "retrieved_at": "2026-11-09T20:25:23.841895+00:00",
+          "snapshot_contract": "Every returned element version must predate the pinned snapshot."
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "998930dfc39366ad78c96c413f8aefa55a2e13f67c69abd41691bd7f30981f18",
+          "request_sha256": "3ad4bea69daffdfda185e0ca7417dee7547b0ad29473d26ba4c98cd3994f387f",
+          "path": "requests/3ad4bea69daffdfda185e0ca7417dee7547b0ad29473d26ba4c98cd3994f387f/d431ef03eebd220365833dcd6910bcb09708063551d63b02a760f7afda98ab78.json",
+          "sha256": "d431ef03eebd220365833dcd6910bcb09708063551d63b02a760f7afda98ab78",
+          "bytes": 1513284,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "56c1acf5670af17a779a31df7598c9a504f633df69f695068c42e3d4843e42e8",
+          "request_sha256": "60f62a83f43ccd8e2d04b3046e304a0a42acc8374c2e8ee7001f436490a0d461",
+          "path": "requests/60f62a83f43ccd8e2d04b3046e304a0a42acc8374c2e8ee7001f436490a0d461/e8b48e373b2afdaac5b2394512c2e14765b00fe4a68f49c41510b407c072f17b.json",
+          "sha256": "e8b48e373b2afdaac5b2394512c2e14765b00fe4a68f49c41510b407c072f17b",
+          "bytes": 38778,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "15b96c945f3f8553d640023a505a2f9b367579e1e76a9102ded53eabef0ea16b",
+          "request_sha256": "a1b074cf9d4996ccfa83330334886444e59c594a95a584ab8663eb2630d457b5",
+          "path": "requests/a1b074cf9d4996ccfa83330334886444e59c594a95a584ab8663eb2630d457b5/fcdd096bdadaa27fc4d627906bd742c8e48b2b4415ec657a156c8389f1931464.json",
+          "sha256": "fcdd096bdadaa27fc4d627906bd742c8e48b2b4415ec657a156c8389f1931464",
+          "bytes": 15814,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "384b5dbf5e769fba278c4672062d8a00300a531514f6970402b780d966bd3183",
+          "request_sha256": "da0ef8a139cee7d89fd8ab488f7bee4e57ee84a80d9d7663e22bb67da20e4538",
+          "path": "requests/da0ef8a139cee7d89fd8ab488f7bee4e57ee84a80d9d7663e22bb67da20e4538/9aa2627a3044d76ee5246041e7f7145412cc7ac4b5ad84ace19c888da5145ed0.json",
+          "sha256": "9aa2627a3044d76ee5246041e7f7145412cc7ac4b5ad84ace19c888da5145ed0",
+          "bytes": 8613,
+          "osm_timestamp": "2026-07-15T15:22:01Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "081afc4fe30ebce8355cc8f13994c9f46a3ae92cfbdf3f2d59b31eba393460de",
+          "request_sha256": "7c20578c5d0e606d9f492a160f52204ea34512f43234e8c8d96a055272bffded",
+          "path": "requests/7c20578c5d0e606d9f492a160f52204ea34512f43234e8c8d96a055272bffded/c72cc04396258c5335c8906bc83b316e3e7e904a5fd0225158440b0f0022f80f.json",
+          "sha256": "c72cc04396258c5335c8906bc83b316e3e7e904a5fd0225158440b0f0022f80f",
+          "bytes": 81202,
+          "osm_timestamp": "2026-07-24T11:04:51Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "233386e120f4b6f2010982080777563867cca25ff68758155b91de5bd1d56ab4",
+          "request_sha256": "4364439b5abcbb615291962c4a9b77e1ecaff8b8b0ac7c41c85375ace24d92dc",
+          "path": "requests/4364439b5abcbb615291962c4a9b77e1ecaff8b8b0ac7c41c85375ace24d92dc/1938a3abc1b33c187b758ad54dc159a0dc534c4ed3247cdbbad9c9d19d45f341.json",
+          "sha256": "1938a3abc1b33c187b758ad54dc159a0dc534c4ed3247cdbbad9c9d19d45f341",
+          "bytes": 174048,
+          "osm_timestamp": "2026-07-15T15:22:01Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "65c7d7344f134a0c3395b24c1faab1c7da97d01565bca449cbce96a64c9016cf",
+          "request_sha256": "732aca4123fe476af37606a6b2a167ff7af8e8abd18b70f2b4138ee7e500e9ab",
+          "path": "requests/732aca4123fe476af37606a6b2a167ff7af8e8abd18b70f2b4138ee7e500e9ab/20d710519a8b0150b9faafe077b0e369092497c29e2f2d7c968bf648f0e91d33.json",
+          "sha256": "20d710519a8b0150b9faafe077b0e369092497c29e2f2d7c968bf648f0e91d33",
+          "bytes": 132609,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "c80c515b178ff2e10824738d13ac42568afd0256e7a95f3fa4a8e52d63b4c20e",
+          "request_sha256": "c1a4ee97d8c1ac295e25effd585f3c15b838af65ae100b456f043f22f12362cb",
+          "path": "requests/c1a4ee97d8c1ac295e25effd585f3c15b838af65ae100b456f043f22f12362cb/e83d8b47cd1f2f2a226fcb46c99c42f63054ef757136fd353858af9a206bbc5f.json",
+          "sha256": "e83d8b47cd1f2f2a226fcb46c99c42f63054ef757136fd353858af9a206bbc5f",
+          "bytes": 213182,
+          "osm_timestamp": "2026-07-28T02:16:18Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "4843503fbe8e141d901fdebc44cc130d92ae45702aa44330ed6bc8429df6a0d5",
+          "request_sha256": "7670b91689c86ac928fbde2e3fcdd000c0713efbea616e213338fb31838eb981",
+          "path": "requests/7670b91689c86ac928fbde2e3fcdd000c0713efbea616e213338fb31838eb981/b4951a01d8ac8557612fb0cf9976108e013d0a7a0df78d5c95d2cbacccef130e.json",
+          "sha256": "b4951a01d8ac8557612fb0cf9976108e013d0a7a0df78d5c95d2cbacccef130e",
+          "bytes": 206443,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "189684585d9ff034f8176a8c94a86c152662b68416bbab3548c3abf63c8e2e0b",
+          "request_sha256": "cb06f18b4ead28118dd122aeec2bdd560c0590eb83c7f0c78e51caefe65f1b56",
+          "path": "requests/cb06f18b4ead28118dd122aeec2bdd560c0590eb83c7f0c78e51caefe65f1b56/65d962e28af1d41c554f90ea83de2f46f316be3f5f4e7faf919993e759565530.json",
+          "sha256": "65d962e28af1d41c554f90ea83de2f46f316be3f5f4e7faf919993e759565530",
+          "bytes": 175437,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "fb3665ea0ae240143b3414503257bee6fede2f1179c995070e45784c693450ea",
+          "request_sha256": "106d97c6da678693da7b9acf51193ba43dc7653cb478328b1d9b56c8cdfb11df",
+          "path": "requests/106d97c6da678693da7b9acf51193ba43dc7653cb478328b1d9b56c8cdfb11df/7d05c7ade103a9aabe29a3a44736955084d13e9a0f4c6da38a9f70a8eacd18c8.json",
+          "sha256": "7d05c7ade103a9aabe29a3a44736955084d13e9a0f4c6da38a9f70a8eacd18c8",
+          "bytes": 339,
+          "osm_timestamp": "2026-07-15T15:22:01Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "f32ccd5341c93fda3a8513a94103f74c86dfb22ecb678e5b7dc370d676685b65",
+          "request_sha256": "a746ae9becdd20048b7861e73e106b2d033ecb8a7a80cefcc4c4ae6014a3481b",
+          "path": "requests/a746ae9becdd20048b7861e73e106b2d033ecb8a7a80cefcc4c4ae6014a3481b/ad30818e0c587f44c7e9cd413916cd4f3c4413cfd3006669d551a212d4657d71.json",
+          "sha256": "ad30818e0c587f44c7e9cd413916cd4f3c4413cfd3006669d551a212d4657d71",
+          "bytes": 1883123,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "eacd7cb137aba8ff3e5f7305fe65223647add845042e9557d86b82c30184f3b8",
+          "request_sha256": "5de979823c15b3c88f781e45f5b98e28ad01486c2c487e34d1500babc01dc70b",
+          "path": "requests/5de979823c15b3c88f781e45f5b98e28ad01486c2c487e34d1500babc01dc70b/d3baeabd877e98a1dce6985ebeca44f26531055dc905a8d341868600fb5bf931.json",
+          "sha256": "d3baeabd877e98a1dce6985ebeca44f26531055dc905a8d341868600fb5bf931",
+          "bytes": 339,
+          "osm_timestamp": "2026-07-24T11:04:51Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "ac4a2b7b005db8b2075dffac2604bda2529c61e0963e2590ec26ad4d1ae677cd",
+          "request_sha256": "4a2a68dcc8610ad57d958d0869244026b3ec22074b76f41b7b5f92643656d03f",
+          "path": "requests/4a2a68dcc8610ad57d958d0869244026b3ec22074b76f41b7b5f92643656d03f/1c7ab3d9adf4e870ec61fb6ec75ac354c1ee0be55e4b8c8cfc9f818d907ed8f7.json",
+          "sha256": "1c7ab3d9adf4e870ec61fb6ec75ac354c1ee0be55e4b8c8cfc9f818d907ed8f7",
+          "bytes": 283978,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "c7435913ab5414e8867d917697d237b1071f537dd1ef76c08c2205d9bbba5225",
+          "request_sha256": "e8f25101985b265c121d9027307137cd772b94485a1e7ffd8f4715bd26182986",
+          "path": "requests/e8f25101985b265c121d9027307137cd772b94485a1e7ffd8f4715bd26182986/05b330221a3c51b8ae5b1df6cc050b3b424ac21ef5192de10f924f92bd7ed4de.json",
+          "sha256": "05b330221a3c51b8ae5b1df6cc050b3b424ac21ef5192de10f924f92bd7ed4de",
+          "bytes": 2482040,
+          "osm_timestamp": "2026-06-01T08:52:28Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "d3b779d33ed2230aab30aea862172cf27cdfc4a4848b92a0302e97b093990b8b",
+          "request_sha256": "dcf09c075a35177d3c7803e4d8fdd43b2824c2cbeb9eec7c0a7e761e906332af",
+          "path": "requests/dcf09c075a35177d3c7803e4d8fdd43b2824c2cbeb9eec7c0a7e761e906332af/9ba48022240f2c639a794d5570f4b4b5a31ef4c4ef25bb8d054af900fc240f6a.json",
+          "sha256": "9ba48022240f2c639a794d5570f4b4b5a31ef4c4ef25bb8d054af900fc240f6a",
+          "bytes": 603702,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        }
+      ],
+      "failures": {},
+      "completed_tiles": [
+        "TR:tile-1",
+        "TR:tile-3",
+        "TR:tile-5"
+      ],
+      "total_tiles": 10,
+      "request_failures": {
+        "RU:pilot:metadata": "Command '['curl.exe', '--fail', '--location', '--silent', '--show-error', '--connect-timeout', '20', '--max-time', '210', '--get', '--retry', '2', '--retry-delay', '5', '--user-agent', 'BangerQueensAtlas/1.6 (bounded administrative data import)', '--data-urlencode', 'data@C:\\\\Crusader Kings III\\\\mobile-godot\\\\.tools\\\\atlas_sources\\\\osm-administration\\\\requests\\\\77664aecaf452c97c1fce2afe177cd6bd373cb15f1a4f7dc634a887a23084f81\\\\query.ql', '--output', 'C:\\\\Crusader Kings III\\\\mobile-godot\\\\.tools\\\\atlas_sources\\\\osm-administration\\\\requests\\\\77664aecaf452c97c1fce2afe177cd6bd373cb15f1a4f7dc634a887a23084f81\\\\response.tmp', 'https://overpass-api.de/api/interpreter']' returned non-zero exit status 22.",
+        "TR:tile-8:metadata": "Command '['curl.exe', '--fail', '--location', '--silent', '--show-error', '--connect-timeout', '20', '--max-time', '210', '--get', '--retry', '2', '--retry-delay', '5', '--user-agent', 'BangerQueensAtlas/1.6 (bounded administrative data import)', '--data-urlencode', 'data@C:\\\\Crusader Kings III\\\\mobile-godot\\\\.tools\\\\atlas_sources\\\\osm-administration\\\\requests\\\\3b27426eb708fd344cdd01633cfd882bd8ab9888dc97f864b5d86ae78850df36\\\\query.ql', '--output', 'C:\\\\Crusader Kings III\\\\mobile-godot\\\\.tools\\\\atlas_sources\\\\osm-administration\\\\requests\\\\3b27426eb708fd344cdd01633cfd882bd8ab9888dc97f864b5d86ae78850df36\\\\response.tmp', 'https://overpass.private.coffee/api/interpreter']' returned non-zero exit status 56."
+      },
+      "coverage_status": "Partial until a complete tile scan and country land-area audit are recorded.",
+      "parent_relationship": "Country selection proven by Overpass ISO area and atlas bbox; finer hierarchy unresolved."
+    },
+    {
+      "id": "osm-TR-admin8-20261109T200006Z",
+      "country": "TR",
+      "kind": "local_admin",
+      "admin_level": 8,
+      "unit_type": "Mahalle / Köy",
+      "url": "https://overpass-api.de/api/interpreter",
+      "endpoints": [
+        "https://api.openstreetmap.org/api/0.6/relation/1306580/full.json",
+        "https://api.openstreetmap.org/api/0.6/relation/1650682/full.json",
+        "https://api.openstreetmap.org/api/0.6/relation/339228/full.json",
+        "https://api.openstreetmap.org/api/0.6/relation/3403828/full.json",
+        "https://api.openstreetmap.org/api/0.6/relation/8852697/full.json",
+        "https://api.openstreetmap.org/api/0.6/relation/9286607/full.json",
+        "https://overpass-api.de/api/interpreter",
+        "https://overpass.private.coffee/api/interpreter"
+      ],
+      "date": "2026-11-09T20:00:06Z",
+      "license": "ODbL-1.0",
+      "license_url": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "attribution": "© OpenStreetMap contributors; Open Database License 1.0",
+      "normalizer_version": 1,
+      "source_unit_count": 133,
+      "metadata_unit_count": 7498,
+      "prepared_area_count": 133,
+      "failed_geometry_count": 0,
+      "pending_geometry_count": 7365,
+      "metadata_selections": [
+        "TR:pilot",
+        "TR:tile-0",
+        "TR:tile-1",
+        "TR:tile-2",
+        "TR:tile-3",
+        "TR:tile-4",
+        "TR:tile-5",
+        "TR:tile-6",
+        "TR:tile-7"
+      ],
+      "sha256": "0ec5624cbb1cd78bb659954a3296c8634aa775838d9e70b34b926c121e65024a",
+      "bytes": 14964,
+      "provenance_path": "provenance/0ec5624cbb1cd78bb659954a3296c8634aa775838d9e70b34b926c121e65024a.json",
+      "replacement_scope": "feature",
+      "blocks_full_coverage_claim": true,
+      "cache_directory": "osm-administration",
+      "feature_files": [
+        {
+          "path": "features/3ad991798cf7e1f7d539fa62a5c167d514d29dbcfa5f5ecfd29577f5fdca8e43.json.gz",
+          "sha256": "3ad991798cf7e1f7d539fa62a5c167d514d29dbcfa5f5ecfd29577f5fdca8e43",
+          "bytes": 11128,
+          "count": 2
+        },
+        {
+          "path": "features/208f5f4aacd810b1d760c835f03f54212e5ea47834c1aba3a3132e83f16a136e.json.gz",
+          "sha256": "208f5f4aacd810b1d760c835f03f54212e5ea47834c1aba3a3132e83f16a136e",
+          "bytes": 5242,
+          "count": 1
+        },
+        {
+          "path": "features/2d0c21f6812af9cb724b2652b9affd73adcbb02b843ceb4e054174aea7185c8e.json.gz",
+          "sha256": "2d0c21f6812af9cb724b2652b9affd73adcbb02b843ceb4e054174aea7185c8e",
+          "bytes": 2304,
+          "count": 2
+        },
+        {
+          "path": "features/d6be68b060b3eeabe4f4a4960c5fee575c34f31ac5054dfb5b2e3aae3e75a5b6.json.gz",
+          "sha256": "d6be68b060b3eeabe4f4a4960c5fee575c34f31ac5054dfb5b2e3aae3e75a5b6",
+          "bytes": 1892,
+          "count": 1
+        },
+        {
+          "path": "features/9ca5d8a9ed32bea7ba188d9a199b799fc3b078e08281007cce0ea1dc1cd11230.json.gz",
+          "sha256": "9ca5d8a9ed32bea7ba188d9a199b799fc3b078e08281007cce0ea1dc1cd11230",
+          "bytes": 5631,
+          "count": 4
+        },
+        {
+          "path": "features/0a20b805a9eaa94110654b83a4ddcb4e81b482e0421f7ceb92356487fbef7832.json.gz",
+          "sha256": "0a20b805a9eaa94110654b83a4ddcb4e81b482e0421f7ceb92356487fbef7832",
+          "bytes": 2247,
+          "count": 4
+        },
+        {
+          "path": "features/7986a920d4376865b65f9633cec7ef312fe58d16365853ac08fc101013554964.json.gz",
+          "sha256": "7986a920d4376865b65f9633cec7ef312fe58d16365853ac08fc101013554964",
+          "bytes": 1476,
+          "count": 2
+        },
+        {
+          "path": "features/1f79ee0fa2befa6ccd344984171a07394698338534a5fadaa6eee3549a2c0056.json.gz",
+          "sha256": "1f79ee0fa2befa6ccd344984171a07394698338534a5fadaa6eee3549a2c0056",
+          "bytes": 8895,
+          "count": 20
+        },
+        {
+          "path": "features/1a5eced57a8a82d320b0d9e389e76baa2c04957dfb44d076b2c5cf46f8ad8deb.json.gz",
+          "sha256": "1a5eced57a8a82d320b0d9e389e76baa2c04957dfb44d076b2c5cf46f8ad8deb",
+          "bytes": 21628,
+          "count": 20
+        },
+        {
+          "path": "features/5e3ac7ac97d5bfe430197eac7bae46d2360549f10cf7580f9abe6af9a65b3e17.json.gz",
+          "sha256": "5e3ac7ac97d5bfe430197eac7bae46d2360549f10cf7580f9abe6af9a65b3e17",
+          "bytes": 14895,
+          "count": 20
+        },
+        {
+          "path": "features/66476c31ed87511262d565c5b52f47cc58b689b95b7bba5aea0c2436a4d0197a.json.gz",
+          "sha256": "66476c31ed87511262d565c5b52f47cc58b689b95b7bba5aea0c2436a4d0197a",
+          "bytes": 25320,
+          "count": 20
+        },
+        {
+          "path": "features/692fc0bd43518e904f87ea4859f7b0296b43167014ad6bb9315d0708ddf88dba.json.gz",
+          "sha256": "692fc0bd43518e904f87ea4859f7b0296b43167014ad6bb9315d0708ddf88dba",
+          "bytes": 25434,
+          "count": 20
+        },
+        {
+          "path": "features/cf04f75e797a56557e797b22ba2d387604c4ff1830004f5845e300138bc0077f.json.gz",
+          "sha256": "cf04f75e797a56557e797b22ba2d387604c4ff1830004f5845e300138bc0077f",
+          "bytes": 22091,
+          "count": 20
+        }
+      ],
+      "raw_requests": [
+        {
+          "url": "https://overpass-api.de/api/interpreter",
+          "query_sha256": "22f6d5b6322b04238cb530fd755777e73079ee930bd8ce97717a2b8a0fe5e9c2",
+          "request_sha256": "8bb1f06405127f08c09b33d0d3844846b7b9c872fe78707fd4fae532e04bd7f7",
+          "path": "requests/8bb1f06405127f08c09b33d0d3844846b7b9c872fe78707fd4fae532e04bd7f7/e4cb19a8db3349faf1b6533e958767ccdac5d8e16b4f7a3392dd24851216ca6e.json",
+          "sha256": "e4cb19a8db3349faf1b6533e958767ccdac5d8e16b4f7a3392dd24851216ca6e",
+          "bytes": 400645,
+          "osm_timestamp": "2026-11-09T20:00:06Z",
+          "imported_from_verified_pilot": {
+            "path": ".tools/atlas_sources/osm-admin-pilot/raw_RU.json",
+            "sha256": "e4cb19a8db3349faf1b6533e958767ccdac5d8e16b4f7a3392dd24851216ca6e",
+            "http_status": 200,
+            "report": ".tools/atlas_sources/osm-admin-pilot/pilot_report.md"
+          }
+        },
+        {
+          "url": "https://api.openstreetmap.org/api/0.6/relation/339228/full.json",
+          "path": "api_requests/860220242ff9f0a8e9be1e4ba7388b80a67701d2295520eb150b766006f47233/962cfef7a141ddfa60cf98fa1b9d954723d4df1e7bad772c507a66091840b846.json",
+          "sha256": "962cfef7a141ddfa60cf98fa1b9d954723d4df1e7bad772c507a66091840b846",
+          "bytes": 60755,
+          "retrieved_at": "2026-11-09T20:25:17.365434+00:00",
+          "snapshot_contract": "Every returned element version must predate the pinned snapshot."
+        },
+        {
+          "url": "https://api.openstreetmap.org/api/0.6/relation/1306580/full.json",
+          "path": "api_requests/b0d4e26ebdc2c486b35b0120275d7c3d87feafd7cedd38372e45ea1a048a5cb5/c4d5e640f005c05a03eee88f9120eb0d8a29f08910c76849781867773cd67a7b.json",
+          "sha256": "c4d5e640f005c05a03eee88f9120eb0d8a29f08910c76849781867773cd67a7b",
+          "bytes": 216183,
+          "retrieved_at": "2026-11-09T20:25:18.789530+00:00",
+          "snapshot_contract": "Every returned element version must predate the pinned snapshot."
+        },
+        {
+          "url": "https://api.openstreetmap.org/api/0.6/relation/1650682/full.json",
+          "path": "api_requests/9baafb9c41c7b13e09f1bf2f5e64a64844336c47cd1255a494a9de4dd0b066d5/983198992f3b79314eabed9b7905d7a854be4e0a0d534ca5e6048f888aaa60ad.json",
+          "sha256": "983198992f3b79314eabed9b7905d7a854be4e0a0d534ca5e6048f888aaa60ad",
+          "bytes": 106457,
+          "retrieved_at": "2026-11-09T20:25:20.108097+00:00",
+          "snapshot_contract": "Every returned element version must predate the pinned snapshot."
+        },
+        {
+          "url": "https://overpass-api.de/api/interpreter",
+          "query_sha256": "795eba2573820dcb873d28a937696746339901f62fb991edab0fc212a1ba96e7",
+          "request_sha256": "def2352aa2f98b4e14317494c841574d42d538db7e04f9d62c247cc7c5e43c2e",
+          "path": "requests/def2352aa2f98b4e14317494c841574d42d538db7e04f9d62c247cc7c5e43c2e/44bd865fa488dfec7699596ddb4bee0e3beec34bd2010e2ecb729374c9753c49.json",
+          "sha256": "44bd865fa488dfec7699596ddb4bee0e3beec34bd2010e2ecb729374c9753c49",
+          "bytes": 57612,
+          "osm_timestamp": "2026-11-09T20:01:05Z",
+          "imported_from_verified_pilot": {
+            "path": ".tools/atlas_sources/osm-admin-pilot/raw_TR.json",
+            "sha256": "44bd865fa488dfec7699596ddb4bee0e3beec34bd2010e2ecb729374c9753c49",
+            "http_status": 200,
+            "report": ".tools/atlas_sources/osm-admin-pilot/pilot_report.md"
+          }
+        },
+        {
+          "url": "https://api.openstreetmap.org/api/0.6/relation/3403828/full.json",
+          "path": "api_requests/392450b0e273276f1462e06e897a8c8333628cf2e65dbc353f320f9fe9cd6837/d3b58dbdbbd6a882234a4bdbf9673bb1a21ffa380fe27d1e2f77d2b02745200c.json",
+          "sha256": "d3b58dbdbbd6a882234a4bdbf9673bb1a21ffa380fe27d1e2f77d2b02745200c",
+          "bytes": 31361,
+          "retrieved_at": "2026-11-09T20:25:21.435110+00:00",
+          "snapshot_contract": "Every returned element version must predate the pinned snapshot."
+        },
+        {
+          "url": "https://api.openstreetmap.org/api/0.6/relation/8852697/full.json",
+          "path": "api_requests/a038c1da29160728d9e45f71d8a73c7bd9c457f583bd627c01494e78a0bbe86b/34f707803e44c81d369e45693f31479230d79bb359e04628f339efa556214db7.json",
+          "sha256": "34f707803e44c81d369e45693f31479230d79bb359e04628f339efa556214db7",
+          "bytes": 14827,
+          "retrieved_at": "2026-11-09T20:25:22.638646+00:00",
+          "snapshot_contract": "Every returned element version must predate the pinned snapshot."
+        },
+        {
+          "url": "https://api.openstreetmap.org/api/0.6/relation/9286607/full.json",
+          "path": "api_requests/95b5e1b5dd8de50181aa5a7d10d1badc04f7588e995baa1c49bcd5daaf519726/c7f61bb98e72951a082252091f46611b5fbe43cd92769ae46004d44fd801eb38.json",
+          "sha256": "c7f61bb98e72951a082252091f46611b5fbe43cd92769ae46004d44fd801eb38",
+          "bytes": 37791,
+          "retrieved_at": "2026-11-09T20:25:23.841895+00:00",
+          "snapshot_contract": "Every returned element version must predate the pinned snapshot."
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "998930dfc39366ad78c96c413f8aefa55a2e13f67c69abd41691bd7f30981f18",
+          "request_sha256": "3ad4bea69daffdfda185e0ca7417dee7547b0ad29473d26ba4c98cd3994f387f",
+          "path": "requests/3ad4bea69daffdfda185e0ca7417dee7547b0ad29473d26ba4c98cd3994f387f/d431ef03eebd220365833dcd6910bcb09708063551d63b02a760f7afda98ab78.json",
+          "sha256": "d431ef03eebd220365833dcd6910bcb09708063551d63b02a760f7afda98ab78",
+          "bytes": 1513284,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "56c1acf5670af17a779a31df7598c9a504f633df69f695068c42e3d4843e42e8",
+          "request_sha256": "60f62a83f43ccd8e2d04b3046e304a0a42acc8374c2e8ee7001f436490a0d461",
+          "path": "requests/60f62a83f43ccd8e2d04b3046e304a0a42acc8374c2e8ee7001f436490a0d461/e8b48e373b2afdaac5b2394512c2e14765b00fe4a68f49c41510b407c072f17b.json",
+          "sha256": "e8b48e373b2afdaac5b2394512c2e14765b00fe4a68f49c41510b407c072f17b",
+          "bytes": 38778,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "15b96c945f3f8553d640023a505a2f9b367579e1e76a9102ded53eabef0ea16b",
+          "request_sha256": "a1b074cf9d4996ccfa83330334886444e59c594a95a584ab8663eb2630d457b5",
+          "path": "requests/a1b074cf9d4996ccfa83330334886444e59c594a95a584ab8663eb2630d457b5/fcdd096bdadaa27fc4d627906bd742c8e48b2b4415ec657a156c8389f1931464.json",
+          "sha256": "fcdd096bdadaa27fc4d627906bd742c8e48b2b4415ec657a156c8389f1931464",
+          "bytes": 15814,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "384b5dbf5e769fba278c4672062d8a00300a531514f6970402b780d966bd3183",
+          "request_sha256": "da0ef8a139cee7d89fd8ab488f7bee4e57ee84a80d9d7663e22bb67da20e4538",
+          "path": "requests/da0ef8a139cee7d89fd8ab488f7bee4e57ee84a80d9d7663e22bb67da20e4538/9aa2627a3044d76ee5246041e7f7145412cc7ac4b5ad84ace19c888da5145ed0.json",
+          "sha256": "9aa2627a3044d76ee5246041e7f7145412cc7ac4b5ad84ace19c888da5145ed0",
+          "bytes": 8613,
+          "osm_timestamp": "2026-07-15T15:22:01Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "081afc4fe30ebce8355cc8f13994c9f46a3ae92cfbdf3f2d59b31eba393460de",
+          "request_sha256": "7c20578c5d0e606d9f492a160f52204ea34512f43234e8c8d96a055272bffded",
+          "path": "requests/7c20578c5d0e606d9f492a160f52204ea34512f43234e8c8d96a055272bffded/c72cc04396258c5335c8906bc83b316e3e7e904a5fd0225158440b0f0022f80f.json",
+          "sha256": "c72cc04396258c5335c8906bc83b316e3e7e904a5fd0225158440b0f0022f80f",
+          "bytes": 81202,
+          "osm_timestamp": "2026-07-24T11:04:51Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "233386e120f4b6f2010982080777563867cca25ff68758155b91de5bd1d56ab4",
+          "request_sha256": "4364439b5abcbb615291962c4a9b77e1ecaff8b8b0ac7c41c85375ace24d92dc",
+          "path": "requests/4364439b5abcbb615291962c4a9b77e1ecaff8b8b0ac7c41c85375ace24d92dc/1938a3abc1b33c187b758ad54dc159a0dc534c4ed3247cdbbad9c9d19d45f341.json",
+          "sha256": "1938a3abc1b33c187b758ad54dc159a0dc534c4ed3247cdbbad9c9d19d45f341",
+          "bytes": 174048,
+          "osm_timestamp": "2026-07-15T15:22:01Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "65c7d7344f134a0c3395b24c1faab1c7da97d01565bca449cbce96a64c9016cf",
+          "request_sha256": "732aca4123fe476af37606a6b2a167ff7af8e8abd18b70f2b4138ee7e500e9ab",
+          "path": "requests/732aca4123fe476af37606a6b2a167ff7af8e8abd18b70f2b4138ee7e500e9ab/20d710519a8b0150b9faafe077b0e369092497c29e2f2d7c968bf648f0e91d33.json",
+          "sha256": "20d710519a8b0150b9faafe077b0e369092497c29e2f2d7c968bf648f0e91d33",
+          "bytes": 132609,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "c80c515b178ff2e10824738d13ac42568afd0256e7a95f3fa4a8e52d63b4c20e",
+          "request_sha256": "c1a4ee97d8c1ac295e25effd585f3c15b838af65ae100b456f043f22f12362cb",
+          "path": "requests/c1a4ee97d8c1ac295e25effd585f3c15b838af65ae100b456f043f22f12362cb/e83d8b47cd1f2f2a226fcb46c99c42f63054ef757136fd353858af9a206bbc5f.json",
+          "sha256": "e83d8b47cd1f2f2a226fcb46c99c42f63054ef757136fd353858af9a206bbc5f",
+          "bytes": 213182,
+          "osm_timestamp": "2026-07-28T02:16:18Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "4843503fbe8e141d901fdebc44cc130d92ae45702aa44330ed6bc8429df6a0d5",
+          "request_sha256": "7670b91689c86ac928fbde2e3fcdd000c0713efbea616e213338fb31838eb981",
+          "path": "requests/7670b91689c86ac928fbde2e3fcdd000c0713efbea616e213338fb31838eb981/b4951a01d8ac8557612fb0cf9976108e013d0a7a0df78d5c95d2cbacccef130e.json",
+          "sha256": "b4951a01d8ac8557612fb0cf9976108e013d0a7a0df78d5c95d2cbacccef130e",
+          "bytes": 206443,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "189684585d9ff034f8176a8c94a86c152662b68416bbab3548c3abf63c8e2e0b",
+          "request_sha256": "cb06f18b4ead28118dd122aeec2bdd560c0590eb83c7f0c78e51caefe65f1b56",
+          "path": "requests/cb06f18b4ead28118dd122aeec2bdd560c0590eb83c7f0c78e51caefe65f1b56/65d962e28af1d41c554f90ea83de2f46f316be3f5f4e7faf919993e759565530.json",
+          "sha256": "65d962e28af1d41c554f90ea83de2f46f316be3f5f4e7faf919993e759565530",
+          "bytes": 175437,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "fb3665ea0ae240143b3414503257bee6fede2f1179c995070e45784c693450ea",
+          "request_sha256": "106d97c6da678693da7b9acf51193ba43dc7653cb478328b1d9b56c8cdfb11df",
+          "path": "requests/106d97c6da678693da7b9acf51193ba43dc7653cb478328b1d9b56c8cdfb11df/7d05c7ade103a9aabe29a3a44736955084d13e9a0f4c6da38a9f70a8eacd18c8.json",
+          "sha256": "7d05c7ade103a9aabe29a3a44736955084d13e9a0f4c6da38a9f70a8eacd18c8",
+          "bytes": 339,
+          "osm_timestamp": "2026-07-15T15:22:01Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "f32ccd5341c93fda3a8513a94103f74c86dfb22ecb678e5b7dc370d676685b65",
+          "request_sha256": "a746ae9becdd20048b7861e73e106b2d033ecb8a7a80cefcc4c4ae6014a3481b",
+          "path": "requests/a746ae9becdd20048b7861e73e106b2d033ecb8a7a80cefcc4c4ae6014a3481b/ad30818e0c587f44c7e9cd413916cd4f3c4413cfd3006669d551a212d4657d71.json",
+          "sha256": "ad30818e0c587f44c7e9cd413916cd4f3c4413cfd3006669d551a212d4657d71",
+          "bytes": 1883123,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "eacd7cb137aba8ff3e5f7305fe65223647add845042e9557d86b82c30184f3b8",
+          "request_sha256": "5de979823c15b3c88f781e45f5b98e28ad01486c2c487e34d1500babc01dc70b",
+          "path": "requests/5de979823c15b3c88f781e45f5b98e28ad01486c2c487e34d1500babc01dc70b/d3baeabd877e98a1dce6985ebeca44f26531055dc905a8d341868600fb5bf931.json",
+          "sha256": "d3baeabd877e98a1dce6985ebeca44f26531055dc905a8d341868600fb5bf931",
+          "bytes": 339,
+          "osm_timestamp": "2026-07-24T11:04:51Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "ac4a2b7b005db8b2075dffac2604bda2529c61e0963e2590ec26ad4d1ae677cd",
+          "request_sha256": "4a2a68dcc8610ad57d958d0869244026b3ec22074b76f41b7b5f92643656d03f",
+          "path": "requests/4a2a68dcc8610ad57d958d0869244026b3ec22074b76f41b7b5f92643656d03f/1c7ab3d9adf4e870ec61fb6ec75ac354c1ee0be55e4b8c8cfc9f818d907ed8f7.json",
+          "sha256": "1c7ab3d9adf4e870ec61fb6ec75ac354c1ee0be55e4b8c8cfc9f818d907ed8f7",
+          "bytes": 283978,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "c7435913ab5414e8867d917697d237b1071f537dd1ef76c08c2205d9bbba5225",
+          "request_sha256": "e8f25101985b265c121d9027307137cd772b94485a1e7ffd8f4715bd26182986",
+          "path": "requests/e8f25101985b265c121d9027307137cd772b94485a1e7ffd8f4715bd26182986/05b330221a3c51b8ae5b1df6cc050b3b424ac21ef5192de10f924f92bd7ed4de.json",
+          "sha256": "05b330221a3c51b8ae5b1df6cc050b3b424ac21ef5192de10f924f92bd7ed4de",
+          "bytes": 2482040,
+          "osm_timestamp": "2026-06-01T08:52:28Z"
+        },
+        {
+          "url": "https://overpass.private.coffee/api/interpreter",
+          "query_sha256": "d3b779d33ed2230aab30aea862172cf27cdfc4a4848b92a0302e97b093990b8b",
+          "request_sha256": "dcf09c075a35177d3c7803e4d8fdd43b2824c2cbeb9eec7c0a7e761e906332af",
+          "path": "requests/dcf09c075a35177d3c7803e4d8fdd43b2824c2cbeb9eec7c0a7e761e906332af/9ba48022240f2c639a794d5570f4b4b5a31ef4c4ef25bb8d054af900fc240f6a.json",
+          "sha256": "9ba48022240f2c639a794d5570f4b4b5a31ef4c4ef25bb8d054af900fc240f6a",
+          "bytes": 603702,
+          "osm_timestamp": "2026-05-31T22:37:44Z"
+        }
+      ],
+      "failures": {},
+      "completed_tiles": [
+        "TR:tile-1",
+        "TR:tile-3",
+        "TR:tile-5"
+      ],
+      "total_tiles": 10,
+      "request_failures": {
+        "RU:pilot:metadata": "Command '['curl.exe', '--fail', '--location', '--silent', '--show-error', '--connect-timeout', '20', '--max-time', '210', '--get', '--retry', '2', '--retry-delay', '5', '--user-agent', 'BangerQueensAtlas/1.6 (bounded administrative data import)', '--data-urlencode', 'data@C:\\\\Crusader Kings III\\\\mobile-godot\\\\.tools\\\\atlas_sources\\\\osm-administration\\\\requests\\\\77664aecaf452c97c1fce2afe177cd6bd373cb15f1a4f7dc634a887a23084f81\\\\query.ql', '--output', 'C:\\\\Crusader Kings III\\\\mobile-godot\\\\.tools\\\\atlas_sources\\\\osm-administration\\\\requests\\\\77664aecaf452c97c1fce2afe177cd6bd373cb15f1a4f7dc634a887a23084f81\\\\response.tmp', 'https://overpass-api.de/api/interpreter']' returned non-zero exit status 22.",
+        "TR:tile-8:metadata": "Command '['curl.exe', '--fail', '--location', '--silent', '--show-error', '--connect-timeout', '20', '--max-time', '210', '--get', '--retry', '2', '--retry-delay', '5', '--user-agent', 'BangerQueensAtlas/1.6 (bounded administrative data import)', '--data-urlencode', 'data@C:\\\\Crusader Kings III\\\\mobile-godot\\\\.tools\\\\atlas_sources\\\\osm-administration\\\\requests\\\\3b27426eb708fd344cdd01633cfd882bd8ab9888dc97f864b5d86ae78850df36\\\\query.ql', '--output', 'C:\\\\Crusader Kings III\\\\mobile-godot\\\\.tools\\\\atlas_sources\\\\osm-administration\\\\requests\\\\3b27426eb708fd344cdd01633cfd882bd8ab9888dc97f864b5d86ae78850df36\\\\response.tmp', 'https://overpass.private.coffee/api/interpreter']' returned non-zero exit status 56."
+      },
+      "coverage_status": "Partial until a complete tile scan and country land-area audit are recorded.",
+      "parent_relationship": "Country selection proven by Overpass ISO area and atlas bbox; finer hierarchy unresolved."
+    }
+  ],
+  "coverage_status": "Partial OSM mapping; no country land-area audit has been completed."
+}

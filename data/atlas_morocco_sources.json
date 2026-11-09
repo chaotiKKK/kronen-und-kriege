@@ -1,0 +1,274 @@
+{
+  "schema": 1,
+  "sources": [
+    {
+      "id": "morocco-communes-HCP2024-OSM202609",
+      "country": "MA",
+      "country_iso3": "MAR",
+      "scope_countries": [
+        "MA"
+      ],
+      "url": "https://github.com/zkousama/morocco-communes/tree/4ec363333fea43e712820e20f59532bac5df0b07/data/v1",
+      "date": "HCP 2024 / OSM 2026-09-17–19",
+      "source_commit": "4ec363333fea43e712820e20f59532bac5df0b07",
+      "dataset_version": "1.10.0",
+      "license": "ODbL 1.0 (Geometrie); CC BY 4.0 (HCP-Namen und Kennungen)",
+      "license_url": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "license_evidence_url": "https://www.hcp.ma/Conditions-generales-d-utilisation-Version-1-0_a2194.html",
+      "attribution": "© OpenStreetMap contributors, ODbL 1.0; Haut-Commissariat au Plan, RGPH 2024, CC BY 4.0; assembled by Ousama Ajebbar (morocco-communes). Boundaries decoded, projected and clipped for the atlas; no endorsement by HCP implied.",
+      "metadata_url": "https://raw.githubusercontent.com/zkousama/morocco-communes/4ec363333fea43e712820e20f59532bac5df0b07/data/v1/sources.json",
+      "pinnedmetadataURL": "https://raw.githubusercontent.com/zkousama/morocco-communes/4ec363333fea43e712820e20f59532bac5df0b07/data/v1/sources.json",
+      "license_layers": [
+        {
+          "scope": "geometry and geometry-derived fields",
+          "license": "ODbL-1.0",
+          "url": "https://raw.githubusercontent.com/zkousama/morocco-communes/4ec363333fea43e712820e20f59532bac5df0b07/data/v1/geometry/LICENSE",
+          "attribution": "© OpenStreetMap contributors"
+        },
+        {
+          "scope": "official commune names and geographic codes",
+          "license": "CC BY 4.0",
+          "url": "https://www.hcp.ma/Conditions-generales-d-utilisation-Version-1-0_a2194.html",
+          "attribution": "Haut-Commissariat au Plan, RGPH 2024"
+        }
+      ],
+      "admin_level": 8,
+      "native_level": "OSM admin_level=8 / HCP commune",
+      "unit_type": "Commune urbaine / commune rurale",
+      "kind": "municipality",
+      "files": [
+        {
+          "url": "https://raw.githubusercontent.com/zkousama/morocco-communes/4ec363333fea43e712820e20f59532bac5df0b07/data/v1/attributes/communes.json",
+          "bytes": 1753991,
+          "sha256": "a8840149a21d582af918893a84a85feb04c7acc6bc97e76e8f3738d5d1cd173b",
+          "cache_file": "morocco/attributes/communes.json"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/zkousama/morocco-communes/4ec363333fea43e712820e20f59532bac5df0b07/data/v1/sources.json",
+          "bytes": 6175,
+          "sha256": "70f3177ceab3da9a4892bfab15e85a5c78e3f361601b2be181af341331f0c17e",
+          "cache_file": "morocco/sources.json"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/zkousama/morocco-communes/4ec363333fea43e712820e20f59532bac5df0b07/data/v1/geometry/01.topojson",
+          "bytes": 281987,
+          "sha256": "b87f93b717d223c1643f6047bd3c64842ad9a37f3704d5920ec94b252458e995",
+          "cache_file": "morocco/geometry/01.topojson"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/zkousama/morocco-communes/4ec363333fea43e712820e20f59532bac5df0b07/data/v1/geometry/02.topojson",
+          "bytes": 259863,
+          "sha256": "954f069af0bf24ed78e35a30ed7b1761b3f56c737c949d474680d08fbe2eb85d",
+          "cache_file": "morocco/geometry/02.topojson"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/zkousama/morocco-communes/4ec363333fea43e712820e20f59532bac5df0b07/data/v1/geometry/03.topojson",
+          "bytes": 196606,
+          "sha256": "3f6579e2be9aa4c17484c5e085e615f748978099cf6f315da7c5b6492ab89263",
+          "cache_file": "morocco/geometry/03.topojson"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/zkousama/morocco-communes/4ec363333fea43e712820e20f59532bac5df0b07/data/v1/geometry/04.topojson",
+          "bytes": 169561,
+          "sha256": "8bbf0bf0b80505b379c3e241d466711099b676dd58409bd55b49ec88e1e192bc",
+          "cache_file": "morocco/geometry/04.topojson"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/zkousama/morocco-communes/4ec363333fea43e712820e20f59532bac5df0b07/data/v1/geometry/05.topojson",
+          "bytes": 92326,
+          "sha256": "502de8304c7af333f16fdab326e69f16eda328907f0f8764bc0b405f2cf2ffa3",
+          "cache_file": "morocco/geometry/05.topojson"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/zkousama/morocco-communes/4ec363333fea43e712820e20f59532bac5df0b07/data/v1/geometry/06.topojson",
+          "bytes": 172208,
+          "sha256": "f3627bc9543d1669bb5abfa453fc7a50ae73473984d68af0bc5211ad5e72c31b",
+          "cache_file": "morocco/geometry/06.topojson"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/zkousama/morocco-communes/4ec363333fea43e712820e20f59532bac5df0b07/data/v1/geometry/07.topojson",
+          "bytes": 222847,
+          "sha256": "1d29fe92b8b348f5575e8143e1affc9a3a54afa0a3b210fb88efd0d2310b5b8a",
+          "cache_file": "morocco/geometry/07.topojson"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/zkousama/morocco-communes/4ec363333fea43e712820e20f59532bac5df0b07/data/v1/geometry/08.topojson",
+          "bytes": 87701,
+          "sha256": "7e37f59b0eb7a06713e110973247d34de5e63c24eb6100d5aedef4aaca13ae10",
+          "cache_file": "morocco/geometry/08.topojson"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/zkousama/morocco-communes/4ec363333fea43e712820e20f59532bac5df0b07/data/v1/geometry/09.topojson",
+          "bytes": 148610,
+          "sha256": "2cc36ab5d23a17c83fcb8266f36e6ad98b9bdd53679bda992c706d1e23637c5b",
+          "cache_file": "morocco/geometry/09.topojson"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/zkousama/morocco-communes/4ec363333fea43e712820e20f59532bac5df0b07/data/v1/geometry/10.topojson",
+          "bytes": 65237,
+          "sha256": "8e73e58dd493051bdb3558415a0b1418d0ab734e8d3c6354ea08ccfbc6916a8a",
+          "cache_file": "morocco/geometry/10.topojson"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/zkousama/morocco-communes/4ec363333fea43e712820e20f59532bac5df0b07/data/v1/geometry/11.topojson",
+          "bytes": 107004,
+          "sha256": "7abab30c1723e3833b1916e70719f496fc0d98cbc64ccc72f3a4fd5471611026",
+          "cache_file": "morocco/geometry/11.topojson"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/zkousama/morocco-communes/4ec363333fea43e712820e20f59532bac5df0b07/data/v1/geometry/12.topojson",
+          "bytes": 163132,
+          "sha256": "43eff1027bbad67ace5c367a80e9bbf7d23bdbf85addbdb3af94705e38467059",
+          "cache_file": "morocco/geometry/12.topojson"
+        }
+      ],
+      "bytes": 3727248,
+      "sha256": "30600c2dfd74b074ba9affdf35140c77851f8f02396e16873147365f0c061e42",
+      "hash_scope": "SHA-256 of the canonical ordered input receipt list; each underlying file retains its own SHA-256",
+      "source_catalogue_count": 1503,
+      "source_feature_count": 1502,
+      "source_unit_count": 1502,
+      "normalized_unit_count": 1502,
+      "units_intersecting_atlas_bbox": 682,
+      "atlas_bbox": [
+        -12,
+        33,
+        52,
+        72
+      ],
+      "source_role_counts": {
+        "Commune urbaine": 242,
+        "Commune rurale": 1260
+      },
+      "geometry_repaired_count": 5,
+      "source_name_missing_count": 0,
+      "known_missing_boundaries": [
+        {
+          "code": "04.281.05.11",
+          "codeDigits": "042810511",
+          "name": {
+            "fr": "Sidi Mohamed Benmansour",
+            "ar": "سيدي محمد بنمنصور"
+          },
+          "parents": {
+            "region": "04",
+            "province": "04.281",
+            "cercle": "04.281.05"
+          },
+          "bbox": null,
+          "centroid": null,
+          "osm": null
+        }
+      ],
+      "blocks_full_coverage_claim": true,
+      "known_geographic_gap_note": "Upstream documents another approximately 88 km² unassigned gap between Ifrane and Boulemane; no polygon is invented for it. Exact per-country coverage in the atlas bbox remains to be measured.",
+      "unit_semantics": {
+        "render_role": "municipality",
+        "source_unit_type": "HCP urban/rural commune",
+        "join": "OSM administrative level-8 relation geometry matched by ref:MA:HCP to the official HCP catalogue codeDigits",
+        "reference_note": "The full provider footprint includes Western Sahara under HCP classification. That southern territory is outside this atlas's latitude>=33 extent. Catalogue totals are not counts inside the atlas bbox.",
+        "coverage_status": "1502 actual boundaries of 1503 catalogued communes; no full coverage claim; bbox intersection count is not land-area coverage"
+      },
+      "original_provenance": {
+        "datasetVersion": "1.10.0",
+        "sources": [
+          {
+            "id": "hcp-2024",
+            "url": "https://www.hcp.ma/file/242341/",
+            "licence": "Haut-Commissariat au Plan, RGPH 2024. Reusable, commercially too, on CC BY 4.0 terms: credit HCP and say what was changed. https://www.hcp.ma/Conditions-generales-d-utilisation-Version-1-0_a2194.html",
+            "sha256": "7e9d3d402cc2fd0d9c4fc941c4f23c6a5e5ddcbefbba80b7540267f8e2728dca",
+            "retrievedAt": "2026-09-17"
+          },
+          {
+            "id": "hcp-2024-indicators",
+            "url": "https://www.hcp.ma/file/242671/",
+            "licence": "Haut-Commissariat au Plan, RGPH 2024, Indicateurs démographiques et socioéconomiques. Reusable, commercially too, on CC BY 4.0 terms: credit HCP and say what was changed. https://www.hcp.ma/Conditions-generales-d-utilisation-Version-1-0_a2194.html",
+            "sha256": "f3d96fcae3c10a2c194b2fe97ee8352a242fb3f36b1b63d4d2a7006176dc7c3e",
+            "retrievedAt": "2026-09-19"
+          },
+          {
+            "id": "hcp-2014",
+            "url": "https://www.hcp.ma/file/230057/",
+            "licence": "Haut-Commissariat au Plan, RGPH 2014. Reusable, commercially too, on CC BY 4.0 terms: credit HCP and say what was changed. https://www.hcp.ma/Conditions-generales-d-utilisation-Version-1-0_a2194.html",
+            "sha256": "e0a7e308c0c1e185e5bec0c080d10635b19e83216d0bf91656554c707bbf0709",
+            "retrievedAt": "2026-09-17"
+          },
+          {
+            "id": "hcp-2014-indicators-people",
+            "url": "https://www.hcp.ma/file/230045/",
+            "licence": "Haut-Commissariat au Plan, RGPH 2014, Indicateurs démographiques et socioéconomiques de la population. Reusable, commercially too, on CC BY 4.0 terms: credit HCP and say what was changed. https://www.hcp.ma/Conditions-generales-d-utilisation-Version-1-0_a2194.html",
+            "sha256": "c20c1f7d08c1089bf4610f81a0eac89516a278fddb24b8577588284e2fc9a2d0",
+            "retrievedAt": "2026-09-19"
+          },
+          {
+            "id": "hcp-2014-indicators-households",
+            "url": "https://www.hcp.ma/file/230042/",
+            "licence": "Haut-Commissariat au Plan, RGPH 2014, Indicateurs sur les ménages et les conditions d'habitation. Reusable, commercially too, on CC BY 4.0 terms: credit HCP and say what was changed. https://www.hcp.ma/Conditions-generales-d-utilisation-Version-1-0_a2194.html",
+            "sha256": "2fde794a15d0d98889875316666d918f1044f8055610bfb909d056a15fe878a1",
+            "retrievedAt": "2026-09-19"
+          },
+          {
+            "id": "hcp-2024-commute",
+            "url": "https://www.hcp.ma/file/248301/",
+            "licence": "Haut-Commissariat au Plan, RGPH 2024, Indicateurs communaux sur le mode de transport domicile-lieu de travail des actifs occupés. Reusable, commercially too, on CC BY 4.0 terms: credit HCP and say what was changed. https://www.hcp.ma/Conditions-generales-d-utilisation-Version-1-0_a2194.html",
+            "sha256": "30e8fc0047fe7ada2cb1db36e127e8d31966da2e775183b9bb0c7eeffd540027",
+            "retrievedAt": "2026-09-19"
+          },
+          {
+            "id": "hcp-2014-mobility",
+            "url": "https://www.hcp.ma/file/230011/",
+            "licence": "Haut-Commissariat au Plan, RGPH 2014, Indicateurs sur la mobilité et le transport par commune. Reusable, commercially too, on CC BY 4.0 terms: credit HCP and say what was changed. https://www.hcp.ma/Conditions-generales-d-utilisation-Version-1-0_a2194.html",
+            "sha256": "ed3c24c0c9dba69cac98c03bf27235211ffdf66e6edd97a84b61d9f0c64aa957",
+            "retrievedAt": "2026-09-19"
+          },
+          {
+            "id": "hcp-2024-establishments",
+            "url": "https://www.hcp.ma/file/242672/",
+            "licence": "Haut-Commissariat au Plan, RGPH 2024, Cartographie des établissements économiques. Reusable, commercially too, on CC BY 4.0 terms: credit HCP and say what was changed. https://www.hcp.ma/Conditions-generales-d-utilisation-Version-1-0_a2194.html",
+            "sha256": "33887f36154129e9fc8eceb6d5393d5b26fae0851f153cdb1ed6358e0aed38ee",
+            "retrievedAt": "2026-09-20"
+          },
+          {
+            "id": "hcp-2014-professions",
+            "url": "https://www.hcp.ma/file/230028/",
+            "licence": "Haut-Commissariat au Plan, RGPH 2014, Indicateurs sur les professions et les secteurs d'activité de la population active occupée. Reusable, commercially too, on CC BY 4.0 terms: credit HCP and say what was changed. https://www.hcp.ma/Conditions-generales-d-utilisation-Version-1-0_a2194.html",
+            "sha256": "c3b94173217e306fa14ce628269bd6b1f0855ccf03eb3503e5da08340c58c644",
+            "retrievedAt": "2026-09-20"
+          },
+          {
+            "id": "hcp-2014-diplomas",
+            "url": "https://www.hcp.ma/file/230031/",
+            "licence": "Haut-Commissariat au Plan, RGPH 2014, Indicateurs sur les diplômes de la population. Reusable, commercially too, on CC BY 4.0 terms: credit HCP and say what was changed. https://www.hcp.ma/Conditions-generales-d-utilisation-Version-1-0_a2194.html",
+            "sha256": "5b6e4785caa3ef42265d4af4b4e1390195d7c114bbf58a1d9867866826329ad6",
+            "retrievedAt": "2026-09-20"
+          },
+          {
+            "id": "hcp-2024-housing",
+            "url": "https://www.hcp.ma/file/246208/",
+            "licence": "Haut-Commissariat au Plan, RGPH 2024, Indicateurs communaux du parc logement urbain. Reusable, commercially too, on CC BY 4.0 terms: credit HCP and say what was changed. https://www.hcp.ma/Conditions-generales-d-utilisation-Version-1-0_a2194.html",
+            "sha256": "c5ca0d86eef04cac4692cc0fff691e81f77e73726515b12eb17a0d7f3a8ff421",
+            "retrievedAt": "2026-09-20"
+          },
+          {
+            "id": "hcp-2024-douars",
+            "url": "https://www.hcp.ma/file/245768/",
+            "licence": "Haut-Commissariat au Plan, RGPH 2024, Population et ménages par douars. Reusable, commercially too, on CC BY 4.0 terms: credit HCP and say what was changed. https://www.hcp.ma/Conditions-generales-d-utilisation-Version-1-0_a2194.html",
+            "sha256": "b04fa4f479aa77a4fbd741c50b734fc80e42be3786ea8a94e2adb085fc5ae1b6",
+            "retrievedAt": "2026-10-01"
+          },
+          {
+            "id": "osm",
+            "via": "Overpass API",
+            "licence": "ODbL-1.0",
+            "attribution": "© OpenStreetMap contributors, opendatacommons.org/licenses/odbl/1-0/",
+            "snapshot": {
+              "earliest": "2026-09-17T16:53:06.964Z",
+              "latest": "2026-09-19T02:18:14.612Z",
+              "regions": 12
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

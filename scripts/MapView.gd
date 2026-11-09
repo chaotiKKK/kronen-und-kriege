@@ -81,6 +81,7 @@ var atlas_obstacles: Array = []
 var atlas_location: String = ""
 var _rivers_cache: Array = []
 var _base_zoom_bucket := -1
+var _last_canvas_size := Vector2.ZERO
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -173,6 +174,14 @@ func _fit() -> Array:
 func _sync_base_transform() -> void:
 	if _base == null:
 		return
+	if _last_canvas_size.x > 0.0 and _last_canvas_size.y > 0.0 and not size.is_equal_approx(_last_canvas_size):
+		var old_fit := minf(_last_canvas_size.x / MAP_SIZE.x, _last_canvas_size.y / MAP_SIZE.y)
+		var new_fit := minf(size.x / MAP_SIZE.x, size.y / MAP_SIZE.y)
+		if old_fit > 0.0 and new_fit > 0.0:
+			# pan / Maßstab bestimmt den geografischen Mittelpunkt, nicht pan allein.
+			pan *= new_fit / old_fit
+			_clamp_pan()
+	_last_canvas_size = size
 	var fit := _fit()
 	_base.position = fit[1]
 	_base.scale = Vector2(float(fit[0]), float(fit[0]))
@@ -182,7 +191,6 @@ func _sync_base_transform() -> void:
 		_base.queue_redraw()
 	if atlas_layer != null:
 		atlas_layer.size = size
-		atlas_layer.refresh()
 
 func rivers() -> Array:
 	if _rivers_cache.is_empty() and atlas_data != null:
@@ -220,6 +228,7 @@ func _clamp_pan() -> void:
 	pan = off - base
 
 func zoom_by(factor: float, pivot = null) -> void:
+	_sync_base_transform()
 	var p: Vector2 = size * 0.5 if pivot == null else pivot
 	var old: Array = _fit()
 	var before: Vector2 = (p - (old[1] as Vector2)) / float(old[0])
@@ -233,12 +242,14 @@ func zoom_by(factor: float, pivot = null) -> void:
 	queue_redraw()
 
 func reset_view() -> void:
+	_last_canvas_size = size
 	zoom = 1.0
 	pan = Vector2.ZERO
 	_sync_base_transform()
 	queue_redraw()
 
 func center_on(map_point: Vector2) -> void:
+	_last_canvas_size = size
 	var fit_s: float = min(size.x / MAP_SIZE.x, size.y / MAP_SIZE.y)
 	if fit_s <= 0.0:
 		return
@@ -256,12 +267,15 @@ func focus_atlas_location(record: Dictionary) -> void:
 	atlas_location = str(record.get("name", ""))
 	atlas_layer.selected_id = str(record.get("id", ""))
 	var kind := str(record.get("kind", "city"))
-	zoom = 4.5 if kind in ["country", "region"] else (12.0 if kind == "district" else (48.0 if kind == "municipality" else 24.0))
+	zoom = 4.5 if kind in ["country", "region"] else (12.0 if kind == "district" else (48.0 if kind in ["municipality", "local_admin"] else 24.0))
 	center_on(point)
 	var province_id := str(record.get("province_id", ""))
 	if game != null and not game.province(province_id).is_empty():
 		select(province_id)
 		province_selected.emit(province_id)
+	else:
+		select("")
+		province_selected.emit("")
 	atlas_location_selected.emit(record)
 
 func _centroid(poly: PackedVector2Array) -> Vector2:
@@ -348,30 +362,46 @@ func _pick_at(pos: Vector2) -> void:
 	if game == null:
 		return
 	atlas_location = ""
+	var record: Dictionary = {}
+	var anchor_target := false
 	if atlas_layer != null and zoom >= 2.5:
 		var fit := _fit()
 		var point: Vector2 = (pos - fit[1]) / float(fit[0])
-		var record: Dictionary = atlas_data.nearest_city(point, 12.0 / float(fit[0]))
+		# Ein verschobenes Namensschild gehört weiterhin zu seinem tatsächlichen Ort.
+		for label in atlas_layer.audit_labels:
+			if (label.get("rect", Rect2()) as Rect2).has_point(pos):
+				record = atlas_data.lookup(str(label.get("id", "")))
+				anchor_target = not record.is_empty()
+				break
+		if record.is_empty():
+			record = atlas_data.nearest_city(point, 12.0 / float(fit[0]))
+			anchor_target = not record.is_empty()
 		if record.is_empty():
 			record = atlas_data.feature_at(point, zoom)
 		atlas_layer.selected_id = str(record.get("id", ""))
 		atlas_location = str(record.get("name", ""))
-		if not record.is_empty():
-			atlas_location_selected.emit(record)
 	var id: String = _province_at(pos)
+	if anchor_target:
+		var mapped_id := str(record.get("province_id", ""))
+		id = mapped_id if not game.province(mapped_id).is_empty() else ""
 	if id == "":
 		if selected != "":
 			selected = ""
 			province_selected.emit("")
 			queue_redraw()
+		if not record.is_empty():
+			atlas_location_selected.emit(record)
 		return
 	selected = id
 	hovered = id
 	_hover_pos = pos
 	province_selected.emit(selected)
+	if not record.is_empty():
+		atlas_location_selected.emit(record)
 	queue_redraw()
 
 func _draw() -> void:
+	_sync_base_transform()
 	var fit := _fit()
 	var s: float = fit[0]
 	var off: Vector2 = fit[1]
@@ -379,7 +409,6 @@ func _draw() -> void:
 	capital_markers_drawn.clear()
 	kingdom_banners_drawn.clear()
 	empire_banners_drawn.clear()
-	_sync_base_transform()
 	if game == null:
 		draw_rect(Rect2(off, MAP_SIZE * s), Color(0.72, 0.58, 0.34, 0.5), false, 3.0)
 		return
@@ -813,7 +842,7 @@ func _legend_rows() -> Array:
 		_:
 			return [
 				["Grafschaft", Color(0.16, 0.11, 0.07, 0.55), 1.0],
-				["Besitzerwechsel", Color(0.98, 0.84, 0.45, 0.95), 4.0],
+				["Grenze zwischen Häusern", Color(0.98, 0.84, 0.45, 0.95), 4.0],
 				["Herzogtum", Color(0.43, 0.30, 0.14, 0.9), 2.1],
 				["Königreich", Color(0.72, 0.52, 0.22, 0.95), 3.2],
 				["Reich", Color(0.64, 0.18, 0.13, 0.95), 5.0],
@@ -848,7 +877,7 @@ func _draw_legend(map_rect: Rect2, font: Font) -> void:
 			draw_string(font, origin + Vector2(22, 14), str(info["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.94, 0.90, 0.80))
 		draw_line(box.position + Vector2(8, h - 34), box.position + Vector2(32, h - 34), Color(0.18, 0.45, 0.58, 0.9), 2.0)
 		draw_string(font, box.position + Vector2(38, h - 31), "Flüsse · Geländesymbole", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.82, 0.88, 0.86))
-		draw_string(font, box.position + Vector2(8, h - 12), "Token = Geländetyp (Blender-Render)", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.76, 0.70, 0.58))
+		draw_string(font, box.position + Vector2(8, h - 12), "Symbole zeigen den Geländetyp", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.76, 0.70, 0.58))
 	elif map_mode == "development":
 		for i in 5:
 			var t: float = float(i) / 4.0
@@ -864,7 +893,7 @@ func _draw_legend(map_rect: Rect2, font: Font) -> void:
 		draw_line(box.position + Vector2(12, 58), box.position + Vector2(42, 58), Color(0.64, 0.18, 0.13, 0.95), 5.0)
 		draw_string(font, box.position + Vector2(52, 62), "Reichsgrenze", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.92, 0.88, 0.78))
 		draw_line(box.position + Vector2(12, 79), box.position + Vector2(42, 79), Color(0.98, 0.84, 0.45, 0.95), 4.0)
-		draw_string(font, box.position + Vector2(52, 83), "Besitzerwechsel", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.92, 0.88, 0.78))
+		draw_string(font, box.position + Vector2(52, 83), "Grenze zwischen Häusern", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.92, 0.88, 0.78))
 		draw_circle(box.position + Vector2(14, 100), 7.0, Color(0.20, 0.36, 0.44, 0.94))
 		draw_arc(box.position + Vector2(14, 100), 7.0, 0.0, TAU, 16, Color(0.86, 0.68, 0.32, 0.95), 1.5, true)
 		draw_string(font, box.position + Vector2(28, 104), "Flotte / Blockade", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.92, 0.88, 0.78))
@@ -875,7 +904,7 @@ func _draw_legend(map_rect: Rect2, font: Font) -> void:
 			var yy: float = 31.0 + i * 16.0
 			draw_line(box.position + Vector2(12, yy), box.position + Vector2(42, yy), row[1], float(row[2]))
 			draw_string(font, box.position + Vector2(52, yy + 4), str(row[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.92, 0.88, 0.78))
-		draw_string(font, box.position + Vector2(8, h - 8), "Klick wählt · Doppelklick öffnet · Rechtsklick schließt", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.76, 0.70, 0.58))
+		draw_string(font, box.position + Vector2(8, h - 8), "Hellgold: ausgewähltes Spielgebiet", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.98, 0.90, 0.62))
 
 func _gui_input(event: InputEvent) -> void:
 	if game == null:

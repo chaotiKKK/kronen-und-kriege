@@ -1,15 +1,17 @@
 extends Node
 ## Misst die Bildrate der Karte in einem echten Fenster.
 ## Aufruf: godot --path . res://tests/MapPerfTest.tscn --resolution 1600x900
-## Gemessen wird die politische Karte bei Übersicht und 4x Zoom, jeweils ohne
-## und mit vollständigem Neuzeichnen pro Frame (Pan/Zoom-Last). Zusätzlich
-## entstehen Gelände-Screenshots für die Sichtprüfung der Biomtextur.
+## Gemessen wird die politische Karte bei Übersicht und 4x Zoom, jeweils mit
+## ruhender Kamera und erzwungenem Host-Redraw. Ein eigener 4x-Pan-Lauf bewegt
+## die Kamera tatsächlich und erfasst dadurch Atlas-Neuberechnungen. Zusätzlich
+## entstehen Gelände-Screenshots des geografischen Untergrunds.
 
 const WARMUP_FRAMES := 60
 const SAMPLE_SECONDS := 4.0
 
 var main
 var _bench_redraw := false
+var _bench_pan := false
 var _samples: Array[float] = []
 var _checks: int = 0
 
@@ -64,6 +66,18 @@ func _ready() -> void:
 	print("MAPPERF zoom value=%.2f pan=%s" % [main.map_view.zoom, main.map_view.pan])
 	await _run_measurement("zoom4-idle", false)
 	await _run_measurement("zoom4-redraw", true)
+	var previous_pan: Vector2 = main.map_view.pan
+	await _run_measurement("zoom4-pan", true, true)
+	if not _expect(not main.map_view.pan.is_equal_approx(previous_pan), "Der Pan-Messlauf hat die tatsächliche Kartenkamera nicht bewegt."):
+		return
+	main.map_view.pan = previous_pan
+	main.map_view._clamp_pan()
+	main.map_view._sync_base_transform()
+	main.map_view.queue_redraw()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if not _expect(main.map_view.pan.is_equal_approx(previous_pan), "Der Pan-Messlauf verändert die anschließenden Screenshot- und Markerpositionen."):
+		return
 	_bench_redraw = false
 	await _shot("map-perf-zoom4")
 	# Sichtprüfung der Biomtextur bei voller Kartenauflösung.
@@ -77,16 +91,25 @@ func _ready() -> void:
 	print("MAPPERF OK; %d Prüfungen." % _checks)
 	get_tree().quit(0)
 
-func _process(_delta: float) -> void:
-	if _bench_redraw and main != null:
+func _process(delta: float) -> void:
+	if main == null:
+		return
+	if _bench_pan:
+		# Zeitbasierte Bewegung hält Baseline und Kandidat bei anderer FPS vergleichbar.
+		main.map_view.pan += Vector2(24.0, -12.0) * delta
+		main.map_view._clamp_pan()
+		main.map_view._sync_base_transform()
+	if _bench_redraw or _bench_pan:
 		main.map_view.queue_redraw()
 
-func _run_measurement(label: String, redraw: bool) -> void:
+func _run_measurement(label: String, redraw: bool, pan_camera: bool = false) -> void:
 	_bench_redraw = redraw
+	_bench_pan = pan_camera
 	main.map_view.queue_redraw()
 	for i in WARMUP_FRAMES:
 		await get_tree().process_frame
 	_samples.clear()
+	var sampled_pan_start: Vector2 = main.map_view.pan
 	var started: int = Time.get_ticks_usec()
 	var last: int = started
 	while Time.get_ticks_usec() - started < int(SAMPLE_SECONDS * 1_000_000.0):
@@ -106,7 +129,7 @@ func _run_measurement(label: String, redraw: bool) -> void:
 	var p50: float = _percentile(50.0)
 	var p95: float = _percentile(95.0)
 	var p99: float = _percentile(99.0)
-	print("MAPPERF %-16s zoom=%.2f redraw=%s frames=%d wall=%.3f fps=%.1f p50=%.2fms p95=%.2fms p99=%.2fms low1=%.1f draw_calls=%d primitives=%d" % [
+	print("MAPPERF %-16s zoom=%.2f redraw=%s frames=%d wall=%.3f fps=%.1f p50=%.2fms p95=%.2fms p99=%.2fms low1=%.1f draw_calls=%d primitives=%d pan=%s pan_distance=%.1f" % [
 		label,
 		main.map_view.zoom,
 		"yes" if redraw else "no",
@@ -119,11 +142,22 @@ func _run_measurement(label: String, redraw: bool) -> void:
 		1000.0 / maxf(p99, 0.001),
 		int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)),
 		int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)),
+		"yes" if pan_camera else "no",
+		main.map_view.pan.distance_to(sampled_pan_start),
 	])
 	_bench_redraw = false
+	_bench_pan = false
+	var target_text := OS.get_environment("ATLAS_MIN_PAN_FPS")
+	if pan_camera and not target_text.is_empty():
+		var target_fps := target_text.to_float()
+		if not _expect(target_fps > 0.0 and fps >= target_fps,
+				"Echter Kartenschwenk erreicht %.1f statt mindestens %.1f FPS." % [fps, target_fps]):
+			return
 
 func _shot(name: String) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://build/verify"))
+	print("MAPPERF capture start ", name)
+	main.map_view.queue_redraw()
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
 	var path := "res://build/verify/%s.png" % name

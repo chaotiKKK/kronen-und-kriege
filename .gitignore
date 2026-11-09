@@ -32,6 +32,12 @@ __pycache__/
 !/preview/stammbaum.png.import
 !/preview/holz-menue.png
 !/preview/holz-spiel.png
+!/preview/atlas-overview.png
+!/preview/atlas-gemeinden.png
+!/preview/atlas-fullscreen.png
+!/preview/atlas-international-FR.png
+!/preview/atlas-international-IT.png
+!/preview/atlas-international-PL.png
 
 # OS/editor noise
 .DS_Store

@@ -1,6 +1,6 @@
 extends VBoxContainer
 ## Deutsche Ortsuche für den eingebetteten Referenzatlas, ohne Netzwerkzugriff.
-const KIND_NAMES := {"country": "Land", "region": "Region", "district": "Kreis", "municipality": "Gemeinde", "city": "Ort"}
+const KIND_NAMES := {"country": "Land / Gebiet", "region": "Region", "district": "Kreis / Verwaltungsbezirk", "municipality": "Gemeinde", "local_admin": "Ortsverwaltung", "city": "Ort"}
 var search_field: LineEdit
 var results_box: VBoxContainer
 var _map
@@ -12,6 +12,10 @@ var _results_scroll: ScrollContainer
 var _sources_panel: PanelContainer
 var _sources_scroll: ScrollContainer
 var _sources_content: VBoxContainer
+var _sources_layout: VBoxContainer
+var _sources_title: Label
+var _sources_close: Button
+var _sources_action: Button
 
 func configure(map_view, main) -> void:
 	_map = map_view
@@ -32,6 +36,7 @@ func configure(map_view, main) -> void:
 	search_field.gui_input.connect(_search_input)
 	row.add_child(search_field)
 	var sources: Button = main._button("Quellen", _toggle_sources)
+	_sources_action = sources
 	sources.custom_minimum_size = Vector2(96, 44)
 	sources.accessibility_name = "Quellen und Lizenzen des Referenzatlas anzeigen"
 	row.add_child(sources)
@@ -69,6 +74,8 @@ func _search_changed(query: String) -> void:
 	for record in _results:
 		var kind := str(record.get("kind", "city"))
 		var category := str(KIND_NAMES.get(kind, "Ort"))
+		if str(record.get("country", "")) == "DE" and str(record.get("unit_type", "")) == "Gemeindefreies Gebiet":
+			category = "Gemeindefreies Gebiet"
 		if kind == "region" and str(record.get("country", "")) == "DE":
 			category = "Bundesland"
 		var title := "%s · %s" % [str(record.get("name", "")), category]
@@ -128,33 +135,164 @@ func _search_input(event: InputEvent) -> void:
 
 func _toggle_sources() -> void:
 	_clear_results()
-	_sources_panel.visible = not _sources_panel.visible
+	if _sources_panel.visible:
+		_close_sources()
+		return
+	_refresh_sources()
+	search_field.release_focus()
+	_sources_panel.visible = true
 	_fit_sources()
 	call_deferred("_fit_sources")
+	_sources_close.grab_focus()
+
+func _close_sources() -> void:
+	_sources_panel.visible = false
+	if _sources_action != null and _sources_action.is_visible_in_tree():
+		_sources_action.grab_focus()
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if _sources_panel != null and _sources_panel.visible and event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		_close_sources()
+		get_viewport().set_input_as_handled()
 
 func _build_sources() -> void:
 	_sources_panel = _floating_panel()
+	_sources_panel.accessibility_name = "Quellen und Lizenzen des Referenzatlas"
+	_sources_layout = VBoxContainer.new()
+	_sources_layout.add_theme_constant_override("separation", 10)
+	_sources_panel.add_child(_sources_layout)
+	_sources_title = _main._label("Quellen und Lizenzen", 15)
+	_sources_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_sources_layout.add_child(_sources_title)
 	_sources_scroll = _scroll_container()
-	_sources_panel.add_child(_sources_scroll)
+	_sources_scroll.name = "AtlasQuellenRollbereich"
+	_sources_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_sources_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_sources_scroll.follow_focus = true
+	_sources_layout.add_child(_sources_scroll)
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
+	box.add_theme_constant_override("separation", 12)
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_sources_scroll.add_child(box)
 	_sources_content = box
 	box.minimum_size_changed.connect(_fit_sources, Object.CONNECT_DEFERRED)
-	for text in [
-		"Quellen des heutigen Referenzatlas",
-		"Natural Earth · Public Domain · naturalearthdata.com/about/terms-of-use/",
-		"Verwaltungsgrenzen: © BKG (2026) · Datenstand 01.01.2025 · dl-de/by-2-0 · govdata.de/dl-de/by-2-0",
-		"Ortsdaten: GeoNames · CC BY 4.0 · geonames.org · creativecommons.org/licenses/by/4.0/",
-		"Kartenausschnitt, Projektion, Vereinfachung und deutsche Ortsnamen wurden für das Spiel aufbereitet. Heutige Verwaltungsgrenzen sind keine historischen Herrschaftsgrenzen."
-	]:
-		var label: Label = _main._label(text, 13)
+	_sources_layout.minimum_size_changed.connect(_fit_sources, Object.CONNECT_DEFERRED)
+	_sources_close = _main._button("Quellen schließen", _close_sources)
+	_sources_close.name = "AtlasQuellenSchliessen"
+	_sources_close.accessibility_name = "Quellenfenster schließen"
+	_sources_close.set_meta("atlas_font_size", 14)
+	_sources_close.add_theme_font_size_override("font_size", int(round(14.0 * float(_main.ModernInterfaceScript.text_scale))))
+	_sources_close.custom_minimum_size.y = 48
+	_sources_layout.add_child(_sources_close)
+	_refresh_sources()
+
+func _refresh_sources() -> void:
+	for child in _sources_content.get_children():
+		_sources_content.remove_child(child)
+		child.queue_free()
+	var available_sources: Array = []
+	if _map != null and _map.atlas_data != null:
+		available_sources = _map.atlas_data.sources
+	var count := 0
+	var coverage: Label = _main._label(_coverage_text(), 13)
+	coverage.name = "AtlasLandabdeckung"
+	coverage.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	coverage.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_sources_content.add_child(coverage)
+	_sources_content.add_child(HSeparator.new())
+	for raw in available_sources:
+		if not (raw is Dictionary):
+			continue
+		if count > 0:
+			_sources_content.add_child(HSeparator.new())
+		var label: Label = _main._label(_source_text(raw), 13)
+		label.name = "AtlasQuelle%d" % count
+		label.set_meta("atlas_source_id", str(raw.get("id", "")))
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		box.add_child(label)
-	var close: Button = _main._button("Quellen schließen", _toggle_sources)
-	close.custom_minimum_size.y = 44
-	box.add_child(close)
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_sources_content.add_child(label)
+		count += 1
+	_sources_title.text = "Quellen und Lizenzen · %d Datensätze" % count
+	if count == 0:
+		var missing: Label = _main._label("Zurzeit sind keine Quelleninformationen verfügbar.", 13)
+		missing.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_sources_content.add_child(missing)
+	var note: Label = _main._label("Kartenausschnitt, Projektion, Vereinfachung und deutsche Ortsnamen wurden für das Spiel aufbereitet. Heutige Verwaltungsgrenzen sind keine historischen Herrschaftsgrenzen.", 13)
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_sources_content.add_child(note)
+	_sources_scroll.scroll_vertical = 0
+
+func _coverage_text() -> String:
+	var lines := PackedStringArray(["Lokale Verwaltungsflächen · Abdeckungsprüfung", "Ziel: mindestens 95 % der Landreferenz im Kartenausschnitt. Ein erreichter Prüfwert ersetzt keinen aktuellen amtlichen Vollständigkeitsnachweis."])
+	if _map == null or _map.atlas_data == null:
+		lines.append("Zurzeit ist keine Abdeckungsprüfung verfügbar.")
+		return "\n".join(lines)
+	var countries: Array = []
+	for feature in _map.atlas_data.features:
+		if str(feature.kind) == "country":
+			countries.append(feature)
+	countries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return str(a.name) < str(b.name))
+	var statuses := {"complete": "Prüfwert erreicht", "gap": "Lücke", "source_review": "Quellprüfung offen", "reference_review": "Landreferenz muss geprüft werden", "single_jurisdiction": "gebietsweite Verwaltung"}
+	for country in countries:
+		var code := str(country.country)
+		var entry: Dictionary = _map.atlas_data.coverage_for_country(code)
+		var state := str(entry.get("status", "unbekannt"))
+		var percent := ("%.2f %%" % (float(entry.get("fraction", 0.0)) * 100.0)).replace(".", ",")
+		if state == "reference_review":
+			percent = "Prozentwert nicht belastbar"
+		elif state == "single_jurisdiction":
+			var native: Dictionary = entry.get("native_scope", {})
+			percent = "Eine landesweite Gemeinde" if native.get("authority_role") == "municipality" else "Zentrale Verwaltung; tiefere Kommunalebene nicht belegt"
+		elif entry.is_empty():
+			percent = "keine Messung vorhanden"
+		lines.append("%s (%s): %s · %s" % [str(country.name), code, percent, str(statuses.get(state, "Stand unklar"))])
+	return "\n".join(lines)
+
+func _source_text(source: Dictionary) -> String:
+	var lines := PackedStringArray()
+	lines.append("Quelle: %s" % _source_value(source, "id"))
+	if source.has("country"):
+		lines.append("Gebiet: %s" % _source_value(source, "country"))
+	if source.has("unit_type"):
+		lines.append("Verwaltungstyp der Quelle: %s" % _source_value(source, "unit_type"))
+	lines.append("Stand: %s" % _source_value(source, "date"))
+	lines.append("Lizenz: %s" % _source_value(source, "license"))
+	# Der vollständige Urheberhinweis bleibt einschließlich mehrerer Credits erhalten.
+	lines.append("Herkunfts- und Urheberhinweis: %s" % _source_value(source, "attribution"))
+	lines.append("Datengrundlage: %s" % _source_value(source, "url"))
+	lines.append("Lizenzadresse: %s" % _source_value(source, "license_url"))
+	if source.get("administrative_geometry_eligible", true) == false:
+		lines.append("Verwaltungsdarstellung: ausgeschlossen; die Rolle dieser Flächen ist nicht belegt.")
+	elif bool(source.get("blocks_full_coverage_claim", false)):
+		lines.append("Prüfgrenze: Diese Quelle ist unvollständig oder fachlich noch zu prüfen.")
+	for note in [["coverage_note", "Abdeckung"], ["source_geometry_defect_note", "Geometrieprüfung"],
+			["administrative_ineligibility_note", "Grund des Ausschlusses"], ["administrative_eligibility_note", "Rollenprüfung"],
+			["territorial_scope_note", "Gebietliche Einordnung"]]:
+		var value = source.get(note[0])
+		if value is String and not value.strip_edges().is_empty():
+			lines.append("%s: %s" % [note[1], value])
+	var semantics = source.get("unit_semantics", {})
+	if semantics is Dictionary and not str(semantics.get("reference_note", "")).is_empty():
+		lines.append("Einordnung der Verwaltungsebene: %s" % semantics.reference_note)
+	var combined = source.get("combined_role_basis", {})
+	if combined is Dictionary and not str(combined.get("limits", "")).is_empty():
+		lines.append("Grenzen des Rollennachweises: %s" % combined.limits)
+	var shown_urls := {str(source.get("url", "")): true, str(source.get("license_url", "")): true}
+	for link in [["product_url", "Produktbeschreibung"], ["metadata_url", "Metadaten"], ["pinnedmetadataURL", "Festgeschriebene Metadaten"], ["license_evidence_url", "Nutzungsbedingungen des Anbieters"], ["original_license_source", "Ursprünglicher Lizenzverweis"]]:
+		var address := str(source.get(link[0], ""))
+		if not address.is_empty() and not shown_urls.has(address):
+			lines.append("%s: %s" % [link[1], address])
+			shown_urls[address] = true
+	for evidence in source.get("evidence", []):
+		if evidence is Dictionary and not str(evidence.get("url", "")).is_empty():
+			lines.append("Amtlicher Beleg %s: %s\n%s" % [str(evidence.get("country", "")), str(evidence.get("title", "")), str(evidence.url)])
+	return "\n".join(lines)
+
+func _source_value(source: Dictionary, key: String) -> String:
+	var value = source.get(key)
+	if value == null or str(value).strip_edges().is_empty():
+		return "nicht angegeben"
+	return str(value)
 
 func _floating_panel() -> PanelContainer:
 	var panel := PanelContainer.new()
@@ -181,8 +319,21 @@ func _fit_results() -> void:
 		_fit_popup(_results_panel, _results_scroll, results_box, 220.0)
 
 func _fit_sources() -> void:
-	if _sources_panel != null and _sources_panel.visible:
-		_fit_popup(_sources_panel, _sources_scroll, _sources_content, get_viewport_rect().size.y - 32.0)
+	if _sources_panel == null or not _sources_panel.visible:
+		return
+	var viewport := get_viewport_rect()
+	var popup_width := minf(maxf(520.0, size.x), minf(760.0, maxf(1.0, viewport.size.x - 24.0)))
+	_sources_panel.custom_minimum_size = Vector2(popup_width, 0)
+	_sources_panel.size.x = popup_width
+	_sources_scroll.custom_minimum_size = Vector2.ZERO
+	var chrome_height := _sources_panel.get_theme_stylebox("panel").get_minimum_size().y
+	chrome_height += _sources_title.get_combined_minimum_size().y + _sources_close.get_combined_minimum_size().y
+	chrome_height += float(_sources_layout.get_theme_constant("separation")) * 2.0
+	var desired_height := maxf(chrome_height + 40.0, _sources_content.get_combined_minimum_size().y + chrome_height)
+	var popup_height := minf(desired_height, maxf(1.0, viewport.size.y - 24.0))
+	_sources_panel.size = Vector2(popup_width, popup_height)
+	var popup_x := clampf(global_position.x, viewport.position.x + 12.0, viewport.end.x - popup_width - 12.0)
+	_sources_panel.position = Vector2(popup_x, viewport.position.y + (viewport.size.y - popup_height) * 0.5)
 
 func _fit_popup(panel: PanelContainer, scroll: ScrollContainer, content: VBoxContainer, maximum_height: float) -> void:
 	var viewport := get_viewport_rect()

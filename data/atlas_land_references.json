@@ -1,0 +1,901 @@
+{
+  "schema": 1,
+  "review_date": "2026-11-09",
+  "sources": [
+    {
+      "id": "swisstopo-land-LI-2026",
+      "country": "LI",
+      "source_type": "swiss-identify",
+      "url": "https://api3.geo.admin.ch/rest/services/ech/MapServer/identify?geometryType=esriGeometryPoint&geometry=9.55%2C47.15&sr=4326&layers=all%3Ach.swisstopo.swissboundaries3d-land-flaeche.fill&imageDisplay=1000%2C1000%2C96&mapExtent=9.45%2C47.0%2C9.65%2C47.3&tolerance=0&returnGeometry=true&geometryFormat=geojson",
+      "bytes": 58286,
+      "sha256": "b9e80b16c1a144b02c3d869e4bcd1ba9d21f05d8af74f301f3f896ad8bbbbbb8",
+      "cache_file": "land-references/LI-swisstopo-identify-2026.json",
+      "date": "2026-01-01",
+      "license": "Federal Office of Topography swisstopo License",
+      "license_url": "https://www.swisstopo.admin.ch/en/terms-of-use-free-geodata-and-geoservices",
+      "attribution": "Federal Office of Topography swisstopo; swissBOUNDARIES3D national boundaries, 2026",
+      "product_url": "https://www.swisstopo.admin.ch/en/landscape-models",
+      "metadata_url": "https://api3.geo.admin.ch/rest/services/api/MapServer/ch.swisstopo.swissboundaries3d-land-flaeche.fill/legend",
+      "reference_area_km2": 160.03460969629378,
+      "derivation": "Official national-boundary feature LI selected from the reviewed service; no target municipal union",
+      "independent_of_target_municipalities": true
+    },
+    {
+      "id": "istat-italy-enclave-SM-2023",
+      "country": "SM",
+      "source_type": "derived-geojson",
+      "cache_file": "land-references/SM-ISTAT-enclave-2023.geojson",
+      "bytes": 3887,
+      "sha256": "66e979729eea5e183744d2d248501c4b0b999b60b27d3cf7e5696ee3708566bd",
+      "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/ITA/ADM4/geoBoundaries-ITA-ADM4_simplified.geojson",
+      "date": "2023",
+      "license": "Creative Commons Attribution 3.0 License",
+      "license_url": "https://creativecommons.org/licenses/by/3.0/",
+      "attribution": "geoBoundaries gbOpen; ISTAT, National Institute of Statistics; Creative Commons Attribution 3.0 License; San Marino outline derived from the enclosed gap in Italian municipal coverage",
+      "product_url": "https://www.istat.it/notizia/confini-delle-unita-amministrative-a-fini-statistici-al-1-gennaio-2018-2/",
+      "metadata_url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/ITA/ADM4/geoBoundaries-ITA-ADM4-metaData.json",
+      "input_source": {
+        "id": "gbOpen-ITA-ADM4",
+        "country": "IT",
+        "url": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/ITA/ADM4/geoBoundaries-ITA-ADM4_simplified.geojson",
+        "cache_file": "communal/geoBoundaries-ITA-ADM4_simplified.geojson",
+        "bytes": 18353080,
+        "sha256": "3f3d441797c9fb6631ae787ed0f00f84500824dda4ed0ed98d8529cb3cca4bbd",
+        "date": "2023",
+        "license": "Creative Commons Attribution 3.0 License",
+        "license_url": "https://creativecommons.org/licenses/by/3.0/",
+        "attribution": "geoBoundaries gbOpen; ISTAT, National Institute of Statistics; Creative Commons Attribution 3.0 License",
+        "pinnedmetadataURL": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/ITA/ADM4/geoBoundaries-ITA-ADM4-metaData.json",
+        "metadata_sha256": "b411d1942950d5ea60f0b19e2e28f55f5a1df01120185fc90fd88cf3eb1a4444",
+        "original_license_source": "www.istat.it/it/note-legali"
+      },
+      "reference_area_km2": 60.87771885459802,
+      "derivation": "Bounding-box complement of independently sourced ISTAT Italian municipality polygons; the single closed component containing the documented San Marino seed is selected",
+      "derivation_bbox": [
+        12.2,
+        43.7,
+        12.7,
+        44.2
+      ],
+      "derivation_seed_lonlat": [
+        12.45,
+        43.94
+      ],
+      "derivation_input_feature_ids": [
+        "92750298B3014901275957",
+        "92750298B70055424300849",
+        "92750298B88526006908180",
+        "92750298B17455416330359",
+        "92750298B81035314771469",
+        "92750298B2987871197693",
+        "92750298B96865367537190",
+        "92750298B69726094026948",
+        "92750298B37476974802385",
+        "92750298B50841080230021",
+        "92750298B70638709059718",
+        "92750298B35170407844997",
+        "92750298B66905907159192",
+        "92750298B6143155055624",
+        "92750298B53425985274702",
+        "92750298B52040201625959",
+        "92750298B95783805922671",
+        "92750298B7962766868975",
+        "92750298B99508773332186",
+        "92750298B71931474702675",
+        "92750298B9777199102927",
+        "92750298B15750104025507",
+        "92750298B45642328567221",
+        "92750298B88755181249549",
+        "92750298B10884943598264",
+        "92750298B28510143046612",
+        "92750298B62114137544248",
+        "92750298B91305118161704",
+        "92750298B71456371435653",
+        "92750298B11875603921493",
+        "92750298B49066413612540",
+        "92750298B69961176093192",
+        "92750298B40399143802303",
+        "92750298B52947517018982",
+        "92750298B44451593556195",
+        "92750298B31174581190945",
+        "92750298B30072277563565",
+        "92750298B50395156366220",
+        "92750298B35255649053308",
+        "92750298B74704736226094",
+        "92750298B45609982102312",
+        "92750298B20756606734783",
+        "92750298B62612300573741",
+        "92750298B28792823955306",
+        "92750298B34958736788600",
+        "92750298B98845469893560",
+        "92750298B39916042852818",
+        "92750298B23853681478305",
+        "92750298B7550743160624",
+        "92750298B65955832838164",
+        "92750298B86207474858813",
+        "92750298B99802299973175",
+        "92750298B65551456402219",
+        "92750298B12370347045700",
+        "92750298B81532441318168",
+        "92750298B68183686381291",
+        "92750298B74022394574655",
+        "92750298B57563990028670",
+        "92750298B57000764469017",
+        "92750298B5454277363778",
+        "92750298B94003357247548",
+        "92750298B94438701470114",
+        "92750298B99033475293133",
+        "92750298B97673161926152"
+      ],
+      "independent_of_target_municipalities": true,
+      "limitation": "The independent ISTAT input is simplified; a small residual geometric disagreement remains and is measured, not hidden"
+    },
+    {
+      "id": "syke-physical-land-AX-MML2025",
+      "country": "AX",
+      "source_type": "aland-physical-coastline",
+      "cache_file": "land-references/AX-SYKE-physical-islands-MML-region2025.geojson",
+      "bytes": 88881304,
+      "sha256": "bdaa1fcbefa781ca5f1b15a967ae2620dbcda8a5f4a145932d584d7626b690d1",
+      "url": "https://paikkatiedot.ymparisto.fi/geoserver/syke_rantaviiva/wfs",
+      "date": "SYKE Ranta10 (MML topographic basis 2000–2008), coastal package 2025; MML region 2025-01-01",
+      "license": "CC BY 4.0 (SYKE coastline and MML administrative regional frame)",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "license_evidence_url": "https://metatieto.ymparisto.fi/geonetwork/srv/api/records/%7BC40D8B4A-DC66-4822-AF27-7B382D89C8ED%7D",
+      "attribution": "Finnish Environment Institute (Syke), Ranta10 Shoreline 1:10,000; National Land Survey of Finland (Maanmittauslaitos), topographic coastline and Administrative Areas 1:10,000, 2025. Åland coastal land derived by intersecting physical sea-island polygons with the separate official regional boundary.",
+      "product_url": "https://www.syke.fi/en/environmental-data/downloadable-spatial-datasets",
+      "metadata_url": "https://www.maanmittauslaitos.fi/kartat-ja-paikkatieto/aineistot-ja-rajapinnat/tuotekuvaukset/hallinnolliset-aluejaot-vektori",
+      "additional_license_urls": [
+        "https://www.maanmittauslaitos.fi/en/opendata-licence-cc40",
+        "https://www.syke.fi/en/environmental-data/use-license-and-responsibilities"
+      ],
+      "reference_role": "physical coastal land, independent of tested municipality boundaries",
+      "territorial_frame": {
+        "product": "SuomenMaakuntajako_2025_10k",
+        "NATCODE": "21",
+        "NAMEFIN": "Ahvenanmaa",
+        "NAMESWE": "Åland",
+        "includes_marine_area": true,
+        "marine_and_land_area_km2": 13251.59468313523,
+        "note": "Only a territorial membership frame; never used as the land denominator by itself"
+      },
+      "coastline_product": "syke_rantaviiva:Ranta10_merisaari",
+      "input_files": [
+        {
+          "url": "https://boileri.nic.funet.fi/pub/sci/geo/geodata/mml/hallintorajat_10k/2025/SuomenMaakuntajako_2025_10k.shp",
+          "bytes": 5289052,
+          "sha256": "0fa6d45115b96b4c4dc3d0a4fa1726d81ea21f7ecffb9a51011b6624ff7dc4a6",
+          "cache_file": "land-references/mml-2025-region/SuomenMaakuntajako_2025_10k.shp"
+        },
+        {
+          "url": "https://boileri.nic.funet.fi/pub/sci/geo/geodata/mml/hallintorajat_10k/2025/SuomenMaakuntajako_2025_10k.shx",
+          "bytes": 252,
+          "sha256": "2a3bc763176bd9a1196d87603309469656941e12f7857929f29fa8426029f841",
+          "cache_file": "land-references/mml-2025-region/SuomenMaakuntajako_2025_10k.shx"
+        },
+        {
+          "url": "https://boileri.nic.funet.fi/pub/sci/geo/geodata/mml/hallintorajat_10k/2025/SuomenMaakuntajako_2025_10k.dbf",
+          "bytes": 3126,
+          "sha256": "e564e8c380e92b705e9e6a985b9ae7170a85f65c6a9fc238f70ca2d0cdf40529",
+          "cache_file": "land-references/mml-2025-region/SuomenMaakuntajako_2025_10k.dbf"
+        },
+        {
+          "url": "https://boileri.nic.funet.fi/pub/sci/geo/geodata/mml/hallintorajat_10k/2025/SuomenMaakuntajako_2025_10k.prj",
+          "bytes": 422,
+          "sha256": "8e9c5bedaa1822e9a10f0219eaf24bac503f688477e3fde6005872d520cf54e4",
+          "cache_file": "land-references/mml-2025-region/SuomenMaakuntajako_2025_10k.prj"
+        },
+        {
+          "url": "https://paikkatiedot.ymparisto.fi/geoserver/syke_rantaviiva/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=syke_rantaviiva%3ARanta10_merisaari&srsName=EPSG%3A4326&outputFormat=application%2Fjson&count=2000&startIndex=0&sortBy=objectid&CQL_FILTER=BBOX%28geom%2C19.083199%2C59.454144%2C21.345646%2C60.876637%2C%27EPSG%3A4326%27%29",
+          "bytes": 2551947,
+          "sha256": "858a5b5ee43294d87b8e2564cb42e30fac219712cabb9ec06f47313b90b0339d",
+          "cache_file": "land-references/syke-AX-islands/page-00000.json"
+        },
+        {
+          "url": "https://paikkatiedot.ymparisto.fi/geoserver/syke_rantaviiva/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=syke_rantaviiva%3ARanta10_merisaari&srsName=EPSG%3A4326&outputFormat=application%2Fjson&count=2000&startIndex=2000&sortBy=objectid&CQL_FILTER=BBOX%28geom%2C19.083199%2C59.454144%2C21.345646%2C60.876637%2C%27EPSG%3A4326%27%29",
+          "bytes": 2732696,
+          "sha256": "40c8e6c944df5605631df93a371bd0f358d9087472340c6048eaf2e66ef35d9c",
+          "cache_file": "land-references/syke-AX-islands/page-02000.json"
+        },
+        {
+          "url": "https://paikkatiedot.ymparisto.fi/geoserver/syke_rantaviiva/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=syke_rantaviiva%3ARanta10_merisaari&srsName=EPSG%3A4326&outputFormat=application%2Fjson&count=2000&startIndex=4000&sortBy=objectid&CQL_FILTER=BBOX%28geom%2C19.083199%2C59.454144%2C21.345646%2C60.876637%2C%27EPSG%3A4326%27%29",
+          "bytes": 2311118,
+          "sha256": "a35b1d767a7e3398b2b1a0dcd5790d6cf3da97ad69369572a68032a668b3113f",
+          "cache_file": "land-references/syke-AX-islands/page-04000.json"
+        },
+        {
+          "url": "https://paikkatiedot.ymparisto.fi/geoserver/syke_rantaviiva/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=syke_rantaviiva%3ARanta10_merisaari&srsName=EPSG%3A4326&outputFormat=application%2Fjson&count=2000&startIndex=6000&sortBy=objectid&CQL_FILTER=BBOX%28geom%2C19.083199%2C59.454144%2C21.345646%2C60.876637%2C%27EPSG%3A4326%27%29",
+          "bytes": 3304610,
+          "sha256": "4e6e97da2a16e742267693120599b15a32419132f60d8f6de107f124a1399584",
+          "cache_file": "land-references/syke-AX-islands/page-06000.json"
+        },
+        {
+          "url": "https://paikkatiedot.ymparisto.fi/geoserver/syke_rantaviiva/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=syke_rantaviiva%3ARanta10_merisaari&srsName=EPSG%3A4326&outputFormat=application%2Fjson&count=2000&startIndex=8000&sortBy=objectid&CQL_FILTER=BBOX%28geom%2C19.083199%2C59.454144%2C21.345646%2C60.876637%2C%27EPSG%3A4326%27%29",
+          "bytes": 3680692,
+          "sha256": "cc9a5281312612d722afa7e68343e805babc4c4a53e2bb1f6d33f9439d0264e1",
+          "cache_file": "land-references/syke-AX-islands/page-08000.json"
+        },
+        {
+          "url": "https://paikkatiedot.ymparisto.fi/geoserver/syke_rantaviiva/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=syke_rantaviiva%3ARanta10_merisaari&srsName=EPSG%3A4326&outputFormat=application%2Fjson&count=2000&startIndex=10000&sortBy=objectid&CQL_FILTER=BBOX%28geom%2C19.083199%2C59.454144%2C21.345646%2C60.876637%2C%27EPSG%3A4326%27%29",
+          "bytes": 3527325,
+          "sha256": "1dae7b1c3106a5f28f793420608d3842b9ebe5472f68bcf4c832925a34bc88d7",
+          "cache_file": "land-references/syke-AX-islands/page-10000.json"
+        },
+        {
+          "url": "https://paikkatiedot.ymparisto.fi/geoserver/syke_rantaviiva/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=syke_rantaviiva%3ARanta10_merisaari&srsName=EPSG%3A4326&outputFormat=application%2Fjson&count=2000&startIndex=12000&sortBy=objectid&CQL_FILTER=BBOX%28geom%2C19.083199%2C59.454144%2C21.345646%2C60.876637%2C%27EPSG%3A4326%27%29",
+          "bytes": 4076606,
+          "sha256": "6fa2fdcd010492ce3bb6b40f3fb73d3a4bbd004b0457a697923cb0b9523ccb39",
+          "cache_file": "land-references/syke-AX-islands/page-12000.json"
+        },
+        {
+          "url": "https://paikkatiedot.ymparisto.fi/geoserver/syke_rantaviiva/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=syke_rantaviiva%3ARanta10_merisaari&srsName=EPSG%3A4326&outputFormat=application%2Fjson&count=2000&startIndex=14000&sortBy=objectid&CQL_FILTER=BBOX%28geom%2C19.083199%2C59.454144%2C21.345646%2C60.876637%2C%27EPSG%3A4326%27%29",
+          "bytes": 5513165,
+          "sha256": "5148029ede1704a003d70803478db9ba0f25bcae775613680f31ec251013b021",
+          "cache_file": "land-references/syke-AX-islands/page-14000.json"
+        },
+        {
+          "url": "https://paikkatiedot.ymparisto.fi/geoserver/syke_rantaviiva/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=syke_rantaviiva%3ARanta10_merisaari&srsName=EPSG%3A4326&outputFormat=application%2Fjson&count=2000&startIndex=16000&sortBy=objectid&CQL_FILTER=BBOX%28geom%2C19.083199%2C59.454144%2C21.345646%2C60.876637%2C%27EPSG%3A4326%27%29",
+          "bytes": 5264113,
+          "sha256": "2f538d9adb6acbba9298a90b7feafbbc8588406555b35c674db3445f0c10d43d",
+          "cache_file": "land-references/syke-AX-islands/page-16000.json"
+        },
+        {
+          "url": "https://paikkatiedot.ymparisto.fi/geoserver/syke_rantaviiva/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=syke_rantaviiva%3ARanta10_merisaari&srsName=EPSG%3A4326&outputFormat=application%2Fjson&count=2000&startIndex=18000&sortBy=objectid&CQL_FILTER=BBOX%28geom%2C19.083199%2C59.454144%2C21.345646%2C60.876637%2C%27EPSG%3A4326%27%29",
+          "bytes": 4026197,
+          "sha256": "8a7b8918e0305f8d9e1b854b2d35f5c15e71d0f5234d3859df3e7edfc181c6df",
+          "cache_file": "land-references/syke-AX-islands/page-18000.json"
+        },
+        {
+          "url": "https://paikkatiedot.ymparisto.fi/geoserver/syke_rantaviiva/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=syke_rantaviiva%3ARanta10_merisaari&srsName=EPSG%3A4326&outputFormat=application%2Fjson&count=2000&startIndex=20000&sortBy=objectid&CQL_FILTER=BBOX%28geom%2C19.083199%2C59.454144%2C21.345646%2C60.876637%2C%27EPSG%3A4326%27%29",
+          "bytes": 4922934,
+          "sha256": "f28a8645234660b8903894f2dd827e49feff45be24ea23b4fbf7485beb21acd0",
+          "cache_file": "land-references/syke-AX-islands/page-20000.json"
+        },
+        {
+          "url": "https://paikkatiedot.ymparisto.fi/geoserver/syke_rantaviiva/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=syke_rantaviiva%3ARanta10_merisaari&srsName=EPSG%3A4326&outputFormat=application%2Fjson&count=2000&startIndex=22000&sortBy=objectid&CQL_FILTER=BBOX%28geom%2C19.083199%2C59.454144%2C21.345646%2C60.876637%2C%27EPSG%3A4326%27%29",
+          "bytes": 5541298,
+          "sha256": "d74083496185eb5c6cc4270ff10df33897a68b9607a5ad3a3401801f15505f7d",
+          "cache_file": "land-references/syke-AX-islands/page-22000.json"
+        },
+        {
+          "url": "https://paikkatiedot.ymparisto.fi/geoserver/syke_rantaviiva/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=syke_rantaviiva%3ARanta10_merisaari&srsName=EPSG%3A4326&outputFormat=application%2Fjson&count=2000&startIndex=24000&sortBy=objectid&CQL_FILTER=BBOX%28geom%2C19.083199%2C59.454144%2C21.345646%2C60.876637%2C%27EPSG%3A4326%27%29",
+          "bytes": 4209293,
+          "sha256": "5755fe2b86c25f20809da391fce4a853895bc0b4cad2aa2ea8fa55e45b8b26ec",
+          "cache_file": "land-references/syke-AX-islands/page-24000.json"
+        },
+        {
+          "url": "https://paikkatiedot.ymparisto.fi/geoserver/syke_rantaviiva/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=syke_rantaviiva%3ARanta10_merisaari&srsName=EPSG%3A4326&outputFormat=application%2Fjson&count=2000&startIndex=26000&sortBy=objectid&CQL_FILTER=BBOX%28geom%2C19.083199%2C59.454144%2C21.345646%2C60.876637%2C%27EPSG%3A4326%27%29",
+          "bytes": 3052698,
+          "sha256": "782790da4935dd8aae9aff44eade8cd25a75ca7d4a5fb83bb2fdee113482a59f",
+          "cache_file": "land-references/syke-AX-islands/page-26000.json"
+        },
+        {
+          "url": "https://paikkatiedot.ymparisto.fi/geoserver/syke_rantaviiva/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=syke_rantaviiva%3ARanta10_merisaari&srsName=EPSG%3A4326&outputFormat=application%2Fjson&count=2000&startIndex=28000&sortBy=objectid&CQL_FILTER=BBOX%28geom%2C19.083199%2C59.454144%2C21.345646%2C60.876637%2C%27EPSG%3A4326%27%29",
+          "bytes": 4410217,
+          "sha256": "1ccdeb0155621d4d2ea322ede5ce2af892d25dd7105dc5a5775787f4e70f817e",
+          "cache_file": "land-references/syke-AX-islands/page-28000.json"
+        },
+        {
+          "url": "https://paikkatiedot.ymparisto.fi/geoserver/syke_rantaviiva/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=syke_rantaviiva%3ARanta10_merisaari&srsName=EPSG%3A4326&outputFormat=application%2Fjson&count=2000&startIndex=30000&sortBy=objectid&CQL_FILTER=BBOX%28geom%2C19.083199%2C59.454144%2C21.345646%2C60.876637%2C%27EPSG%3A4326%27%29",
+          "bytes": 4348562,
+          "sha256": "0c429d6838a3600cc317d910e295b81f8f7cbb6cd383221b2e5dc74778f255b1",
+          "cache_file": "land-references/syke-AX-islands/page-30000.json"
+        },
+        {
+          "url": "https://paikkatiedot.ymparisto.fi/geoserver/syke_rantaviiva/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=syke_rantaviiva%3ARanta10_merisaari&srsName=EPSG%3A4326&outputFormat=application%2Fjson&count=2000&startIndex=32000&sortBy=objectid&CQL_FILTER=BBOX%28geom%2C19.083199%2C59.454144%2C21.345646%2C60.876637%2C%27EPSG%3A4326%27%29",
+          "bytes": 2906056,
+          "sha256": "fadad893b85909fbb88b5edbb6ec9f310f0e8accf612f5c5f7b6ab4bcb83a45d",
+          "cache_file": "land-references/syke-AX-islands/page-32000.json"
+        },
+        {
+          "url": "https://paikkatiedot.ymparisto.fi/geoserver/syke_rantaviiva/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=syke_rantaviiva%3ARanta10_merisaari&srsName=EPSG%3A4326&outputFormat=application%2Fjson&count=2000&startIndex=34000&sortBy=objectid&CQL_FILTER=BBOX%28geom%2C19.083199%2C59.454144%2C21.345646%2C60.876637%2C%27EPSG%3A4326%27%29",
+          "bytes": 5323219,
+          "sha256": "ddb02e6190bd2c5ebf16a2e5752d3a044ac4ac6a4cbea6d5ea33cbed7e8dba05",
+          "cache_file": "land-references/syke-AX-islands/page-34000.json"
+        },
+        {
+          "url": "https://paikkatiedot.ymparisto.fi/geoserver/syke_rantaviiva/wfs?service=WFS&version=2.0.0&request=GetFeature&typeNames=syke_rantaviiva%3ARanta10_merisaari&srsName=EPSG%3A4326&outputFormat=application%2Fjson&count=2000&startIndex=36000&sortBy=objectid&CQL_FILTER=BBOX%28geom%2C19.083199%2C59.454144%2C21.345646%2C60.876637%2C%27EPSG%3A4326%27%29",
+          "bytes": 4159550,
+          "sha256": "2e28b59389a5a08d865da4d92ce61f51bf5bbc126ab5743f1267b7ef250de047",
+          "cache_file": "land-references/syke-AX-islands/page-36000.json"
+        }
+      ],
+      "input_bytes": 81155148,
+      "source_feature_count": 36879,
+      "page_size": 2000,
+      "page_count": 19,
+      "query_bbox": [
+        19.083199,
+        59.454144,
+        21.345646,
+        60.876637
+      ],
+      "geometry_repaired_count": 0,
+      "tool_versions": {
+        "pyproj": "3.7.2",
+        "pyshp": "2.3.1"
+      },
+      "reference_area_km2": 1581.0250877525589,
+      "independent_of_target_municipalities": true,
+      "derivation": "Union of independently supplied SYKE physical sea-island polygons intersected with official MML regional feature 21; no StatFi kunta1000k features or municipal-target union are read",
+      "limitation": "Physical coastline has an older topographic basis; the coastal footprint can include inland freshwater within an island and is not an asserted current legal/ellipsoidal land-area figure",
+      "derivation_version": 1
+    },
+    {
+      "input_files": [
+        {
+          "url": "https://data.public.lu/api/1/datasets/limites-administratives-du-grand-duche-de-luxembourg/",
+          "bytes": 14668,
+          "sha256": "debb672ffb1e257edd4e2da9e2595f3ca793c46fcd77afcc22bef5f47dffd58e",
+          "cache_file": "official/LU-portal-metadata.json"
+        },
+        {
+          "url": "https://download.data.public.lu/resources/limites-administratives-du-grand-duche-de-luxembourg/20261105-042000/limadmin-shp.zip",
+          "bytes": 9909017,
+          "sha256": "7a1cb6db3369121bfff175a79ceb6a1c23d136a63b243f0f4a9cacd19a1afc24",
+          "cache_file": "official/LU/limadmin-20261105.zip"
+        }
+      ],
+      "zip_members": [
+        {
+          "name": "LIMADM_PAYS.shp",
+          "bytes": 307532,
+          "sha256": "47be719a5931807ef0cbc9435d4b6e4826e3fbbccad75b0e3cdb75bb9b7a00bb",
+          "crc32": "35f71ac1"
+        },
+        {
+          "name": "LIMADM_PAYS.shx",
+          "bytes": 108,
+          "sha256": "4b3c33d5dc2b7c6b2733a90ea452fb5da7a9ef60361a55cb4d2fac54c5d2c80e",
+          "crc32": "d90f271c"
+        },
+        {
+          "name": "LIMADM_PAYS.dbf",
+          "bytes": 72,
+          "sha256": "5466e59e2dc450f17cc86d5d041fa929ef13f3ac14555c7d2d9f0e7a4d7ad0d2",
+          "crc32": "13bc9d01"
+        },
+        {
+          "name": "LIMADM_PAYS.prj",
+          "bytes": 468,
+          "sha256": "cecc5ab3664aef1918ec86fe52dc776956010381038407e5158ba2568951a517",
+          "crc32": "28215079"
+        },
+        {
+          "name": "LIMADM_PAYS.cpg",
+          "bytes": 5,
+          "sha256": "3ad3031f5503a4404af825262ee8232cc04d4ea6683d42c5dd0a2f2a27ac9824",
+          "crc32": "0e813c50"
+        }
+      ],
+      "source_layer": "LIMADM_PAYS",
+      "source_crs": 2169,
+      "source_date": "2026-11-05",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "metadata_url": "https://data.public.lu/api/1/datasets/limites-administratives-du-grand-duche-de-luxembourg/",
+      "product_url": "https://data.public.lu/en/datasets/limites-administratives-du-grand-duche-de-luxembourg/",
+      "attribution": "Administration du cadastre et de la topographie (ACT), Grand-Duché de Luxembourg; Limites administratives, 2026-11-05; CC0 1.0",
+      "coordinate_transformation": "axis order change (2D) + Inverse of Luxembourg TM + LUREF to WGS 84 (4) + axis order change (2D)",
+      "transformation_accuracy_metres": 1.0,
+      "crs_note": "Original PRJ's historical Luxembourg_1930 label resolved through its explicit EPSG2169 declaration and checked TM/ellipsoid parameters; no ballpark datum transformation allowed",
+      "tool_versions": {
+        "pyproj": "3.7.2",
+        "pyshp": "2.3.1"
+      },
+      "id": "act-national-LU-20261105",
+      "country": "LU",
+      "source_type": "act-national-geojson",
+      "cache_file": "land-references/LU-ACT-national-20261105.geojson",
+      "bytes": 1349004,
+      "sha256": "a8d8afcd3c85d154105568e17e946dc656429822449c04bfce738ccad16bf0aa",
+      "url": "https://download.data.public.lu/resources/limites-administratives-du-grand-duche-de-luxembourg/20261105-042000/limadmin-shp.zip",
+      "date": "2026-11-05",
+      "reference_area_km2": 2584.0457919624782,
+      "independent_of_target_municipalities": true,
+      "derivation": "Original separate ACT LIMADM_PAYS national feature projected from explicitly declared EPSG2169; no municipal union, no historical district or cadastral layer"
+    },
+    {
+      "id": "us-physical-islands-FO-20261109",
+      "country": "FO",
+      "source_type": "faroe-physical-islands",
+      "source_layer": "lendiskort/us_lendiskort/15",
+      "url": "https://gis.us.fo/arcgis/rest/services/lendiskort/us_lendiskort/MapServer/15/query?where=1%3D1&outFields=OBJECTID%2Cname%2Cfeature_id%2Cfeature_type%2Cimported_from_usgis%2Ccollection_date%2Cmodified_date&returnGeometry=true&outSR=4326&orderByFields=OBJECTID&f=geojson",
+      "metadata_url": "https://gis.us.fo/arcgis/rest/services/lendiskort/us_lendiskort/MapServer/15?f=pjson",
+      "product_url": "https://www.foroyakort.fo/vevtaenastur",
+      "cache_file": "land-references/FO-US-physical-islands-20261109.geojson",
+      "bytes": 26173726,
+      "sha256": "3d960a8e16c1da0f39b86e9050be3ed946ab2cb1f81478d3139f0f6797660e67",
+      "date": "2026-11-09",
+      "date_role": "retrieval date; service does not declare a fixed dataset release",
+      "original_feature_count": 34,
+      "input_files": [
+        {
+          "url": "https://gis.us.fo/arcgis/rest/services/lendiskort/us_lendiskort/MapServer/15?f=pjson",
+          "bytes": 5865,
+          "sha256": "e6f8562ff2ba0799e07e8d9a2b4e370bf12ac7e1546740eec2982dd62fa3b15b",
+          "cache_file": "audit/fo-physical-2026/metadata.json"
+        },
+        {
+          "url": "https://gis.us.fo/arcgis/rest/services/lendiskort/us_lendiskort/MapServer/15/query?where=1%3D1&returnCountOnly=true&f=pjson",
+          "bytes": 16,
+          "sha256": "95527110366dab3456af29f33de79bf6a54fd3be4c9ef7d6d04a5b068cc7f141",
+          "cache_file": "audit/fo-physical-2026/count.json"
+        },
+        {
+          "url": "https://gis.us.fo/arcgis/rest/services/lendiskort/us_lendiskort/MapServer/15/query?where=1%3D1&outFields=OBJECTID%2Cname%2Cfeature_id%2Cfeature_type%2Cimported_from_usgis%2Ccollection_date%2Cmodified_date&returnGeometry=true&outSR=4326&orderByFields=OBJECTID&f=geojson",
+          "bytes": 13480632,
+          "sha256": "564ce40bea22bab1f4264028a0190823d6deeb84432fdaaf2c8e5642bd0d1533",
+          "cache_file": "audit/fo-physical-2026/islands.geojson"
+        },
+        {
+          "url": "https://www.foroyakort.fo/um-foeroyakort/terms-and-conditions-in-english",
+          "bytes": 8876,
+          "sha256": "fb003071b12b4f421519042d1fe408a81f68afdefea5601a93fc97864e0586e2",
+          "cache_file": "audit/fo-physical-2026/license-public.html"
+        }
+      ],
+      "license": "Faroese Environment Agency free maps/data terms, June 2019",
+      "license_url": "https://www.foroyakort.fo/um-foeroyakort/terms-and-conditions-in-english",
+      "attribution": "Data from the Faroese Environment Agency, Umhvørvisstovan: Lendiskort — Oyggjar; downloaded 2026-11-09",
+      "license_conditions": "Worldwide copying, distribution, modification and commercial use permitted; credit agency, dataset and download date, retain terms link, no endorsement or nautical navigation; front-page agency credit when other sources are credited there",
+      "independent_of_target_municipalities": true,
+      "reference_area_km2": 1387.6732245159276,
+      "derivation": "All 34 original Oyggjar physical island polygons unioned; no municipal geometry, marine boundary or Natural Earth clipping used",
+      "limitations": "Original source names contain replacement characters; original bytes preserved. Names are not used to derive physical geometry. Small coast disagreements remain measured."
+    },
+    {
+      "id": "maaruum-physical-land-EE-20261101",
+      "country": "EE",
+      "source_type": "estonia-physical-land",
+      "source_layer": "maakond",
+      "coastline_product": "ETAK:eesti_mask",
+      "derivation_version": 1,
+      "cache_file": "land-references/EE-MaaRuum-physical-land-20261101.geojson",
+      "bytes": 88160252,
+      "sha256": "527f3f0526f946da49a99659383e0b3c2fb9f5d7010ef1a0d75922ddcf4c32eb",
+      "url": "https://s3.pilw.io/rp-kemit-kataster/EHAK/eesti_mask_json.zip",
+      "metadata_url": "https://geoportaal.maaruum.ee/est/Ruumiandmed/Haldus-ja-asustusjaotus-p119.html",
+      "product_url": "https://geoportaal.maaruum.ee/est/Ruumiandmed/Haldus-ja-asustusjaotus-p119.html",
+      "date": "2026-11-01",
+      "retrieved": "2026-11-09",
+      "physical_mask_export": "2025-11-19",
+      "county_codes": [
+        "0037",
+        "0039",
+        "0045",
+        "0050",
+        "0052",
+        "0056",
+        "0060",
+        "0064",
+        "0068",
+        "0071",
+        "0074",
+        "0079",
+        "0081",
+        "0084",
+        "0087"
+      ],
+      "original_county_properties": [
+        {
+          "MNIMI": "Ida-Viru maakond",
+          "MKOOD": "0045",
+          "EKSPORT": "2026-11-01"
+        },
+        {
+          "MNIMI": "Lääne maakond",
+          "MKOOD": "0056",
+          "EKSPORT": "2026-11-01"
+        },
+        {
+          "MNIMI": "Rapla maakond",
+          "MKOOD": "0071",
+          "EKSPORT": "2026-11-01"
+        },
+        {
+          "MNIMI": "Saare maakond",
+          "MKOOD": "0074",
+          "EKSPORT": "2026-11-01"
+        },
+        {
+          "MNIMI": "Viljandi maakond",
+          "MKOOD": "0084",
+          "EKSPORT": "2026-11-01"
+        },
+        {
+          "MNIMI": "Hiiu maakond",
+          "MKOOD": "0039",
+          "EKSPORT": "2026-11-01"
+        },
+        {
+          "MNIMI": "Harju maakond",
+          "MKOOD": "0037",
+          "EKSPORT": "2026-11-01"
+        },
+        {
+          "MNIMI": "Lääne-Viru maakond",
+          "MKOOD": "0060",
+          "EKSPORT": "2026-11-01"
+        },
+        {
+          "MNIMI": "Põlva maakond",
+          "MKOOD": "0064",
+          "EKSPORT": "2026-11-01"
+        },
+        {
+          "MNIMI": "Valga maakond",
+          "MKOOD": "0081",
+          "EKSPORT": "2026-11-01"
+        },
+        {
+          "MNIMI": "Tartu maakond",
+          "MKOOD": "0079",
+          "EKSPORT": "2026-11-01"
+        },
+        {
+          "MNIMI": "Pärnu maakond",
+          "MKOOD": "0068",
+          "EKSPORT": "2026-11-01"
+        },
+        {
+          "MNIMI": "Järva maakond",
+          "MKOOD": "0052",
+          "EKSPORT": "2026-11-01"
+        },
+        {
+          "MNIMI": "Võru maakond",
+          "MKOOD": "0087",
+          "EKSPORT": "2026-11-01"
+        },
+        {
+          "MNIMI": "Jõgeva maakond",
+          "MKOOD": "0050",
+          "EKSPORT": "2026-11-01"
+        }
+      ],
+      "original_physical_mask_properties": {
+        "eksport": "19.11.2025"
+      },
+      "input_files": [
+        {
+          "url": "https://s3.pilw.io/rp-kemit-kataster/EHAK/maakond_shp.zip",
+          "bytes": 8233358,
+          "sha256": "8c48fabe4e04006641cd82347b12f82561282aa0d10c79df251ed42a08926e46",
+          "cache_file": "audit/ee-physical-2026/maakond_shp.zip"
+        },
+        {
+          "url": "https://s3.pilw.io/rp-kemit-kataster/EHAK/eesti_mask_json.zip",
+          "bytes": 10809563,
+          "sha256": "3da4e46c4521b03fa7501c694ae40d723bb2e53d899f8a7da6a85bacab53f9e1",
+          "cache_file": "audit/ee-physical-2026/eesti_mask_json.zip"
+        },
+        {
+          "url": "https://geoportaal.maaruum.ee/est/Ruumiandmed/Haldus-ja-asustusjaotus-p119.html",
+          "bytes": 62705,
+          "sha256": "8651588e91a9b360bd2c421c2d3d6b9f932adc49a8104d5694efbe8ce59a5992",
+          "cache_file": "audit/ee-physical-2026/portal.html"
+        },
+        {
+          "url": "https://kataster.ee/sites/default/files/documents/2024-03/MTP_andmeteenuste_kasutustingimused.pdf",
+          "bytes": 159605,
+          "sha256": "1e30385ca30e5da2b6ed8c842d0609edd0c06f6dac9c27f234118733ced39baa",
+          "cache_file": "audit/ee-physical-2026/terms.pdf"
+        }
+      ],
+      "zip_members": [
+        {
+          "archive": "maakond_shp.zip",
+          "name": "maakond.shp",
+          "bytes": 14269612,
+          "sha256": "292294f90953f22075166194090cdd187b7e004e691cfbf52035624cfa099907",
+          "crc32": "9c256f7a"
+        },
+        {
+          "archive": "maakond_shp.zip",
+          "name": "maakond.shx",
+          "bytes": 220,
+          "sha256": "2d65297fa510103e497f5645c4bc8b5e0d9bbeca72a80de99b13d51a11a8e843",
+          "crc32": "c0b6881a"
+        },
+        {
+          "archive": "maakond_shp.zip",
+          "name": "maakond.dbf",
+          "bytes": 1825,
+          "sha256": "59903990a71ce9231af1a60177dd9ada70f0214ce16262b24703dea93cbe44bc",
+          "crc32": "bc8d1c27"
+        },
+        {
+          "archive": "maakond_shp.zip",
+          "name": "maakond.prj",
+          "bytes": 525,
+          "sha256": "52bc823ecf1dcd9e04d0997ce41a796287a78e18afb9383e9eba2945e7743698",
+          "crc32": "366c5666"
+        },
+        {
+          "archive": "eesti_mask_json.zip",
+          "name": "eesti_mask_json.json",
+          "bytes": 46019905,
+          "sha256": "464de8c93fb600722f36324c25edf437bb9f4388770947c85ee2b25d1696e358",
+          "crc32": "1ae4d9b7"
+        }
+      ],
+      "license": "Maa- ja Ruumiamet public data-service terms (Maatoimingute platvorm), 2024-03",
+      "license_url": "https://kataster.ee/sites/default/files/documents/2024-03/MTP_andmeteenuste_kasutustingimused.pdf",
+      "attribution": "Haldus- ja asustusjaotus: Maa- ja Ruumiamet 2026-11-01, Maakonnad; Eesti lõikemask, ETAK export 2025-11-19; downloaded 2026-11-09",
+      "license_conditions": "Unrestricted public data may be used commercially and redistributed under section2.5; credit Maa- ja Ruumiamet and source date as stated by the official product portal",
+      "source_crs": 3301,
+      "source_encoding": "cp1252",
+      "coordinate_transformation": "axis order change (2D) + Inverse of Estonian National Grid + EST97 to WGS 84 (1) + axis order change (2D)",
+      "transformation_accuracy_metres": 1.0,
+      "crs_note": "Original numeric EPSG3301 AUTHORITY and every projection/ellipsoid parameter checked explicitly; no low-confidence code inference or ballpark datum conversion",
+      "tool_versions": {
+        "pyproj": "3.7.2",
+        "pyshp": "2.3.1"
+      },
+      "independent_of_target_municipalities": true,
+      "reference_area_km2": 43236.56639335184,
+      "derivation": "Separate complete 15-Maakond county product intersected with independent ETAK physical coastal clip mask; no target municipalities or Natural Earth geometry used",
+      "limitations": "Physical mask alone includes neighbouring foreign land and is not a national boundary. Its original export2025-11-19 differs from county export2026-11-01; both dates preserved. Residual coast disagreement is measured, not filled."
+    },
+    {
+      "id": "eea-physical-islands-GG-v3-2017",
+      "country": "GG",
+      "source_type": "eea-physical-islands",
+      "physical_product": "EEA:coastline2017-v3",
+      "date": "2017-03-01",
+      "retrieved": "2026-11-09",
+      "date_role": "Physical coastline product publication; separate national-frame snapshot recorded below",
+      "url": "https://marine.discomap.eea.europa.eu/arcgis/rest/services/Marine/EEA_coastline_2017/MapServer/0",
+      "metadata_url": "https://sdi.eea.europa.eu/catalogue/eea-statistical-data/api/records/9faa6ea1-372a-4826-a3c7-fb5b05e31c52",
+      "product_url": "https://sdi.eea.europa.eu/catalogue/eea-statistical-data/api/records/9faa6ea1-372a-4826-a3c7-fb5b05e31c52",
+      "cache_file": "land-references/GG-EEA-physical-islands-v3-2017.geojson",
+      "bytes": 221935,
+      "sha256": "8eea76d18e835dcb85ce8c16c2e381ef3ee57d031464bf28d95927c352f77b96",
+      "input_files": [
+        {
+          "url": "https://marine.discomap.eea.europa.eu/arcgis/rest/services/Marine/EEA_coastline_2017/MapServer/0?f=pjson",
+          "bytes": 5905,
+          "sha256": "e8464472302176201961fbf6e977825fd569ecd23b9b14cac19fdacb72df3025",
+          "cache_file": "audit/channel-islands-physical-2026/metadata.json"
+        },
+        {
+          "url": "https://marine.discomap.eea.europa.eu/arcgis/rest/services/Marine/EEA_coastline_2017/MapServer/0/query?where=1%3D1&geometry=-2.8%2C48.8%2C-1.8%2C49.9&geometryType=esriGeometryEnvelope&inSR=4326&outFields=FID%2COBJECTID%2CId%2CShape_Area&returnGeometry=false&f=json",
+          "bytes": 11854,
+          "sha256": "254ec2d1fcfdfb851b0844c21da52ff6a8f6b14aa81d17ac3cdd1f175dd7789e",
+          "cache_file": "audit/channel-islands-physical-2026/bbox-identities.json"
+        },
+        {
+          "url": "https://marine.discomap.eea.europa.eu/arcgis/rest/services/Marine/EEA_coastline_2017/MapServer/0/query?where=Shape_Area%3C500000000&geometry=-2.8%2C48.8%2C-1.8%2C49.9&geometryType=esriGeometryEnvelope&inSR=4326&outFields=FID%2COBJECTID%2CId%2CShape_Area&returnGeometry=true&outSR=4326&orderByFields=FID&f=geojson",
+          "bytes": 195092,
+          "sha256": "bd1aa26d900279b7100a1866a39a6039a6fa85312e0b14c2ce5656d802beae15",
+          "cache_file": "audit/channel-islands-physical-2026/physical-islands.geojson"
+        },
+        {
+          "url": "https://sdi.eea.europa.eu/catalogue/eea-statistical-data/api/records/9faa6ea1-372a-4826-a3c7-fb5b05e31c52",
+          "bytes": 71324,
+          "sha256": "db5dd72160769e0ade26f1d78f7413d6d1eacb5c82e415314586fc59b05b24f3",
+          "cache_file": "audit/channel-islands-physical-2026/EEA-metadata.html"
+        },
+        {
+          "url": "https://api.openstreetmap.org/api/0.6/relation/270009/full.json",
+          "bytes": 145595,
+          "sha256": "d82775c2e52f51ca06f145009e3c8c2247af1a4aeb868d77165641fc73d580b7",
+          "cache_file": "audit/channel-islands-physical-2026/GG-country-full.json"
+        }
+      ],
+      "source_feature_ids": [
+        10756,
+        10757,
+        10758,
+        10759,
+        10760,
+        10761,
+        10762,
+        10763,
+        10764,
+        10765,
+        10766,
+        10768,
+        10769,
+        10771,
+        10772,
+        10773,
+        10774,
+        10775,
+        10776,
+        10778,
+        10779,
+        10780,
+        10781,
+        10782,
+        10783,
+        10784,
+        10785,
+        10786,
+        10787,
+        10788,
+        10790,
+        10791,
+        10792,
+        10793,
+        10794,
+        10795,
+        10796,
+        10797,
+        10798,
+        10799,
+        10800,
+        10801,
+        10802,
+        10803,
+        10804,
+        10805,
+        10806,
+        10807,
+        10808,
+        10809,
+        10810,
+        10811,
+        10812,
+        10813,
+        10818,
+        10819,
+        10820,
+        10821,
+        10822,
+        10823,
+        10824,
+        10825,
+        10826,
+        10827,
+        10828,
+        10829,
+        10830,
+        10831,
+        10832,
+        10833,
+        10834,
+        10835
+      ],
+      "source_feature_count": 72,
+      "reference_area_km2": 76.51230466594154,
+      "territorial_frame": {
+        "ISO3166-1": "GG",
+        "admin_level": 2,
+        "relation_id": 270009,
+        "relation_version": 69,
+        "snapshot": "2026-11-08T21:21:00Z",
+        "role": "national territorial assignment only; marine geometry is not land"
+      },
+      "license": "CC BY 4.0 (EEA physical coastline); ODbL 1.0 (separate OSM national territorial reference)",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "license_layers": [
+        {
+          "scope": "physical coastline polygons",
+          "license": "CC BY 4.0",
+          "holder": "European Environment Agency (EEA)",
+          "url": "https://creativecommons.org/licenses/by/4.0/"
+        },
+        {
+          "scope": "national territorial assignment reference",
+          "license": "ODbL 1.0",
+          "holder": "OpenStreetMap contributors",
+          "url": "https://opendatacommons.org/licenses/odbl/1-0/"
+        }
+      ],
+      "attribution": "European Environment Agency (EEA), EEA coastline for analysis polygon v3, March 2017, CC BY 4.0; © OpenStreetMap contributors, national territorial reference, ODbL 1.0; downloaded 2026-11-09",
+      "independent_of_target_municipalities": true,
+      "derivation": "Whole original EEA physical island polygons wholly contained in a separately ISO-verified national OSM frame; no target municipal union and no island/continental clipping",
+      "limitations": "Physical source is a historical 2017 product at1:100000 scale. Residual shoreline differences are measured. National marine frames select membership only; they never supply physical land area."
+    },
+    {
+      "id": "eea-physical-islands-JE-v3-2017",
+      "country": "JE",
+      "source_type": "eea-physical-islands",
+      "physical_product": "EEA:coastline2017-v3",
+      "date": "2017-03-01",
+      "retrieved": "2026-11-09",
+      "date_role": "Physical coastline product publication; separate national-frame snapshot recorded below",
+      "url": "https://marine.discomap.eea.europa.eu/arcgis/rest/services/Marine/EEA_coastline_2017/MapServer/0",
+      "metadata_url": "https://sdi.eea.europa.eu/catalogue/eea-statistical-data/api/records/9faa6ea1-372a-4826-a3c7-fb5b05e31c52",
+      "product_url": "https://sdi.eea.europa.eu/catalogue/eea-statistical-data/api/records/9faa6ea1-372a-4826-a3c7-fb5b05e31c52",
+      "cache_file": "land-references/JE-EEA-physical-islands-v3-2017.geojson",
+      "bytes": 76880,
+      "sha256": "ad77aeefc1bafecc00fffd71b07a4b05d01e1c556b8d7fcc0d517c867ca1d700",
+      "input_files": [
+        {
+          "url": "https://marine.discomap.eea.europa.eu/arcgis/rest/services/Marine/EEA_coastline_2017/MapServer/0?f=pjson",
+          "bytes": 5905,
+          "sha256": "e8464472302176201961fbf6e977825fd569ecd23b9b14cac19fdacb72df3025",
+          "cache_file": "audit/channel-islands-physical-2026/metadata.json"
+        },
+        {
+          "url": "https://marine.discomap.eea.europa.eu/arcgis/rest/services/Marine/EEA_coastline_2017/MapServer/0/query?where=1%3D1&geometry=-2.8%2C48.8%2C-1.8%2C49.9&geometryType=esriGeometryEnvelope&inSR=4326&outFields=FID%2COBJECTID%2CId%2CShape_Area&returnGeometry=false&f=json",
+          "bytes": 11854,
+          "sha256": "254ec2d1fcfdfb851b0844c21da52ff6a8f6b14aa81d17ac3cdd1f175dd7789e",
+          "cache_file": "audit/channel-islands-physical-2026/bbox-identities.json"
+        },
+        {
+          "url": "https://marine.discomap.eea.europa.eu/arcgis/rest/services/Marine/EEA_coastline_2017/MapServer/0/query?where=Shape_Area%3C500000000&geometry=-2.8%2C48.8%2C-1.8%2C49.9&geometryType=esriGeometryEnvelope&inSR=4326&outFields=FID%2COBJECTID%2CId%2CShape_Area&returnGeometry=true&outSR=4326&orderByFields=FID&f=geojson",
+          "bytes": 195092,
+          "sha256": "bd1aa26d900279b7100a1866a39a6039a6fa85312e0b14c2ce5656d802beae15",
+          "cache_file": "audit/channel-islands-physical-2026/physical-islands.geojson"
+        },
+        {
+          "url": "https://sdi.eea.europa.eu/catalogue/eea-statistical-data/api/records/9faa6ea1-372a-4826-a3c7-fb5b05e31c52",
+          "bytes": 71324,
+          "sha256": "db5dd72160769e0ade26f1d78f7413d6d1eacb5c82e415314586fc59b05b24f3",
+          "cache_file": "audit/channel-islands-physical-2026/EEA-metadata.html"
+        },
+        {
+          "url": "https://api.openstreetmap.org/api/0.6/relation/367988/full.json",
+          "bytes": 73857,
+          "sha256": "99a1be4a20525f0dd25e4c51466bd3fed7fad4455890829e3c02bd9247f85881",
+          "cache_file": "audit/channel-islands-physical-2026/JE-country-full.json"
+        }
+      ],
+      "source_feature_ids": [
+        10597,
+        10637,
+        10641,
+        10642,
+        10719,
+        10720,
+        10726,
+        10727,
+        10728,
+        10729,
+        10734,
+        10735,
+        10736,
+        10737,
+        10738,
+        10739,
+        10740,
+        10741,
+        10742,
+        10744,
+        10745,
+        10746,
+        10747,
+        10748,
+        10749,
+        10750,
+        10751
+      ],
+      "source_feature_count": 27,
+      "reference_area_km2": 118.96217124266265,
+      "territorial_frame": {
+        "ISO3166-1": "JE",
+        "admin_level": 2,
+        "relation_id": 367988,
+        "relation_version": 53,
+        "snapshot": "2026-11-08T21:21:00Z",
+        "role": "national territorial assignment only; marine geometry is not land"
+      },
+      "license": "CC BY 4.0 (EEA physical coastline); ODbL 1.0 (separate OSM national territorial reference)",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "license_layers": [
+        {
+          "scope": "physical coastline polygons",
+          "license": "CC BY 4.0",
+          "holder": "European Environment Agency (EEA)",
+          "url": "https://creativecommons.org/licenses/by/4.0/"
+        },
+        {
+          "scope": "national territorial assignment reference",
+          "license": "ODbL 1.0",
+          "holder": "OpenStreetMap contributors",
+          "url": "https://opendatacommons.org/licenses/odbl/1-0/"
+        }
+      ],
+      "attribution": "European Environment Agency (EEA), EEA coastline for analysis polygon v3, March 2017, CC BY 4.0; © OpenStreetMap contributors, national territorial reference, ODbL 1.0; downloaded 2026-11-09",
+      "independent_of_target_municipalities": true,
+      "derivation": "Whole original EEA physical island polygons wholly contained in a separately ISO-verified national OSM frame; no target municipal union and no island/continental clipping",
+      "limitations": "Physical source is a historical 2017 product at1:100000 scale. Residual shoreline differences are measured. National marine frames select membership only; they never supply physical land area."
+    }
+  ],
+  "purpose": "Independent country outlines and coverage denominators; never unions of the target country's imported communes",
+  "unresolved": {}
+}

@@ -18,8 +18,8 @@ cd "$ROOT"
 
 VERSION="${VERSION:-$(sed -n 's/^config\/version="\([^"]*\)"/\1/p' project.godot | head -n 1)}"
 TAG="${TAG:-v$VERSION}"
-APK="${APK:-F:/banger-queens.apk}"
-EXE="${EXE:-F:/banger-queens.exe}"
+APK="${APK:-$ROOT/build/exports/banger-queens.apk}"
+EXE="${EXE:-$ROOT/build/exports/banger-queens.exe}"
 REPO="${GH_REPO:-}"
 DRY_RUN=0
 SKIP_VERIFY=0

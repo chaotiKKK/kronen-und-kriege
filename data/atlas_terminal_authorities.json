@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "id": "atlas-terminal-authorities",
+  "checked_at": "2026-11-09",
+  "classification_is_geometric_coverage": false,
+  "purpose": "Document terminal civil administration without generating municipality geometries or claiming measured complete land coverage.",
+  "authorities": [
+    {
+      "country": "MC",
+      "checked_at": "2026-11-09",
+      "native_scope": {
+        "authority_name": "Commune de Monaco",
+        "authority_role": "municipality",
+        "native_role": "Commune / Municipalité",
+        "scope": "countrywide",
+        "municipality_count": 1,
+        "deeper_civil_municipal_tier": "single_countrywide_commune",
+        "legal_coextensiveness": "The territory of the Principality forms one single commune under Constitution Article 78."
+      },
+      "evidence": [
+        {
+          "id": "MC-constitution",
+          "url": "https://legimonaco.mc/constitution/",
+          "publisher": "Principauté de Monaco / Legimonaco",
+          "title": "Constitution de la Principauté",
+          "version": "Official online consolidated Constitution retrieved 9 November 2026; Articles 78-79 verified in cached source",
+          "provisions": ["Article 78: one commune comprising the Principality's territory", "Article 79: Municipalité, mayor and deputies"],
+          "source_sha256": "504d060372bc30863ae999aac6bdcaa0f3c19f96c973a04a1a77a70052dbf7a6",
+          "cache_receipt": "terminal-authorities/MC-constitution-504d060372bc30863ae999aac6bdcaa0f3c19f96c973a04a1a77a70052dbf7a6.receipt.json"
+        }
+      ],
+      "evidence_basis": "express_constitutional_single_commune",
+      "uncertainty": "Legal coextensiveness does not verify the precision or measured land coverage of an existing country geometry. Planning quarters are not additional communes."
+    },
+    {
+      "country": "VA",
+      "checked_at": "2026-11-09",
+      "native_scope": {
+        "authority_name": "Governatorato dello Stato della Città del Vaticano",
+        "authority_role": "central_state_administration",
+        "native_role": "Governatorato",
+        "scope": "countrywide",
+        "municipality_count": null,
+        "deeper_civil_municipal_tier": "not_demonstrated_in_current_government_structure"
+      },
+      "evidence": [
+        {
+          "id": "VA-fundamental-law-2026",
+          "url": "https://www.vaticanstate.va/phocadownload/Legge-Fondamentale-dello-Stato-della-Citta-del-Vaticano-31-Luglio-2026.pdf",
+          "publisher": "Stato della Città del Vaticano",
+          "title": "Legge fondamentale dello Stato della Città del Vaticano",
+          "version": "31 luglio 2026; immediate entry into force under Article 26(3)",
+          "provisions": ["Articles 1-2: sovereign state and state functions exercised by the Governatorato", "Articles 15-16, 20: executive, general administration and public services", "Article 26(3): immediate entry into force"],
+          "source_sha256": "2d584547aa7046337d24c4db0d82229d2315ac0e02493b52e15fe4c00b4a7e0f",
+          "cache_receipt": "terminal-authorities/VA-fundamental-law-2026-2d584547aa7046337d24c4db0d82229d2315ac0e02493b52e15fe4c00b4a7e0f.receipt.json"
+        }
+      ],
+      "evidence_basis": "inference_from_current_central_state_organization",
+      "uncertainty": "No lower independent civil municipal tier is demonstrated by the examined current framework; this is an organizational inference, not a literal statutory declaration of zero subdivisions. Curial bodies, church parishes and extraterritorial properties are not municipalities. Boundary precision and measured land coverage remain separate."
+    },
+    {
+      "country": "GI",
+      "checked_at": "2026-11-09",
+      "native_scope": {
+        "authority_name": "Government of Gibraltar",
+        "authority_role": "territorial_government",
+        "native_role": "Government of Gibraltar; Mayor with ceremonial civic functions",
+        "scope": "territorywide",
+        "municipality_count": null,
+        "deeper_civil_municipal_tier": "not_demonstrated_in_current_government_structure"
+      },
+      "evidence": [
+        {
+          "id": "GI-constitution",
+          "url": "https://www.gibraltarlaws.gov.gi/uploads/legislations/gibraltar-constitution/2007-00/2007-00.pdf",
+          "publisher": "Government of Gibraltar / Gibraltar Laws",
+          "title": "Gibraltar Constitution Order 2006, Annex 1",
+          "version": "Constitution effective 2 January 2007; official text retrieved 9 November 2026",
+          "provisions": ["Sections 45-47: Government of Gibraltar, ministerial and reserved responsibilities", "Section 77(2): Mayor's functions are ceremonial functions of a civic character"],
+          "source_sha256": "c58a27197fb3e2901dbc8c028bf7259020f252ad2ec225beaaaa8b6a700be64e",
+          "cache_receipt": "terminal-authorities/GI-constitution-c58a27197fb3e2901dbc8c028bf7259020f252ad2ec225beaaaa8b6a700be64e.receipt.json"
+        }
+      ],
+      "evidence_basis": "current_territorial_government_and_expressly_ceremonial_mayor",
+      "uncertainty": "No separate current civil municipal council tier is demonstrated. This does not remove the Governor's reserved constitutional functions or equate neighborhoods, electoral areas or ministerial contact areas with municipalities. Measured land coverage is not certified."
+    }
+  ]
+}

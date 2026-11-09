@@ -1,6 +1,7 @@
 extends Control
 ## Sichtbare Referenzgrenzen und Ortsnamen im Bildschirmraum, ohne Simulation.
 const UiScript = preload("res://scripts/ModernInterface.gd")
+const BoundariesScript = preload("res://scripts/AtlasBoundaries.gd")
 const MAP_SIZE := Vector2(1200, 760)
 const KIND_NAMES := {"country": "Land", "region": "Region", "district": "Kreis", "municipality": "Gemeinde", "city": "Ort"}
 const TEXT := Color("fff7df")
@@ -10,6 +11,7 @@ var selected_id := ""
 var audit_labels: Array = []
 var audit_features: Array = []
 var _last_key := ""
+var _boundaries
 
 func configure(map_host) -> void:
 	host = map_host
@@ -18,6 +20,10 @@ func configure(map_host) -> void:
 	clip_contents = true
 	show_behind_parent = true
 	set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	_boundaries = BoundariesScript.new()
+	_boundaries.name = "AtlasBoundaries"
+	_boundaries.show_behind_parent = true
+	add_child(_boundaries)
 	refresh()
 
 func refresh() -> void:
@@ -29,7 +35,8 @@ func _process(_delta: float) -> void:
 	if host == null:
 		return
 	var fit: Array = host._fit()
-	var key := "%s|%s|%s|%s|%s" % [fit[0], fit[1], host.size, UiScript.text_scale, selected_id]
+	var game_key: int = host.game.get_instance_id() if host.game != null else 0
+	var key := "%s|%s|%s|%s|%s|%s|%s" % [fit[0], fit[1], host.size, UiScript.text_scale, selected_id, game_key, hash(host.atlas_obstacles)]
 	if key != _last_key:
 		_last_key = key
 		refresh()
@@ -50,29 +57,13 @@ func _draw() -> void:
 		return
 	var features: Array = atlas.visible_features(visible, host.zoom)
 	var drawable_features: Array = []
-	draw_set_transform(offset, 0.0, Vector2.ONE * scale)
+	_boundaries.update_view(atlas, visible, host.zoom, scale, offset)
 	for feature in features:
 		var kind := str(feature.kind)
-		if kind == "municipality" and float(feature.bounds.get_area()) * scale * scale < 256.0:
+		if kind in ["municipality", "local_admin"] and float(feature.bounds.get_area()) * scale * scale < 256.0:
 			continue
-		var width := 0.85
-		var color := Color(0.17, 0.20, 0.15, 0.45)
-		if kind == "country":
-			width = 1.2
-			color = Color(0.14, 0.17, 0.13, 0.55)
-		elif kind == "district":
-			width = 0.8
-			color = Color(0.14, 0.17, 0.13, 0.50)
-		elif kind == "municipality":
-			width = 0.6
-			color = Color(0.20, 0.23, 0.18, 0.25)
-		for reference in feature.paths:
-			var points: PackedVector2Array = atlas.path(reference)
-			if points.size() >= 2:
-				draw_polyline(points, color, width / scale, true)
 		audit_features.append(str(feature.id))
 		drawable_features.append(feature)
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	_draw_places(atlas, drawable_features, visible, scale, offset)
 
 func _draw_places(atlas, features: Array, visible: Rect2, scale: float, offset: Vector2) -> void:
@@ -89,7 +80,7 @@ func _draw_places(atlas, features: Array, visible: Rect2, scale: float, offset: 
 		var kind: String = str(feature.kind)
 		if str(feature.id) == selected_id or not visible.has_point(feature.center):
 			continue
-		var show: bool = (kind == "region" and host.zoom >= 2.5 and host.zoom < 12.0) or (kind == "district" and host.zoom >= 6.0 and host.zoom < 24.0) or (kind == "municipality" and host.zoom >= 24.0)
+		var show: bool = (kind == "region" and host.zoom >= 2.5 and host.zoom < 12.0) or (kind == "district" and host.zoom >= 6.0 and host.zoom < 24.0) or (kind in ["municipality", "local_admin"] and host.zoom >= 24.0)
 		if show:
 			candidates.append({"record": feature, "rank": 500000 if kind == "region" else 0})
 	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
@@ -104,6 +95,8 @@ func _draw_places(atlas, features: Array, visible: Rect2, scale: float, offset: 
 		if audit_labels.size() >= limit:
 			break
 		var record: Dictionary = candidate.record
+		if not bool(record.get("name_known", true)) and str(record.get("id", "")) != selected_id:
+			continue
 		var name: String = str(record.get("name", ""))
 		if name.is_empty() or names.has(name.to_lower()):
 			continue
