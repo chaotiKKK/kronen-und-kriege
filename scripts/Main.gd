@@ -240,7 +240,7 @@ func _ready() -> void:
 		var driver = AcceptanceDriverScript.new()
 		add_child(driver)
 		driver.begin(self, args)
-	print("MAIN_READY version=1.5")
+	print("MAIN_READY version=%s" % ProjectSettings.get_setting("application/config/version"))
 
 func _stop_audio() -> void:
 	# Die laufende Ambient-Wiedergabe kann beim Engine-Shutdown eine Ressource
@@ -913,8 +913,12 @@ func _build() -> void:
 	event_layer.add_child(center)
 	var card := PanelContainer.new()
 	card.custom_minimum_size = Vector2(720, 0)
-	var event_card_style := ModernInterfaceScript.surface(Color(0, 0, 0, 0), 20)
-	event_card_style.set_border_width_all(0)
+	var event_card_style := ModernInterfaceScript.surface(Color(0.04, 0.09, 0.13, 0.10), 20)
+	event_card_style.set_border_width_all(1)
+	event_card_style.border_color = Color(0.70, 0.84, 0.90, 0.24)
+	event_card_style.shadow_color = Color(0, 0, 0, 0.28)
+	event_card_style.shadow_size = 10
+	event_card_style.shadow_offset = Vector2(0, 3)
 	event_card_style.content_margin_bottom = 18
 	card.add_theme_stylebox_override("panel", event_card_style)
 	center.add_child(card)
@@ -3944,8 +3948,39 @@ func _show_event() -> void:
 		if cut > 0:
 			label = label.substr(0, cut)
 		var effects: String = tags.sub(str(opt["chips"]), "", true)
-		var choose := _button(label + ("\n" + effects if effects != "" else ""), Callable(self, "_choose").bind(i), "")
-		choose.custom_minimum_size = Vector2(0, 64)
+		var choose := _button("", Callable(self, "_choose").bind(i), "")
+		choose.accessibility_name = label + (" — " + effects if effects != "" else "")
+		choose.tooltip_text = choose.accessibility_name
+		choose.custom_minimum_size = Vector2(0, 64 * ModernInterfaceScript.text_scale)
+		choose.set_meta("rich_choice", true)
+		# Ein gemeinsamer Trefferbereich mit zugänglichem Namen und farbigen Werten.
+		for role in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_disabled_color"]:
+			choose.add_theme_color_override(role, Color.TRANSPARENT)
+		var inset := MarginContainer.new()
+		inset.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		inset.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		for edge in ["left", "right", "top", "bottom"]:
+			inset.add_theme_constant_override("margin_" + edge, 8)
+		choose.add_child(inset)
+		var content := VBoxContainer.new()
+		content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		content.alignment = BoxContainer.ALIGNMENT_CENTER
+		content.add_theme_constant_override("separation", 2)
+		inset.add_child(content)
+		var action_title := _label(label, 16, INK)
+		action_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		action_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		content.add_child(action_title)
+		var effect_values := RichTextLabel.new()
+		effect_values.bbcode_enabled = true
+		effect_values.fit_content = true
+		effect_values.scroll_active = false
+		effect_values.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		effect_values.set_meta("atlas_effect_source", str(opt["chips"]))
+		effect_values.add_theme_font_size_override("normal_font_size", int(round(14 * ModernInterfaceScript.text_scale)))
+		effect_values.add_theme_font_size_override("bold_font_size", int(round(14 * ModernInterfaceScript.text_scale)))
+		effect_values.text = "[center]" + ModernInterfaceScript.effect_markup(str(opt["chips"])) + "[/center]"
+		content.add_child(effect_values)
 		row.add_child(choose)
 		event_buttons.add_child(row)
 	kernel.push_modal("event")

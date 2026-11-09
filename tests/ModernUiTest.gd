@@ -20,6 +20,9 @@ func _ready() -> void:
 		_finish()
 		return
 	var ui = main.get_meta("modern_interface")
+	for child in main.start_layer.get_children():
+		if child is PanelContainer:
+			_check(is_equal_approx(child.get_theme_stylebox("panel").bg_color.a, 1.0), "Hintergrundlogo darf nicht durch den Menübereich scheinen.")
 	if not ui.has_method("set_appearance"):
 		_check(false, "Umschaltbare Lesbarkeitsthemen fehlen.")
 		_finish()

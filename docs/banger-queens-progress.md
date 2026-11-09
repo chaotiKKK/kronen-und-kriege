@@ -1,4 +1,4 @@
-# Banger Queens 1.5 – Entwicklungs- und Prüfbericht
+# Banger Queens 1.5.1 – Entwicklungs- und Prüfbericht
 
 Stand: 2026-11-09. Hauptprojekt: `C:\Crusader Kings III\mobile-godot`.
 
@@ -15,7 +15,8 @@ Die vorhandene Godot-Fassung wurde übernommen und als **Banger Queens** weitere
 - Das Seitenpanel hat vier exklusive Bereiche: Übersicht, Politik, Familie und Welt. Das Herrscherprofil bleibt kompakt; die vollständigen Provinzdetails sind über die Provinzseite erreichbar.
 - Drei gespeicherte Lesbarkeitsthemen: dunkler Atlas, hoher Kontrast und heller Atlas.
 - Schriftgröße 100, 125, 150 oder 200 %. Dialoginhalte werden durch Rollbereiche begrenzt. Die Optionen mit 200-%-Text wurden tatsächlich gerendert und visuell geprüft.
-- Ereignisse wie „Gute Ernte“ zeigen Aktion und sämtliche Folgen im selben Button. Die Panel-Fläche ist transparent, die Abdunklung auf 16 % reduziert. Ein kleineres, abgerundetes Bild bleibt über Titel und Beschreibung sichtbar. Der vollständige Button löst die bestehende Entscheidung aus.
+- Ereignisse wie „Gute Ernte“ zeigen Aktion und sämtliche Folgen im selben Button. Pluswerte sind grün, Minuswerte rot, neutrale Angaben gelb/amber; die Farbtöne passen sich den drei Themen an. Die Panel-Fläche hat 10 % Deckkraft, einen dünnen Rand und einen dezenten Schatten; die Abdunklung der Spielansicht bleibt auf 16 % reduziert. Ein kleineres, abgerundetes Bild bleibt über Titel und Beschreibung sichtbar. Der vollständige Button löst die bestehende Entscheidung aus, auch bei einem Klick direkt auf die Wertzeile. Zugängliche Aktionsnamen enthalten alle Werte. Textgröße und Themen können gewechselt werden; ein Regressionstest prüft, dass die Buttons nach dem Zurückschalten von 200 % nicht überlappen.
+- Die Wortmarke und das rote Banner im Hintergrundmotiv des Hauptmenüs sind vollständig vom breiteren, deckenden Menübereich überlagert.
 
 Die Gestaltung folgt dem Skill `frontend-design`: klare Informationshierarchie, eine auf das Spiel abgestimmte Palette und überprüfte Ingame-Bilder. Es handelt sich um native Godot-Bedienelemente.
 
@@ -33,13 +34,15 @@ Die Gestaltung folgt dem Skill `frontend-design`: klare Informationshierarchie, 
 
 Godot: `4.5.stable.official.876b29033`.
 
-Der abschließende Sammellauf meldet **37 von 37 Suiten grün, 3.486 Prüfungen**. Bericht: `build/tests/run_all_summary.tsv`; Einzelprotokolle: `build/tests/*.log`. Neu hinzugekommen sind `CampaignTest`, `InfrastructureTest`, `InfrastructureUiTest`, `LoadingStatusTest`, `ModernUiTest` und `EventChoiceTest`. Die neuen Fälle wurden zunächst gegen den jeweils fehlenden Funktionsstand ausgeführt und anschließend auf Grün gebracht.
+Der abschließende Sammellauf für Version 1.5.1 meldet **37 von 37 Suiten grün, 3.503 Prüfungen**. Bericht: `build/tests/run_all_summary.tsv`; Einzelprotokolle: `build/tests/*.log`. Neu hinzugekommen sind `CampaignTest`, `InfrastructureTest`, `InfrastructureUiTest`, `LoadingStatusTest`, `ModernUiTest` und `EventChoiceTest`. Die neuen Fälle wurden zunächst gegen den jeweils fehlenden Funktionsstand ausgeführt und anschließend auf Grün gebracht. Die letzte Korrektur erweitert die Abdeckung um Vorzeichenfarben, neutrale Farbe, Themenwechsel, zugängliche Namen, zehn Prozent Deckkraft, Kontur/Schatten und überlappungsfreie Buttonflächen nach Textgrößenwechsel.
 
 Bestehende Prüfungen für Charaktererstellung, individuelle Häuser, drei Hauspartien, Touch-Eingaben, Dynastie, Hof, Religion, Seekrieg, KI-Kanten, Ereignisbilder, Save-Migration und 120 Spielmonate bestehen weiterhin. Die neue Layoutprüfung verwendet Fenstergrößen 1280×720, 1024×768 und 1920×1080. Fensterläufe wurden auf dem rechten Monitor ausgeführt.
 
 Die exportierte Windows-Fassung wurde außerdem außerhalb der Tests gestartet und per echter Bedienung geprüft. Im ersten 1.4-Build wurden Ari/Haus Neu erstellt, Vermessung erforscht, bis Dezember 1999 v. Chr. gespielt, vollständig beendet und derselbe Stand nach Neustart geladen. Version 1.5 lädt diesen Stand mit Herrscher, Forschung und offenem Ereignis im modernisierten UI. Das dient als zusätzliche Binärprüfung; es ist kein 4200-Jahre-Lauf.
 
 Auch der endgültige Export mit transparentem Ereignisfenster wurde gestartet (`build/verify/bq-windows-final.log`, `MAIN_READY version=1.5`). Der Klick direkt auf die Wertzeile „+45 Gold“ im Verkaufsbutton schließt das Ernteereignis korrekt und setzt die Partie fort. Anschließend wurde die Testanwendung regulär beendet. Sämtliche manuellen Partien verwendeten ein separates lokales Testprofil.
+
+Nachkorrektur 1.5.1: Der aktuelle Export startet mit `MAIN_READY version=1.5.1` (`build/verify/bq-windows-1.5.1.log`). Die Logoabdeckung im Hauptmenü sowie das neue, schwach hinterlegte Ereignisfenster mit farbigen Werten wurden im exportierten Programm beobachtet. Ein Klick direkt auf „+60 Gold / −10 Prestige“ bei „Mitgift fordern“ schließt das Ereignis; die tatsächlich angezeigten Werte wechseln von 241 auf 301 Gold und von 24 auf 14 Prestige. Danach wurde die Anwendung regulär beendet.
 
 Screenshots:
 
@@ -56,9 +59,9 @@ Die Windows-Startprotokolle enthalten eine bereits bekannte Warnung zur Initiali
 | Eigenschaft | Windows | Android |
 |---|---|---|
 | Datei | `F:\banger-queens.exe` | `F:\banger-queens.apk` |
-| Bytes | 142.845.336 | 204.854.900 |
-| Version | 1.5.0.0 | versionName 1.5, versionCode 6 |
-| SHA-256 | `4a8c1e50c63bc35758dfd2edb135c18ab0ade86d5d92865a35309ff98c19c3de` | `80082a74fd8ccd62060c3bb42357fcf9306a4bc6bda1ade9df258e80b91a32c8` |
+| Bytes | 142.848.056 | 204.857.604 |
+| Version | 1.5.1.0 | versionName 1.5.1, versionCode 7 |
+| SHA-256 | `f15ef31ed1da49b169b0c84b9db678d39ee8d6adb19c7ca192ceea9d72e54061` | `5a124282e2860d150e6397ced56ea5022728f8a182fb3f020a9a9f2ab62c552a` |
 
 Die APK ist debug-signiert. APK Signature Scheme v2 und `zipalign` sind gültig. Paketkennung bleibt `org.example.kronen`, damit bestehende Installationen mit derselben Signatur aktualisierbar bleiben. Das Zertifikat bleibt unverändert: SHA-256 `da3c6296edd521ad9f67d6d52d1cfe71fa5115e8d7ee0dfbca0a5c2c663802ac`. minSdk 24, targetSdk 35; native Bibliotheken für ARM64 und ARMv7. Alle eigenen Laufzeitdaten sind in einer APK enthalten. Die geprüften 678 Archiveinträge enthalten den neuen Ereignisbildshader sowie die neuen Spielmodule; keine Wine-/Box64-Einträge und keine Sicherungs-/Testszenen.
 

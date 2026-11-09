@@ -157,7 +157,8 @@ func _collect_buttons(node: Node, prefix: String, include_disabled: bool, found:
 	for child in node.get_children():
 		if child is Button:
 			var b := child as Button
-			if b.is_visible_in_tree() and (include_disabled or not b.disabled) and b.text.begins_with(prefix):
+			var name_text: String = b.text if b.text != "" else b.accessibility_name
+			if b.is_visible_in_tree() and (include_disabled or not b.disabled) and name_text.begins_with(prefix):
 				found.append(b)
 		_collect_buttons(child, prefix, include_disabled, found)
 
@@ -689,7 +690,7 @@ func _handle_event() -> void:
 	if not is_instance_valid(choice):
 		result["errors"].append("event button freed before click")
 		return
-	_log("event choice: " + choice.text)
+	_log("event choice: " + (choice.text if choice.text != "" else choice.accessibility_name))
 	await _ensure_visible(choice)
 	if not is_instance_valid(choice) or not main.event_layer.visible:
 		return

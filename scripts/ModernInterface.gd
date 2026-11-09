@@ -55,6 +55,20 @@ static func _surface_color(color: Color) -> Color:
 		return Color(0.92, 0.95, 0.96, color.a)
 	return color
 
+static func effect_markup(source: String) -> String:
+	var positive := "#85d9b0"
+	var negative := "#f29d96"
+	var neutral := "#e7c774"
+	if appearance == 1:
+		positive = "#a0f2aa"
+		negative = "#ffb4ab"
+		neutral = "#ffe58b"
+	elif appearance == 2:
+		positive = "#21613c"
+		negative = "#9e2832"
+		neutral = "#78590d"
+	return source.replace("#1c6b2f", positive).replace("#9c2f24", negative).replace("#d8c9a6", neutral).replace("[b]", "").replace("[/b]", "")
+
 func install(host) -> void:
 	main = host
 	main.set_meta("modern_interface", self)
@@ -85,8 +99,15 @@ func _scale_text(node: Node) -> void:
 		if not is_equal_approx(float(control.get_meta("atlas_applied_scale", -1.0)), text_scale):
 			control.add_theme_font_size_override("font_size", int(round(base * text_scale)))
 			control.set_meta("atlas_applied_scale", text_scale)
+	elif node is RichTextLabel and node.has_meta("atlas_effect_source"):
+		node.add_theme_font_size_override("normal_font_size", int(round(14 * text_scale)))
+		node.add_theme_font_size_override("bold_font_size", int(round(14 * text_scale)))
 	for child in node.get_children():
 		_scale_text(child)
+	if node is Button and node.has_meta("rich_choice"):
+		# Verkleinern sofort übernehmen, bevor verschachtelte Container neu sortieren.
+		node.custom_minimum_size.y = 64 * text_scale
+		node.size.y = node.custom_minimum_size.y
 
 func _prepare_dialogs(node: Node) -> void:
 	# ScrollContainer begrenzt die Inhaltsgröße, ohne alte Dialoglogik zu ersetzen.
@@ -106,6 +127,7 @@ func _prepare_dialogs(node: Node) -> void:
 		card.add_child(scroll)
 		scroll.add_child(content)
 		content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		content.minimum_size_changed.connect(_fit_dialogs, Object.CONNECT_DEFERRED)
 		dialogs.append({"card": card, "scroll": scroll, "content": content, "width": width})
 
 func _fit_dialogs() -> void:
@@ -135,6 +157,11 @@ func _recolor(node: Node) -> void:
 				control.add_theme_color_override("font_pressed_color", readable(original))
 				control.add_theme_color_override("font_hover_color", readable(original))
 				control.add_theme_color_override("font_focus_color", readable(original))
+				if control.has_meta("rich_choice"):
+					for role in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_disabled_color"]:
+						control.add_theme_color_override(role, Color.TRANSPARENT)
+		if control is RichTextLabel and control.has_meta("atlas_effect_source"):
+			control.text = "[center]" + effect_markup(str(control.get_meta("atlas_effect_source"))) + "[/center]"
 		for style_name in ["panel", "normal", "hover", "pressed", "disabled", "focus"]:
 			if not control.has_theme_stylebox_override(style_name):
 				continue
@@ -354,10 +381,10 @@ func _rebuild_menu() -> void:
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	main.start_layer.add_child(shade)
 	var panel := PanelContainer.new()
-	panel.anchor_left = 0.57
+	panel.anchor_left = 0.54
 	panel.anchor_right = 1.0
 	panel.anchor_bottom = 1.0
-	panel.add_theme_stylebox_override("panel", surface(Color(0.063, 0.118, 0.169, 0.985), 34))
+	panel.add_theme_stylebox_override("panel", surface(Color(0.063, 0.118, 0.169, 1.0), 34))
 	main.start_layer.add_child(panel)
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -394,7 +421,7 @@ func _rebuild_menu() -> void:
 	main.title_status = main._label("", 12, COPPER)
 	main.title_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(main.title_status)
-	box.add_child(main._label("VERSION 1.5    ·    DEUTSCH    ·    OFFLINE", 11, MUTED))
+	box.add_child(main._label("VERSION %s    ·    DEUTSCH    ·    OFFLINE" % ProjectSettings.get_setting("application/config/version"), 11, MUTED))
 
 func refresh_summary() -> void:
 	if main.game == null:
