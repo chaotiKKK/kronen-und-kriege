@@ -23,6 +23,10 @@ var sidebar_tabs: GridContainer
 var current_section := "overview"
 var last_width := -1.0
 var dialogs: Array = []
+var map_focus := false
+var _header_panel: Control
+var _focus_button: Button
+var _focus_restore: Dictionary = {}
 
 static func surface(color: Color = PANEL, margin: int = 16) -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()
@@ -251,6 +255,7 @@ func _sync_grain(panel: PanelContainer) -> void:
 func _rebuild_header() -> void:
 	var old_row: HBoxContainer = main.top_crest.get_parent().get_parent()
 	var panel: PanelContainer = old_row.get_parent()
+	_header_panel = panel
 	var rows := VBoxContainer.new()
 	rows.add_theme_constant_override("separation", 6)
 	panel.remove_child(old_row)
@@ -317,6 +322,10 @@ func _rebuild_map_tools() -> void:
 	modes.reparent(navigation)
 	modes.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	modes.add_theme_constant_override("separation", 6)
+	_focus_button = main._button("Karte groß", _toggle_map_focus)
+	_focus_button.toggle_mode = true
+	_focus_button.accessibility_name = "Kartenfläche vergrößern oder normale Ansicht wiederherstellen"
+	modes.add_child(_focus_button)
 	for child in modes.get_children():
 		if child is Button:
 			_style_tool(child)
@@ -354,6 +363,32 @@ func _rebuild_map_tools() -> void:
 	main.minimap.offset_top = -116
 	main.minimap.offset_right = -12
 	main.minimap.offset_bottom = -12
+	var search := preload("res://scripts/AtlasSearch.gd").new()
+	column.add_child(search)
+	column.move_child(search, 2)
+	search.configure(main.map_view, main)
+	main.set_meta("atlas_search", search)
+
+func _toggle_map_focus() -> void:
+	set_map_focus(not map_focus)
+
+func set_map_focus(enabled: bool) -> void:
+	if enabled == map_focus:
+		return
+	var ticker: Control = main.log_label.get_parent()
+	if enabled:
+		_focus_restore = {"header": _header_panel.visible, "side": main.side_panel.visible, "ticker": ticker.visible}
+		_header_panel.visible = false
+		main.side_panel.visible = false
+		ticker.visible = false
+	else:
+		_header_panel.visible = bool(_focus_restore.get("header", true))
+		main.side_panel.visible = bool(_focus_restore.get("side", true))
+		ticker.visible = bool(_focus_restore.get("ticker", true))
+	map_focus = enabled
+	_focus_button.text = "Ansicht zurück" if enabled else "Karte groß"
+	_focus_button.set_pressed_no_signal(enabled)
+	main.map_view.call_deferred("_sync_base_transform")
 
 func _style_tool(button: Button) -> void:
 	button.custom_minimum_size.y = 48

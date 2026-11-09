@@ -5,7 +5,7 @@ extends Control
 ## zwischengespeichert und müssen beim Ziehen nicht jede Frame neu entstehen.
 
 const MAP_SIZE := Vector2(1200, 760)
-const EUROPE := preload("res://assets/map/europe_detail.png")
+const EUROPE := preload("res://assets/map/atlas_terrain.webp")
 const RELIEF := preload("res://assets/map/generated/relief_shaded.png")
 const RELIEF_SHADER := preload("res://shaders/map_relief.gdshader")
 
@@ -29,22 +29,15 @@ func _ready() -> void:
 	_relief_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_relief_overlay.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_relief_overlay.material = _relief_material
+	# Der neue Untergrund enthält bereits geografisch passende Schummerung.
+	# Das frühere prozedurale Relief bleibt als Projektasset erhalten.
+	_relief_overlay.visible = false
 	add_child(_relief_overlay)
 
 func _draw() -> void:
 	if host == null:
 		return
 	draw_texture_rect(EUROPE, Rect2(Vector2.ZERO, MAP_SIZE), false)
-	# Kompass und Schiff als Kartenmöbel.
-	draw_arc(Vector2(1116, 96), 38, 0, TAU, 32, Color(0.76, 0.65, 0.44, 0.55), 1.5)
-	for k in 8:
-		var a: float = k * TAU / 8.0
-		draw_line(Vector2(1116, 96) + Vector2(cos(a), sin(a)) * 25, Vector2(1116, 96) + Vector2(cos(a), sin(a)) * 52, Color(0.76, 0.65, 0.44, 0.5), 1.0)
-	draw_line(Vector2(1116, 44), Vector2(1116, 62), Color(0.88, 0.75, 0.48, 0.8), 2.0)
-	var hull := PackedVector2Array([Vector2(74, 700), Vector2(142, 700), Vector2(130, 722), Vector2(86, 722)])
-	draw_colored_polygon(hull, Color(0.42, 0.28, 0.14, 0.9))
-	draw_line(Vector2(108, 700), Vector2(108, 668), Color(0.55, 0.40, 0.20, 0.9), 2.0)
-	draw_colored_polygon(PackedVector2Array([Vector2(110, 670), Vector2(140, 692), Vector2(110, 696)]), Color(0.84, 0.76, 0.57, 0.9))
 
 	if host.game == null:
 		return
@@ -83,19 +76,20 @@ func _draw() -> void:
 				var seg: Array = border_batches[key]
 				seg.append(a)
 				seg.append(b)
+	var screen_scale: float = maxf(0.1, float(host._fit()[0]))
 	var border_style := {
-		"province": [Color(0.16, 0.11, 0.07, 0.55), 1.0],
-		"duchy": [Color(0.43, 0.30, 0.14, 0.9), 2.1],
-		"kingdom": [Color(0.72, 0.52, 0.22, 0.95), 3.2],
-		"owner": [Color(0.98, 0.84, 0.45, 0.95), 4.0],
-		"empire": [Color(0.64, 0.18, 0.13, 0.95), 5.0],
-		"coast": [Color(0.12, 0.09, 0.05, 0.95), 2.4],
+		"province": [Color(0.16, 0.18, 0.13, 0.20), 0.55],
+		"duchy": [Color(0.32, 0.30, 0.20, 0.38), 0.8],
+		"kingdom": [Color(0.50, 0.40, 0.23, 0.68), 1.1],
+		"owner": [Color(0.95, 0.82, 0.49, 0.85), 1.6],
+		"empire": [Color(0.31, 0.25, 0.16, 0.78), 2.0],
+		"coast": [Color(0.14, 0.23, 0.23, 0.48), 0.65],
 	}
 	for key in ["province", "duchy", "kingdom", "owner", "empire", "coast"]:
 		var points := PackedVector2Array(border_batches[key])
 		if points.size() >= 2:
 			var style: Array = border_style[key]
-			draw_multiline(points, style[0], float(style[1]), true)
+			draw_multiline(points, style[0], float(style[1]) / screen_scale, true)
 
 	if host.selected != "":
 		var sel: Dictionary = host.game.province(host.selected)
@@ -104,11 +98,14 @@ func _draw() -> void:
 				draw_colored_polygon(part, Color(1.0, 0.92, 0.62, 0.18))
 				var outline: PackedVector2Array = part.duplicate()
 				outline.append(part[0])
-				draw_polyline(outline, Color(1.0, 0.90, 0.55), 3.2, true)
+				draw_polyline(outline, Color(1.0, 0.90, 0.55), 2.0 / screen_scale, true)
 	_draw_edge_vignette()
 
 func relief_texture() -> Texture2D:
 	return RELIEF
+
+func terrain_texture() -> Texture2D:
+	return EUROPE
 
 func relief_overlay() -> TextureRect:
 	return _relief_overlay
@@ -120,19 +117,13 @@ func _sync_relief_strength() -> void:
 	_relief_material.set_shader_parameter("strength", strength)
 
 func _draw_geography(detailed: bool) -> void:
-	var font := ThemeDB.fallback_font
+	var screen_scale: float = maxf(0.1, float(host._fit()[0]))
 	for river in host.rivers():
 		var line := PackedVector2Array()
 		for point in river["points"]:
 			line.append(point)
-		draw_polyline(line, Color(0.16, 0.43, 0.57, 0.80), 2.6, true)
-		if line.size() > 0:
-			draw_circle(line[line.size() - 1], 3.2, Color(0.22, 0.50, 0.62, 0.62))
 		if line.size() > 1:
-			var mid: Vector2 = line[int(line.size() / 2)]
-			draw_string(font, mid + Vector2(4, -4), str(river["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.84, 0.93, 0.92, 0.82))
-	for sea in host.seas():
-		draw_string(font, sea["pos"], str(sea["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.88, 0.91, 0.84, 0.72))
+			draw_polyline(line, Color(0.20, 0.40, 0.44, 0.68), 1.0 / screen_scale, true)
 	if not detailed:
 		return
 	for p in host.game.provinces:

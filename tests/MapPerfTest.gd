@@ -32,8 +32,8 @@ func _ready() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-	var tex: Texture2D = load("res://assets/map/europe_detail.png")
-	if not _expect(tex != null, "europe_detail.png wurde nicht geladen."):
+	var tex: Texture2D = main.map_view._base.terrain_texture()
+	if not _expect(tex != null, "Der tatsächlich verwendete Atlas-Untergrund wurde nicht geladen."):
 		return
 	var relief_tex: Texture2D = load("res://assets/map/generated/relief_shaded.png")
 	if not _expect(relief_tex != null, "Generiertes Relief wurde nicht geladen."):

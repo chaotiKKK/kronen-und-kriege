@@ -1,0 +1,31 @@
+{
+  "source": "https://naturalearth.s3.amazonaws.com/10m_raster/NE2_HR_LC_SR_W_DR.zip",
+  "product": "Natural Earth II with Shaded Relief, Water, and Drainages",
+  "version": "3.2.0",
+  "license": "Public Domain",
+  "license_url": "https://www.naturalearthdata.com/about/terms-of-use/",
+  "source_sha256": "e4a6e27c121cab119835ac38f17695768011d12a2a7d9e57d5cddf65566fcec0",
+  "source_size": [
+    21600,
+    10800
+  ],
+  "bounds": [
+    -12,
+    33,
+    52,
+    72
+  ],
+  "source_crop": [
+    10080,
+    1080,
+    13920,
+    3420
+  ],
+  "output": "res://assets/map/atlas_terrain.webp",
+  "output_size": [
+    4800,
+    3040
+  ],
+  "output_sha256": "528ce9e399fba4248be0513a85bc791f89ac411457baeb0d28af1279d6aad13c",
+  "changes": "Geografischer Ausschnitt Europa; an Kartenraum 1200x760 angepasst; WebP 94%."
+}

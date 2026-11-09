@@ -6,6 +6,7 @@ extends Control
 signal province_selected(province_id: String)
 signal map_mode_changed(mode: String)
 signal province_activated(province_id: String)
+signal atlas_location_selected(record: Dictionary)
 
 const MAP_MODES := ["political", "terrain", "duchy", "kingdom", "development", "war"]
 const MODE_TITLES := {
@@ -30,27 +31,18 @@ const TITLE_COLORS := [
 	Color(0.68, 0.53, 0.22), Color(0.35, 0.28, 0.52), Color(0.22, 0.50, 0.50),
 	Color(0.55, 0.34, 0.25), Color(0.40, 0.47, 0.25), Color(0.56, 0.24, 0.40),
 ]
-const RIVERS := [
-	{"name": "Rhein", "points": [Vector2(468, 392), Vector2(445, 348), Vector2(430, 300), Vector2(420, 246), Vector2(402, 194)]},
-	{"name": "Donau", "points": [Vector2(352, 398), Vector2(444, 408), Vector2(536, 404), Vector2(650, 423), Vector2(746, 464), Vector2(826, 512)]},
-	{"name": "Rhone", "points": [Vector2(408, 414), Vector2(394, 466), Vector2(374, 526)]},
-	{"name": "Po", "points": [Vector2(382, 407), Vector2(426, 414), Vector2(474, 421)]},
-	{"name": "Elbe", "points": [Vector2(456, 334), Vector2(446, 282), Vector2(440, 228), Vector2(432, 190)]},
-	{"name": "Dnepr", "points": [Vector2(696, 430), Vector2(676, 360), Vector2(654, 300), Vector2(640, 250)]},
-	{"name": "Themse", "points": [Vector2(240, 324), Vector2(258, 304), Vector2(278, 294)]},
-	{"name": "Ebro", "points": [Vector2(146, 390), Vector2(174, 414), Vector2(205, 435)]},
-	{"name": "Tagus", "points": [Vector2(82, 414), Vector2(116, 430), Vector2(151, 447)]},
-]
 const SEAS := [
-	{"name": "ATLANTIK", "pos": Vector2(48, 366)},
-	{"name": "NORDSEE", "pos": Vector2(342, 246)},
-	{"name": "OSTSEE", "pos": Vector2(566, 168)},
-	{"name": "MITTELMEER", "pos": Vector2(496, 638)},
-	{"name": "SCHWARZES MEER", "pos": Vector2(792, 492)},
+	{"name": "ATLANTIK", "geo": Vector2(-9.5, 45.0)},
+	{"name": "NORDSEE", "geo": Vector2(3.5, 56.5)},
+	{"name": "OSTSEE", "geo": Vector2(19.0, 58.0)},
+	{"name": "MITTELMEER", "geo": Vector2(10.0, 35.0)},
+	{"name": "SCHWARZES MEER", "geo": Vector2(34.0, 43.0)},
 ]
 
 const MAP_SIZE := Vector2(1200, 760)
 const MapBaseScript = preload("res://scripts/MapBase.gd")
+const AtlasDataScript = preload("res://scripts/AtlasData.gd")
+const AtlasLayerScript = preload("res://scripts/AtlasLayer.gd")
 const MARKER_CASTLE := preload("res://assets/map/generated/marker_castle.png")
 const MARKER_BANNER := preload("res://assets/map/generated/marker_banner.png")
 const INK := Color(0.12, 0.09, 0.05)
@@ -83,13 +75,26 @@ var _terrain_tex: Dictionary = {}
 var _building_tex: Dictionary = {}
 var _unit_tex: Dictionary = {}
 var _base
+var atlas_data
+var atlas_layer
+var atlas_obstacles: Array = []
+var atlas_location: String = ""
+var _rivers_cache: Array = []
+var _base_zoom_bucket := -1
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	clip_contents = true
+	atlas_data = AtlasDataScript.new()
+	if atlas_data.load_data():
+		atlas_layer = AtlasLayerScript.new()
+		atlas_layer.configure(self)
+		add_child(atlas_layer)
 	_base = MapBaseScript.new()
 	_base.host = self
 	_base.size = MAP_SIZE
 	add_child(_base)
+	move_child(_base, 0)
 	resized.connect(_sync_base_transform)
 	mouse_exited.connect(_on_mouse_exited)
 	_sync_base_transform()
@@ -171,12 +176,30 @@ func _sync_base_transform() -> void:
 	var fit := _fit()
 	_base.position = fit[1]
 	_base.scale = Vector2(float(fit[0]), float(fit[0]))
+	var bucket := int(zoom)
+	if bucket != _base_zoom_bucket:
+		_base_zoom_bucket = bucket
+		_base.queue_redraw()
+	if atlas_layer != null:
+		atlas_layer.size = size
+		atlas_layer.refresh()
 
 func rivers() -> Array:
-	return RIVERS
+	if _rivers_cache.is_empty() and atlas_data != null:
+		for river in atlas_data.rivers:
+			for ref in river.get("paths", []):
+				var points: PackedVector2Array = atlas_data.path(ref)
+				if points.size() > 1:
+					_rivers_cache.append({"name": str(river.get("name", "")), "points": points})
+	return _rivers_cache
 
 func seas() -> Array:
-	return SEAS
+	var result: Array = []
+	if atlas_data == null:
+		return result
+	for sea in SEAS:
+		result.append({"name": sea.name, "pos": atlas_data.project(sea.geo.x, sea.geo.y)})
+	return result
 
 func _clamp_pan() -> void:
 	var fit_s: float = min(size.x / MAP_SIZE.x, size.y / MAP_SIZE.y)
@@ -200,7 +223,7 @@ func zoom_by(factor: float, pivot = null) -> void:
 	var p: Vector2 = size * 0.5 if pivot == null else pivot
 	var old: Array = _fit()
 	var before: Vector2 = (p - (old[1] as Vector2)) / float(old[0])
-	zoom = clampf(zoom * factor, 1.0, 4.0)
+	zoom = clampf(zoom * factor, 1.0, 64.0)
 	var fit_s: float = min(size.x / MAP_SIZE.x, size.y / MAP_SIZE.y)
 	var s: float = fit_s * zoom
 	var base: Vector2 = (size - MAP_SIZE * s) * 0.5
@@ -225,6 +248,21 @@ func center_on(map_point: Vector2) -> void:
 	_clamp_pan()
 	_sync_base_transform()
 	queue_redraw()
+
+func focus_atlas_location(record: Dictionary) -> void:
+	if record.is_empty() or atlas_layer == null:
+		return
+	var point: Vector2 = record.get("point", record.get("center", Vector2.ZERO))
+	atlas_location = str(record.get("name", ""))
+	atlas_layer.selected_id = str(record.get("id", ""))
+	var kind := str(record.get("kind", "city"))
+	zoom = 4.5 if kind in ["country", "region"] else (12.0 if kind == "district" else (48.0 if kind == "municipality" else 24.0))
+	center_on(point)
+	var province_id := str(record.get("province_id", ""))
+	if game != null and not game.province(province_id).is_empty():
+		select(province_id)
+		province_selected.emit(province_id)
+	atlas_location_selected.emit(record)
 
 func _centroid(poly: PackedVector2Array) -> Vector2:
 	var sum := Vector2.ZERO
@@ -309,6 +347,17 @@ func _province_at(pos: Vector2) -> String:
 func _pick_at(pos: Vector2) -> void:
 	if game == null:
 		return
+	atlas_location = ""
+	if atlas_layer != null and zoom >= 2.5:
+		var fit := _fit()
+		var point: Vector2 = (pos - fit[1]) / float(fit[0])
+		var record: Dictionary = atlas_data.nearest_city(point, 12.0 / float(fit[0]))
+		if record.is_empty():
+			record = atlas_data.feature_at(point, zoom)
+		atlas_layer.selected_id = str(record.get("id", ""))
+		atlas_location = str(record.get("name", ""))
+		if not record.is_empty():
+			atlas_location_selected.emit(record)
 	var id: String = _province_at(pos)
 	if id == "":
 		if selected != "":
@@ -336,7 +385,20 @@ func _draw() -> void:
 		return
 	_draw_hover_highlight(s, off)
 	_draw_infrastructure(s, off)
+	_draw_sea_names(s, off)
 	_draw_labels(s, off)
+
+func _draw_sea_names(s: float, off: Vector2) -> void:
+	if zoom >= 3.0:
+		return
+	var font := ThemeDB.fallback_font
+	var font_size := int(round(13.0 * preload("res://scripts/ModernInterface.gd").text_scale))
+	for sea in seas():
+		var position: Vector2 = off + sea.pos * s
+		if not Rect2(Vector2.ZERO, size).has_point(position):
+			continue
+		draw_string_outline(font, position, sea.name, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 3, Color(0.08, 0.16, 0.18, 0.85))
+		draw_string(font, position, sea.name, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(0.85, 0.91, 0.88, 0.85))
 
 func infrastructure_segments() -> Array:
 	var segments: Array = []
@@ -376,11 +438,27 @@ func _draw_labels(s: float, off: Vector2) -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	var font := ThemeDB.fallback_font
 	var map_rect := Rect2(off, MAP_SIZE * s)
-	var inner := map_rect.grow(-3)
+	var inner := map_rect.intersection(Rect2(Vector2.ZERO, size)).grow(-3)
+	atlas_obstacles.clear()
+	# Die Minimap ist ein Geschwister-Control; ihr Raum gehört nicht den Labels.
+	if get_parent() != null:
+		for sibling in get_parent().get_children():
+			if sibling is Control and sibling.get_script() == preload("res://scripts/WorldMiniMap.gd") and sibling.visible:
+				atlas_obstacles.append(Rect2(sibling.global_position - global_position, sibling.size))
+	if inner.size.x < 80 or inner.size.y < 40:
+		return
 	var occupied: Array = []
-	var fs_title := 16 if s < 0.9 else 18
-	var fs_owner := 10 if s < 0.9 else 11
-	var fs_label := 9 if s >= 1.1 else (8 if s >= 0.62 else 7)
+	var font_scale: float = preload("res://scripts/ModernInterface.gd").text_scale
+	var fs_title := int(round(19 * font_scale))
+	var fs_owner := int(round(13 * font_scale))
+	var fs_label := int(round(13 * font_scale))
+	# In der Nahansicht übernehmen echte Orte und Verwaltungsgrenzen den Platz.
+	if atlas_layer != null and zoom >= 2.5:
+		labels_drawn = 0
+		if map_mode == "war":
+			_draw_war_markers(s, off, font)
+		_draw_hover_tooltip(font)
+		return
 
 	# Die Blender-Marker sitzen an den Halte- und Königreichssitzen. Sie werden
 	# vor den Titeln eingeplant, damit die Beschriftung nicht auf ihnen landet.
@@ -430,8 +508,7 @@ func _draw_labels(s: float, off: Vector2) -> void:
 				placed = true
 				break
 		if not placed:
-			box.position.x = clampf(box.position.x, inner.position.x + 2, inner.end.x - w - 2)
-			box.position.y = clampf(box.position.y, inner.position.y + 2, inner.end.y - h - 2)
+			continue
 		occupied.append(box)
 		# Titel schweben wie auf einer historischen Karte über dem Gelände:
 		# Kontur statt deckender Kästen, dazu eine schmale Hausfarben-Marke.
@@ -476,7 +553,8 @@ func _draw_labels(s: float, off: Vector2) -> void:
 				bx += 14.0
 
 	var drawn := 0
-	for p in game.provinces:
+	var label_provinces: Array = game.provinces if atlas_layer == null else []
+	for p in label_provinces:
 		var name := str(p["name"])
 		if map_mode == "development":
 			name = "%s · %d" % [name, int(p.get("dev", 1))]
@@ -519,6 +597,7 @@ func _draw_labels(s: float, off: Vector2) -> void:
 			draw_line(txt + Vector2(0, 2), txt + Vector2(w, 2), Color(1.0, 0.80, 0.34, 0.95), 1.2, true)
 		drawn += 1
 	labels_drawn = drawn
+	atlas_obstacles.append_array(occupied)
 
 	if map_mode == "war":
 		_draw_war_markers(s, off, font)
@@ -655,7 +734,7 @@ func _fill_color(p: Dictionary) -> Color:
 			base = game.houses[int(p["owner"])]["color"]
 	if selected == str(p["id"]):
 		base = base.lightened(0.25)
-	base.a = 0.72 if map_mode in ["terrain", "development"] else 0.68
+	base.a = 0.08 if map_mode == "terrain" else (0.38 if map_mode == "development" else 0.26)
 	return base
 
 func _title_color(id: String) -> Color:

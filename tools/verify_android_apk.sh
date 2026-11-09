@@ -32,7 +32,7 @@ grep -q "Verified using v2 scheme (APK Signature Scheme v2): true" "$SIG" || { e
 grep -q "Number of signers: 1" "$SIG" || { echo "FEHLER: Kein eindeutiger Signer." >&2; exit 1; }
 grep -q "Signer #1 certificate SHA-256 digest:" "$SIG" || { echo "FEHLER: Zertifikatsdigest fehlt." >&2; exit 1; }
 
-grep -q "^package: name='org.example.kronen' versionCode='8' versionName='1.5.2'" "$BADGING" || { echo "FEHLER: Paketname/Version weicht ab." >&2; exit 1; }
+grep -q "^package: name='org.example.kronen' versionCode='9' versionName='1.6.0'" "$BADGING" || { echo "FEHLER: Paketname/Version weicht ab." >&2; exit 1; }
 grep -q "^sdkVersion:'24'" "$BADGING" || { echo "FEHLER: minSdk ist nicht 24." >&2; exit 1; }
 grep -q "^targetSdkVersion:'35'" "$BADGING" || { echo "FEHLER: targetSdk ist nicht 35." >&2; exit 1; }
 grep -q "^launchable-activity: name='com.godot.game.GodotApp'" "$BADGING" || { echo "FEHLER: Einstiegs-Activity fehlt." >&2; exit 1; }

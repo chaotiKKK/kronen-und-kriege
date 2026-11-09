@@ -23,6 +23,12 @@ func _process(_delta: float) -> void:
 	if host == null:
 		return
 	var game_key := str(host.game.get_instance_id()) if host.game != null else "0"
+	# Dieselbe Spielinstanz kann Besitzer und Entwicklung ändern, ohne Pan/Zoom.
+	if host.game != null:
+		var political_state: Array = []
+		for province in host.game.provinces:
+			political_state.append([province.get("owner", -1), province.get("dev", 0)])
+		game_key += ":" + str(hash(political_state))
 	var key := "%s|%.3f|%.1f|%.1f|%s|%s" % [game_key, host.zoom, host.pan.x, host.pan.y, host.selected, host.map_mode]
 	if key == _last_state:
 		return

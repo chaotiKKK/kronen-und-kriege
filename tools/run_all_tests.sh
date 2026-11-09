@@ -36,6 +36,7 @@ mkdir -p "$LOGDIR"
 
 # Logik- und UI-Tests ohne Renderpfad.
 HEADLESS=(
+	AtlasDataTest
 	CampaignTest
 	InfrastructureTest
 	LoadingStatusTest
@@ -68,6 +69,7 @@ HEADLESS=(
 # Suiten, die einen echten Viewport brauchen.
 # CourtShotTest gehört ebenfalls hierher; es war zuvor nicht registriert.
 WINDOWED=(
+	AtlasIntegrationTest
 	EventChoiceTest
 	MaterialThemeTest
 	ModernUiTest

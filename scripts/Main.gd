@@ -644,6 +644,7 @@ func _build() -> void:
 	map_view.province_selected.connect(_on_province_selected)
 	map_view.province_activated.connect(_on_province_activated)
 	map_view.map_mode_changed.connect(_on_map_mode_changed)
+	map_view.atlas_location_selected.connect(_on_atlas_location_selected)
 	map_wrap.add_child(map_view)
 
 	# HUD-Plaketten und Werkzeuge schweben über der Karte; die Karte bleibt
@@ -2465,6 +2466,9 @@ func _on_province_activated(id: String) -> void:
 	if id != "" and selected == id:
 		_show_province()
 
+func _on_atlas_location_selected(_record: Dictionary) -> void:
+	_refresh_map_header()
+
 func _toggle_map_legend() -> void:
 	if map_view == null:
 		return
@@ -2484,7 +2488,7 @@ func _toggle_side_panel() -> void:
 func _refresh_map_header() -> void:
 	if map_header_title == null or map_view == null:
 		return
-	map_header_title.text = "WELTKARTE · %s" % _map_mode_title(str(map_view.map_mode)).to_upper()
+	map_header_title.text = "ATLAS · EUROPA · %s" % _map_mode_title(str(map_view.map_mode)).to_upper()
 	if game == null:
 		return
 	if top_world_label != null:
@@ -2492,6 +2496,9 @@ func _refresh_map_header() -> void:
 	if selected != "":
 		var p: Dictionary = game.province(selected)
 		if not p.is_empty():
+			if not map_view.atlas_location.is_empty():
+				map_header_meta.text = "%s · Referenzort\nHerrschaft: %s · Spielgebiet %s" % [map_view.atlas_location, str(game.houses[int(p["owner"])]["name"]), str(p["name"])]
+				return
 			map_header_meta.text = "%s · %s\n%s · Entw. %d · Aufgebot %d" % [
 				str(p["name"]), str(game.houses[int(p["owner"])]["name"]),
 				str(p.get("terrain_name", "Ebenen")), int(p.get("dev", 1)), int(p.get("levy", 0)),
@@ -3999,6 +4006,10 @@ func _show_event() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		var top: String = kernel.top_modal()
+		if top == "game" and has_meta("modern_interface") and get_meta("modern_interface").map_focus:
+			get_meta("modern_interface").set_map_focus(false)
+			get_viewport().set_input_as_handled()
+			return
 		if top == "infrastructure":
 			_hide_infrastructure()
 			get_viewport().set_input_as_handled()
