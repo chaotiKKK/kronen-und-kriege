@@ -1,4 +1,42 @@
-# Banger Queens 1.5.1 – Entwicklungs- und Prüfbericht
+# Banger Queens 1.5.2 – Entwicklungs- und Prüfbericht
+
+Stand: 2026-11-09. Hauptprojekt: `C:\Crusader Kings III\mobile-godot`.
+
+## Aktueller Quellstand: sechs Material- und Lesbarkeitsthemen
+
+Neue oder fehlende Themeneinstellungen starten mit **Holz · Walnuss**. Bestehende gespeicherte Themen behalten ihre Bedeutung; der Stil ist in den Optionen unter „Lesbarkeitsthema“ wählbar. Die Schriftgrößen 100, 125, 150 und 200 % bleiben verfügbar.
+
+| Einstellungs-ID | Thema |
+|---|---|
+| `0` | Dunkler Atlas — bestehende ID |
+| `1` | Hoher Kontrast — bestehende ID |
+| `2` | Heller Atlas — bestehende ID |
+| `3` | Holz · Walnuss (Standard) |
+| `4` | Holz · Helle Eiche |
+| `5` | Pergament |
+
+Die Holzoberflächen verwenden eine eigene, prozedural erzeugte und gemeinsam wiederverwendete Maserung. [Poliigon](https://www.poliigon.com/) dient als Materialreferenz; es wurden keine Poliigon-Materialdateien heruntergeladen oder eingebunden. Die Maserung liegt hinter den Inhalten, ignoriert Maus-/Touch-Eingaben und vergrößert die Bedienelemente nicht.
+
+Der Stilwechsel erhält die semantischen Hausfarbfelder sowie grüne Pluswerte, rote Minuswerte und gelbe neutrale Angaben. Einfügecursor und Platzhalter erhalten passende Kontraste; der Tastaturfokus hat eine transparente Fläche und eine mindestens zwei Pixel breite Kontur. Deaktivierte Aktionen bleiben unterscheidbar. Die Temposchalter werden nicht zusätzlich durch eine Gesamtmodulation abgedunkelt. Bereits geöffnete Ereignisse aktualisieren beim Stilwechsel auch ihre Textkonturen; die Ereignisfläche bleibt bei 10 % Deckkraft.
+
+## Prüfstand dieser Änderung
+
+Der abschließende Sammellauf besteht mit **38 von 38 Suiten und 3.722 Prüfungen**: 27 Suiten headless, elf mit Fenster. Es gibt keine übersprungenen oder ausstehenden Fälle; FAIL-Meldungen und Skriptfehler wurden im Sammellauf nicht festgestellt. `MaterialThemeTest` besteht im Fensterlauf mit **219 Prüfungen**. Er prüft unter anderem die sechs Stilwechsel, Kontrastwerte, Hausfarben, Cursor und Platzhalter, Fokus, deaktivierte Aktionen, Zeitsteuerung, nicht blockierende Maserung sowie Ereignisfarben und Textkonturen. Ein früherer fokussierter Headless-Lauf bestand mit 215 Prüfungen; die vier zusätzlichen Fälle des Fensterlaufs prüfen die Screenshot-Ausgabe.
+
+Die Exporte 1.5.2 wurden erstellt und separat geprüft. Die Windows-EXE startet sichtbar auf dem rechten Monitor, erreicht `MAIN_READY version=1.5.2`, liefert einen nichtleeren Render-Frame und schließt mit Exit 0. Die Android-APK besteht Signatur-v2-, ZIP-Ausrichtungs- und Metadatenprüfung: `org.example.kronen`, Versionscode 8, ARM64 und ARMv7, minSdk 24, targetSdk 35. Ein Spieltest dieser APK auf dem Poco steht aus.
+
+| Export 1.5.2 | Bytes | SHA-256 |
+|---|---:|---|
+| `F:\banger-queens.apk` | 204.862.841 | `9ee52449ab15ea5ea1d4cc0e12da6a40b70638691e8fbfe3682ce3002a94f072` |
+| `F:\banger-queens.exe` | 142.853.392 | `377335ad7ac6560076a7fe878de41e57f43bbf7fe0eb7624c29701090fdf0a69` |
+
+Das Android-Zertifikat bleibt das bisherige Debug-Zertifikat (SHA-256 `da3c6296edd521ad9f67d6d52d1cfe71fa5115e8d7ee0dfbca0a5c2c663802ac`). Die APK enthält die eigenen Spieldaten; Wine, Box64 und manuelle Datenimporte gehören nicht zu diesem Projekt.
+
+Die folgenden Abschnitte bewahren den **historischen Bericht zu 1.5.1**. Dessen Größen, Hashes und manuellen Abnahmen gehören ausschließlich zu den damaligen Exporten. Die wiederverwendeten Dateipfade unter `F:` kennzeichnen allein keine Version und sind kein Beleg dafür, dass spätere Dateien dieselben Hashes besitzen.
+
+---
+
+# Vorgänger 1.5.1 – historischer Entwicklungs- und Prüfbericht
 
 Stand: 2026-11-09. Hauptprojekt: `C:\Crusader Kings III\mobile-godot`.
 
@@ -54,7 +92,7 @@ Screenshots:
 
 Die Windows-Startprotokolle enthalten eine bereits bekannte Warnung zur Initialisierung nativer Windows-Common-Controls. Die Godot-Oberfläche startet; Skript-/Shaderfehler wurden in der Abnahme nicht festgestellt. Dies ist keine Behauptung vollständig warnungsfreier Engine-Protokolle.
 
-## Dateien
+## Dateien des Vorgängers 1.5.1
 
 | Eigenschaft | Windows | Android |
 |---|---|---|

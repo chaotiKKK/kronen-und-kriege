@@ -1,5 +1,5 @@
 param(
-    [string]$Exe = "F:\ck3-kronen-kriege.exe",
+    [string]$Exe = "F:\banger-queens.exe",
     [int]$WaitSeconds = 30,
     [switch]$GodotVerbose
 )
@@ -51,6 +51,10 @@ public static class Win32Window {
 "@
 
 Add-Type -AssemblyName System.Drawing
+Add-Type -AssemblyName System.Windows.Forms
+$targetScreen = [System.Windows.Forms.Screen]::AllScreens | Sort-Object { $_.Bounds.Right } | Select-Object -Last 1
+$windowX = $targetScreen.Bounds.Left + 100
+$windowY = $targetScreen.Bounds.Top + 60
 
 function Get-WindowTitle([IntPtr]$hWnd) {
     $buffer = New-Object System.Text.StringBuilder 512
@@ -60,7 +64,7 @@ function Get-WindowTitle([IntPtr]$hWnd) {
 
 # Der Logpfad enthaelt Leerzeichen. Start-Process joined die Array-Elemente
 # ohne Quoting; deshalb wird hier ein explizit gequoteter Argumentstring benutzt.
-$arguments = '--resolution 1280x720 --log-file "{0}"' -f $log
+$arguments = '--resolution 1280x720 --position {1},{2} --log-file "{0}"' -f $log, $windowX, $windowY
 if ($GodotVerbose) { $arguments += ' --verbose' }
 $psi = New-Object System.Diagnostics.ProcessStartInfo
 $psi.FileName = $Exe
@@ -115,7 +119,7 @@ $title = Get-WindowTitle $handle
 # Topmost + feste Position: CopyFromScreen darf nicht ein anderes Fenster
 # aufnehmen, wenn der Desktop das Spiel nicht in den Vordergrund holt.
 [void][Win32Window]::ShowWindow($handle, 5)
-[void][Win32Window]::SetWindowPos($handle, [IntPtr](-1), 100, 100, 0, 0, 0x41)
+[void][Win32Window]::SetWindowPos($handle, [IntPtr](-1), $windowX, $windowY, 0, 0, 0x41)
 [void][Win32Window]::SetForegroundWindow($handle)
 Start-Sleep -Milliseconds 750
 

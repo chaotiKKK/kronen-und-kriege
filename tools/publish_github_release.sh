@@ -6,10 +6,11 @@
 #
 # Das Skript liest die Version aus project.godot, verlangt einen sauberen
 # main-Arbeitsbaum, prüft die APK-Signatur, pusht Commit und Tag und lädt APK,
-# EXE sowie SHA256SUMS.txt als Pre-Release hoch. Ein vorhandener Release wird
-# mit den neuen Assets aktualisiert, sofern der Tag auf dem aktuellen Commit
-# liegt. Mit --dry-run werden nur Prüfungen und die geplanten Schritte
-# ausgegeben; mit --skip-verify entfällt die APK-Signaturprüfung.
+# EXE sowie SHA256SUMS.txt als Pre-Release hoch. Ein vorhandener Release kann
+# neue Assets erhalten, sofern der Tag auf dem aktuellen Commit liegt;
+# gleichnamige Assets werden nicht überschrieben. Mit --dry-run werden nur
+# Prüfungen und die geplanten Schritte ausgegeben; mit --skip-verify entfällt
+# die APK-Signaturprüfung.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -17,8 +18,8 @@ cd "$ROOT"
 
 VERSION="${VERSION:-$(sed -n 's/^config\/version="\([^"]*\)"/\1/p' project.godot | head -n 1)}"
 TAG="${TAG:-v$VERSION}"
-APK="${APK:-F:/ck3-kronen-kriege.apk}"
-EXE="${EXE:-F:/ck3-kronen-kriege.exe}"
+APK="${APK:-F:/banger-queens.apk}"
+EXE="${EXE:-F:/banger-queens.exe}"
 REPO="${GH_REPO:-}"
 DRY_RUN=0
 SKIP_VERIFY=0
@@ -75,7 +76,7 @@ EXE_NAME="$(basename "$EXE")"
 HEAD_SHA="$(git rev-parse HEAD)"
 SHORT_SHA="$(git rev-parse --short HEAD)"
 
-WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/kronen-release.XXXXXX")"
+WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/banger-queens-release.XXXXXX")"
 CHECKSUMS="$WORK_DIR/SHA256SUMS.txt"
 NOTES="$WORK_DIR/release-notes.md"
 trap 'rm -rf "$WORK_DIR"' EXIT
@@ -83,7 +84,7 @@ trap 'rm -rf "$WORK_DIR"' EXIT
 printf '%s  %s\n%s  %s\n' "$APK_SHA" "$APK_NAME" "$EXE_SHA" "$EXE_NAME" > "$CHECKSUMS"
 
 cat > "$NOTES" <<EOF
-# Kronen und Kriege $VERSION – Testversion
+# Banger Queens $VERSION – Testversion
 
 Quellstand: \`$SHORT_SHA\` auf \`main\`
 
@@ -128,18 +129,18 @@ fi
 
 git push origin HEAD:main
 if [ "$TAG_EXISTS" -eq 0 ]; then
-	git tag -a "$TAG" -m "Kronen und Kriege $VERSION"
+	git tag -a "$TAG" -m "Banger Queens $VERSION"
 fi
 git push origin "$TAG"
 
 if gh release view "$TAG" -R "$REPO" >/dev/null 2>&1; then
 	echo "Aktualisiere vorhandenen Release $TAG ..."
-	gh release upload "$TAG" "$APK" "$EXE" "$CHECKSUMS" -R "$REPO" --clobber
-	gh release edit "$TAG" -R "$REPO" --title "Kronen und Kriege $VERSION" --notes-file "$NOTES" --prerelease
+	gh release upload "$TAG" "$APK" "$EXE" "$CHECKSUMS" -R "$REPO"
+	gh release edit "$TAG" -R "$REPO" --title "Banger Queens $VERSION" --notes-file "$NOTES" --prerelease
 else
 	echo "Erzeuge Release $TAG ..."
-	gh release create "$TAG" -R "$REPO" --title "Kronen und Kriege $VERSION" --notes-file "$NOTES" --prerelease --verify-tag
-	gh release upload "$TAG" "$APK" "$EXE" "$CHECKSUMS" -R "$REPO" --clobber
+	gh release create "$TAG" -R "$REPO" --title "Banger Queens $VERSION" --notes-file "$NOTES" --prerelease --verify-tag
+	gh release upload "$TAG" "$APK" "$EXE" "$CHECKSUMS" -R "$REPO"
 fi
 
 echo "Release veröffentlicht:"

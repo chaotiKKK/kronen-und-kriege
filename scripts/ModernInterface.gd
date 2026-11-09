@@ -6,7 +6,11 @@ const TEXT := Color("edf3f5")
 const MUTED := Color("afbfca")
 const COPPER := Color("d4a875")
 const SEA := Color("78c6bd")
-static var appearance := 0
+const DEFAULT_APPEARANCE := 3
+# Bestehende IDs bleiben stabil, damit gespeicherte Einstellungen gültig bleiben.
+const THEME_NAMES := ["Dunkler Atlas", "Hoher Kontrast", "Heller Atlas", "Holz · Walnuss (Standard)", "Holz · Helle Eiche", "Pergament"]
+const WoodGrainScript = preload("res://scripts/WoodGrain.gd")
+static var appearance := DEFAULT_APPEARANCE
 static var text_scale := 1.0
 
 var main
@@ -36,8 +40,12 @@ static func surface(color: Color = PANEL, margin: int = 16) -> StyleBoxFlat:
 static func readable(color: Color) -> Color:
 	if appearance == 1:
 		return Color.WHITE
+	if appearance == 4 or appearance == 5:
+		return Color("302319")
 	if appearance == 2:
 		return Color("152b39")
+	if appearance == 3:
+		return Color("fff1d6") if color.get_luminance() >= 0.5 else Color("d8c4a6")
 	if color.get_luminance() >= 0.5:
 		return color
 	if color.g > color.r * 1.5:
@@ -53,7 +61,29 @@ static func _surface_color(color: Color) -> Color:
 		return Color(0.015, 0.025, 0.035, color.a)
 	if appearance == 2:
 		return Color(0.92, 0.95, 0.96, color.a)
+	if appearance >= 3:
+		var base := Color("36251c")
+		if appearance == 4:
+			base = Color("e5c99b")
+		elif appearance == 5:
+			base = Color("f0e2c5")
+		# Quellenhelligkeit bewahrt die Hierarchie zwischen Flächen und Zuständen.
+		var result := base.lightened(clampf(color.get_luminance() * 0.5, 0.0, 0.18))
+		result.a = color.a
+		return result
 	return color
+
+static func is_light() -> bool:
+	return appearance in [2, 4, 5]
+
+static func disabled_text() -> Color:
+	return Color("756750") if is_light() else Color("9b927f")
+
+static func focus_surface(margin: int = 12) -> StyleBoxFlat:
+	var focus := surface(Color.TRANSPARENT, margin)
+	focus.border_color = readable(TEXT)
+	focus.set_border_width_all(2)
+	return focus
 
 static func effect_markup(source: String) -> String:
 	var positive := "#85d9b0"
@@ -63,7 +93,7 @@ static func effect_markup(source: String) -> String:
 		positive = "#a0f2aa"
 		negative = "#ffb4ab"
 		neutral = "#ffe58b"
-	elif appearance == 2:
+	elif is_light():
 		positive = "#21613c"
 		negative = "#9e2832"
 		neutral = "#78590d"
@@ -82,7 +112,7 @@ func install(host) -> void:
 	_prepare_dialogs(main)
 	main.resized.connect(fit_layout)
 	fit_layout()
-	set_appearance(int(main.settings.get("ui_theme", 0)))
+	set_appearance(int(main.settings.get("ui_theme", DEFAULT_APPEARANCE)))
 	set_text_scale(float(main.settings.get("text_scale", 1.0)))
 
 func set_text_scale(value: float) -> void:
@@ -138,9 +168,15 @@ func _fit_dialogs() -> void:
 		dialog.scroll.custom_minimum_size = Vector2(0, minf(dialog.content.get_combined_minimum_size().y, max_height))
 
 func set_appearance(index: int) -> void:
-	appearance = clampi(index, 0, 2)
+	appearance = clampi(index, 0, THEME_NAMES.size() - 1)
 	main.settings["ui_theme"] = appearance
+	if main.opt_theme != null:
+		main.opt_theme.select(appearance)
 	_recolor(main)
+	var outline := Color(1, 1, 1, 0.95) if is_light() else Color(0.015, 0.035, 0.05, 0.95)
+	for label in [main.event_title, main.event_text]:
+		if label != null:
+			label.add_theme_color_override("font_outline_color", outline)
 	for child in main.get_children():
 		if child is ColorRect and child.has_meta("atlas_background"):
 			child.color = _surface_color(BG)
@@ -152,8 +188,11 @@ func _recolor(node: Node) -> void:
 			var original: Color = control.get_meta("atlas_color", control.get_theme_color("font_color"))
 			control.set_meta("atlas_color", original)
 			control.add_theme_color_override("font_color", readable(original))
+			if control is LineEdit:
+				control.add_theme_color_override("caret_color", readable(TEXT))
+				control.add_theme_color_override("font_placeholder_color", readable(MUTED))
 			if control is Button:
-				control.add_theme_color_override("font_disabled_color", readable(MUTED))
+				control.add_theme_color_override("font_disabled_color", disabled_text())
 				control.add_theme_color_override("font_pressed_color", readable(original))
 				control.add_theme_color_override("font_hover_color", readable(original))
 				control.add_theme_color_override("font_focus_color", readable(original))
@@ -168,14 +207,46 @@ func _recolor(node: Node) -> void:
 			var style = control.get_theme_stylebox(style_name)
 			if style is StyleBoxFlat:
 				var copy: StyleBoxFlat = style.duplicate()
-				copy.bg_color = _surface_color(copy.get_meta("atlas_bg", copy.bg_color))
+				var source: Color = copy.get_meta("atlas_bg", copy.bg_color)
+				if control is LineEdit and style_name in ["normal", "focus"]:
+					source = BG
+				copy.set_meta("atlas_bg", source)
+				copy.bg_color = source if copy.get_meta("atlas_fixed_color", false) else _surface_color(source)
+				var original_border: Color = copy.get_meta("atlas_border", copy.border_color)
+				copy.set_meta("atlas_border", original_border)
+				copy.border_color = original_border
 				if appearance == 1:
 					copy.border_color = Color("afbfca")
 				elif appearance == 2:
 					copy.border_color = Color("708897")
+				elif appearance >= 3:
+					copy.border_color = Color("a58050") if appearance == 3 else Color("927348")
+				if control is Button and not copy.get_meta("atlas_fixed_color", false):
+					if style_name == "focus":
+						copy.bg_color = Color.TRANSPARENT
+						copy.border_color = readable(TEXT)
+						copy.set_border_width_all(2)
+					elif style_name in ["hover", "pressed"]:
+						var amount := 0.025 if style_name == "hover" else 0.045
+						copy.bg_color = copy.bg_color.darkened(amount) if is_light() else copy.bg_color.lightened(amount)
 				control.add_theme_stylebox_override(style_name, copy)
+		if control is PanelContainer:
+			_sync_grain(control)
 	for child in node.get_children():
 		_recolor(child)
+
+func _sync_grain(panel: PanelContainer) -> void:
+	var grain = panel.get_node_or_null("MaterialGrain")
+	var wooden := appearance == 3 or appearance == 4
+	if grain == null and wooden:
+		grain = WoodGrainScript.new()
+		grain.name = "MaterialGrain"
+		# Interner Hintergrund: gehört weder zum Inhaltslayout noch zur Bedienung.
+		panel.add_child(grain, false, Node.INTERNAL_MODE_FRONT)
+	if grain != null:
+		grain.visible = wooden
+		if wooden:
+			grain.configure(panel.get_theme_stylebox("panel"))
 
 func _rebuild_header() -> void:
 	var old_row: HBoxContainer = main.top_crest.get_parent().get_parent()
@@ -217,6 +288,7 @@ func _rebuild_header() -> void:
 	economy.add_child(main._spacer())
 	for button in main.speed_buttons:
 		button.reparent(economy)
+		button.toggle_mode = true
 		_style_tool(button)
 		button.custom_minimum_size = Vector2(54, 44)
 	old_row.queue_free()
@@ -286,16 +358,13 @@ func _rebuild_map_tools() -> void:
 func _style_tool(button: Button) -> void:
 	button.custom_minimum_size.y = 48
 	button.add_theme_color_override("font_color", TEXT)
-	button.add_theme_color_override("font_disabled_color", MUTED)
+	button.add_theme_color_override("font_disabled_color", disabled_text())
 	button.add_theme_stylebox_override("normal", surface(Color("182d3c"), 9))
 	button.add_theme_stylebox_override("hover", surface(Color("294856"), 9))
 	var selected := surface(Color("26565a"), 9)
 	selected.border_color = SEA
 	button.add_theme_stylebox_override("pressed", selected)
-	var focus := surface(Color(0, 0, 0, 0), 9)
-	focus.border_color = COPPER
-	focus.set_border_width_all(2)
-	button.add_theme_stylebox_override("focus", focus)
+	button.add_theme_stylebox_override("focus", focus_surface(9))
 
 func _rebuild_sidebar() -> void:
 	var scroll: ScrollContainer = main.side_panel.get_child(0)

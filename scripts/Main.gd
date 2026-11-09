@@ -157,7 +157,7 @@ var settings := {
 	"resolution": 1,
 	"vsync": 1,
 	"ui_scale": 1.0,
-	"ui_theme": 0,
+	"ui_theme": ModernInterfaceScript.DEFAULT_APPEARANCE,
 	"text_scale": 1.0,
 	"music": 55,
 	"sfx": 75,
@@ -333,7 +333,7 @@ func _load_settings() -> void:
 	settings["resolution"] = clampi(int(cf.get_value("bild", "aufloesung", 1)), 0, RESOLUTIONS.size() - 1)
 	settings["vsync"] = clampi(int(cf.get_value("bild", "vsync", 1)), 0, 2)
 	settings["ui_scale"] = clampf(float(cf.get_value("bild", "ui_scale", 1.0)), 0.8, 1.2)
-	settings["ui_theme"] = clampi(int(cf.get_value("bild", "ui_theme", 0)), 0, 2)
+	settings["ui_theme"] = clampi(int(cf.get_value("bild", "ui_theme", ModernInterfaceScript.DEFAULT_APPEARANCE)), 0, ModernInterfaceScript.THEME_NAMES.size() - 1)
 	settings["text_scale"] = clampf(float(cf.get_value("bild", "text_scale", 1.0)), 1.0, 2.0)
 	settings["music"] = clampi(int(cf.get_value("ton", "musik", 55)), 0, 100)
 	settings["sfx"] = clampi(int(cf.get_value("ton", "effekte", 75)), 0, 100)
@@ -437,12 +437,13 @@ func _card_style(cm: int = 18) -> StyleBoxFlat:
 func _btn_style(bright: float) -> StyleBoxFlat:
 	return ModernInterfaceScript.surface(Color(0.11, 0.21, 0.27).lightened(maxf(0, bright - 1.0) * 0.4), 12)
 
-func _flat(bg: Color, line := Color(0, 0, 0, 0), width: int = 0) -> StyleBoxFlat:
+func _flat(bg: Color, line := Color(0, 0, 0, 0), width: int = 0, preserve_color: bool = false) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
-	if bg.r > bg.b * 1.3 and bg.g < 0.3:
+	if not preserve_color and bg.r > bg.b * 1.3 and bg.g < 0.3:
 		bg = Color(0.075, 0.14, 0.19, bg.a)
 	sb.set_meta("atlas_bg", bg)
-	sb.bg_color = ModernInterfaceScript._surface_color(bg)
+	sb.set_meta("atlas_fixed_color", preserve_color)
+	sb.bg_color = bg if preserve_color else ModernInterfaceScript._surface_color(bg)
 	if width > 0:
 		sb.border_width_left = width
 		sb.border_width_right = width
@@ -487,12 +488,12 @@ func _button(text: String, cb: Callable, icon_name := "") -> Button:
 	b.add_theme_color_override("font_color", ModernInterfaceScript.readable(CREAM))
 	b.add_theme_color_override("font_hover_color", ModernInterfaceScript.readable(Color.WHITE))
 	b.add_theme_color_override("font_pressed_color", ModernInterfaceScript.readable(CREAM))
-	b.add_theme_color_override("font_disabled_color", ModernInterfaceScript.readable(Color("8fa4b2")))
+	b.add_theme_color_override("font_disabled_color", ModernInterfaceScript.disabled_text())
 	b.add_theme_stylebox_override("normal", _btn_style(1.0))
 	b.add_theme_stylebox_override("hover", _btn_style(1.18))
 	b.add_theme_stylebox_override("pressed", _btn_style(0.82))
 	b.add_theme_stylebox_override("disabled", _btn_style(0.55))
-	b.add_theme_stylebox_override("focus", _btn_style(1.05))
+	b.add_theme_stylebox_override("focus", ModernInterfaceScript.focus_surface())
 	if icon_name != "" and ICONS.has(icon_name):
 		b.icon = ICONS[icon_name]
 		b.add_theme_constant_override("icon_max_width", 22)
@@ -1582,7 +1583,7 @@ func _build_options_layer() -> void:
 	var bild_hint := _label("Auflösung und Vollbild gelten sofort; die Oberfläche bleibt bei 1280 × 720 lesbar.", 11, INK_SOFT)
 	bild_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	bild.add_child(bild_hint)
-	opt_theme = _drop_option(["Dunkler Atlas", "Hoher Kontrast", "Heller Atlas"])
+	opt_theme = _drop_option(ModernInterfaceScript.THEME_NAMES)
 	opt_theme.select(int(settings["ui_theme"]))
 	opt_theme.item_selected.connect(func(index: int):
 		if has_meta("modern_interface"):
@@ -2005,9 +2006,10 @@ func _build_customizer() -> void:
 		var color_btn := Button.new()
 		color_btn.custom_minimum_size = Vector2(30, 30)
 		color_btn.tooltip_text = "Hausfarbe wählen"
-		color_btn.add_theme_stylebox_override("normal", _flat(col, Color(0.20, 0.14, 0.08), 1))
-		color_btn.add_theme_stylebox_override("hover", _flat(col.lightened(0.18), Color(0.90, 0.70, 0.34), 2))
-		color_btn.add_theme_stylebox_override("pressed", _flat(col.darkened(0.18), Color(1.0, 0.82, 0.42), 2))
+		color_btn.add_theme_stylebox_override("normal", _flat(col, Color(0.20, 0.14, 0.08), 1, true))
+		color_btn.add_theme_stylebox_override("hover", _flat(col.lightened(0.18), Color(0.90, 0.70, 0.34), 2, true))
+		color_btn.add_theme_stylebox_override("pressed", _flat(col.darkened(0.18), Color(1.0, 0.82, 0.42), 2, true))
+		color_btn.add_theme_stylebox_override("focus", ModernInterfaceScript.focus_surface(0))
 		color_btn.pressed.connect(_custom_set_color.bind(col))
 		palette.add_child(color_btn)
 
@@ -2260,9 +2262,9 @@ func _field(placeholder: String, fallback: String) -> LineEdit:
 	e.placeholder_text = fallback
 	e.add_theme_stylebox_override("normal", _field_style())
 	e.add_theme_stylebox_override("focus", _field_style())
-	e.add_theme_color_override("font_color", INK)
-	e.add_theme_color_override("caret_color", INK)
-	e.add_theme_color_override("font_placeholder_color", Color(0.42, 0.33, 0.22, 0.9))
+	e.add_theme_color_override("font_color", ModernInterfaceScript.readable(INK))
+	e.add_theme_color_override("caret_color", ModernInterfaceScript.readable(INK))
+	e.add_theme_color_override("font_placeholder_color", ModernInterfaceScript.readable(INK_SOFT))
 	e.add_theme_font_size_override("font_size", 15)
 	return e
 
@@ -2689,7 +2691,8 @@ func refresh() -> void:
 	renown_label.text = str(vm["renown"])
 	for i in speed_buttons.size():
 		var b: Button = speed_buttons[i]
-		b.modulate = Color(1, 1, 1) if int(vm["speed"]) == i else Color(0.60, 0.60, 0.66)
+		b.modulate = Color.WHITE
+		b.set_pressed_no_signal(int(vm["speed"]) == i)
 
 	var custom_tex := _house_crest_texture(h)
 	if custom_tex != null:
@@ -3928,7 +3931,7 @@ func _show_event() -> void:
 	var vm: Dictionary = ViewModelBuilder.event(game)
 	event_title.text = str(vm["title"])
 	event_text.text = str(vm["text"])
-	var outline := Color(0.015, 0.035, 0.05, 0.95) if ModernInterfaceScript.appearance != 2 else Color(1, 1, 1, 0.95)
+	var outline := Color(1, 1, 1, 0.95) if ModernInterfaceScript.is_light() else Color(0.015, 0.035, 0.05, 0.95)
 	event_title.add_theme_color_override("font_outline_color", outline)
 	event_text.add_theme_color_override("font_outline_color", outline)
 	var art_key: String = str(EVENT_ART_KEYS.get(str(vm.get("id", "")), ""))

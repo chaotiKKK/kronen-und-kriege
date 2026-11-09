@@ -69,6 +69,7 @@ HEADLESS=(
 # CourtShotTest gehört ebenfalls hierher; es war zuvor nicht registriert.
 WINDOWED=(
 	EventChoiceTest
+	MaterialThemeTest
 	ModernUiTest
 	InfrastructureUiTest
 	TouchTest

@@ -2,17 +2,23 @@
 
 Eigenständige Grand Strategy für **Android und Windows**, gebaut mit Godot 4.5. Die vorhandene Fassung „Kronen und Kriege“ wird als **Banger Queens** weiterentwickelt. Ausgangspunkt bleibt die Europakarte mit 49 Grafschaften, 29 Herzogtümern, neun Königreichen und drei Reichen.
 
-**Entwicklungsstand 1.5.1:** neues Hauptmenü, reservierte Kartennavigation, gegliedertes Seitenpanel, drei Lesbarkeitsthemen und Textgröße bis 200 %. Ereignisaktionen enthalten farbige Werte (grün/rot/gelb) innerhalb desselben Buttons; die Ereignisfläche hat 10 % Deckkraft, Kontur und Schatten. Das alte Logo/Banner des Hintergrundmotivs wird vollständig vom Menübereich abgedeckt. Dazu kommen Kalender ohne Jahr null, Save-Schema 12, erste Forschung und auf der Karte sichtbarer Straßenbau. Der Kalender reicht bis 2200; die vollständigen Epochen, Forschungszweige und langfristigen Nachfolgesysteme sind weitere Ausbaustufen. Sie sind durch die Datumsgrenze allein noch nicht implementiert.
+**Entwicklungsstand 1.5.2:** sechs gespeicherte Oberflächenstile, auswählbar unter „Lesbarkeitsthema“, mit Textgröße bis 200 %. **Holz · Walnuss** ist der Standard für neue Einstellungen; **Holz · Helle Eiche** und **Pergament** ergänzen **Dunkler Atlas**, **Hoher Kontrast** und **Heller Atlas**. Deren bestehende Einstellungs-IDs `0`, `1` und `2` bleiben erhalten; die neuen Stile verwenden `3`, `4` und `5`. Die eigene, prozedural erzeugte Holzmaserung blockiert keine Touch-Eingaben. Hausfarben bleiben beim Stilwechsel unverändert; Einfügecursor, Platzhalter, Fokus, deaktivierte Aktionen und Zeitsteuerung sind auf die jeweiligen Flächen abgestimmt.
 
-Aktuelle Dateien: `F:\banger-queens.exe` und `F:\banger-queens.apk`. Die APK enthält die eigenen Laufzeitdaten. Paketkennung und Signatur bleiben für Updates erhalten. [Entwurf](docs/superpowers/specs/2026-11-09-banger-queens-design.md) und [aktueller Prüfbericht](docs/banger-queens-progress.md) unterscheiden umgesetzte Funktionen und Ausbauziele. Die folgenden Release-1.3-Angaben beschreiben den früheren Stand.
+Das neue Hauptmenü, reservierte Kartennavigation und gegliederte Seitenpanel bleiben erhalten. Ereignisaktionen enthalten farbige Werte (grün/rot/gelb) innerhalb desselben Buttons; die Ereignisfläche hat 10 % Deckkraft, Kontur und Schatten. Das alte Logo/Banner des Hintergrundmotivs wird vollständig vom Menübereich abgedeckt. Dazu kommen Kalender ohne Jahr null, Save-Schema 12, erste Forschung und auf der Karte sichtbarer Straßenbau. Der Kalender reicht bis 2200; die vollständigen Epochen, Forschungszweige und langfristigen Nachfolgesysteme sind weitere Ausbaustufen. Sie sind durch die Datumsgrenze allein noch nicht implementiert.
 
-![Screenshot](preview/screenshot.png)
+Exportpfade: `F:\banger-queens.exe` und `F:\banger-queens.apk`. Die APK enthält die eigenen Laufzeitdaten. Paketkennung und Signatur bleiben für Updates erhalten. [Entwurf](docs/superpowers/specs/2026-11-09-banger-queens-design.md) und [aktueller Prüfbericht](docs/banger-queens-progress.md) unterscheiden Quellstand, geprüfte Exporte und Ausbauziele. Die folgenden Release-1.3-Angaben beschreiben ausdrücklich den früheren Stand.
+
+![Hauptmenü mit Walnussoberfläche](preview/holz-menue.png)
+
+![Spielansicht mit Walnussoberfläche](preview/holz-spiel.png)
+
+Die folgenden Bilder der Herrscher-Werkstatt und des Stammbaums zeigen einen älteren Oberflächenstand:
 
 ![Herrscher-Werkstatt](preview/herrscher.png)
 
 ![Stammbaum](preview/stammbaum.png)
 
-## Architekturstand Welle 9
+## Architektur und bestehende Spielsysteme
 
 Die systemische Tiefe ist in versionierten Dokumenten festgehalten:
 
@@ -21,9 +27,9 @@ Die systemische Tiefe ist in versionierten Dokumenten festgehalten:
 - [`docs/depth-contract.md`](docs/depth-contract.md) — Depth Contract und 30-Minuten-Messlatte
 - [`docs/manual-acceptance.md`](docs/manual-acceptance.md) — ausführbares 30-Minuten-Prüfprotokoll für Windows und Android
 - [`docs/interaction-matrix.md`](docs/interaction-matrix.md) — Kanten der vier Säulen mit Quelle, Ziel und Zustandsgröße
-- [`docs/save-schema.md`](docs/save-schema.md) — Schema 11, Migration und Nachweis
+- [`docs/save-schema.md`](docs/save-schema.md) — Schema 12, Migration und Nachweis
 
-Der Save ist migrationfest: Schema 1 wird beim Laden auf Schema 11 gehoben; Gebäude, `victory`, Legitimität, Fraktionen, Geheimnisse, Ansprüche, Armeen, Flotten, Truces, Traits, Erziehung, Verteidigung, Belagerung, Blockaden, Ruhm, Vermächtnisse, Vasallenverträge, Ratssitze sowie Hofpracht, Reliquien, Hofhalle, Hofausstattung, Konfession, Frömmigkeit, heilige Stätten, Kirchenmacht, Ketzerei, Reformstufe und heiliger Krieg werden additiv ergänzt. Die erwartete Hofpracht wird aus Provinzbesitz und Legitimität abgeleitet, nicht gespeichert. Ein JSON-Roundtrip liefert denselben Zustand. Der Nachweis läuft über `SaveMigrationTest` mit einem echten Altstand als Fixture. Die Systemtiefe umfasst alle 59 Matrixkanten: H1–H8, D1–D8, K1–K7, L1–L3, AI1–AI5, V1–V3, C1–C5, R1–R8 und F1–F12; Spieler und KI benutzen denselben `SystemicResolver` und dieselben `Game`-Kommandos. `SystemicDepthTest`, `FullDepthTest`, `DynastyTest`, `CouncilTest`, `CourtTest` und `FaithTest` prüfen positive Ketten und Negativkontrollen, `StoryTest` spielt 120 Monate mit drei Save-Roundtrips.
+Der Save ist migrationfest: Schema 1 wird beim Laden auf Schema 12 gehoben; Gebäude, `victory`, Legitimität, Fraktionen, Geheimnisse, Ansprüche, Armeen, Flotten, Truces, Traits, Erziehung, Verteidigung, Belagerung, Blockaden, Ruhm, Vermächtnisse, Vasallenverträge, Ratssitze sowie Hofpracht, Reliquien, Hofhalle, Hofausstattung, Konfession, Frömmigkeit, heilige Stätten, Kirchenmacht, Ketzerei, Reformstufe und heiliger Krieg werden additiv ergänzt. Schema 12 ergänzt den Kalender ohne Jahr null sowie Forschung und Straßenbau. Die erwartete Hofpracht wird aus Provinzbesitz und Legitimität abgeleitet, nicht gespeichert. Ein JSON-Roundtrip liefert denselben Zustand. Der Nachweis läuft über `SaveMigrationTest` mit einem echten Altstand als Fixture. Die Systemtiefe umfasst alle 59 Matrixkanten: H1–H8, D1–D8, K1–K7, L1–L3, AI1–AI5, V1–V3, C1–C5, R1–R8 und F1–F12; Spieler und KI benutzen denselben `SystemicResolver` und dieselben `Game`-Kommandos. `SystemicDepthTest`, `FullDepthTest`, `DynastyTest`, `CouncilTest`, `CourtTest` und `FaithTest` prüfen positive Ketten und Negativkontrollen, `StoryTest` spielt 120 Monate mit drei Save-Roundtrips.
 
 **Dynastie-Vermächtnis (Welle 5):** Jede Dynastie sammelt monatlich Ruhm aus Prestige, Besitz und Diplomatie; Ehen und Geburten geben zusätzlichen Ruhm. Drei Zweige mit je drei Stufen werden über `unlock_legacy()` gekauft: Kriegsvermächtnis (+10 % Armeestärke und Angriffskraft je Stufe), Kronvermächtnis (+2 Gold jährlich je Stufe, +2 Legitimität bei Freischaltung) und Ränkevermächtnis (+3 Prozentpunkte Intrigenchance je Stufe). Der Herrschaftsbildschirm zeigt Ruhm, Zweig, Stufe, Kosten und die drei neuen Blender-Token; die KI kauft über dieselbe Methode.
 
@@ -35,9 +41,9 @@ Der Save ist migrationfest: Schema 1 wird beim Laden auf Schema 11 gehoben; Geb�
 
 **Ketzerei, Reform und heiliger Krieg (Welle 9):** Jedes Haus führt `heresy` (`0..100`), `reform` (`0..3`) und einen laufenden `holy_war` mit Zielhaus und Restlaufzeit. Ketzerei wächst jährlich um 4 bei Kirchenmacht unter 40 und zusätzlich um 2 bei Legitimität unter 35; ab 70 Kirchenmacht sinkt sie um 3, jede Reformstufe senkt den Zuwachs um 2 (`F11`). Ab 40 Ketzerei sinkt die Legitimität jährlich um 1, ab 70 um 2 (`F8`); ab 30 Ketzerei sinkt die Vasallenmeinung um 1 je 30 Punkte, maximal 3 (`F9`). Das Ketzergericht kostet 50 Gold und 10 Prestige und senkt die Ketzerei um 25. Eine Reform kostet `100/150/200` Gold, `25/30/35` Frömmigkeit und `10/15/20` Prestige, gibt +4 Kirchenmacht je Stufe (`F10`), senkt die Ketzerei um 10 und die Vasallenmeinung um 4; ab 60 Ketzerei ist sie gesperrt. Ein heiliger Krieg kostet 60 Gold, 20 Frömmigkeit und 10 Prestige, senkt die Meinung um 3 und erhebt 24 Monate Anspruch auf die Hauptstadt eines Andersgläubigen oder Ketzers; die Eroberung gibt +10 Prestige und +5 Legitimität (`F12`) über die bestehenden Kriegskanten K1/K2. Der Glaubensbildschirm zeigt Ketzerei, Reformstufe, Kosten und alle Kriegsziele mit echten Buttons; die KI nutzt dieselben Kommandos `suppress_heresy()`, `reform_faith()` und `declare_holy_war()`.
 
-**Hofpracht 2.0 (Welle 10):** Die Hofpracht steht jetzt relativ zu einer Erwartung aus Provinzbesitz und Legitimität: `5 + 2 * eigene Provinzen + Legitimität / 5`, geklemmt auf `0..100`. Der Hofbildschirm zeigt den Korridor und die aktuelle Füllung, die bestehende Blender-Hallenkulisse trägt Zielmarke und Pips für Tafel, Gemächer und Gefolge. Jede der drei Linien hat drei Stufen, gibt `+5` Hofpracht und einen eigenen Sekundäreffekt (Vasallenmeinung, Diplomatie oder Hauptstadtaufgebot); der Ausbau kostet `50/90/140` Gold, der Unterhalt `8` Gold je Stufe und Jahr. `R8` bucht jährlich einen spürbaren Bonus über Erwartung bzw. Malus darunter. Spieler und KI nutzen dieselben Kommandos und den zentralen Resolver; `court.amenities` wird in Schema 11 persistiert und aus Reliquien, Halle und Ausstattung validiert.
+**Hofpracht 2.0 (Welle 10):** Die Hofpracht steht jetzt relativ zu einer Erwartung aus Provinzbesitz und Legitimität: `5 + 2 * eigene Provinzen + Legitimität / 5`, geklemmt auf `0..100`. Der Hofbildschirm zeigt den Korridor und die aktuelle Füllung, die bestehende Blender-Hallenkulisse trägt Zielmarke und Pips für Tafel, Gemächer und Gefolge. Jede der drei Linien hat drei Stufen, gibt `+5` Hofpracht und einen eigenen Sekundäreffekt (Vasallenmeinung, Diplomatie oder Hauptstadtaufgebot); der Ausbau kostet `50/90/140` Gold, der Unterhalt `8` Gold je Stufe und Jahr. `R8` bucht jährlich einen spürbaren Bonus über Erwartung bzw. Malus darunter. Spieler und KI nutzen dieselben Kommandos und den zentralen Resolver; `court.amenities` wurde mit Schema 11 eingeführt und wird im aktuellen Schema 12 persistiert und aus Reliquien, Halle und Ausstattung validiert.
 
-## Downloads
+## Frühere Downloads und Abnahme: Version 1.3
 
 Die veröffentlichten Testversionen liegen auf GitHub: [Kronen und Kriege 1.2](https://github.com/chaotiKKK/kronen-und-kriege/releases/tag/v1.2). Release 1.3 mit dem Banger-Queens-Titelbild ist gebaut, für Windows geprüft und auf dem Android-Emulator sichtbar getestet, aber noch nicht veröffentlicht.
 
@@ -214,7 +220,7 @@ bash export_windows.sh
 bash tools/publish_github_release.sh
 ```
 
-Das Skript liest `config/version`, verlangt einen sauberen `main`-Arbeitsbaum, prüft die APK-Signatur, pusht den Commit und den Tag `v<version>` und lädt APK, EXE und `SHA256SUMS.txt` als Pre-Release hoch. Es ist idempotent: Ein vorhandener Release wird mit den neuen Assets aktualisiert, sofern der Tag auf dem aktuellen Commit liegt. `GH_REPO` kann ein abweichendes Ziel-Repository setzen; `--skip-verify` überspringt nur die APK-Signaturprüfung.
+Das Skript liest `config/version`, verlangt einen sauberen `main`-Arbeitsbaum, prüft die APK-Signatur, pusht den Commit und den Tag `v<version>` und lädt `F:/banger-queens.apk`, `F:/banger-queens.exe` und `SHA256SUMS.txt` als Banger-Queens-Pre-Release hoch. Ein vorhandener Release kann zusätzliche Assets erhalten, sofern der Tag auf dem aktuellen Commit liegt. Gleichnamige Assets werden nicht überschrieben; der Upload bricht bei einem Namenskonflikt ab.
 
 ## Tests
 
@@ -250,7 +256,13 @@ APPDATA="$PWD/appdata" ./godot.exe --path .. res://tests/TitleShot.tscn --resolu
 APPDATA="$PWD/appdata" ./godot.exe --path .. res://tests/FaithShotTest.tscn --resolution 1280x720
 ```
 
-Godot 4.5 muss vorhanden sein; die lokale `.tools/godot.exe` ist wie die übrige Toolchain nicht versioniert und muss in einem frischen Checkout separat bereitgestellt werden. `bash tools/run_all_tests.sh` entdeckt alle Test-Szenen im Repo selbst (30 unter `tests/`, keine außerhalb), startet alle 30 Suiten in einem Sammellauf (23 headless, 7 mit Fenster), schreibt je ein Log nach `build/tests/` und endet nur bei vollständig grünem Lauf mit Exit 0. Der Runner bricht bei einer unregistrierten Szene ab und akzeptiert ein Log nur mit positiver Assertion-Zahl und ohne `skip`/`pending`/`todo`/`ignored`-/`FAIL`-Marker; den Report schreibt er nach `build/tests/run_all_summary.tsv`. `EventArtTest` prüft die acht Ereignisbilder, ihre Zuordnung, das Manifest und den Vektor-Fallback. `SaveMigrationTest` lädt den echten Altstand aus `tests/fixtures/legacy_v1.json`, migriert ihn auf Schema 11 und vergleicht alle Altfelder sowie einen JSON-Roundtrip; die Hofpracht wird aus Reliquien, Halle und Ausstattung neu abgeleitet und manipuliert erkannt. Die negativen Kontrollen entfernen `provinces[0].dev`, `houses[0].legitimacy`, `houses[0].renown`, `provinces[0].defense` und verändern `houses[0].court.grandeur` sowie `houses[0].faith.church_power` und `houses[0].faith.heresy`; alle Verluste, die manipulierte Hofpracht, die manipulierte Kirchenmacht und die manipulierte Ketzerei müssen gemeldet werden. `DynastyTest` prüft Ruhm, Kauf, Maximalstufe, die drei Vermächtniswirkungen, die deaktivierte Kante L1, KI-Käufe, UiKernel-Routing und den Schema-11-Roundtrip mit 42 Prüfungen. `DynastyUiTest` öffnet den echten Herrschaftsbildschirm, prüft Ruhm, drei Token und Zweige und löst den ersten Kauf über den tatsächlichen Button aus (14 Prüfungen). `CouncilTest` prüft drei Vertragsstufen, vier Ratssitze, Stimmen, vier Beschlüsse, KI-Nutzung, Negativfälle und den Schema-11-Roundtrip (76 Prüfungen). `CourtTest` prüft Reliquien, Halle, Hofpracht, Ausstattung, Erwartung, R1–R8, KI, Negativfälle und den Schema-11-Roundtrip (197 Prüfungen); `CourtUiTest` drückt im echten Hofbildschirm den Kronen-, Hallen- und Tafelbutton und prüft Zielkorridor sowie drei Ausstattungs-Pips (39 Prüfungen). `CourtShotTest` rendert den Hofbildschirm mit Zielkorridor und Ausstattungsstufen als 1600×900-Screenshot. `CouncilUiTest` drückt im echten Herrschaftsbildschirm den Vertrags- und den Landfrieden-Button (22 Prüfungen). `SystemicDepthTest` prüft H1, H2, H5 (Kaserne), D5 und AI1; `FullDepthTest` prüft die übrigen 23 Kanten positiv und negativ sowie Gelände und Versorgung. `StoryTest` spielt 120 Monate mit 47 Kanten und drei Save-Roundtrips. `NavalTest` prüft Küstenerkennung, Flottenaufstellung, Blockade, Seeschlacht, Frieden und den Schema-11-Roundtrip. `FaithTest` prüft Konfessionen, Frömmigkeit, Kirchenmacht, heilige Stätten, Bekehrung, Ketzerei, Reform, heiligen Krieg, F1–F12, KI-Kosten und den Schema-11-Roundtrip (225 Prüfungen); `FaithUiTest` drückt im echten Glaubensbildschirm Wallfahrt, Bekehrung, Weihe, Ketzergericht, Reform und heiligen Krieg (95 Prüfungen). `FaithShotTest` rendert den Glaubensbildschirm oben und bis Ketzerei/Reform/Krieg gescrollt sowie den Hofbildschirm als echte 1600×900-Bilder. `CustomizeTest` klickt auf das Porträt, ändert Porträt, Wappen, Hausfarbe, Namen, Geschlecht, Alter und Charakterwerte, prüft Speichern/Laden und das Zurücksetzen per Abbrechen. `ShotTest` rendert elf Bilder: Start, Erstellung, Spiel, sechs Kartenmodi, Stammbaum und Herrscher-Werkstatt; `TitleShot` rendert Titelbild, Hausauswahl und Ladebildschirm.
+Godot 4.5 muss vorhanden sein; die lokale `.tools/godot.exe` ist wie die übrige Toolchain nicht versioniert und muss in einem frischen Checkout separat bereitgestellt werden. `bash tools/run_all_tests.sh` entdeckt derzeit **38 Test-Suiten** unter `tests/` (27 headless, elf mit Fenster), schreibt je ein Log nach `build/tests/` und endet nur bei vollständig grünem Lauf mit Exit 0. Der Runner bricht bei einer unregistrierten Szene ab und akzeptiert ein Log nur mit positiver Assertion-Zahl und ohne `skip`/`pending`/`todo`/`ignored`-/`FAIL`-Marker. Der Sammelbericht steht unter `build/tests/run_all_summary.tsv`; die zum jeweiligen Export gehörenden Ergebnisse beschreibt der [aktuelle Prüfbericht](docs/banger-queens-progress.md).
+
+`SaveMigrationTest` lädt den echten Altstand aus `tests/fixtures/legacy_v1.json`, migriert ihn auf Schema 12 und vergleicht erhaltene Altfelder sowie einen JSON-Roundtrip. Fehlende Pflichtfelder und manipulierte abgeleitete Werte müssen erkannt werden. `CampaignTest` prüft den Kalender ohne Jahr null; `InfrastructureTest` und `InfrastructureUiTest` prüfen Forschung und Straßenbau samt Kosten, Voraussetzungen und Persistenz.
+
+`DynastyTest`, `CouncilTest`, `CourtTest`, `NavalTest` und `FaithTest` prüfen Spielregeln, Kosten, Negativfälle, KI-Nutzung und Save-Roundtrips im aktuellen Schema 12. `SystemicDepthTest` und `FullDepthTest` decken die Matrixkanten ab; `StoryTest` spielt 120 Monate mit drei Save-Roundtrips. Die zugehörigen UI-Suiten lösen Käufe, Verträge, Ratsbeschlüsse, Hofausbau und Glaubensaktionen über die tatsächlichen Buttons aus.
+
+`EventArtTest` prüft Ereignisbilder, Zuordnung, Manifest und Vektor-Fallback. `CustomizeTest` prüft die Herrscher-Werkstatt einschließlich Speichern/Laden und Abbrechen. `ModernUiTest`, `EventChoiceTest` und `MaterialThemeTest` prüfen Navigation, Textskalierung, farbige Aktionswerte, sechs Oberflächenstile und ihre Bedienzustände. `TouchTest` erprobt Eingaben im Test-Viewport. Die Screenshot-Suiten rendern Titel, Erstellung, Kartenmodi, Hof, Glaube, Stammbaum und Herrscher-Werkstatt. Diese Prüfungen ersetzen keinen aktuellen Spieltest auf einem physischen Android-Gerät.
 
 ## Toolchain im Projekt
 
@@ -275,7 +287,7 @@ project.godot
 export_presets.cfg        Android- und Windows-Preset, ABIs, Paketname, Zielpfade
 scenes/Main.tscn          nur die Wurzel, die UI entsteht zur Laufzeit
 scripts/Data.gd           Bronzezeit-Provinzen, Häuser, Familien, Ereignissescripts/Game.gd          Simulation, Familie, Intrigen, Speicherstand
-scripts/SaveGame.gd      Schema 11, Migration, Validierung, kanonischer Diff
+scripts/SaveGame.gd      Schema 12, Migration, Validierung, kanonischer Diff
 scripts/SystemicResolver.gd  zentraler Effektpunkt für Welle-1-Kanten
 
 scripts/MapView.gd        texturierte Karte, Wappen, Touch- und Mausauswahl
@@ -289,7 +301,13 @@ export_android.sh         Android-Build
 export_windows.sh         Windows-Build
 ```
 
-## Stand der Prüfung
+## Prüfstand 1.5.2
+
+Der abschließende Sammellauf besteht mit **38 von 38 Suiten und 3.722 Prüfungen**: 27 Suiten headless, elf mit Fenster, ohne übersprungene oder ausstehende Fälle. `MaterialThemeTest` besteht im Fensterlauf mit 219 Prüfungen für sechs Themen, Kontraste, Hausfarben, Eingabefelder, Fokus, Zeitsteuerung und Ereignisse. Die zugehörigen Exportprüfungen werden im [Prüfbericht](docs/banger-queens-progress.md) getrennt vom Quelltest dokumentiert. Ein aktueller Spieltest auf dem Poco ist damit nicht nachgewiesen.
+
+### Historischer Prüfstand bis Version 1.3
+
+Die folgenden Einzelzahlen, Hashes, Emulatorbelege und manuellen Abnahmen stammen aus dem früheren Stand. Sie gelten nicht als Nachweis für die heutigen Exportdateien.
 
 - `MapDataTest`: 49 Grafschaften, 29 Herzogtümer, 9 Königreiche, 3 Reiche, keine ungültigen Flächen, alle 49 Nachbarschaften vorhanden.
 - `MapTest`: Auswahl, Hierarchie, eigener Grafschaftsstart und Karten-UI funktionieren.
@@ -321,7 +339,7 @@ export_windows.sh         Windows-Build
 - Android: Schema-4-Export erfolgreich (Exit 0), 180.708.021 Bytes, SHA-256 `3b17118a9ea7d4e307fec735b58cc4b46dcc459d4ca49a4edac30f71037dbbbf`; `apksigner` bestätigt v2, einen Signer und das Debug-Zertifikat; `zipalign` ok; Badging: `org.example.kronen`, versionCode 4/versionName 1.3, minSdk 24, targetSdk 35, Activity `com.godot.game.GodotApp`, ABIs `arm64-v8a`/`armeabi-v7a`. Bei der letzten Prüfung sah ADB das autorisierte Gerät `f030379a` (Android 16, Modell `24117RK2CG`); während der Prüfung war kein reales Gerät verbunden; der Ziel-Emulator `emulator-5554` wurde für den Host-GPU-Test neu gestartet. Die frühere APK 1.2 wurde mit `adb install -r` installiert (Exit 0), die Activity kalt gestartet (`Status: ok`); der Prozess lief nach 15 Sekunden noch ohne FATAL-/Script-Error. Die aktuelle APK 1.3 ist auf `emulator-5554` (AVD `fhd36`, Android 16) mit Host-GPU (`-gpu host`, NVIDIA RTX 5070 Laptop) installiert und rendert dort sichtbar: Ladebildschirm bei 82 % und Hauptmenü, `MAIN_READY version=1.3`, kein FATAL. Der frühere SwiftShader-Start scheitert an `GL_MAX_FRAGMENT_UNIFORM_VECTORS (261)`; auf realer Hardware wurde sie nicht installiert, daher bleiben die reale Sichtprüfung und der Android-30-Minuten-Lauf offen.
 - Windows: Schema-4-Export erfolgreich (Exit 0), **138.795.936 Bytes**, SHA-256 `922eb13b62b8150a065f5132cd4506142fc44ad057692b7e740f0fd31ec1d6b1`, eingebettete PCK, Audio und Versionsressourcen `1.3.0.0` vorhanden. Der Startcheck meldet `MAIN_READY version=1.3`, Fenster `1618x945` und keine `ERROR`-/Exception-Zeilen (`build/verify/windows-start-current.log`). Der vollständige 30-Minuten-Abnahmelauf am 2026-11-08 (`21:34:29–22:04:31`, 30:02) war gegen diesen 1.3-Build **BESTANDEN** (12/12 Aktionen, 3/3 Roundtrips ohne Save-Diff, AI2+AI3, `status=BESTANDEN`). Belege: `build/verify/manual-build-922eb13/acceptance-result.json`, `build/verify/acceptance-FullDepthTest.log`, `build/verify/acceptance-SystemicDepthTest.log`.
 
-## Offene manuelle Abnahme
+## Historisches Abnahmeprotokoll: Version 1.3
 
 Automatisch nicht möglich sind nur diese Punkte. Das ausführbare Prüfprotokoll mit sechs Zeitfenstern, Evidenztabelle und Abbruchregeln steht in [`docs/manual-acceptance.md`](docs/manual-acceptance.md).
 
