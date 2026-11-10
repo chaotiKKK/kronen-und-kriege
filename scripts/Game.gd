@@ -163,6 +163,14 @@ var effect_log: Array = []
 var history: Array = []
 ## Verlauf je Haus (Index = Haus) für den Vergleich in der Chronik.
 var house_history: Array = []
+
+## Im Einzelspielermodus bleiben die bisherigen persönlichen Felder unverändert.
+## Eine LAN-Partie hält zusätzlich einen Kontext je Haus; player wählt nur die
+## aktuelle synchrone Perspektive. Nur der Host darf die gemeinsame Welt takten.
+var human_houses: Array = []
+var _player_contexts: Dictionary = {}
+var _event_instance: int = 0
+var _lan_projection := false
 ## Testhook: >= 0 erzwingt den Schlachtwurf; im normalen Spiel bleibt der Wert -1.
 var attack_roll_override: float = -1.0
 
@@ -206,6 +214,146 @@ func owned() -> Array:
 			out.append(p)
 	return out
 
+func configure_human_houses(ids: Array) -> bool:
+	if not _valid_human_ids(ids, houses.size()):
+		return false
+	_store_player_context()
+	human_houses = []
+	for index in ids:
+		human_houses.append(int(index))
+	_lan_projection = false
+	for i in houses.size():
+		_ensure_player_context(i)
+	if not human_houses.has(player):
+		return select_player_context(int(human_houses[0]))
+	return true
+
+func is_human_house(index: int) -> bool:
+	return index == player if human_houses.is_empty() else human_houses.has(index)
+
+func select_player_context(index: int) -> bool:
+	if index < 0 or index >= houses.size():
+		return false
+	if index == player:
+		return true
+	_store_player_context()
+	_ensure_player_context(index)
+	player = index
+	_load_player_context(_player_contexts[str(index)])
+	return true
+
+func opinion_value(house_index: int, index: int) -> int:
+	if index < 0 or index >= houses.size() or house_index < 0 or house_index >= houses.size():
+		return 0
+	if human_houses.is_empty() or house_index == player:
+		return int(opinion[index]) if index < opinion.size() else 0
+	_ensure_player_context(house_index)
+	return int(_player_contexts[str(house_index)]["opinion"][index])
+
+func set_opinion_value(house_index: int, index: int, value: int) -> void:
+	if index < 0 or index >= houses.size() or house_index < 0 or house_index >= houses.size():
+		return
+	if human_houses.is_empty() or house_index == player:
+		opinion[index] = value
+		return
+	_ensure_player_context(house_index)
+	_player_contexts[str(house_index)]["opinion"][index] = value
+
+func scandal_value(house_index: int) -> int:
+	if house_index < 0 or house_index >= houses.size():
+		return 0
+	if human_houses.is_empty() or house_index == player:
+		return scandal
+	_ensure_player_context(house_index)
+	return int(_player_contexts[str(house_index)]["scandal"])
+
+func set_scandal_value(house_index: int, value: int) -> void:
+	if house_index < 0 or house_index >= houses.size():
+		return
+	if human_houses.is_empty() or house_index == player:
+		scandal = value
+		return
+	_ensure_player_context(house_index)
+	_player_contexts[str(house_index)]["scandal"] = value
+
+func pending_event_instance() -> int:
+	return _event_instance
+
+func has_pending_human_events() -> bool:
+	if human_houses.is_empty():
+		return pending_event != null
+	_store_player_context()
+	for index in human_houses:
+		var context: Dictionary = _player_contexts[str(index)]
+		if not bool(context["game_over"]) and str(context["pending"]) != "":
+			return true
+	return false
+
+func all_human_houses_over() -> bool:
+	if human_houses.is_empty():
+		return game_over
+	_store_player_context()
+	for index in human_houses:
+		if not bool(_player_contexts[str(index)]["game_over"]):
+			return false
+	return true
+
+func _personal_state() -> Dictionary:
+	return {
+		"opinion": opinion.duplicate(), "cooldowns": cooldowns.duplicate(true),
+		"captive": captive.duplicate(true), "scandal": scandal,
+		"pending": str(pending_event["id"]) if pending_event != null else "",
+		"event_timer": event_timer, "event_instance": _event_instance,
+		"game_over": game_over, "victory": victory,
+		"history": history.duplicate(true), "log": log_lines.duplicate(),
+	}
+
+func _store_player_context() -> void:
+	_player_contexts[str(player)] = _personal_state()
+
+func _ensure_player_context(index: int) -> void:
+	if _player_contexts.has(str(index)):
+		return
+	var initial_opinion: Array = []
+	initial_opinion.resize(houses.size())
+	initial_opinion.fill(0)
+	_player_contexts[str(index)] = {
+		"opinion": initial_opinion, "cooldowns": {}, "captive": {}, "scandal": 0,
+		"pending": "", "event_timer": 9, "event_instance": 0,
+		"game_over": false, "victory": false, "log": [],
+		"history": house_history[index].duplicate(true) if index < house_history.size() else [_house_point(index, _now())],
+	}
+
+func _load_player_context(context: Dictionary) -> void:
+	opinion = context["opinion"].duplicate()
+	cooldowns = context["cooldowns"].duplicate(true)
+	captive = context["captive"].duplicate(true)
+	scandal = int(context["scandal"])
+	event_timer = int(context["event_timer"])
+	_event_instance = int(context["event_instance"])
+	game_over = bool(context["game_over"])
+	victory = bool(context["victory"])
+	history = context["history"].duplicate(true)
+	log_lines = context["log"].duplicate()
+	pending_event = null
+	for event in data.events():
+		if str(event["id"]) == str(context["pending"]):
+			pending_event = event
+			break
+
+func _valid_human_ids(ids: Array, house_count: int) -> bool:
+	if ids.size() < 2 or ids.size() > 4:
+		return false
+	var seen: Array = []
+	for index in ids:
+		if not _whole_number(index) or int(index) < 0 or int(index) >= house_count or seen.has(int(index)):
+			return false
+		seen.append(int(index))
+	return true
+
+func _whole_number(value) -> bool:
+	return value is int or (value is float and is_finite(value) and value == floor(value))
+
 func neighbours(id: String) -> Array:
 	return adjacency.get(id, [])
 
@@ -222,6 +370,28 @@ func note(msg: String) -> void:
 	log_lines.append(msg)
 	while log_lines.size() > 10:
 		log_lines.pop_front()
+
+## Persönliche Tickmeldungen erreichen auch inaktive Menschenperspektiven.
+## Der gemeinsame Welt-/Spielerkontext wird dafür nicht umgeschaltet.
+func _note_for_house(house_index: int, msg: String) -> void:
+	if house_index < 0 or house_index >= houses.size() or not is_human_house(house_index):
+		return
+	if house_index == player:
+		note(msg)
+		return
+	_ensure_player_context(house_index)
+	var lines: Array = _player_contexts[str(house_index)]["log"]
+	lines.append(msg)
+	while lines.size() > 10:
+		lines.pop_front()
+
+func _note_for_houses(recipients: Array, msg: String) -> void:
+	var delivered: Array = []
+	for recipient in recipients:
+		var house_index := int(recipient)
+		if not delivered.has(house_index):
+			delivered.append(house_index)
+			_note_for_house(house_index, msg)
 
 # --- Aufbau --------------------------------------------------------------
 
@@ -564,11 +734,19 @@ func _custom_start(cfg: Dictionary) -> void:
 # --- Zeit ----------------------------------------------------------------
 
 func advance_month() -> void:
-	if game_over:
+	if (game_over if human_houses.is_empty() else all_human_houses_over()):
 		return
 	if not campaign_sandbox and calendar_index() >= CalendarScript.LAST_MONTH:
 		speed = 0
 		return
+	var original_player := player
+	# Ältere Hausmethoden lesen game_over der aktuellen Perspektive. Der
+	# gemeinsame Weltschritt verwendet deshalb ein noch lebendes Menschenhaus.
+	if not human_houses.is_empty() and game_over:
+		for index in human_houses:
+			select_player_context(int(index))
+			if not game_over:
+				break
 	month += 1
 	if month > 12:
 		month = 1
@@ -578,13 +756,27 @@ func advance_month() -> void:
 	_tick_naval()
 	_tick_dynasty()
 	_tick_infrastructure()
+	if human_houses.is_empty():
+		_tick_personal_event()
+	else:
+		var previous_player := player
+		for index in human_houses:
+			select_player_context(int(index))
+			if not game_over:
+				_tick_captive()
+				_tick_personal_event()
+		select_player_context(previous_player)
+	_record_history()
+	if not human_houses.is_empty():
+		select_player_context(original_player)
+	if not campaign_sandbox and calendar_index() >= CalendarScript.LAST_MONTH:
+		speed = 0
+
+func _tick_personal_event() -> void:
 	if pending_event == null:
 		event_timer -= 1
 		if event_timer <= 0:
 			_trigger_event()
-	_record_history()
-	if not campaign_sandbox and calendar_index() >= CalendarScript.LAST_MONTH:
-		speed = 0
 
 func calendar_index() -> int:
 	return CalendarScript.to_index(year, month)
@@ -675,8 +867,7 @@ func _tick_infrastructure() -> void:
 				var innovation := str(research.active)
 				research.known.append(innovation)
 				research.active = ""
-				if hi == player:
-					note("Forschung abgeschlossen: " + str(InfrastructureScript.INNOVATIONS[innovation].name))
+				_note_for_house(hi, "Forschung abgeschlossen: " + str(InfrastructureScript.INNOVATIONS[innovation].name))
 	for road in roads:
 		if road.state != "building":
 			continue
@@ -685,8 +876,7 @@ func _tick_infrastructure() -> void:
 		road.months = int(road.months) - 1
 		if int(road.months) == 0:
 			road.state = "complete"
-			if int(road.builder) == player:
-				note("Eine Straßenverbindung ist fertiggestellt.")
+			_note_for_house(int(road.builder), "Eine Straßenverbindung ist fertiggestellt.")
 
 func road_segments() -> Array:
 	return roads.duplicate(true)
@@ -713,6 +903,12 @@ func _record_history() -> void:
 		house_history[i].append(_house_point(i, t))
 		while house_history[i].size() > 240:
 			house_history[i].pop_front()
+	if not human_houses.is_empty():
+		_store_player_context()
+		for i in houses.size():
+			_ensure_player_context(i)
+			_player_contexts[str(i)]["history"] = house_history[i].duplicate(true)
+		history = house_history[player].duplicate(true)
 
 func _house_point(index: int, t: int) -> Dictionary:
 	var h: Dictionary = houses[index]
@@ -815,20 +1011,31 @@ func _yearly() -> void:
 		_apply_vassal_politics(i)
 		_apply_faction_pressure(i)
 	for i in houses.size():
-		if i == player:
+		if is_human_house(i):
 			continue
 		var h: Dictionary = houses[i]
 		if h["spouse"].is_empty() and randf() < 0.25:
 			h["spouse"] = _make_spouse_for(i, i)
 		if not h["spouse"].is_empty() and int(h["pregnant"]) == 0 and randf() < 0.16:
 			h["pregnant"] = 9
+	if human_houses.is_empty():
+		_tick_scandal()
+	else:
+		var previous_player := player
+		for index in human_houses:
+			select_player_context(int(index))
+			if not game_over:
+				_tick_scandal()
+		select_player_context(previous_player)
+	_check_deaths()
+
+func _tick_scandal() -> void:
 	if scandal > 0 and randf() < 0.35:
 		scandal = 0
 		house()["prestige"] = maxi(0, int(house()["prestige"]) - 18)
 		for i in opinion.size():
 			opinion[i] = int(opinion[i]) - 10
 		note("Ein Skandal erschüttert dein Haus (−18 Prestige).")
-	_check_deaths()
 
 func _tick_family() -> void:
 	for i in houses.size():
@@ -837,6 +1044,10 @@ func _tick_family() -> void:
 			h["pregnant"] = int(h["pregnant"]) - 1
 			if int(h["pregnant"]) == 0:
 				_birth(i)
+	if human_houses.is_empty():
+		_tick_captive()
+
+func _tick_captive() -> void:
 	if not captive.is_empty():
 		captive["months"] = int(captive["months"]) - 1
 		if int(captive["months"]) <= 0:
@@ -864,8 +1075,7 @@ func _birth(i: int) -> void:
 	}])
 	h["pregnant"] = 0
 	_recompute_heir(h)
-	if i == player:
-		note("Ein Kind wird geboren: %s." % child["name"])
+	_note_for_house(i, "Ein Kind wird geboren: %s." % child["name"])
 
 func _heir_candidate(h: Dictionary) -> Dictionary:
 	var children: Array = h.get("children", [])
@@ -892,14 +1102,24 @@ func _recompute_heir(h: Dictionary) -> void:
 
 func _check_deaths() -> void:
 	for i in houses.size():
-		if game_over:
+		if game_over and human_houses.is_empty():
 			return
+		if not human_houses.is_empty() and is_human_house(i):
+			_store_player_context()
+			if bool(_player_contexts[str(i)]["game_over"]):
+				continue
 		var r: Dictionary = houses[i]["ruler"]
 		var chance: float = clampf((int(r["age"]) - 45) / 55.0 + (100 - int(r["health"])) / 350.0, 0.0, 0.85)
 		if randf() < chance:
 			_succession(i)
 
 func _succession(i: int) -> void:
+	if not human_houses.is_empty() and is_human_house(i) and i != player:
+		var previous_player := player
+		select_player_context(i)
+		_succession(i)
+		select_player_context(previous_player)
+		return
 	var h: Dictionary = houses[i]
 	var old: String = str(h["ruler"]["name"])
 	var new_ruler: Dictionary = {}
@@ -962,6 +1182,7 @@ func _random_name() -> String:
 func _trigger_event() -> void:
 	var pool: Array = data.events()
 	pending_event = pool[randi_range(0, pool.size() - 1)]
+	_event_instance += 1
 
 # --- Aktionen ------------------------------------------------------------
 
@@ -1785,8 +2006,7 @@ func _apply_faith_holy_war(house_index: int) -> void:
 	if not claim_active(capital_id, house_index):
 		f["holy_war"] = {"target": -1, "months": 0}
 		houses[house_index]["faith"] = f
-		if house_index == player:
-			note("Der Anspruch im heiligen Krieg ist erloschen; der Krieg endet.")
+		_note_for_house(house_index, "Der Anspruch im heiligen Krieg ist erloschen; der Krieg endet.")
 		return
 	if not capital.is_empty() and int(capital.get("owner", -1)) == house_index:
 		_resolve([
@@ -1799,14 +2019,12 @@ func _apply_faith_holy_war(house_index: int) -> void:
 		])
 		f["holy_war"] = {"target": -1, "months": 0}
 		houses[house_index]["faith"] = f
-		if house_index == player:
-			note("Der heilige Krieg ist gewonnen: +%d Prestige, +%d Legitimität." % [FAITH_HOLY_WAR_PRESTIGE, FAITH_HOLY_WAR_LEGITIMACY])
+		_note_for_house(house_index, "Der heilige Krieg ist gewonnen: +%d Prestige, +%d Legitimität." % [FAITH_HOLY_WAR_PRESTIGE, FAITH_HOLY_WAR_LEGITIMACY])
 		return
 	months -= 1
 	if months <= 0:
 		f["holy_war"] = {"target": -1, "months": 0}
-		if house_index == player:
-			note("Der heilige Krieg gegen %s ist versandet." % str(houses[target]["name"]))
+		_note_for_house(house_index, "Der heilige Krieg gegen %s ist versandet." % str(houses[target]["name"]))
 	else:
 		f["holy_war"] = {"target": target, "months": months}
 	houses[house_index]["faith"] = f
@@ -2425,8 +2643,8 @@ func _apply_council_training(i: int) -> void:
 		"kind": "levy", "province": str(capital["id"]), "house": i,
 		"amount": amount, "reason": "Marschallstraining",
 	}])
-	if i == player and not applied.is_empty():
-		note("%s trainiert %s (+%d Truppen)." % [marshal["name"], capital["name"], amount])
+	if not applied.is_empty():
+		_note_for_house(i, "%s trainiert %s (+%d Truppen)." % [marshal["name"], capital["name"], amount])
 
 func assign_council(office: String, courtier_index: int, house_index: int = -1) -> Dictionary:
 	var hi: int = player if house_index < 0 else house_index
@@ -2455,7 +2673,7 @@ func _assign_best_ai(office: String, stat: String, house_index: int) -> void:
 
 func run_ai_turn() -> void:
 	for i in houses.size():
-		if i == player:
+		if is_human_house(i):
 			continue
 		var h: Dictionary = houses[i]
 		if h.get("courtiers", []).is_empty():
@@ -2887,8 +3105,7 @@ func _apply_army_supply(i: int) -> void:
 		var loss: int = maxi(1, int(round(float(strength - capacity) * 0.02)))
 		loss = mini(loss, maxi(1, int(strength / 20)))
 		army["strength"] = maxi(1, strength - loss)
-		if i == player:
-			note("%s: Versorgung im %s reicht nicht; %d Mann gehen verloren." % [str(p["name"]), str(p.get("terrain_name", "Gelände")), loss])
+		_note_for_house(i, "%s: Versorgung im %s reicht nicht; %d Mann gehen verloren." % [str(p["name"]), str(p.get("terrain_name", "Gelände")), loss])
 
 func _apply_trait_effects(i: int) -> void:
 	var h: Dictionary = houses[i]
@@ -2910,7 +3127,7 @@ func _apply_trait_effects(i: int) -> void:
 			}])
 
 func _apply_legitimacy_effects(i: int) -> void:
-	if i != player or int(houses[i]["legitimacy"]) >= 40:
+	if not is_human_house(i) or int(houses[i]["legitimacy"]) >= 40:
 		return
 	for j in opinion.size():
 		if j == i:
@@ -3146,8 +3363,7 @@ func blockade(province_id: String, house_index: int = -1) -> Dictionary:
 		var battle := _naval_battle(fleet, hi, defending_fleet, defender)
 		battle_text = str(battle.get("msg", ""))
 		if not bool(battle.get("won", false)):
-			if hi == player or defender == player:
-				note("Seeschlacht vor %s: %s" % [target["name"], battle_text])
+			_note_for_houses([hi, defender], "Seeschlacht vor %s: %s" % [target["name"], battle_text])
 			return _res(false, battle_text)
 	target["blockade"] = BLOCKADE_MONTHS
 	target["blockade_owner"] = hi
@@ -3159,11 +3375,10 @@ func blockade(province_id: String, house_index: int = -1) -> Dictionary:
 		houses[defender]["gold"] = int(houses[defender]["gold"]) - loot
 		h["gold"] = int(h["gold"]) + loot
 	h["prestige"] = int(h["prestige"]) + 3
-	if hi == player or defender == player:
-		var prefix := ""
-		if battle_text != "":
-			prefix = battle_text + " "
-		note("%sDie Küste von %s wird blockiert (%d Monate, %d Gold Beute)." % [prefix, target["name"], BLOCKADE_MONTHS, loot])
+	var prefix := ""
+	if battle_text != "":
+		prefix = battle_text + " "
+	_note_for_houses([hi, defender], "%sDie Küste von %s wird blockiert (%d Monate, %d Gold Beute)." % [prefix, target["name"], BLOCKADE_MONTHS, loot])
 	return _res(true, "Küste von %s blockiert." % target["name"])
 
 func _defending_fleet(province_id: String, house_index: int) -> Dictionary:
@@ -3217,8 +3432,7 @@ func _sink_fleet(house_index: int, fleet: Dictionary) -> void:
 			kept.append(item)
 	houses[house_index]["fleets"] = kept
 	_clear_blockades(house_index)
-	if house_index == player:
-		note("Die eigene Flotte ist versenkt worden.")
+	_note_for_house(house_index, "Die eigene Flotte ist versenkt worden.")
 
 func _clear_blockades(house_index: int) -> void:
 	for p in provinces:
@@ -3250,8 +3464,7 @@ func _tick_naval() -> void:
 		p["blockade"] = months
 		if months <= 0:
 			_release_blockade(p)
-			if blockader == player or target_owner == player:
-				note("Die Blockade von %s endet." % str(p["name"]))
+			_note_for_houses([blockader, target_owner], "Die Blockade von %s endet." % str(p["name"]))
 			continue
 		var loot: int = mini(3 + int(p.get("dev", 1)), int(houses[target_owner]["gold"]))
 		if loot > 0:
@@ -3271,8 +3484,7 @@ func _apply_fleet_upkeep(i: int) -> void:
 		else:
 			fleet["morale"] = maxi(0, int(fleet.get("morale", 100)) - 20)
 			fleet["ships"] = maxi(0, int(fleet.get("ships", 0)) - 1)
-			if i == player:
-				note("Der Flottenunterhalt ist nicht bezahlt; Schiffe desertieren.")
+			_note_for_house(i, "Der Flottenunterhalt ist nicht bezahlt; Schiffe desertieren.")
 			if int(fleet["ships"]) > 0:
 				kept.append(fleet)
 	h["fleets"] = kept
@@ -3330,8 +3542,7 @@ func _capture_province(province_id: String, new_owner: int) -> void:
 				"reason": "Belagerungsschaden",
 			}])
 			break
-	if new_owner == player:
-		note("Die Belagerung nimmt %s ein." % p["name"])
+	_note_for_house(new_owner, "Die Belagerung nimmt %s ein." % p["name"])
 
 func make_peace(target_house: int, house_index: int = -1) -> Dictionary:
 	var hi: int = player if house_index < 0 else house_index
@@ -3749,7 +3960,117 @@ func snapshot() -> Dictionary:
 	data_state["scandal"] = scandal
 	data_state["custom"] = custom_start
 	data_state["victory"] = victory
+	data_state["event_instance"] = _event_instance
+	if not human_houses.is_empty():
+		_store_player_context()
+		data_state["lan_human_houses"] = human_houses.duplicate()
+		if _lan_projection:
+			data_state["lan_projection"] = true
+			data_state.erase("lan_contexts")
+		else:
+			data_state["lan_contexts"] = _player_contexts.duplicate(true)
+			data_state.erase("lan_projection")
 	return SaveGameScript.make_current(data_state)
+
+func snapshot_for_player(index: int) -> Dictionary:
+	if index < 0 or index >= houses.size() or (not human_houses.is_empty() and not human_houses.has(index)):
+		return {}
+	var previous_player := player
+	select_player_context(index)
+	var out := snapshot()
+	select_player_context(previous_player)
+	out.erase("lan_contexts")
+	if not human_houses.is_empty():
+		out["lan_projection"] = true
+	return out
+
+func _valid_personal_context(context, house_count: int) -> bool:
+	if not context is Dictionary:
+		return false
+	for key in ["event_timer", "event_instance", "scandal"]:
+		if not _whole_number(context.get(key)) or int(context[key]) < 0 or int(context[key]) > 1000000000:
+			return false
+	if not context.get("game_over") is bool or not context.get("victory") is bool:
+		return false
+	var opinions = context.get("opinion")
+	if not opinions is Array or opinions.size() != house_count:
+		return false
+	for value in opinions:
+		if not _whole_number(value) or absi(int(value)) > 1000000000:
+			return false
+	var pending = context.get("pending")
+	if not pending is String:
+		return false
+	if pending != "":
+		var known := false
+		for event in data.events():
+			if str(event["id"]) == pending:
+				known = true
+				break
+		if not known or int(context["event_instance"]) < 1:
+			return false
+	var saved_cooldowns = context.get("cooldowns")
+	if not saved_cooldowns is Dictionary or saved_cooldowns.size() > 256:
+		return false
+	for key in saved_cooldowns:
+		if not key is String or key.length() > 128 or not _whole_number(saved_cooldowns[key]) or int(saved_cooldowns[key]) < 0 or int(saved_cooldowns[key]) > 1000000000:
+			return false
+	var saved_captive = context.get("captive")
+	if not saved_captive is Dictionary:
+		return false
+	if not saved_captive.is_empty():
+		if not _whole_number(saved_captive.get("house")) or int(saved_captive["house"]) < 0 or int(saved_captive["house"]) >= house_count:
+			return false
+		if not saved_captive.get("name") is String or str(saved_captive["name"]).length() > 256 or not ["m", "f"].has(saved_captive.get("gender")):
+			return false
+		if not _whole_number(saved_captive.get("months")) or int(saved_captive["months"]) < 0 or int(saved_captive["months"]) > 24:
+			return false
+	var lines = context.get("log")
+	if not lines is Array or lines.size() > 10:
+		return false
+	for line in lines:
+		if not line is String or line.length() > 2048:
+			return false
+	var points = context.get("history")
+	if not points is Array or points.size() > 240:
+		return false
+	for point in points:
+		if not point is Dictionary:
+			return false
+		for key in ["t", "gold", "prestige", "legitimacy", "army", "dev"]:
+			if not _whole_number(point.get(key)):
+				return false
+	return true
+
+func _valid_lan_state(state: Dictionary) -> bool:
+	if state.has("event_instance") and (not _whole_number(state["event_instance"]) or int(state["event_instance"]) < 0):
+		return false
+	if not state.has("lan_human_houses"):
+		return not state.has("lan_contexts") and not state.has("lan_projection")
+	var ids = state["lan_human_houses"]
+	var house_count: int = state["houses"].size()
+	if not _whole_number(state.get("player")) or int(state["player"]) < 0 or int(state["player"]) >= house_count:
+		return false
+	if not ids is Array or not _valid_human_ids(ids, house_count):
+		return false
+	var active: Dictionary = {}
+	for key in ["opinion", "cooldowns", "captive", "scandal", "pending", "event_timer", "event_instance", "game_over", "victory", "history", "log"]:
+		active[key] = state.get(key)
+	if not _valid_personal_context(active, house_count):
+		return false
+	if state.has("lan_projection"):
+		var active_is_human := false
+		for index in ids:
+			if int(index) == int(state["player"]):
+				active_is_human = true
+		return state["lan_projection"] is bool and state["lan_projection"] == true and not state.has("lan_contexts") and active_is_human
+	var contexts = state.get("lan_contexts")
+	if not contexts is Dictionary or contexts.size() != house_count:
+		return false
+	for i in house_count:
+		if not _valid_personal_context(contexts.get(str(i)), house_count):
+			return false
+	return SaveGameScript.state_equal(active, contexts[str(int(state["player"]))])
 
 func restore(d: Dictionary) -> bool:
 	var migration: Dictionary = SaveGameScript.migrate(d)
@@ -3757,6 +4078,8 @@ func restore(d: Dictionary) -> bool:
 		note("Spielstand nicht ladbar: " + "; ".join(migration.get("errors", [])))
 		return false
 	var state: Dictionary = migration["data"]
+	if not _valid_lan_state(state):
+		return false
 	var saved_houses: Array = state.get("houses", [])
 	if saved_houses.is_empty():
 		note("Spielstand enthält kein Haus.")
@@ -3767,7 +4090,7 @@ func restore(d: Dictionary) -> bool:
 
 	extra_state = {}
 	for key in state.keys():
-		if SaveGameScript.REQUIRED_TOP_LEVEL.has(str(key)):
+		if SaveGameScript.REQUIRED_TOP_LEVEL.has(str(key)) or ["lan_human_houses", "lan_contexts", "lan_projection", "event_instance"].has(str(key)):
 			continue
 		var extra = state[key]
 		if extra is Dictionary or extra is Array:
@@ -3786,6 +4109,10 @@ func restore(d: Dictionary) -> bool:
 	custom_start = bool(state.get("custom", false))
 	scandal = int(state.get("scandal", 0))
 	victory = bool(state.get("victory", false))
+	_event_instance = int(state.get("event_instance", 0))
+	human_houses = []
+	_player_contexts = {}
+	_lan_projection = bool(state.get("lan_projection", false))
 	log_lines = []
 	for line in state.get("log", []):
 		log_lines.append(str(line))
@@ -3845,6 +4172,8 @@ func restore(d: Dictionary) -> bool:
 		for ev in data.events():
 			if ev["id"] == pid:
 				pending_event = ev
+				# Alte Einzelspielstände besitzen noch keine Ereignisinstanz.
+				_event_instance = maxi(1, _event_instance)
 				break
 	history = _clean_series(state.get("history", []))
 	var raw_house_history = state.get("house_history", [])
@@ -3853,4 +4182,14 @@ func restore(d: Dictionary) -> bool:
 		for series in raw_house_history:
 			house_history.append(_clean_series(series))
 	_ensure_history()
+	if state.has("lan_human_houses"):
+		for index in state["lan_human_houses"]:
+			human_houses.append(int(index))
+		if not _lan_projection:
+			_player_contexts = (state["lan_contexts"] as Dictionary).duplicate(true)
+			_load_player_context(_player_contexts[str(player)])
+		else:
+			_store_player_context()
+			for index in houses.size():
+				_ensure_player_context(index)
 	return true

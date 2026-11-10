@@ -8,7 +8,7 @@ Der Atlas umfasst Länge −12 bis 52° und Breite 33 bis 72° im Kartenraum 120
 |---|---:|
 | country | 70 |
 | district | 4521 |
-| local_admin | 19222 |
+| local_admin | 19695 |
 | municipality | 114761 |
 | region | 997 |
 | Städte (GeoNames) | 23463 |
@@ -179,6 +179,7 @@ Die folgende Tabelle nennt den tatsächlich benutzten Stand und den SHA-256 der 
 | [osm-RU-admin8-20261109T200006Z](https://overpass-api.de/api/interpreter) | 2026-11-09T20:00:06Z | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 14964 | `f2155225323b8522efe6a1540ce318f6c7a47afbed3e0f36443d371a04ff7746` |
 | [osm-TR-admin7-20261109T200006Z](https://overpass-api.de/api/interpreter) | 2026-11-09T20:00:06Z | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 14964 | `979decd1e763b18d6cb8efae1dd5aabb63d9f64f1ec79a7547e34b208ba4733e` |
 | [osm-TR-admin8-20261109T200006Z](https://overpass-api.de/api/interpreter) | 2026-11-09T20:00:06Z | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 14964 | `0ec5624cbb1cd78bb659954a3296c8634aa775838d9e70b34b926c121e65024a` |
+| [sakarya-original-mahalle-20240515](https://veri.sakarya.bel.tr/dataset/67faf6a1-18d6-440c-89ed-7c5374edf70e/resource/eede1456-63d4-4fc9-805d-cfc435158995/download/mahalle-snrlar-kmz-verileri.kmz) | 2024-05-15 | [Sakarya Açık Veri Lisansı (original terms snapshot)](https://veri.sakarya.bel.tr/license) | 4487547 | `19e3cf53fecea10bf0d07355973f1ca18f28f9e6987aebdee18028c4824d575e` |
 | [atlas-terminal-authorities](https://github.com/chaotiKKK/kronen-und-kriege/blob/main/data/atlas_terminal_authorities.json) | 2026-11-09 | [Nicht anwendbar: eigene Strukturmetadaten; amtliche Rechtstexte werden nur verlinkt]() | 5335 | `dd1b24db8e9b3ff4c798c2a3149ea2be921c9f1560fd38e103276c12d4fb3c50` |
 
 BKG-Quellenvermerk: © BKG (2026), dl-de/by-2-0; projiziert, auf Landflächen begrenzt und vereinfacht. [Datenquellen](https://sgx.geodatenzentrum.de/web_public/gdz/datenquellen/datenquellen_vg_nuts.pdf). Der verwendete freie WFS dokumentiert Stand 01.01.2025; neuere getrennte Downloadprodukte wurden nicht damit vermischt.
@@ -202,8 +203,8 @@ Der Python-Test umfasst zehn gezielte Pipelinefälle und vier Prüfungen des vol
 
 | Builddatei | Bytes | SHA-256 |
 |---|---:|---|
-| `data/atlas.json` | 99101714 | `9d3e7aa80cf0497d6aea940748a887b84fad78081d8382b2fefb65b395a60cfc` |
-| `data/atlas_geometry.bin` | 57445584 | `42e529cb7495d58029ecb949f38f6d2499568b116b74b14c7e49a6b423b72d83` |
+| `data/atlas.json` | 99841251 | `38379a047444092c35ee42cd7b533888b3d04a8a2fdf0868d2a88594054ed398` |
+| `data/atlas_geometry.bin` | 57514576 | `5a81d924bda6d587de0d6c37de255d09974a910d90cbf1251b35a740fe597815` |
 
 ## Landesweise Abdeckung lokaler Verwaltung
 
@@ -276,7 +277,7 @@ Die Prozentwerte messen echte lokale Flächen gegen eine unabhängige Landrefere
 | SM | San Marino | 99.22 % | Prüfwert erreicht | istat-italy-enclave-SM-2023 |
 | SY | Syrien | 99.61 % | Prüfwert erreicht | natural-earth-countries |
 | TN | Tunesien | 97.61 % | Prüfwert erreicht | natural-earth-countries |
-| TR | Türkei | 55.59 % | Quellprüfung offen | natural-earth-countries |
+| TR | Türkei | 55.60 % | Quellprüfung offen | natural-earth-countries |
 | UA | Ukraine | 99.40 % | Prüfwert erreicht | natural-earth-countries |
 | VA | Vatikanstadt | entfällt (Strukturklassifikation) | Gebietsweite Verwaltung ohne zusätzliche Kommunalgliederung | natural-earth-countries |
 | WSB | Akrotiri | 96.38 % | Prüfwert erreicht | natural-earth-countries |

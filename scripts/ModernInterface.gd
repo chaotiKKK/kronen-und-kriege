@@ -450,7 +450,7 @@ func _rebuild_sidebar() -> void:
 				section = "family"
 			elif text.contains("Hof") or text.contains("Glaube") or text == "Herrschaft":
 				section = "politics"
-			elif text.contains("speichern") or text.contains("laden") or text.contains("Forschung"):
+			elif text.contains("speichern") or text.contains("laden") or text.contains("Forschung") or text.contains("WLAN"):
 				section = "world"
 		elif child is HSeparator or (child is Label and child != main.hint_label):
 			old_box.remove_child(child)
@@ -512,8 +512,10 @@ func _rebuild_menu() -> void:
 	var period: Label = main._label("2000 v. Chr.    —    2200 n. Chr.\n4200 Jahre alternative Geschichte", 14, MUTED)
 	period.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	timeline.add_child(period)
-	for entry in [["Neues Spiel", main._show_newgame], ["Spiel laden", main._load_from_title], ["Optionen", main._show_options], ["Beenden", main._quit_game]]:
+	for entry in [["Neues Spiel", main._show_newgame], ["Gemeinsam im WLAN", main._show_lan_menu], ["Spiel laden", main._load_from_title], ["Optionen", main._show_options], ["Beenden", main._quit_game]]:
 		var button: Button = main._button(str(entry[0]), entry[1])
+		if str(entry[0]) == "Gemeinsam im WLAN":
+			button.name = "LanEntryButton"
 		button.custom_minimum_size.y = 56
 		button.add_theme_font_size_override("font_size", 18)
 		_style_tool(button)

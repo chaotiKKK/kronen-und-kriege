@@ -1,0 +1,253 @@
+extends SceneTree
+## Externer Pakettest. Dieses Skript und die Koordinationsmarker liegen nie in res://.
+
+const EXPECTATIONS_JSON := __EXPECTATIONS_JSON__
+var expected: Dictionary = {}
+var main
+var protocol
+var checks := 0
+var failures: Array = []
+var observed: Dictionary = {}
+var acknowledgements: Array = []
+var started_ms := 0
+var finished := false
+
+func _initialize() -> void:
+	expected = JSON.parse_string(EXPECTATIONS_JSON)
+	started_ms = Time.get_ticks_msec()
+	process_frame.connect(_watchdog)
+	call_deferred("_run")
+
+func _run() -> void:
+	var role: String = expected.role
+	var profile: String = str(expected.profile).replace("\\", "/").to_lower()
+	var user_dir := OS.get_user_data_dir().replace("\\", "/").to_lower()
+	_check(user_dir.begins_with(profile + "/"), "Benutzerdaten verlassen das exklusive Testprofil: " + user_dir)
+	_check(not FileAccess.file_exists("user://spielstand.json"), "Frisches Profil enthält bereits einen Einzelspielerspielstand.")
+	_check(not FileAccess.file_exists("user://lan_partie.json"), "Frisches Profil enthält bereits einen WLAN-Spielstand.")
+	_check(str(ProjectSettings.get_setting("application/config/version", "")) == str(expected.version), "Eingebettete Projektversion stimmt nicht.")
+	_check(FileAccess.get_sha256(OS.get_executable_path()) == str(expected.exe_sha256), "Die gestartete EXE stimmt nicht mit dem eingefrorenen SHA-256 überein.")
+	_check(not DirAccess.dir_exists_absolute("res://tests"), "Tests wurden versehentlich in das Spielpaket exportiert.")
+	_check(not DirAccess.dir_exists_absolute("res://tools"), "Werkzeuge wurden versehentlich in das Spielpaket exportiert.")
+	_check(OS.get_cmdline_user_args().has("--lan-release-run-id=" + str(expected.run_id)), "Der Prozess besitzt nicht die erwartete Laufkennung.")
+	_check(OS.get_cmdline_user_args().has("--lan-release-role=" + role), "Der Prozess besitzt nicht die erwartete Rolle.")
+	if not failures.is_empty():
+		_finish()
+		return
+	protocol = load("res://scripts/LanProtocol.gd")
+	var scene = load("res://scenes/Main.tscn")
+	if not _check(protocol != null and scene is PackedScene, "Produktiver Main- oder Protokollcode fehlt im Paket."):
+		_finish()
+		return
+	main = scene.instantiate()
+	root.add_child(main)
+	await process_frame
+	await process_frame
+	if not _check(main.lan_session != null and main.lan_menu != null and main.kernel != null and main.map_view != null, "Die tatsächliche Main-Szene besitzt keine vollständige WLAN-Oberfläche."):
+		_finish()
+		return
+	main.lan_session.discovery_enabled = false
+	main.lan_session.command_finished.connect(func(result: Dictionary): acknowledgements.append(result.duplicate(true)))
+	main.lan_menu.nickname.text = "Paket-Host" if role == "host" else "Paket-Gast"
+	main.lan_menu.room_name.text = "Paketprüfung " + str(expected.run_id).substr(0, 8)
+	main.lan_menu.port_box.value = int(expected.port)
+	main._show_lan_menu()
+	if role == "host":
+		await _host_case()
+	else:
+		await _guest_case()
+	_finish()
+
+func _host_case() -> void:
+	var session = main.lan_session
+	main.lan_menu.house_picker.select(0)
+	main.lan_menu.host_button.pressed.emit()
+	if not _check(session.phase == "lobby" and session.is_host and session.local_peer_id == 1, "Produktiver Hostbutton öffnet keine echte Lobby."):
+		return
+	_write_marker("listening")
+	var both_ready := func():
+		if session.players.size() != 2:
+			return false
+		for peer in session.players:
+			if not bool(session.players[peer].ready):
+				return false
+		return true
+	if not await _until(both_ready, "Zwei reale bereite Sitze"):
+		return
+	_check(session.players.size() == 2, "Host besitzt nicht genau zwei reale Spieler.")
+	main.lan_menu.start_button.pressed.emit()
+	if not await _until(func(): return session.phase == "playing" and main.game != null, "Start über den Main-Lobbybutton"):
+		return
+	_check_references(0)
+	_check(main.game.speed == 0, "Paketpartie startet nicht pausiert.")
+	var host_capital := str(main.game.houses[0].capital)
+	var guest_capital := str(main.game.houses[1].capital)
+	var host_gold := int(main.game.houses[0].gold)
+	var guest_gold := int(main.game.houses[1].gold)
+	var host_dev := int(main.game.province(host_capital).dev)
+	var guest_dev := int(main.game.province(guest_capital).dev)
+	main._on_province_selected(host_capital)
+	var result: Dictionary = main._dispatch({"id":"develop"})
+	_check(bool(result.get("ok", false)), "Eigener Hostausbau wurde im Main-Pfad abgewiesen.")
+	_check(int(main.game.houses[0].gold) == host_gold - 50 and int(main.game.province(host_capital).dev) == host_dev + 1, "Hostausbau wurde nicht genau einmal berechnet.")
+	_check(int(main.game.houses[1].gold) == guest_gold, "Hostausbau belastete das Gasthaus.")
+	_write_marker("built")
+	if not await _until(func(): return int(main.game.houses[1].gold) == guest_gold - 50 and int(main.game.province(guest_capital).dev) == guest_dev + 1, "Echter Gastausbau beim Host"):
+		return
+	if not await _until(func(): return _marker_exists("guest", "actions-complete"), "Gast hat echte Bestätigungen und Ablehnung beobachtet"):
+		return
+	_check_references(0)
+	_check(int(main.game.houses[0].gold) == host_gold - 50 and int(main.game.province(host_capital).dev) == host_dev + 1, "Abgewiesener Gastbefehl veränderte das Hosthaus.")
+	_capture_world()
+	_write_marker("world-ready")
+	if not await _until(func(): return _marker_exists("guest", "observed"), "Gast hat denselben endgültigen Paketstand beobachtet"):
+		return
+	if not await _until(func(): return session.players.size() == 1, "Geordnetes Ende des echten Gastprozesses"):
+		return
+	_check(main.game.speed == 0, "Host läuft nach Gastende weiter.")
+	_check(str(observed.world_hash) == str(protocol.world_hash(main.game.snapshot())), "Gastende veränderte die eingefrorene Welt.")
+	session.close_session("Isolierte Paketprüfung abgeschlossen.")
+
+func _guest_case() -> void:
+	var session = main.lan_session
+	main.lan_menu.address.text = "127.0.0.1"
+	main.lan_menu.join_button.pressed.emit()
+	if not await _until(func(): return session.phase == "lobby" and session.local_peer_id > 1, "Echter Gastbeitritt über Main"):
+		return
+	main.lan_menu.house_picker.select(1)
+	main.lan_menu.house_picker.item_selected.emit(1)
+	main.lan_menu.ready_button.pressed.emit()
+	if not await _until(func(): return session.phase == "playing" and main.game != null, "Gast erhielt produktiven Startsnapshot"):
+		return
+	_check_references(1)
+	_check(not main.start_layer.visible and not main.lan_menu.visible, "Gast bleibt nach dem Start im Titel oder in der Lobby.")
+	_check(main.game.speed == 0, "Gastpartie startet nicht pausiert.")
+	if not await _until(func(): return _marker_exists("host", "built"), "Host hat eigene Main-Aktion abgeschlossen"):
+		return
+	var host_capital := str(main.game.houses[0].capital)
+	var guest_capital := str(main.game.houses[1].capital)
+	var base_houses: Array = main.DataScript.houses()
+	var base_provinces: Array = main.DataScript.provinces()
+	var base_host_dev := -1
+	for province in base_provinces:
+		if str(province.id) == host_capital:
+			base_host_dev = int(province.dev)
+	if not await _until(func(): return int(main.game.houses[0].gold) == int(base_houses[0].gold) - 50 and int(main.game.province(host_capital).dev) == base_host_dev + 1, "Hostausbau kam als echter Gast-Snapshot an"):
+		return
+	_check_references(1)
+	var guest_gold := int(main.game.houses[1].gold)
+	var guest_dev := int(main.game.province(guest_capital).dev)
+	main._on_province_selected(guest_capital)
+	var previous_acks := acknowledgements.size()
+	var result: Dictionary = main._dispatch({"id":"develop"})
+	_check(bool(result.get("ok", false)) and session.pending_command, "Gastausbau wurde nicht als ausstehender echter Befehl versendet.")
+	if not await _until(func(): return acknowledgements.size() > previous_acks and not session.pending_command and int(main.game.houses[1].gold) == guest_gold - 50, "Gast erhielt echte Hostbestätigung und neuen Main-Snapshot"):
+		return
+	var success: Dictionary = acknowledgements[-1]
+	var success_text := str(success.get("message", ""))
+	_check(bool(success.get("ok", false)) and not success_text.is_empty(), "Host bestätigte eigenen Gastausbau nicht erfolgreich.")
+	_check(int(main.game.province(guest_capital).dev) == guest_dev + 1, "Gastausbau erhöhte die Entwicklung nicht genau einmal.")
+	_check(main.hint_label.text.contains(success_text) and not main.hint_label.text.contains("gesendet"), "Echte Gastbestätigung fehlt im sichtbaren Main-Hinweis.")
+	_check_references(1)
+	_check(str(main.selected) == guest_capital and str(main.map_view.selected) == guest_capital, "Gast-Snapshot verlor die lokale Provinzauswahl.")
+	observed["accepted_message"] = success_text
+	var before_hash := str(protocol.world_hash(main.game.snapshot()))
+	main._on_province_selected(host_capital)
+	previous_acks = acknowledgements.size()
+	result = main._dispatch({"id":"develop"})
+	_check(bool(result.get("ok", false)), "Bewusst ungültiger Gastbefehl erreichte den Transport nicht.")
+	if not await _until(func(): return acknowledgements.size() > previous_acks and not session.pending_command, "Gast erhielt echte Ablehnung des fremden Provinzbefehls"):
+		return
+	var rejection: Dictionary = acknowledgements[-1]
+	var rejection_text := str(rejection.get("message", ""))
+	_check(not bool(rejection.get("ok", true)) and not rejection_text.is_empty(), "Fremde Hostprovinz wurde akzeptiert oder ohne Begründung abgewiesen.")
+	_check(main.hint_label.text.contains(rejection_text) and not main.hint_label.text.contains("gesendet"), "Die tatsächliche Hostablehnung fehlt im sichtbaren Gasthinweis.")
+	_check(str(protocol.world_hash(main.game.snapshot())) == before_hash, "Abgewiesener fremder Provinzbefehl änderte die Paketwelt.")
+	_check(int(main.game.houses[1].gold) == guest_gold - 50, "Abgewiesener Befehl kostete den Gast weiteres Gold.")
+	observed["rejected_message"] = rejection_text
+	observed["rejected_hint"] = str(main.hint_label.text)
+	_write_marker("actions-complete")
+	if not await _until(func(): return _marker_exists("host", "world-ready"), "Host hat endgültigen tatsächlichen Paketstand eingefroren"):
+		return
+	_check_references(1)
+	_capture_world()
+	_write_marker("observed")
+	session.close_session("Gast der Paketprüfung ist fertig.")
+
+func _check_references(house: int) -> void:
+	_check(main.game == main.lan_session.game and main.kernel.game == main.game and main.map_view.game == main.game, "Main, Session, Kernel oder Karte verwendet einen alten Snapshot.")
+	_check(int(main.game.player) == house and main.lan_session.local_house() == house, "Persönliche Paketperspektive gehört zum falschen Haus.")
+	_check(main.kernel.top_modal() == "game", "Nach dem Start blieb ein unerwartetes Modal aktiv.")
+
+func _capture_world() -> void:
+	observed["world_hash"] = str(protocol.world_hash(main.game.snapshot()))
+	observed["revision"] = int(main.lan_session.revision)
+	observed["personal_house"] = int(main.game.player)
+	observed["local_peer_id"] = int(main.lan_session.local_peer_id)
+	observed["month_index"] = int(main.game.calendar_index())
+	observed["house_gold"] = [int(main.game.houses[0].gold), int(main.game.houses[1].gold)]
+	observed["capital_development"] = [int(main.game.province(str(main.game.houses[0].capital)).dev), int(main.game.province(str(main.game.houses[1].capital)).dev)]
+	observed["references_current"] = main.game == main.lan_session.game and main.kernel.game == main.game and main.map_view.game == main.game
+
+func _until(condition: Callable, stage: String) -> bool:
+	var deadline := Time.get_ticks_msec() + int(expected.phase_timeout_ms)
+	while not finished and Time.get_ticks_msec() < deadline:
+		if condition.call():
+			return true
+		if main != null and main.lan_session.phase == "disconnected":
+			_check(false, stage + ": Verbindung beendet: " + str(main.lan_session.status))
+			return false
+		await create_timer(0.025).timeout
+	_check(false, "Zeitüberschreitung: " + stage)
+	return false
+
+func _marker_exists(role: String, stage: String) -> bool:
+	var path := str(expected.output) + "/" + role + "-" + stage + ".json"
+	if not FileAccess.file_exists(path):
+		return false
+	var marker = JSON.parse_string(FileAccess.get_file_as_string(path))
+	return marker is Dictionary and marker.get("run_id") == expected.run_id and marker.get("role") == role and marker.get("stage") == stage
+
+func _write_marker(stage: String) -> void:
+	_write_json(str(expected.output) + "/" + str(expected.role) + "-" + stage + ".json", {
+		"run_id":expected.run_id, "role":expected.role, "stage":stage,
+		"pid":OS.get_process_id(), "elapsed_ms":Time.get_ticks_msec() - started_ms})
+
+func _write_json(path: String, value: Dictionary) -> void:
+	var temporary := path + ".tmp-" + str(OS.get_process_id())
+	var file := FileAccess.open(temporary, FileAccess.WRITE)
+	if file == null:
+		_check(false, "Testbeleg konnte nicht geschrieben werden: " + path)
+		return
+	file.store_string(JSON.stringify(value, "\t") + "\n")
+	file.close()
+	_check(DirAccess.rename_absolute(temporary, path) == OK, "Testbeleg konnte nicht abgeschlossen werden: " + path)
+
+func _watchdog() -> void:
+	if not finished and Time.get_ticks_msec() - started_ms > int(expected.overall_timeout_ms):
+		_check(false, "Gesamtfrist der isolierten Paketprüfung überschritten.")
+		_finish()
+
+func _check(ok: bool, message: String) -> bool:
+	checks += 1
+	if not ok:
+		failures.append(message)
+		print("PACKAGED_LAN_SMOKE FAIL: " + message)
+	return ok
+
+func _finish() -> void:
+	if finished:
+		return
+	finished = true
+	var report := {"stage":"packaged-lan-main-smoke", "run_id":expected.get("run_id", ""),
+		"role":expected.get("role", ""), "pid":OS.get_process_id(),
+		"version":str(ProjectSettings.get_setting("application/config/version", "")),
+		"exe":OS.get_executable_path(), "exe_sha256":expected.get("exe_sha256", ""),
+		"checks":checks, "failures":failures.duplicate(), "observed":observed,
+		"user_data":OS.get_user_data_dir(), "elapsed_ms":Time.get_ticks_msec() - started_ms,
+		"real_android_wlan_verified":false}
+	if main != null:
+		main.lan_session.close_session("Isolierte Paketprüfung beendet.")
+	_write_json(str(expected.output) + "/" + str(expected.role) + "-result.json", report)
+	print("PACKAGED_LAN_SMOKE %s; role=%s; pid=%d; %d Prüfungen." % ["OK" if failures.is_empty() else "FAIL", expected.get("role", ""), OS.get_process_id(), checks])
+	quit(0 if failures.is_empty() else 1)

@@ -36,6 +36,11 @@ mkdir -p "$LOGDIR"
 
 # Logik- und UI-Tests ohne Renderpfad.
 HEADLESS=(
+	LanProtocolTest
+	LanAuthorityTest
+	LanGameStateTest
+	LanTransportTest
+	LanMainIntegrationTest
 	AtlasCoverageSemanticsTest
 	AtlasDataTest
 	CampaignTest
@@ -70,6 +75,7 @@ HEADLESS=(
 # Suiten, die einen echten Viewport brauchen.
 # CourtShotTest gehört ebenfalls hierher; es war zuvor nicht registriert.
 WINDOWED=(
+	LanUiTest
 	AtlasIntegrationTest
 	EventChoiceTest
 	MaterialThemeTest
@@ -222,7 +228,7 @@ run_suite() {
 	local count=""
 	if grep -Eqi '\<(skip|skipped|pending|todo|ignored)\>' "$log"; then
 		reason="Log enthält skip/pending/todo/ignored"
-	elif grep -Eq 'SCRIPT ERROR|FAIL:' "$log"; then
+	elif grep -Eq '(^|[[:space:]])ERROR:|SCRIPT ERROR|FAIL:' "$log"; then
 		reason="Log enthält Fehler-/FAIL-Marker"
 	elif ! grep -Eq 'OK[:;.]|OK$' "$log"; then
 		reason="Log enthält keine Erfolgszeile"

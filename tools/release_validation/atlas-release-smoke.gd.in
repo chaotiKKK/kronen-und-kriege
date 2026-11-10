@@ -103,6 +103,16 @@ func _run() -> void:
 		if expected.sources.has(str(source.get("id", ""))):
 			actual_sources[str(source.id)] = source
 	_check(actual_sources == expected.sources, "Qualified and quarantined source metadata changed in runtime")
+	var sakarya: Dictionary = actual_sources.get("sakarya-original-mahalle-20240515", {})
+	var sakarya_count := 0
+	for feature in atlas.features:
+		if feature.get("source") == "sakarya-original-mahalle-20240515":
+			sakarya_count += 1
+	_check(sakarya_count == 662, "Exactly 662 admitted Sakarya originals must be embedded")
+	for identifier in sakarya.get("replaces_feature_ids", []):
+		_check(atlas.lookup(str(identifier)).is_empty(), "Replaced Sakarya fallback remains: " + str(identifier))
+	for identifier in sakarya.get("retained_fallback_feature_ids", []):
+		_check(not atlas.lookup(str(identifier)).is_empty(), "Unresolved Sakarya fallback was removed: " + str(identifier))
 	for country in expected.coverage:
 		_check(atlas.coverage_for_country(country) == expected.coverage[country], "Runtime coverage flag/note mismatch: " + country)
 	_check(actual_sources.get("gbOpen-IRN-ADM4", {}).get("administrative_geometry_eligible", true) == false,

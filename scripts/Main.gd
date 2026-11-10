@@ -12,6 +12,8 @@ const UiKernelScript = preload("res://scripts/UiKernel.gd")
 const ViewModelBuilder = preload("res://scripts/ViewModelBuilder.gd")
 const AcceptanceDriverScript = preload("res://scripts/AcceptanceDriver.gd")
 const ModernInterfaceScript = preload("res://scripts/ModernInterface.gd")
+const LanSessionScript = preload("res://scripts/LanSession.gd")
+const LanMenuScript = preload("res://scripts/LanMenu.gd")
 
 const TEX_CARD = preload("res://assets/ui/card.png")
 const TEX_BUTTON = preload("res://assets/ui/button.png")
@@ -38,6 +40,9 @@ const INK_SOFT := Color("afbfca")
 const CREAM := Color("edf3f5")
 
 var game
+var lan_session
+var lan_menu
+var lan_game_menu_button: Button
 var kernel
 var map_view
 var map_mode_buttons: Dictionary = {}
@@ -209,6 +214,7 @@ var quit_layer: Control
 var quit_status: Label
 var _cli_resolution_locked := false
 var accum: float = 0.0
+var _lan_last_month := -1
 var stat_values := {"martial": 6, "diplomacy": 6, "stewardship": 6, "intrigue": 6}
 var stat_labels := {}
 var stat_points: int = 20
@@ -231,6 +237,17 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless":
 		_load_audio()
 	_build()
+	lan_session = LanSessionScript.new(DataScript)
+	lan_session.name = "BangerQueensLan"
+	add_child(lan_session)
+	lan_menu = LanMenuScript.new()
+	add_child(lan_menu)
+	lan_menu.install(self, lan_session)
+	lan_session.game_started.connect(_on_lan_started)
+	lan_session.game_updated.connect(_on_lan_updated)
+	lan_session.status_changed.connect(_on_lan_status)
+	lan_session.lobby_changed.connect(_on_lan_lobby)
+	lan_session.command_finished.connect(_on_lan_command_finished)
 	var modern = ModernInterfaceScript.new()
 	modern.install(self)
 	_show_start()
@@ -264,7 +281,66 @@ func _notification(what: int) -> void:
 		get_tree().quit()
 
 func _exit_tree() -> void:
+	if lan_session != null:
+		lan_session.close_session("Das Spiel wurde beendet.")
 	_stop_audio()
+
+func _lan_active() -> bool:
+	return lan_session != null and lan_session.phase != "idle"
+
+func _show_lan_menu() -> void:
+	if lan_menu != null:
+		lan_menu.show_menu()
+
+func _on_lan_started() -> void:
+	game = lan_session.game
+	_lan_last_month = game.calendar_index()
+	kernel.bind_game(game)
+	kernel.set_base_modal("game")
+	selected = ""
+	map_view.select("")
+	for layer in [start_layer, newgame_layer, create_layer, pick_layer, tree_layer, rule_layer,
+		court_layer, faith_layer, custom_layer, event_layer, over_layer]:
+		if layer != null:
+			layer.visible = false
+	lan_menu.visible = false
+	accum = 0.0
+	refresh()
+
+func _on_lan_updated() -> void:
+	if lan_session.game != null:
+		game = lan_session.game
+		kernel.game = game
+		var month_index: int = game.calendar_index()
+		var annual_save: bool = lan_session.is_host and lan_session.phase == "playing" and bool(settings.get("autosave", false)) and game.month == 1 and _lan_last_month >= 0 and month_index > _lan_last_month
+		_lan_last_month = month_index
+		if annual_save:
+			var saved: Dictionary = lan_session.save_host()
+			lan_session.status = "WLAN-Partie automatisch gespeichert." if saved.ok else str(saved.message)
+		refresh()
+
+func _on_lan_command_finished(result: Dictionary) -> void:
+	if not str(result.get("message", "")).is_empty():
+		lan_session.status = str(result.message)
+	refresh()
+	lan_menu.refresh()
+
+func _on_lan_status() -> void:
+	if _lan_active() and hint_label != null:
+		hint_label.text = "WLAN · " + lan_session.status
+	if lan_session != null and (lan_session.phase == "disconnected" or lan_session.needs_lobby_return()) and lan_menu != null:
+		lan_menu.show_menu()
+
+func _on_lan_lobby() -> void:
+	if lan_session != null and lan_session.phase == "lobby" and not start_layer.visible and lan_menu != null:
+		lan_menu.show_menu()
+
+func _lan_editor_blocked() -> bool:
+	if not _lan_active():
+		return false
+	lan_session.status = "Während der WLAN-Partie bleiben Herrschereditor und Wappengenerator geschlossen."
+	_on_lan_status()
+	return true
 
 func _load_audio() -> void:
 	ambient_player = AudioStreamPlayer.new()
@@ -896,6 +972,9 @@ func _build() -> void:
 	side_box.add_child(_button("Herrschaft", _show_rule, "crown"))
 	side_box.add_child(_button("Spiel speichern", func(): _dispatch({"id": "save"}), "scroll"))
 	side_box.add_child(_button("Spielstand laden", func(): _dispatch({"id": "load"}), "scroll"))
+	lan_game_menu_button = _button("WLAN-Lobby", _show_lan_menu, "")
+	lan_game_menu_button.visible = false
+	side_box.add_child(lan_game_menu_button)
 	_build_rule_layer()
 	_build_court_layer()
 	_build_faith_layer()
@@ -2064,6 +2143,8 @@ func _on_identity_gui_input(event: InputEvent) -> void:
 		_open_customizer()
 
 func _open_customizer() -> void:
+	if _lan_editor_blocked():
+		return
 	if game == null or game.game_over:
 		return
 	kernel.push_modal("customizer")
@@ -2180,6 +2261,8 @@ func _custom_cancel() -> void:
 	_close_customizer(true)
 
 func _open_banner_generator() -> void:
+	if _lan_editor_blocked():
+		return
 	if game == null or game.game_over or banner_generator == null:
 		return
 	if banner_generator.visible:
@@ -2316,6 +2399,9 @@ func _quit_game() -> void:
 		_finish_quit()
 
 func _show_start() -> void:
+	_hide_event()
+	if _lan_active():
+		lan_session.close_session("Zurück zum Hauptmenü.")
 	for c in start_box.get_children():
 		c.queue_free()
 	var all_houses: Array = DataScript.houses()
@@ -2369,6 +2455,9 @@ func _update_points() -> void:
 		stat_labels[k].text = str(stat_values[k])
 
 func _create_begin() -> void:
+	_hide_event()
+	if _lan_active():
+		lan_session.close_session("Einzelspieler gestartet.")
 	var ruler: String = edit_ruler.text.strip_edges()
 	if ruler == "":
 		ruler = "Ari"
@@ -2406,6 +2495,9 @@ func _create_begin() -> void:
 	refresh()
 
 func _start(index: int) -> void:
+	_hide_event()
+	if _lan_active():
+		lan_session.close_session("Einzelspieler gestartet.")
 	game = GameScript.new(DataScript, index)
 	game.speed = clampi(int(settings["start_speed"]), 0, 3)
 	kernel.bind_game(game)
@@ -2525,6 +2617,22 @@ func _set_speed(value: int) -> void:
 	_dispatch({"id": "set_speed", "value": value})
 
 func _dispatch(command: Dictionary) -> Dictionary:
+	if _lan_active():
+		var network_result: Dictionary
+		if command.get("id") == "save":
+			network_result = lan_session.save_host()
+		elif command.get("id") == "load":
+			network_result = {"ok":false,"code":"host_only","message":"LAN-Spielstände werden vor dem Start in der WLAN-Lobby geladen."}
+		else:
+			var intent := command.duplicate(true)
+			intent["selection"] = selected
+			if intent.get("id") == "apply_event" and game != null:
+				intent["event_instance"] = game.pending_event_instance()
+			network_result = lan_session.submit(intent)
+		if not str(network_result.get("message", "")).is_empty():
+			lan_session.status = str(network_result.message)
+		refresh()
+		return network_result
 	var result: Dictionary = kernel.dispatch(command)
 	refresh()
 	return result
@@ -2609,6 +2717,8 @@ func _refresh_tree() -> void:
 	tree_list.add_child(_label(str(vm["law"]), 11, INK_SOFT))
 
 func _write_save() -> bool:
+	if _lan_active():
+		return bool(lan_session.save_host().get("ok", false)) if lan_session.is_host else true
 	if game == null:
 		return false
 	var f := FileAccess.open("user://spielstand.json", FileAccess.WRITE)
@@ -2619,6 +2729,8 @@ func _write_save() -> bool:
 	return true
 
 func _save() -> Dictionary:
+	if _lan_active():
+		return lan_session.save_host()
 	if game == null:
 		return {"ok": false, "code": "invalid", "message": "Kein Spiel aktiv.", "delta": {}, "refresh": []}
 	if not _write_save():
@@ -2630,6 +2742,10 @@ func _save() -> Dictionary:
 	return {"ok": true, "code": "ok", "message": "Spielstand gespeichert.", "delta": {}, "refresh": []}
 
 func _load() -> bool:
+	if _lan_active():
+		lan_session.status = "LAN-Spielstände werden in der WLAN-Lobby des Gastgebers geladen."
+		_on_lan_status()
+		return false
 	if game == null:
 		return false
 	if not FileAccess.file_exists("user://spielstand.json"):
@@ -2679,7 +2795,8 @@ func _load() -> bool:
 
 func _choose(index: int) -> void:
 	_dispatch({"id": "apply_event", "option": index})
-	_hide_event()
+	if not _lan_active():
+		_hide_event()
 
 func _hide_event() -> void:
 	kernel.pop_modal("event")
@@ -2703,6 +2820,7 @@ func refresh() -> void:
 		var b: Button = speed_buttons[i]
 		b.modulate = Color.WHITE
 		b.set_pressed_no_signal(int(vm["speed"]) == i)
+		b.disabled = _lan_active() and (not lan_session.is_host or lan_session.phase != "playing")
 
 	var custom_tex := _house_crest_texture(h)
 	if custom_tex != null:
@@ -2740,7 +2858,9 @@ func refresh() -> void:
 	var log_lines: PackedStringArray = str(vm["log"]).split("\n")
 	log_label.text = str(log_lines[log_lines.size() - 1]) if not log_lines.is_empty() else ""
 	log_label.tooltip_text = str(vm["log"])
-	if bool(vm["has_event"]) and not event_layer.visible:
+	if _lan_active() and not bool(vm["has_event"]) and event_layer.visible:
+		_hide_event()
+	if bool(vm["has_event"]) and not event_layer.visible and not (_lan_active() and lan_menu.visible):
 		_show_event()
 	if tree_layer.visible:
 		_refresh_tree()
@@ -2751,6 +2871,10 @@ func refresh() -> void:
 	if faith_layer != null and faith_layer.visible:
 		_refresh_faith()
 	over_layer.visible = bool(vm["game_over"])
+	if _lan_active():
+		over_layer.visible = lan_session.all_houses_over
+	if lan_game_menu_button != null:
+		lan_game_menu_button.visible = _lan_active()
 	_refresh_province_side()
 	_refresh_province_page()
 	_refresh_infrastructure()
@@ -2758,6 +2882,8 @@ func refresh() -> void:
 		get_meta("modern_interface").refresh_summary()
 	if chronicle_layer != null and chronicle_layer.visible:
 		_fill_chronicle()
+	if _lan_active():
+		_on_lan_status()
 
 func _build_infrastructure_layer() -> void:
 	infrastructure_layer = Control.new()
@@ -4009,6 +4135,10 @@ func _show_event() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		var top: String = kernel.top_modal()
+		if top == "lan":
+			lan_menu.hide_menu()
+			get_viewport().set_input_as_handled()
+			return
 		if top == "game" and has_meta("modern_interface") and get_meta("modern_interface").map_focus:
 			get_meta("modern_interface").set_map_focus(false)
 			get_viewport().set_input_as_handled()
@@ -4105,6 +4235,8 @@ func _text_input_active() -> bool:
 	return focus is LineEdit or focus is TextEdit
 
 func _process(delta: float) -> void:
+	if _lan_active():
+		return
 	if game == null or game.game_over:
 		return
 	if game.pending_event != null and bool(settings["pause_events"]):

@@ -25,9 +25,10 @@ SOURCE_IDS = (
     "geofabrik-JO-Ruwaished-terminal-20261108",
     "geofabrik-IR-Dehestan-20261108",
     "DLS-SBA-overlapping-local-areas-2024-CYSTAT20260609",
+    "sakarya-original-mahalle-20240515",
     "gbOpen-IRN-ADM4",
 )
-SAMPLE_COUNTRIES = ("CY", "CYN", "JO", "IR", "ESB")
+SAMPLE_COUNTRIES = ("CY", "CYN", "JO", "IR", "ESB", "TR")
 SAMPLE_SOURCE_BY_COUNTRY = dict(zip(SAMPLE_COUNTRIES, SOURCE_IDS[:-1], strict=True))
 SBA_SOURCE_ID = SAMPLE_SOURCE_BY_COUNTRY["ESB"]
 FORBIDDEN = {"reference", "tests", "tools", "docs", ".tools", "build", "preview"}
@@ -36,6 +37,15 @@ FORBIDDEN = {"reference", "tests", "tools", "docs", ".tools", "build", "preview"
 def require(condition, message):
     if not condition:
         raise ValueError(message)
+
+
+def require_lan_permissions(badging):
+    permissions = ['android.permission.' + name for name in (
+        'INTERNET', 'ACCESS_NETWORK_STATE', 'ACCESS_WIFI_STATE', 'CHANGE_WIFI_MULTICAST_STATE')]
+    for permission in permissions:
+        require(re.search(r"^uses-permission: name='" + re.escape(permission) + r"'", badging, re.M),
+                'Actual APK LAN permission missing: ' + permission)
+    return permissions
 
 
 def digest(raw):
@@ -130,6 +140,15 @@ def prepare(args):
                for path in sorted((project / "data").iterdir()) if path.suffix in (".json", ".bin")}
     source_features = {identifier: [f for f in atlas["features"] if f.get("source") == identifier]
                        for identifier in SOURCE_IDS}
+    sakarya = selected['sakarya-original-mahalle-20240515']
+    sakarya_features = source_features[sakarya['id']]
+    feature_ids = {f['id'] for f in atlas['features']}
+    require(len(sakarya_features) == 662 and all(f['country'] == 'TR' and f['kind'] == 'local_admin' for f in sakarya_features),
+            'Expected exactly 662 original Sakarya local-admin features')
+    require(len(sakarya['replaces_feature_ids']) == 189 and not feature_ids.intersection(sakarya['replaces_feature_ids']),
+            'Expected exactly 189 removed Sakarya fallback identities')
+    require(len(sakarya['retained_fallback_feature_ids']) == 9 and set(sakarya['retained_fallback_feature_ids']) <= feature_ids,
+            'The nine unresolved Sakarya fallback identities must remain')
     sba_source = selected[SBA_SOURCE_ID]
     sba_features = source_features[SBA_SOURCE_ID]
     require(sba_source.get("country") == "ESB" and sba_source.get("scope_countries") == ["ESB"], "Additive SBA source must have ESB-only scope")
@@ -144,6 +163,7 @@ def prepare(args):
     expectations = {
         "version": actual_version,
         "android_version_code": args.android_code,
+        "lan_enabled": args.with_lan,
         "files": records,
         "feature_count": len(atlas["features"]),
         "kind_counts": dict(Counter(f["kind"] for f in atlas["features"])),
@@ -235,6 +255,8 @@ def static(args):
     certificate = re.search(r"Signer #1 certificate SHA-256 digest: ([0-9a-f]+)", signature)
     require(certificate is not None, "APK signer certificate digest missing")
     badging = sdk_run("apk-badging", [build_tools / "aapt.exe", "dump", "badging", args.apk.resolve()])
+    if frozen.get('lan_enabled'):
+        report['android_lan_permissions'] = require_lan_permissions(badging)
     require(re.search(r"^package: name='org\.example\.kronen' versionCode='" + str(frozen["android_version_code"]) + r"' versionName='" + re.escape(frozen["version"]) + "'", badging, re.M),
             "APK package name/versionCode/versionName differ from frozen release")
     for expression in (r"^sdkVersion:'24'", r"^targetSdkVersion:'35'", r"^launchable-activity: name='com\.godot\.game\.GodotApp'", r"^native-code: 'arm64-v8a' 'armeabi-v7a'"):
@@ -259,6 +281,7 @@ def main():
     prep.add_argument("--output", type=Path, required=True)
     prep.add_argument("--version", default="1.6.1")
     prep.add_argument("--android-code", type=int, default=10)
+    prep.add_argument("--with-lan", action="store_true")
     check = commands.add_parser("static")
     check.add_argument("--frozen", type=Path, required=True)
     check.add_argument("--exe", type=Path, required=True)

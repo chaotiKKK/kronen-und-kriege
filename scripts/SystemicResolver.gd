@@ -71,9 +71,7 @@ func _read(host, effect: Dictionary):
 			return int(province.get("levy", 0))
 		"opinion":
 			var index: int = int(effect.get("index", -1))
-			if index >= 0 and index < host.opinion.size():
-				return int(host.opinion[index])
-			return 0
+			return host.opinion_value(house_index, index)
 		"vassal_opinion":
 			var vassals: Array = host.houses[house_index].get("vassals", [])
 			var vassal_index: int = int(effect.get("index", -1))
@@ -99,7 +97,7 @@ func _read(host, effect: Dictionary):
 		"heir":
 			return str(host.houses[house_index].get("heir", ""))
 		"scandal":
-			return int(host.scandal)
+			return host.scandal_value(house_index)
 		"dev":
 			return int(host.province(str(effect.get("province", ""))).get("dev", 0))
 		"defense":
@@ -152,8 +150,8 @@ func _write(host, effect: Dictionary, before):
 			var index: int = int(effect.get("index", -1))
 			if index < 0 or index >= host.opinion.size():
 				return before
-			host.opinion[index] = clampi(int(before) + amount, -100, 100)
-			return int(host.opinion[index])
+			host.set_opinion_value(house_index, index, clampi(int(before) + amount, -100, 100))
+			return host.opinion_value(house_index, index)
 		"vassal_opinion":
 			var vassals: Array = host.houses[house_index].get("vassals", [])
 			var vassal_index: int = int(effect.get("index", -1))
@@ -198,8 +196,8 @@ func _write(host, effect: Dictionary, before):
 		"heir":
 			return _write_heir(host, house_index)
 		"scandal":
-			host.scandal = maxi(0, int(before) + amount)
-			return int(host.scandal)
+			host.set_scandal_value(house_index, maxi(0, int(before) + amount))
+			return host.scandal_value(house_index)
 		"dev":
 			var dev_province: Dictionary = host.province(str(effect.get("province", "")))
 			if dev_province.is_empty():

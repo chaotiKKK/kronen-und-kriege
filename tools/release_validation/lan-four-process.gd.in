@@ -1,0 +1,242 @@
+extends SceneTree
+## Quellnachweis mit vier echten Prozessen; kein Paket- oder Androidnachweis.
+
+const EXPECTATIONS_JSON := __EXPECTATIONS_JSON__
+var expected: Dictionary = {}
+var session
+var protocol
+var data
+var acknowledgements: Array = []
+var failures: Array = []
+var checks := 0
+var started_ms := 0
+var finished := false
+var observed: Dictionary = {}
+
+func _initialize() -> void:
+	expected = JSON.parse_string(EXPECTATIONS_JSON)
+	started_ms = Time.get_ticks_msec()
+	process_frame.connect(_watchdog)
+	call_deferred("_run")
+
+func _run() -> void:
+	var user_dir := OS.get_user_data_dir().replace("\\", "/").to_lower()
+	var profile := str(expected.profile).replace("\\", "/").to_lower()
+	_check(user_dir.begins_with(profile + "/"), "Benutzerdaten verlassen das exklusive Rollenprofil.")
+	_check(ProjectSettings.globalize_path("res://").replace("\\", "/").trim_suffix("/").to_lower() == str(expected.project).to_lower(), "Der Prozess verwendet nicht das eingefrorene Quellprojekt.")
+	_check(str(ProjectSettings.get_setting("application/config/version", "")) == str(expected.version), "Quellprojektversion stimmt nicht.")
+	_check(OS.get_cmdline_user_args().has("--lan-four-run-id=" + str(expected.run_id)), "Prozess besitzt nicht die eigene Laufkennung.")
+	_check(OS.get_cmdline_user_args().has("--lan-four-role=" + str(expected.role)), "Prozess besitzt nicht die eigene Rolle.")
+	_check(not FileAccess.file_exists("user://spielstand.json") and not FileAccess.file_exists("user://lan_partie.json"), "Neues Rollenprofil enthält bereits einen Spielstand.")
+	for path in expected.source_sha256:
+		_check(FileAccess.get_sha256(str(path)) == str(expected.source_sha256[path]), "Geladener Quellstand weicht vom eingefrorenen Skript ab: " + str(path))
+	if not failures.is_empty():
+		_finish()
+		return
+	data = load("res://scripts/Data.gd")
+	protocol = load("res://scripts/LanProtocol.gd")
+	var session_script = load("res://scripts/LanSession.gd")
+	if not _check(data != null and protocol != null and session_script != null, "Produktive LAN-/Data-Skripte konnten nicht geladen werden."):
+		_finish()
+		return
+	session = session_script.new(data, str(expected.test_fingerprint))
+	session.discovery_enabled = false
+	root.add_child(session)
+	session.command_finished.connect(func(result: Dictionary): acknowledgements.append(result.duplicate(true)))
+	if expected.role == "host":
+		await _host_case()
+	else:
+		await _guest_case()
+	_finish()
+
+func _host_case() -> void:
+	var opened: Dictionary = session.host("Vier echte Prozesse", "Host", 0, int(expected.port))
+	if not _check(bool(opened.get("ok", false)) and session.phase == "lobby" and session.local_peer_id == 1, "Echter Hostlistener wurde nicht geöffnet."):
+		return
+	_write_marker("listening")
+	var all_ready := func():
+		if session.players.size() != 4:
+			return false
+		for peer in session.players:
+			if not bool(session.players[peer].ready):
+				return false
+		return true
+	if not await _until(all_ready, "Vier getrennte bereite ENet-Sitze"):
+		return
+	_check_unique_seats()
+	var result: Dictionary = session.start_match()
+	if not _check(bool(result.get("ok", false)) and session.phase == "playing", "Host konnte vier tatsächliche Teilnehmer nicht starten."):
+		return
+	_check(session.game.speed == 0 and session.game.calendar_index() == 0, "Die gemeinsame Simulation startete nicht unverändert pausiert.")
+	await _develop_own_house()
+	_write_marker("built")
+	if not await _until(func(): return _all_four_developed(), "Host bestätigt alle vier tatsächlichen Ausbauten"):
+		return
+	if not await _until(func(): return _marker_exists("guest1", "built") and _marker_exists("guest2", "built") and _marker_exists("guest3", "built"), "Alle drei Gäste haben ihre echten ACKs beobachtet"):
+		return
+	_capture_world()
+	_write_marker("world-ready")
+	if not await _until(func(): return _marker_exists("guest1", "world-observed") and _marker_exists("guest2", "world-observed") and _marker_exists("guest3", "world-observed"), "Alle vier Prozesse haben den endgültigen Weltstand beobachtet"):
+		return
+	_write_marker("finish-approved")
+	if not await _until(func(): return session.players.size() == 1, "Drei Gastprozesse beenden ihre eigenen Verbindungen"):
+		return
+	_check(session.game.speed == 0 and session.game.calendar_index() == 0, "Beim geordneten Gastende lief unerwartet Simulationszeit.")
+	_check(str(protocol.world_hash(session.game.snapshot())) == str(observed.world_hash), "Gastende veränderte die gemeinsam bestätigte Welt.")
+
+func _guest_case() -> void:
+	var joined: Dictionary = session.join("127.0.0.1", str(expected.role), int(expected.port))
+	if not _check(bool(joined.get("ok", false)), "Gast konnte den echten ENet-Verbindungsversuch nicht starten."):
+		return
+	if not await _until(func(): return session.phase == "lobby", "Gast wurde in die tatsächliche Lobby aufgenommen"):
+		return
+	var chosen: Dictionary = session.choose_house(int(expected.house))
+	_check(bool(chosen.get("ok", false)), "Gast konnte sein eigenes Haus nicht anfordern.")
+	if not await _until(func(): return session.local_house() == int(expected.house), "Eigener Haussitz wurde vom Host bestätigt"):
+		return
+	var ready: Dictionary = session.set_ready(true)
+	_check(bool(ready.get("ok", false)), "Gast konnte Bereitschaft nicht anfordern.")
+	if not await _until(func(): return session.players.has(session.local_peer_id) and bool(session.players[session.local_peer_id].ready), "Eigene Bereitschaft wurde vom Host bestätigt"):
+		return
+	_write_marker("ready")
+	if not await _until(func(): return session.phase == "playing" and session.game != null, "Gast erhält den echten gemeinsamen Startsnapshot"):
+		return
+	_check_unique_seats()
+	_check(session.game.speed == 0 and session.game.calendar_index() == 0, "Gast sah vor dem ersten Befehl unerwarteten Zeitfortschritt.")
+	if not await _until(func(): return _marker_exists("host", "built"), "Host hat seinen tatsächlichen Eigenbefehl ausgeführt"):
+		return
+	await _develop_own_house()
+	_write_marker("built")
+	if not await _until(func(): return _marker_exists("host", "world-ready") and _all_four_developed(), "Alle vier tatsächlichen Ausbauten sind im Gast-Snapshot angekommen"):
+		return
+	_capture_world()
+	_write_marker("world-observed")
+	if not await _until(func(): return _marker_exists("host", "finish-approved"), "Alle vier Prozesse haben ihre unabhängigen Beobachtungen abgeschlossen"):
+		return
+
+func _develop_own_house() -> void:
+	var house := int(expected.house)
+	_check(session.local_house() == house and int(session.game.player) == house, "Die persönliche Perspektive gehört nicht zum erwarteten Haus.")
+	var capital := str(session.game.houses[house].capital)
+	var gold := int(session.game.houses[house].gold)
+	var development := int(session.game.province(capital).dev)
+	var previous_acks := acknowledgements.size()
+	var result: Dictionary = session.submit({"id":"develop", "selection":capital})
+	_check(bool(result.get("ok", false)), "Eigener Ausbau wurde nicht über die produktive Befehlsverarbeitung angenommen.")
+	if not await _until(func(): return acknowledgements.size() == previous_acks + 1 and not session.pending_command and int(session.game.houses[house].gold) == gold - 50 and int(session.game.province(capital).dev) == development + 1, "Genau eine echte Bestätigung und genau einmal 50 Gold Ausbaukosten"):
+		return
+	var ack: Dictionary = acknowledgements[-1]
+	_check(bool(ack.get("ok", false)), "Die tatsächliche Hostantwort weist den Eigenbefehl ab.")
+	_check(int(session.game.houses[house].gold) == gold - 50, "Eigenbefehl kostet nicht exakt 50 Gold.")
+	_check(int(session.game.province(capital).dev) == development + 1, "Eigenbefehl verändert Entwicklung nicht exakt einmal.")
+	_check(session.game.speed == 0 and session.game.calendar_index() == 0, "Während eines Befehls lief unerwartet Simulationszeit.")
+	observed["own_command"] = {"capital":capital, "gold_before":gold, "gold_after":int(session.game.houses[house].gold),
+		"development_before":development, "development_after":int(session.game.province(capital).dev),
+		"ack_count":acknowledgements.size() - previous_acks, "ack_ok":bool(ack.get("ok", false)), "ack_message":str(ack.get("message", ""))}
+
+func _all_four_developed() -> bool:
+	if session.game == null:
+		return false
+	var base_houses: Array = data.houses()
+	var base_provinces: Array = data.provinces()
+	for house in 4:
+		var capital := str(base_houses[house].capital)
+		var base_dev := -1
+		for province in base_provinces:
+			if str(province.id) == capital:
+				base_dev = int(province.dev)
+				break
+		if int(session.game.houses[house].gold) != int(base_houses[house].gold) - 50 or int(session.game.province(capital).dev) != base_dev + 1:
+			return false
+	return true
+
+func _check_unique_seats() -> void:
+	_check(session.players.size() == 4, "Die gemeinsame Partie besitzt nicht vier tatsächliche Sitzzuweisungen.")
+	var chosen: Array = []
+	for peer in session.players:
+		chosen.append(int(session.players[peer].house))
+	chosen.sort()
+	_check(chosen == [0, 1, 2, 3], "Die vier Teilnehmer besitzen keine vier eindeutigen Häuser.")
+	_check(session.local_peer_id == 1 if expected.role == "host" else session.local_peer_id > 1, "Gast- und Hostpeerkennung wurden verwechselt.")
+
+func _capture_world() -> void:
+	_check(_all_four_developed(), "Persönlicher Weltstand enthält nicht alle vier genau einmaligen Ausbauten.")
+	_check(session.game.speed == 0 and session.game.calendar_index() == 0, "Endgültiger Weltstand enthält unerlaubten Zeitfortschritt.")
+	_check(session.revision == 5, "Start und genau vier Spielbefehle ergeben nicht genau fünf Weltrevisionen.")
+	observed["world_hash"] = str(protocol.world_hash(session.game.snapshot()))
+	observed["revision"] = int(session.revision)
+	observed["personal_house"] = int(session.game.player)
+	observed["local_peer_id"] = int(session.local_peer_id)
+	observed["month_index"] = int(session.game.calendar_index())
+	observed["speed"] = int(session.game.speed)
+	var gold: Array = []
+	var development: Array = []
+	for house in 4:
+		gold.append(int(session.game.houses[house].gold))
+		development.append(int(session.game.province(str(session.game.houses[house].capital)).dev))
+	observed["house_gold"] = gold
+	observed["capital_development"] = development
+
+func _until(condition: Callable, stage: String) -> bool:
+	var deadline := Time.get_ticks_msec() + int(expected.phase_timeout_ms)
+	while not finished and Time.get_ticks_msec() < deadline:
+		if condition.call():
+			return true
+		if session != null and session.phase == "disconnected":
+			_check(false, stage + ": " + str(session.status))
+			return false
+		await create_timer(0.025).timeout
+	_check(false, "Zeitüberschreitung: " + stage)
+	return false
+
+func _marker_exists(role: String, stage: String) -> bool:
+	var path := str(expected.output) + "/" + role + "-" + stage + ".json"
+	if not FileAccess.file_exists(path):
+		return false
+	var marker = JSON.parse_string(FileAccess.get_file_as_string(path))
+	return marker is Dictionary and marker.get("run_id") == expected.run_id and marker.get("role") == role and marker.get("stage") == stage
+
+func _write_marker(stage: String) -> void:
+	_write_json(str(expected.output) + "/" + str(expected.role) + "-" + stage + ".json", {
+		"run_id":expected.run_id, "role":expected.role, "stage":stage,
+		"pid":OS.get_process_id(), "elapsed_ms":Time.get_ticks_msec() - started_ms})
+
+func _write_json(path: String, value: Dictionary) -> void:
+	var temporary := path + ".tmp-" + str(OS.get_process_id())
+	var file := FileAccess.open(temporary, FileAccess.WRITE)
+	if file == null:
+		_check(false, "Quellnachweis kann nicht geschrieben werden: " + path)
+		return
+	file.store_string(JSON.stringify(value, "\t") + "\n")
+	file.close()
+	_check(DirAccess.rename_absolute(temporary, path) == OK, "Quellnachweis kann nicht abgeschlossen werden: " + path)
+
+func _watchdog() -> void:
+	if not finished and Time.get_ticks_msec() - started_ms > int(expected.overall_timeout_ms):
+		_check(false, "Gesamtfrist des Vier-Prozesse-Quellnachweises überschritten.")
+		_finish()
+
+func _check(ok: bool, message: String) -> bool:
+	checks += 1
+	if not ok:
+		failures.append(message)
+		print("LAN_FOUR_PROCESS_SMOKE FAIL: " + message)
+	return ok
+
+func _finish() -> void:
+	if finished:
+		return
+	finished = true
+	var report := {"stage":"source-lan-four-process-smoke", "run_id":expected.get("run_id", ""),
+		"role":expected.get("role", ""), "pid":OS.get_process_id(), "exe":OS.get_executable_path(),
+		"version":str(ProjectSettings.get_setting("application/config/version", "")),
+		"engine_version":str(Engine.get_version_info().get("string", "")), "engine_sha256":expected.get("engine_sha256", ""),
+		"test_fingerprint_override":expected.get("test_fingerprint", ""),
+		"checks":checks, "failures":failures.duplicate(), "observed":observed,
+		"user_data":OS.get_user_data_dir(), "elapsed_ms":Time.get_ticks_msec() - started_ms,
+		"package_verified":false, "real_android_wlan_verified":false}
+	if session != null:
+		session.close_session("Vier-Prozesse-Quellnachweis abgeschlossen.")
+	_write_json(str(expected.output) + "/" + str(expected.role) + "-result.json", report)
+	print("LAN_FOUR_PROCESS_SMOKE %s; role=%s; pid=%d; %d Prüfungen." % ["OK" if failures.is_empty() else "FAIL", expected.get("role", ""), OS.get_process_id(), checks])
+	quit(0 if failures.is_empty() else 1)

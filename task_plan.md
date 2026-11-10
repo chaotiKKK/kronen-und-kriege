@@ -40,7 +40,7 @@ Alle im Kartenrechteck vorhandenen Gebiete sollen echte, vergleichbar detaillier
 
 ## Next Step
 
-Geprüfter Zwischenstand: Version 1.6.1; Veröffentlichungsstand unter https://github.com/chaotiKKK/kronen-und-kriege/releases/tag/v1.6.1. Für weitere reale Abdeckung benötigen AZ/CNM/IL/KZ/LB/LY/MA/TR die im 15-Gebiete-Audit konkret bezeichneten fehlenden Primärgeometrien beziehungsweise Rollen-/Nutzungsbelege.
+Den unabhängig geprüften 1.7.0-Stand samt finaler EXE/APK und Prüfsummen auf GitHub veröffentlichen und serverseitige Assetdigests prüfen. LAN-Implementierung, 427 Python-Tests, 47 Godot-Suiten/32.043 Prüfungen und reale Windows-Paketprozesse sind abgeschlossen. Die acht offenen Gesamtgebiete bleiben konkrete externe Quellen-/Geometrieaufgaben; reale Android-WLAN-Abnahme bleibt offen.
 
 ## Errors Encountered
 
@@ -53,3 +53,7 @@ Geprüfter Zwischenstand: Version 1.6.1; Veröffentlichungsstand unter https://g
 | Minifiziertes atlas.json als ganze ersteZeile ausgegeben | Get-Content -TotalCount begrenzt Zeilen, nichtBytes | Große JSON-Dateien ausschließlich perParser gezielt projizieren |
 | JO-CLI UnicodeEncodeError | Windows-Standardkonsole cp1252 | ASCII-sicheres JSON amCLI-Ausgang und UTF-8-Dateien |
 | JO-Neucachewiederherstellung .read-Attributfehler | RangeSource-Vertrag hat.fetch | FrischerCache-Regressionstest und gezielteMethodenkorrektur |
+
+## Neue Fortsetzung: acht Quellenfälle und WLAN
+
+Auftrag vom10.November2026: neue belastbare Quellen für die acht offenen Gebiete und echter WLAN-Mehrspielermodus. Architektur/Plan unter docs/superpowers/specs/2026-11-10-lan-multiplayer-design.md und docs/superpowers/plans/2026-11-10-lan-multiplayer.md. Userautonomie gilt. Root besitzt Netz/UI/Main/Integration, Game-Worker isoliert persönliche Zustände; zwei getrennte Quellenworker suchen andere Primärwege. Nur koordinierte einzelne Godot-/Build-/Exportslots.

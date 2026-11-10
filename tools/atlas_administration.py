@@ -194,6 +194,66 @@ def _replace_reference_features(features, item, row):
             feature["parent_id"] = item["id"]
 
 
+def _replace_exact_local_features(features, sources):
+    """Replace only named, admitted local units after validating every pair.
+
+    This separate contract deliberately cannot remove whole country sources.
+    The original fallback remains unless its actual successor and evidence
+    survived normalization, scope filtering and feature creation.
+    """
+    index = {feature['id']: feature for feature in features}
+    replacements = {}
+    successors = {}
+    for source in sources:
+        declared = source.get('replaces_feature_ids', [])
+        if not declared:
+            continue
+        evidence = source.get('feature_replacement_evidence', [])
+        if (source.get('replacement_scope') != 'feature'
+                or source.get('kind') not in {'municipality', 'local_admin'}
+                or not isinstance(declared, list) or not all(isinstance(x, str) for x in declared)
+                or len(set(declared)) != len(declared) or not isinstance(evidence, list)
+                or len(evidence) != len(declared)):
+            raise ValueError('Unqualified exact local replacement declaration')
+        evidenced = set()
+        for proof in evidence:
+            target = proof.get('replaces_feature_id')
+            successor = proof.get('source_unit_id')
+            old, new = index.get(target), index.get(successor)
+            urls = proof.get('evidence_urls')
+            if (target not in declared or target in evidenced or target in replacements
+                    or not old or not new or target == successor
+                    or new.get('source') != source['id']
+                    or old.get('source') != f"geofabrik-{source['country']}-admin8-{source['kind']}"
+                    or old.get('country') != source['country'] or new.get('country') != source['country']
+                    or old.get('kind') != source['kind'] or new.get('kind') != source['kind']
+                    or old.get('parent_id') != proof.get('parent_id')
+                    or new.get('parent_id') != proof.get('parent_id')
+                    or not proof.get('identity_method')
+                    or new.get('original_source_id') != proof.get('original_source_id')
+                    or not isinstance(urls, list) or not urls
+                    or not all(isinstance(url, str) and url.startswith('https://') for url in urls)
+                    or new.get('replaces_feature_ids') != [target]):
+                raise ValueError(f'Missing, ambiguous or unrelated exact replacement: {target}')
+            evidenced.add(target)
+            replacements[target] = successor
+            successors[successor] = new
+        if evidenced != set(declared):
+            raise ValueError('Exact replacement evidence does not match declared targets')
+    actual = {f['id']: f.get('replaces_feature_ids', []) for f in features if f.get('replaces_feature_ids')}
+    if set(actual) != set(successors):
+        raise ValueError('Undeclared admitted local feature replacement')
+    # Mutation begins only after the complete contract was validated.
+    for successor, new in successors.items():
+        new['replaced_feature_ids'] = list(actual[successor])
+    features[:] = [feature for feature in features if feature['id'] not in replacements]
+    for feature in features:
+        if feature.get('parent_id') in replacements:
+            feature['replaced_source_parent_id'] = feature['parent_id']
+            feature['parent_id'] = replacements[feature['parent_id']]
+    return replacements
+
+
 def _merge_verified_aliases(features, alias_rows, geometries):
     """Coalesce only explicitly attested, independently rechecked source pairs."""
     index = {feature["id"]: feature for feature in features}
@@ -285,6 +345,7 @@ def supplement(features, pool, provinces, make_feature, country_geometries, base
         ("atlas_official_sources", "atlas_official_sources.json", 3),
         ("atlas_morocco_sources", "atlas_morocco_sources.json", 3),
         ("atlas_osm_sources", "atlas_osm_sources.json", 4),
+        ("atlas_sakarya_sources", "atlas_sakarya_sources.json", 5),
     ]
     sources, pending, batches = [], [], []
     for module_name, filename, priority in providers:
@@ -410,6 +471,12 @@ def supplement(features, pool, provinces, make_feature, country_geometries, base
         f["source"] == "natural-earth-regions" and (
             (f["country"] in frame_countries and f["kind"] != "municipality")
             or f["kind"] in regional_frames[f["country"]]))]
+    exact_replacements = _replace_exact_local_features(features, sources)
+    # Removed fallbacks must also disappear from both coverage numerators.
+    for collection in (local_shapes, trusted_local_shapes):
+        for country in collection:
+            collection[country] = [(identifier, geometry) for identifier, geometry in collection[country]
+                                   if identifier not in exact_replacements]
     _restore_territorial_parents(features, territorial_part_ids)
     removed_aliases = _merge_verified_aliases(features, alias_rows, alias_geometries)
     feature_index = {feature["id"]: feature for feature in features}
