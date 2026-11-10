@@ -40,7 +40,7 @@ Alle im Kartenrechteck vorhandenen Gebiete sollen echte, vergleichbar detaillier
 
 ## Next Step
 
-Den unabhängig geprüften 1.7.0-Stand samt finaler EXE/APK und Prüfsummen auf GitHub veröffentlichen und serverseitige Assetdigests prüfen. LAN-Implementierung, 427 Python-Tests, 47 Godot-Suiten/32.043 Prüfungen und reale Windows-Paketprozesse sind abgeschlossen. Die acht offenen Gesamtgebiete bleiben konkrete externe Quellen-/Geometrieaufgaben; reale Android-WLAN-Abnahme bleibt offen.
+Geprüfter Zwischenstand1.7.0 ist veröffentlicht: https://github.com/chaotiKKK/kronen-und-kriege/releases/tag/v1.7.0, getesteter Codecommit71884ddedcb6ac1ebc70717f13e9fc530f682e71. Der LAN-Umfang und die positiv qualifizierte Sakarya-Erweiterung sind umgesetzt. Für das Gesamtziel bleiben die konkret dokumentierten externen Quellen-/Geometriebelege in AZ/CNM/IL/KZ/LB/LY/MA/TR sowie die reale Android-WLAN-Abnahme auf zwei Geräten offen.
 
 ## Errors Encountered
 

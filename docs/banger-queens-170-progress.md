@@ -171,3 +171,7 @@ einen neuen Ausgabepfad, wenn bereits eine Datei existiert.
 Sichtbare Prüfungen erhalten die Position des aktuell rechten Bildschirms.
 Die Paket-Smoke-Skripte verwenden frische Profile und beenden ausschließlich
 an EXE, Helperskript, Laufkennung, Rolle und Startzeit erkannte eigene Prozesse.
+
+## Veröffentlichung
+
+Die [öffentliche Testfassung v1.7.0](https://github.com/chaotiKKK/kronen-und-kriege/releases/tag/v1.7.0) enthält EXE, APK und Prüfsummen. Tag und getesteter Quellstand zeigen auf `71884ddedcb6ac1ebc70717f13e9fc530f682e71`. GitHub bestätigt die Größen und SHA-256-Digests aller drei Assets; Release-ID439980564, draft=false, prerelease=true. Lokaler Beleg: `build/verify/release-170-publication-receipt.json`. Die acht Quellenfälle und reale Android-WLAN-Abnahme bleiben ausdrücklich offen.
