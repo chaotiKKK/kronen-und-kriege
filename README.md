@@ -4,6 +4,8 @@ Eigenständige Grand Strategy für **Android und Windows**, gebaut mit Godot 4.5
 
 **Entwicklungsstand 1.6.1:** geografischer Referenzatlas mit echten Verwaltungsgrenzen, lesbaren Ortsnamen und Flüssen. Der geprüfte Bestand enthält 70 Länder-/Gebietsobjekte, 997 regionale und 4521 Kreis-/Bezirksflächen sowie 114761 kommunale Darstellungsflächen und 19222 weitere lokale Verwaltungsflächen. Deutschland enthält 16 Länder, 400 Kreise, 10.751 Gemeinden und 198 gemeindefreie Gebiete. Dazu kommen 23.463 GeoNames-Orte und 175 Flussgruppen. Frankreich, Italien, Spanien und das Vereinigte Königreich erhalten ihre tatsächlichen oberen Regionalebenen. Sieben der zuvor 15 offenen Gebiete erfüllen nun das begrenzte fachliche Prüfkriterium; **acht bleiben offen**. [Vorher-/Nachher-Bericht](docs/atlas-remaining-15-audit.md). **Die durchgehend vergleichbare Gesamtabdeckung bleibt teilweise offen**; die Quellenanzeige nennt tatsächliche Datenstände und jede landesweise Lücke. Natural Earth II liefert den geografischen Geländeuntergrund auf 4800×3040 Pixeln.
 
+Der [ergänzende amtliche Quellenabgleich für Libyen und Israel](docs/atlas-open-source-followups.md) dokumentiert zusätzliche ausgeschlossene Treffer und die konkret noch fehlenden Grenzbelege. Produktdaten und Pakete von 1.6.1 bleiben dabei unverändert.
+
 Der Atlas zeigt **Europa und Nachbargebiete**. Heutige Ortsnamen und Verwaltungsgrenzen dienen der geografischen Orientierung; sie werden im Spiel als „Referenzatlas“ bezeichnet. Die bestehenden **49 Spielgebiete** bilden weiterhin Wirtschaft, Eigentum, Krieg und Speicherstände ab. Die zusätzlichen Gemeinden sind kartografische Details. Historische Gebietswechsel über alle Epochen und eine vollständig auf Gemeinden aufgeteilte Simulation sind weitere Ausbauschritte. AAA bleibt das gestalterische Ziel; der aktuelle Stand belegt noch keine vollständige AAA- oder Weltkommunensimulation.
 
 **Bedienung:** Orts- und Regionensuche mit antippbaren Treffern, Zoom bis 64× und „Karte groß“ für zusätzliche Kartenfläche; ESC stellt die normale Ansicht wieder her. Kreise erscheinen ab 6×, Gemeinden ab 24× und erst bei mindestens 256 Pixel² projizierter Begrenzungsfläche. Ortsnamen werden priorisiert und kollisionsgeprüft statt auf wenige Pixel verkleinert: mindestens 13 Canvas-Pixel bei 100 % und 26 bei 200 % Textgröße. Suchtreffer und Quellen stehen in begrenzten schwebenden Rollbereichen. [Quellen und Datenstände](docs/atlas-sources.md), [Raster-Herkunft](data/atlas_terrain_source.json), [Atlas-Entwurf](docs/superpowers/specs/2026-11-09-atlas-design.md) und [Atlas-Prüfbericht](docs/atlas-progress.md) dokumentieren Daten, Umsetzung und den jeweiligen Prüfstand.
@@ -19,6 +21,10 @@ Lokale Exportziele: `build/exports/banger-queens-1.6.1.exe` und `build/exports/b
 ![Gemeinden und Orte in der Nahansicht](preview/atlas-gemeinden.png)
 
 ![Vergrößerte Kartenansicht](preview/atlas-fullscreen.png)
+
+![Geprüfte neue kommunale Detailansicht in Nordzypern, Version 1.6.1](preview/atlas-international-CYN.png)
+
+![Geprüfte Dehestan-Detailansicht im Iran, Version 1.6.1](preview/atlas-international-IR.png)
 
 ![Hauptmenü mit Walnussoberfläche](preview/holz-menue.png)
 
