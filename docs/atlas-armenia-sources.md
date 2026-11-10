@@ -1,6 +1,6 @@
 # Armenien: rechtlich geprüfte kommunale Rollen, OSM-Stand 8. November 2026
 
-Prüfdatum: 9. November 2026. Dieser Provider ergänzt echte Referenzgeografie;
+Prüfdatum: 10. November 2026. Dieser Provider ergänzt echte Referenzgeografie;
 er ändert keine der 49 Simulationskennungen. Die nachgewiesenen **62 aktuellen
 kommunalen Identitäten** sind ein Rechts-/Identitätsabgleich, keine amtliche
 Bestätigung sämtlicher Grenzkoordinaten und kein Nachweis vollständiger
@@ -101,14 +101,29 @@ Rechtsdokumente.
 
 Alle 62 aktuellen gesetzlichen Identitäten sind auf die tatsächlichen
 Quellobjekte beziehungsweise die beiden gesetzlich belegten Unionen abgebildet.
-Der geometrische Prüfwert gegen die unabhängige Natural-Earth-Länderreferenz
-beträgt dennoch nur **93,162904 %**: 27.534,198 von 29.554,894 km² des
-verwendeten Nenners. Referenz-/Küsten-/Binnengewässerabweichungen dürfen nicht
-durch erfundene Gemeindegeometrie verdeckt werden. Beide Quellen behalten
-`blocks_full_coverage_claim=true`; der Hauptbuild misst die aktuelle Abdeckung
-erneut. Dies ist ein ehrlicher partieller Flächennachweis.
+Die Neubewertung verwendet den unveränderten territorialen Staatsrahmen
+Natural Earth admin0 v5.1.2 und eine davon getrennte physische Land-/Wasserreferenz
+`ne-physical-water-AM-20261108`. Sie zieht ausschließlich unabhängig erhobene
+Wasserflächen ab; weder Gemeindegrenzen noch der nationale Gebietsrahmen wurden
+angepasst. Gegen diesen Nenner sind **97,340036 %** bedeckt: 27.417,919549 von
+28.167,155701 km². **749,236153 km²** gemessene Restdifferenz bleiben ausdrücklich
+ausgewiesen.
 
-13 gezielte Python-Tests wurden zunächst rot und anschließend grün ausgeführt.
+Der frühere Wert **93,162904 %** zählte den Sewansee im administrativen NE-Umriss
+als Land. Dieser konkrete Sperrgrund ist durch die unabhängigen physischen
+Originaldaten aufgelöst. Zusammen mit dem vollständigen aktuellen Rechts-/
+Identitätsabgleich und unveränderten gehashten Originalflächen ist damit die
+Quellenqualifizierung positiv abgeschlossen; beide Quellen tragen nun
+`blocks_full_coverage_claim=false`. Die dokumentierte Neubewertung ist an den
+genannten physischen Referenzstand gebunden. Daraus folgen weder hundertprozentige
+Flächengenauigkeit noch eine amtliche Katasterzertifizierung.
+
+Die getrennten Originaldaten, Mengen- und Rollenprüfungen der physischen
+Referenz sind im [AM/KZ/IL-Quellenaudit](atlas-AM-KZ-IL-audit.md) beschrieben.
+Die Alternative eines anderen nationalen OSM-Gebietsrahmens wurde für diese
+Freigabe ausdrücklich nicht verwendet.
+
+14 gezielte Python-Tests bestehen; die neue positive Quellenqualifizierung wurde zusätzlich mit einem beobachteten RED→GREEN-Schritt geprüft.
 Sie prüfen Gemeindespalte statt Siedlungsspalte, positive Rollen, Land-/Level-
 Widersprüche, unbekannte Einheiten, echte Fusionsunionen und Löcher, fehlende
 Fusionskomponenten, API-Member/Snapshot, Cachemanipulation und den gezielten

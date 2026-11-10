@@ -1,0 +1,208 @@
+extends SceneTree
+
+# External diagnostic: never exported into the game candidate.
+const EXPECTATIONS_JSON := __EXPECTATIONS_JSON__
+var expected: Dictionary = {}
+var failures := 0
+var checks := 0
+var main
+
+func _initialize() -> void:
+	expected = JSON.parse_string(EXPECTATIONS_JSON)
+	call_deferred("_run")
+
+func _run() -> void:
+	var started := Time.get_ticks_msec()
+	var sandbox: String = expected.sandbox
+	var user_dir := OS.get_user_data_dir().replace("\\", "/")
+	if not user_dir.to_lower().begins_with(sandbox.to_lower() + "/"):
+		_check(false, "User directory escaped the isolated profile: " + user_dir)
+		_finish()
+		return
+	_check(not FileAccess.file_exists("user://spielstand.json"), "Fresh profile already has a save file")
+	_check(str(ProjectSettings.get_setting("application/config/version")) == expected.version, "Embedded project version mismatch")
+	for path in expected.files:
+		var bytes := FileAccess.get_file_as_bytes(path)
+		var context := HashingContext.new()
+		context.start(HashingContext.HASH_SHA256)
+		context.update(bytes)
+		_check(bytes.size() == int(expected.files[path].bytes), "Embedded resource length mismatch: " + path)
+		_check(context.finish().hex_encode() == expected.files[path].sha256, "Embedded resource SHA-256 mismatch: " + path)
+	for folder in expected.forbidden_roots:
+		_check(not DirAccess.dir_exists_absolute("res://" + str(folder)), "Forbidden exported folder: " + str(folder))
+	var entry: String = ProjectSettings.get_setting("application/run/main_scene")
+	_check(entry == "res://scenes/Loading.tscn", "Unexpected real project entry scene")
+	_check(change_scene_to_file(entry) == OK, "Real Loading/Main entry could not be started")
+	for attempt in 3600:
+		await process_frame
+		if current_scene != null and current_scene.has_method("_start"):
+			main = current_scene
+			break
+		await create_timer(0.05).timeout
+	if main == null:
+		_check(false, "Real Main scene never became ready")
+		_finish()
+		return
+	await _frames()
+	await _shot("main-menu")
+	main._start(0)
+	main.game.speed = 0
+	await _frames()
+	_check(not main.start_layer.visible, "New-game action did not dismiss title menu")
+	_check(main.game != null and main.kernel.top_modal() == "game", "New-game action did not bind an active game")
+	var atlas = main.map_view.atlas_data
+	_check(atlas.features.size() == int(expected.feature_count), "Runtime feature count mismatch")
+	var country_kind_counts := {}
+	var expected_country_kind_counts := {}
+	var invalid_iran_roles := 0
+	var quarantined_features := 0
+	var sba_features := []
+	var invalid_sba_roles := 0
+	for country in expected.country_kind_counts:
+		country_kind_counts[country] = {}
+		expected_country_kind_counts[country] = {}
+		for kind in expected.country_kind_counts[country]:
+			# Godot's JSON parser uses floats; Dictionary equality compares types.
+			expected_country_kind_counts[country][kind] = int(expected.country_kind_counts[country][kind])
+	for feature in atlas.features:
+		var country: String = str(feature.get("country", ""))
+		if country_kind_counts.has(country):
+			var kind: String = feature.kind
+			country_kind_counts[country][kind] = int(country_kind_counts[country].get(kind, 0)) + 1
+		if country == "IR" and feature.kind == "local_admin":
+			if feature.source != "geofabrik-IR-Dehestan-20261108":
+				invalid_iran_roles += 1
+		if str(feature.get("source", "")) == "gbOpen-IRN-ADM4":
+			quarantined_features += 1
+		if str(feature.get("source", "")) == str(expected.sba_source_id):
+			var sba_record := {}
+			for key in ["id", "name", "original_name", "country", "kind", "source", "territorial_scope_note", "actual_unrestricted_exercise_of_powers_verified"]:
+				if feature.has(key):
+					sba_record[key] = feature[key]
+			sba_features.append(sba_record)
+			if country != "ESB" or feature.kind != "local_admin" or str(feature.get("original_name", "")) != str(feature.name):
+				invalid_sba_roles += 1
+	_check(invalid_iran_roles == 0, "IR local administration uses an unqualified source")
+	_check(quarantined_features == 0, "Quarantined historical Iranian geometry entered runtime administration")
+	_check(sba_features == expected.sba_features and sba_features.size() == 2, "Exactly two frozen SBA original features must remain present")
+	_check(invalid_sba_roles == 0, "SBA additive roles must stay ESB-only local_admin with original names; no CY/CYN import")
+	var sba_names := []
+	for feature in sba_features:
+		sba_names.append(str(feature.name))
+	sba_names.sort()
+	_check(sba_names == ["Ammochostos", "Lysi"], "SBA original names Lysi/Ammochostos changed")
+	_check(country_kind_counts == expected_country_kind_counts, "Runtime country/role inventory mismatch: actual="
+		+ JSON.stringify(country_kind_counts) + " expected=" + JSON.stringify(expected_country_kind_counts))
+	_check(int(country_kind_counts.CY.get("municipality", 0)) == 20, "CY municipality role count must be twenty")
+	_check(int(country_kind_counts.CYN.get("municipality", 0)) == 18, "CYN municipality role count must be eighteen")
+	var jordan: Dictionary = atlas.lookup("geofabrik:JO:5:13376111")
+	_check(jordan.get("kind") == "district" and jordan.get("local_government_role") == "local_admin", "JO deconcentrated district role was lost/promoted")
+	_check(str(jordan.get("local_government_role_note", "")).contains("not municipal self-government"), "JO nonmunicipal role caveat missing")
+	var actual_sources := {}
+	for source in atlas.sources:
+		if expected.sources.has(str(source.get("id", ""))):
+			actual_sources[str(source.id)] = source
+	_check(actual_sources == expected.sources, "Qualified and quarantined source metadata changed in runtime")
+	for country in expected.coverage:
+		_check(atlas.coverage_for_country(country) == expected.coverage[country], "Runtime coverage flag/note mismatch: " + country)
+	_check(actual_sources.get("gbOpen-IRN-ADM4", {}).get("administrative_geometry_eligible", true) == false,
+		"Historical Iranian source quarantine disappeared")
+	var sba_source: Dictionary = actual_sources.get(str(expected.sba_source_id), {})
+	_check(sba_source.get("country") == "ESB" and sba_source.get("scope_countries") == ["ESB"], "SBA source scope leaked beyond ESB")
+	_check(sba_source.get("kind") == "local_admin" and sba_source.get("replacement_scope") == "feature"
+		and int(sba_source.get("municipal_authorities_created", -1)) == 0, "SBA source must stay additive and create no new municipality status")
+	print("PACKAGED_START elapsed_ms=", Time.get_ticks_msec() - started, " features=", atlas.features.size(), " user_data=", user_dir)
+	for identifier in ["geonames:2809346", "geonames:2988507", "geonames:3143244", "geonames:524901", "geonames:323786"]:
+		await _focus_and_render(str(identifier), "city")
+	for country in expected.sample_ids:
+		await _focus_and_render(str(expected.sample_ids[country]), str(country))
+	for feature in expected.sba_features:
+		if str(feature.id) != str(expected.sample_ids.ESB):
+			await _focus_and_render(str(feature.id), "ESB-" + str(feature.name))
+	var saved_year: int = main.game.year
+	var saved_month: int = main.game.month
+	var saved: Dictionary = main._save()
+	_check(bool(saved.get("ok", false)), "Save action failed in isolated profile")
+	_check(FileAccess.file_exists("user://spielstand.json"), "Save action did not create a sandbox save file")
+	var save_state = JSON.parse_string(FileAccess.get_file_as_string("user://spielstand.json"))
+	_check(save_state is Dictionary, "Sandbox save file is not valid JSON")
+	main.game.year = saved_year + 7
+	_check(main._load(), "Load action failed in isolated profile")
+	main.game.speed = 0
+	_check(main.game.year == saved_year and main.game.month == saved_month, "Save/load did not restore deliberately mutated date")
+	await _frames()
+	var ui = main.get_meta("modern_interface")
+	ui.set_text_scale(2.0)
+	await _frames()
+	var sources = main.get_meta("atlas_search")
+	sources._toggle_sources()
+	await _frames()
+	_check(sources._sources_panel.visible, "Source panel cannot be opened at 200%")
+	_check(root.get_visible_rect().grow(1).encloses(sources._sources_close.get_global_rect()), "Source close action clipped at 200%")
+	var labels := {}
+	for child in sources._sources_content.get_children():
+		if child is Label and child.has_meta("atlas_source_id"):
+			labels[str(child.get_meta("atlas_source_id"))] = child
+	for source_id in expected.sources:
+		_check(labels.has(source_id), "Source panel is missing qualified/quarantined source: " + source_id)
+		if not labels.has(source_id):
+			continue
+		var source: Dictionary = expected.sources[source_id]
+		var source_text: String = labels[source_id].text
+		for field in ["coverage_note", "territorial_scope_note", "administrative_ineligibility_note"]:
+			if not str(source.get(field, "")).is_empty():
+				_check(source_text.contains(str(source[field])), "Product source panel omitted " + field + " for " + source_id)
+		if source.get("administrative_geometry_eligible", true) == false:
+			_check(source_text.contains("Verwaltungsdarstellung: ausgeschlossen"), "Source exclusion not explained in product panel")
+		elif bool(source.get("blocks_full_coverage_claim", false)):
+			_check(source_text.contains("Prüfgrenze:"), "Unresolved source block not explained in product panel")
+		for country in source.get("blocks_full_coverage_claim_countries", []):
+			_check(source_text.contains("Gebietsbezogene Prüfgrenze:") and source_text.contains(str(country)), "Territorial caveat not explained in source panel: " + str(country))
+		if source_id == str(expected.sba_source_id):
+			_check(source_text.contains("Crown") and source_text.contains("Militär")
+				and source_text.contains("keine neuen") and source_text.contains("außerhalb ESB"), "German SBA Crown/military/territorial caveats missing from product source panel")
+	for source_id in ["geofabrik-CYN-261108-law15-2022", "geofabrik-IR-Dehestan-20261108", "DLS-CY-reform2024-CYSTAT20260609", str(expected.sba_source_id)]:
+		if labels.has(source_id):
+			sources._sources_scroll.ensure_control_visible(labels[source_id])
+			await _frames()
+			await _shot("sources-200-" + source_id)
+	sources._close_sources()
+	await _frames()
+	_check(not sources._sources_panel.visible, "Product source panel cannot be closed")
+	_finish()
+
+func _focus_and_render(identifier: String, name: String) -> void:
+	var record: Dictionary = main.map_view.atlas_data.lookup(identifier)
+	_check(not record.is_empty(), "Runtime selected geographic identity missing: " + identifier)
+	if record.is_empty():
+		return
+	main.map_view.focus_atlas_location(record)
+	main.map_view.zoom_by(48.0 / main.map_view.zoom)
+	main.map_view.atlas_layer.refresh()
+	await _frames()
+	_check(not main.map_view.atlas_layer.audit_features.is_empty(), "No actual boundaries rendered: " + identifier)
+	_check(not main.map_view.atlas_layer.audit_labels.is_empty(), "No actual labels rendered: " + identifier)
+	await _shot("atlas-" + name + "-" + str(record.get("country", "")))
+
+func _frames() -> void:
+	for i in 4:
+		await process_frame
+	await RenderingServer.frame_post_draw
+
+func _shot(name: String) -> void:
+	_check(root.get_texture().get_image().save_png(str(expected.output) + "/" + name + ".png") == OK, "Cannot save rendered screenshot: " + name)
+
+func _check(ok: bool, message: String) -> void:
+	checks += 1
+	if not ok:
+		failures += 1
+		print("PACKAGED_RELEASE_SMOKE FAIL: " + message)
+
+func _finish() -> void:
+	var report := {"stage": "packaged-runtime-smoke", "version": expected.get("version", ""), "checks": checks,
+		"failures": failures, "user_data": OS.get_user_data_dir(), "physical_android_test": false}
+	var file := FileAccess.open(str(expected.output) + "/runtime-smoke-receipt.json", FileAccess.WRITE)
+	if file != null:
+		file.store_string(JSON.stringify(report, "\t") + "\n")
+	print("PACKAGED_RELEASE_SMOKE %s; %d checks." % ["OK" if failures == 0 else "FAIL", checks])
+	quit(0 if failures == 0 else 1)

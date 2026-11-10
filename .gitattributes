@@ -1,7 +1,7 @@
 # Source receipts are byte-hashed: preserve their original line endings.
+*.sh text eol=lf
 /data/atlas*.json -text whitespace=cr-at-eol
-# These two generated/previously tracked files have canonical LF in Git.
+# The generated large atlas has canonical LF; individual receipts stay byte-exact.
 /data/atlas.json text eol=lf
-/data/atlas_terrain_source.json text eol=lf
 /data/atlas_geometry.bin binary
 /assets/map/atlas_terrain.webp binary

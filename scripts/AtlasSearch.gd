@@ -246,6 +246,8 @@ func _coverage_text() -> String:
 		elif entry.is_empty():
 			percent = "keine Messung vorhanden"
 		lines.append("%s (%s): %s · %s" % [str(country.name), code, percent, str(statuses.get(state, "Stand unklar"))])
+		if not entry.get("nonmunicipal_terminal_administration", []).is_empty():
+			lines.append("  Zuständige staatliche Ortsverwaltung im Kartenausschnitt; Gemeindegrenzen nicht nachgewiesen.")
 	return "\n".join(lines)
 
 func _source_text(source: Dictionary) -> String:
@@ -265,6 +267,9 @@ func _source_text(source: Dictionary) -> String:
 		lines.append("Verwaltungsdarstellung: ausgeschlossen; die Rolle dieser Flächen ist nicht belegt.")
 	elif bool(source.get("blocks_full_coverage_claim", false)):
 		lines.append("Prüfgrenze: Diese Quelle ist unvollständig oder fachlich noch zu prüfen.")
+	var restricted_countries: Array = source.get("blocks_full_coverage_claim_countries", [])
+	if not restricted_countries.is_empty():
+		lines.append("Gebietsbezogene Prüfgrenze: Die örtliche Verwaltungsrolle muss für %s gesondert geprüft werden." % ", ".join(restricted_countries))
 	for note in [["coverage_note", "Abdeckung"], ["source_geometry_defect_note", "Geometrieprüfung"],
 			["administrative_ineligibility_note", "Grund des Ausschlusses"], ["administrative_eligibility_note", "Rollenprüfung"],
 			["territorial_scope_note", "Gebietliche Einordnung"]]:

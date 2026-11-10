@@ -1,0 +1,1615 @@
+{
+  "schema": 1,
+  "sources": [
+    {
+      "id": "geofabrik-CYN-261108-law15-2022",
+      "country": "CYN",
+      "scope_countries": [
+        "CYN"
+      ],
+      "kind": "municipality",
+      "replacement_scope": "country",
+      "merge_priority": 5,
+      "clip_to_scope": true,
+      "scope_clip_basis": "display/intersection against the existing atlas territorial reference, not certified state boundary",
+      "scope_clip_evidence_url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_10m_admin_0_countries.geojson",
+      "scope_clip_reference_source": "natural-earth-countries",
+      "url": "https://download.geofabrik.de/europe/cyprus-261108-free.shp.zip",
+      "metadata_url": "https://mevzuat.gov.ct.tr/Portals/48/15-2022%20Belediyelerin%20Birlestirilmesine%20Iliskin%20%28Ozel%29%20Yasa.pdf",
+      "date": "2026-11-08T21:21:00Z",
+      "license": "ODbL-1.0",
+      "license_url": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "license_evidence_url": "https://www.openstreetmap.org/copyright",
+      "attribution": "© OpenStreetMap contributors; Geofabrik GmbH. ODbL 1.0. Rollen nach konsolidiertem Gesetz 15/2022 geprüft; Gebietsanzeige am bestehenden Atlasrahmen geschnitten. Keine amtliche Grenzzertifizierung.",
+      "unit_type": "Belediye",
+      "role_evidence_urls": [
+        "https://mevzuat.gov.ct.tr/Portals/48/15-2022%20Belediyelerin%20Birlestirilmesine%20Iliskin%20%28Ozel%29%20Yasa.pdf"
+      ],
+      "files": [
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/geofabrik-cyprus-261108/gis_osm_adminareas_a_free_1.cpg",
+          "archive_member": "gis_osm_adminareas_a_free_1.cpg",
+          "url": "https://download.geofabrik.de/europe/cyprus-261108-free.shp.zip",
+          "bytes": 6,
+          "sha256": "146d6789ffe033a5297c1ad046e6a62ee35319b86b021444f05b6ea2aa8a1f4a",
+          "crc32": "59b2d65b"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/geofabrik-cyprus-261108/gis_osm_adminareas_a_free_1.dbf",
+          "archive_member": "gis_osm_adminareas_a_free_1.dbf",
+          "url": "https://download.geofabrik.de/europe/cyprus-261108-free.shp.zip",
+          "bytes": 136897,
+          "sha256": "4fe306ab9a6f37db341b18ce32849d5ebb3e2240de88f71a9f05d82e4144313e",
+          "crc32": "d82a4b53"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/geofabrik-cyprus-261108/gis_osm_adminareas_a_free_1.prj",
+          "archive_member": "gis_osm_adminareas_a_free_1.prj",
+          "url": "https://download.geofabrik.de/europe/cyprus-261108-free.shp.zip",
+          "bytes": 144,
+          "sha256": "ffc9162903c37f0867d1e7f36c20036a165f7aa555dda24c1ae0ee4328d2977f",
+          "crc32": "0bbee490"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/geofabrik-cyprus-261108/gis_osm_adminareas_a_free_1.shp",
+          "archive_member": "gis_osm_adminareas_a_free_1.shp",
+          "url": "https://download.geofabrik.de/europe/cyprus-261108-free.shp.zip",
+          "bytes": 10515356,
+          "sha256": "facdee5e637b7d95133734fab96b86f1dbc5b200a4bcd85c837809e362bde02a",
+          "crc32": "e7dc743c"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/geofabrik-cyprus-261108/gis_osm_adminareas_a_free_1.shx",
+          "archive_member": "gis_osm_adminareas_a_free_1.shx",
+          "url": "https://download.geofabrik.de/europe/cyprus-261108-free.shp.zip",
+          "bytes": 7644,
+          "sha256": "26c5028a8e9b364e5bff74de72d01ac8bfe5e5ed056df6da7295db4fcfb933d6",
+          "crc32": "b96d95ef"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/geofabrik-cyprus-261108/README",
+          "url": "https://download.geofabrik.de/europe/cyprus-261108-free.shp.zip",
+          "bytes": 653,
+          "sha256": "a4547a0e98dff8848dc2b64ec0e10b40bfe6856d7d7619419257b549dda70413",
+          "archive_member": "README"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/CYN-merger-law-2022.pdf",
+          "url": "https://mevzuat.gov.ct.tr/Portals/48/15-2022%20Belediyelerin%20Birlestirilmesine%20Iliskin%20%28Ozel%29%20Yasa.pdf",
+          "bytes": 517088,
+          "sha256": "f35b25b03a5b7d58468b071c23e88c6a78558370389e05ccdf5ffb0f5b60fc58"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/CYN-osm-relations-fixed-versions.json",
+          "url": "https://api.openstreetmap.org/api/0.6/relations.json?relations=16283722v14,16301094v8,16272379v5,16268774v3,16306104v4,16264705v5,16283807v10,16272281v4,16337159v8,16335158v3,16300875v4,16301043v6,16283617v8,16300958v6,16272365v5,16272310v7,16300858v2,16301085v9",
+          "bytes": 36719,
+          "sha256": "2287902399dbb6af521cfe34af592bee7a8ce2eeb3ae5bcb5f6fdcbc84ba24a4"
+        }
+      ],
+      "bytes": 11214507,
+      "sha256": "9f22f610109500a5210f6341a0e8d23422dfcec7fa195250145f65164c3134a7",
+      "hash_scope": "Canonical ordered original input receipts; every original file is individually pinned",
+      "object_count": 18,
+      "source_unit_count": 18,
+      "normalized_unit_count": 18,
+      "role_counts": {
+        "municipality": 18
+      },
+      "blocks_full_coverage_claim": false,
+      "coverage_note": "18 nach Gesetz 15/2022 eindeutig geprüfte Gemeinden; 209 von 213 gesetzlichen Ortsnamen räumlich zugeordnet, die Zuordnung von vier Ortsnamen bleibt offen. Rund 95,17 % der bestehenden Landreferenz sind bedeckt; rund 160,36 km² bleiben ungefüllt. Dies ist kein amtlicher Kataster- oder Vollständigkeitsnachweis.",
+      "territorial_scope_note": "Die Anzeige ist auf den bestehenden Kartenraum Nordzypern (CYN) begrenzt. Daraus werden keine nördlichen Gemeindebefugnisse in der UN-Pufferzone oder den britischen Basen abgeleitet. Die ursprünglichen Quellpolygone bleiben unverändert nachprüfbar.",
+      "settlement_qualification": {
+        "legal_settlement_count": 213,
+        "exact_normalized_name_matches": 209,
+        "unmatched_name_count": 4,
+        "unmatched_names": [
+          {
+            "municipality_id": "geofabrik:CYN:7:16301094",
+            "names": [
+              "Yukarı Derinya"
+            ]
+          },
+          {
+            "municipality_id": "geofabrik:CYN:7:16272379",
+            "names": [
+              "Edremit"
+            ]
+          },
+          {
+            "municipality_id": "geofabrik:CYN:7:16283807",
+            "names": [
+              "Dereliköy"
+            ]
+          },
+          {
+            "municipality_id": "geofabrik:CYN:7:16272281",
+            "names": [
+              "Kılıçarslan"
+            ]
+          }
+        ],
+        "meaning": "All 18 municipality identities match the enacted schedule. 209 village names match independently; four unjoined names are disclosed, not treated as proof of four missing municipal polygons."
+      },
+      "unit_semantics": {
+        "render_role": "18 actual northern municipalities under their native names",
+        "geometry": "Original dated OSM/Geofabrik polygons. Only display intersection with the existing independent CYN reference is authorized; no union, repair, gap fill or transfer to other territories.",
+        "coverage_status": "Unchanged NE-v5.1.2 CYN reference: 95.1691459% covered; land 3319.450567 km², covered 3159.092754 km². Residual 160.357813 km² remains unfilled. Original source polygons include 92.547417 km² outside that display reference; no northern municipal powers in buffer or bases are inferred.",
+        "role_date": "Consolidated Law 15/2022 including 2023/2024 amendments; geometry snapshot 2026-11-08",
+        "political_scope": "Separate native northern administration. No substitution of Republic CY claimed municipalities, international recognition statement, or certified effective-control boundary is inferred."
+      }
+    }
+  ],
+  "qualified_identities": [
+    {
+      "id": "geofabrik:CYN:7:16283722",
+      "name": "Lefkoşa Türk Belediyesi",
+      "osm_id": 16283722,
+      "osm_version": 14,
+      "osm_timestamp": "2026-03-28T14:40:11Z",
+      "legal_schedule_number": 1,
+      "legal_name": "LEFKOŞA TÜRK BELEDİYESİ",
+      "legal_settlement_count": 9,
+      "settlement_name_audit": {
+        "method": "Exact normalized native name and original village representative point inside the original municipality; no alias inference",
+        "exact_match_count": 9,
+        "exact_matches": [
+          {
+            "legal_name": "Lefkoşa",
+            "osm_id": "16283715",
+            "source_name": "Lefkoşa"
+          },
+          {
+            "legal_name": "Eylence",
+            "osm_id": "16283720",
+            "source_name": "Eylence"
+          },
+          {
+            "legal_name": "Büyük Kaymaklı",
+            "osm_id": "16283719",
+            "source_name": "Büyükkaymaklı"
+          },
+          {
+            "legal_name": "Haspolat",
+            "osm_id": "16283718",
+            "source_name": "Haspolat"
+          },
+          {
+            "legal_name": "Hamitköy",
+            "osm_id": "16283717",
+            "source_name": "Hamitköy"
+          },
+          {
+            "legal_name": "Kızılbaş",
+            "osm_id": "16283712",
+            "source_name": "Kızılbaş"
+          },
+          {
+            "legal_name": "Ortaköy",
+            "osm_id": "16283713",
+            "source_name": "Ortaköy"
+          },
+          {
+            "legal_name": "Küçük Kaymaklı",
+            "osm_id": "16283716",
+            "source_name": "Küçükkaymaklı"
+          },
+          {
+            "legal_name": "Aydemet",
+            "osm_id": "16283714",
+            "source_name": "Aydemet"
+          }
+        ],
+        "unmatched_legal_names": [],
+        "additional_spatial_names": [
+          {
+            "osm_id": "16283721",
+            "name": "Yeri"
+          },
+          {
+            "osm_id": "18748079",
+            "name": "Panaya"
+          }
+        ]
+      }
+    },
+    {
+      "id": "geofabrik:CYN:7:16301094",
+      "name": "Gazimağusa Belediyesi",
+      "osm_id": 16301094,
+      "osm_version": 8,
+      "osm_timestamp": "2026-10-15T04:34:43Z",
+      "legal_schedule_number": 2,
+      "legal_name": "GAZİMAĞUSA BELEDİYESİ",
+      "legal_settlement_count": 4,
+      "settlement_name_audit": {
+        "method": "Exact normalized native name and original village representative point inside the original municipality; no alias inference",
+        "exact_match_count": 3,
+        "exact_matches": [
+          {
+            "legal_name": "Gazimağusa",
+            "osm_id": "16301096",
+            "source_name": "Gazimağusa"
+          },
+          {
+            "legal_name": "Tuzla",
+            "osm_id": "16301095",
+            "source_name": "Tuzla"
+          },
+          {
+            "legal_name": "Mutluyaka",
+            "osm_id": "16301092",
+            "source_name": "Mutluyaka"
+          }
+        ],
+        "unmatched_legal_names": [
+          "Yukarı Derinya"
+        ],
+        "additional_spatial_names": [
+          {
+            "osm_id": "18712690",
+            "name": "Frenaros"
+          },
+          {
+            "osm_id": "16301093",
+            "name": "Derinya"
+          }
+        ]
+      }
+    },
+    {
+      "id": "geofabrik:CYN:7:16272379",
+      "name": "Girne Belediyesi",
+      "osm_id": 16272379,
+      "osm_version": 5,
+      "osm_timestamp": "2025-07-21T21:01:31Z",
+      "legal_schedule_number": 3,
+      "legal_name": "GİRNE BELEDİYESİ",
+      "legal_settlement_count": 9,
+      "settlement_name_audit": {
+        "method": "Exact normalized native name and original village representative point inside the original municipality; no alias inference",
+        "exact_match_count": 8,
+        "exact_matches": [
+          {
+            "legal_name": "Beylerbeyi",
+            "osm_id": "16272383",
+            "source_name": "Beylerbeyi"
+          },
+          {
+            "legal_name": "Doğanköy",
+            "osm_id": "16272382",
+            "source_name": "Doğanköy"
+          },
+          {
+            "legal_name": "Ozanköy",
+            "osm_id": "16272380",
+            "source_name": "Ozanköy"
+          },
+          {
+            "legal_name": "Karakum",
+            "osm_id": "16272381",
+            "source_name": "Karakum"
+          },
+          {
+            "legal_name": "Girne",
+            "osm_id": "16272388",
+            "source_name": "Girne"
+          },
+          {
+            "legal_name": "Zeytinlik",
+            "osm_id": "16272387",
+            "source_name": "Zeytinlik"
+          },
+          {
+            "legal_name": "Karaman",
+            "osm_id": "16272386",
+            "source_name": "Karaman"
+          },
+          {
+            "legal_name": "Karaoğlanoğlu",
+            "osm_id": "16272384",
+            "source_name": "Karaoğlanoğlu"
+          }
+        ],
+        "unmatched_legal_names": [
+          "Edremit"
+        ],
+        "additional_spatial_names": [
+          {
+            "osm_id": "16272385",
+            "name": "Erdemit"
+          }
+        ]
+      }
+    },
+    {
+      "id": "geofabrik:CYN:7:16268774",
+      "name": "Güzelyurt Belediyesi",
+      "osm_id": 16268774,
+      "osm_version": 3,
+      "osm_timestamp": "2023-09-05T01:22:56Z",
+      "legal_schedule_number": 4,
+      "legal_name": "GÜZELYURT BELEDİYESİ",
+      "legal_settlement_count": 14,
+      "settlement_name_audit": {
+        "method": "Exact normalized native name and original village representative point inside the original municipality; no alias inference",
+        "exact_match_count": 14,
+        "exact_matches": [
+          {
+            "legal_name": "Yukarı Bostancı",
+            "osm_id": "16268764",
+            "source_name": "Yukarıbostancı"
+          },
+          {
+            "legal_name": "Aşağı Bostancı",
+            "osm_id": "16268763",
+            "source_name": "Aşağıbostancı"
+          },
+          {
+            "legal_name": "Güneşköy",
+            "osm_id": "16268761",
+            "source_name": "Güneşköy"
+          },
+          {
+            "legal_name": "Aydınköy",
+            "osm_id": "16268760",
+            "source_name": "Aydınköy"
+          },
+          {
+            "legal_name": "Akçay",
+            "osm_id": "16268767",
+            "source_name": "Akçay"
+          },
+          {
+            "legal_name": "Zümrütköy",
+            "osm_id": "16268768",
+            "source_name": "Zümrütköy"
+          },
+          {
+            "legal_name": "Şahinler",
+            "osm_id": "16268769",
+            "source_name": "Şahinler"
+          },
+          {
+            "legal_name": "Gayretköy",
+            "osm_id": "16268772",
+            "source_name": "Gayretköy"
+          },
+          {
+            "legal_name": "Serhatköy",
+            "osm_id": "16268771",
+            "source_name": "Serhatköy"
+          },
+          {
+            "legal_name": "Mevlevi",
+            "osm_id": "16268770",
+            "source_name": "Mevlevi"
+          },
+          {
+            "legal_name": "Yuvacık",
+            "osm_id": "16268766",
+            "source_name": "Yuvacık"
+          },
+          {
+            "legal_name": "Güzelyurt",
+            "osm_id": "16268773",
+            "source_name": "Güzelyurt"
+          },
+          {
+            "legal_name": "Yayla",
+            "osm_id": "16268762",
+            "source_name": "Yayla"
+          },
+          {
+            "legal_name": "Kalkanlı",
+            "osm_id": "16268765",
+            "source_name": "Kalkanlı"
+          }
+        ],
+        "unmatched_legal_names": [],
+        "additional_spatial_names": []
+      }
+    },
+    {
+      "id": "geofabrik:CYN:7:16306104",
+      "name": "İskele Belediyesi",
+      "osm_id": 16306104,
+      "osm_version": 4,
+      "osm_timestamp": "2026-10-10T09:24:34Z",
+      "legal_schedule_number": 5,
+      "legal_name": "İSKELE BELEDİYESİ",
+      "legal_settlement_count": 22,
+      "settlement_name_audit": {
+        "method": "Exact normalized native name and original village representative point inside the original municipality; no alias inference",
+        "exact_match_count": 22,
+        "exact_matches": [
+          {
+            "legal_name": "Kuzucuk",
+            "osm_id": "16334942",
+            "source_name": "Kuzucuk"
+          },
+          {
+            "legal_name": "Ötüken",
+            "osm_id": "16334943",
+            "source_name": "Ötüken"
+          },
+          {
+            "legal_name": "Aygün",
+            "osm_id": "16334941",
+            "source_name": "Aygün"
+          },
+          {
+            "legal_name": "Boğaziçi",
+            "osm_id": "16334939",
+            "source_name": "Boğaziçi"
+          },
+          {
+            "legal_name": "Sınırüstü",
+            "osm_id": "16334940",
+            "source_name": "Sınırüstü"
+          },
+          {
+            "legal_name": "İskele",
+            "osm_id": "16334944",
+            "source_name": "İskele"
+          },
+          {
+            "legal_name": "Bahçeler",
+            "osm_id": "16334938",
+            "source_name": "Bahçeler"
+          },
+          {
+            "legal_name": "Boğaztepe",
+            "osm_id": "16334936",
+            "source_name": "Boğaztepe"
+          },
+          {
+            "legal_name": "Boğaz",
+            "osm_id": "16334935",
+            "source_name": "Boğaz"
+          },
+          {
+            "legal_name": "Altınova",
+            "osm_id": "16334926",
+            "source_name": "Altınova"
+          },
+          {
+            "legal_name": "Ağıllar",
+            "osm_id": "16334925",
+            "source_name": "Ağıllar"
+          },
+          {
+            "legal_name": "Topçuköy",
+            "osm_id": "16334927",
+            "source_name": "Topçuköy"
+          },
+          {
+            "legal_name": "Yarköy",
+            "osm_id": "16334937",
+            "source_name": "Yarköy"
+          },
+          {
+            "legal_name": "Kalecik",
+            "osm_id": "16334934",
+            "source_name": "Kalecik"
+          },
+          {
+            "legal_name": "Kurtuluş",
+            "osm_id": "16334933",
+            "source_name": "Kurtuluş"
+          },
+          {
+            "legal_name": "Turnalar",
+            "osm_id": "16334929",
+            "source_name": "Turnalar"
+          },
+          {
+            "legal_name": "Ardahan",
+            "osm_id": "16334928",
+            "source_name": "Ardahan"
+          },
+          {
+            "legal_name": "Mersinlik",
+            "osm_id": "16306102",
+            "source_name": "Mersinlik"
+          },
+          {
+            "legal_name": "Ergazi",
+            "osm_id": "16334930",
+            "source_name": "Ergazi"
+          },
+          {
+            "legal_name": "Kaplıca",
+            "osm_id": "16306103",
+            "source_name": "Kaplıca"
+          },
+          {
+            "legal_name": "Kilitkaya",
+            "osm_id": "16334931",
+            "source_name": "Kilitkaya"
+          },
+          {
+            "legal_name": "Tuzluca",
+            "osm_id": "16334932",
+            "source_name": "Tuzluca"
+          }
+        ],
+        "unmatched_legal_names": [],
+        "additional_spatial_names": []
+      }
+    },
+    {
+      "id": "geofabrik:CYN:7:16264705",
+      "name": "Lefke Belediyesi",
+      "osm_id": 16264705,
+      "osm_version": 5,
+      "osm_timestamp": "2026-05-27T14:51:23Z",
+      "legal_schedule_number": 6,
+      "legal_name": "LEFKE BELEDİYESİ",
+      "legal_settlement_count": 22,
+      "settlement_name_audit": {
+        "method": "Exact normalized native name and original village representative point inside the original municipality; no alias inference",
+        "exact_match_count": 22,
+        "exact_matches": [
+          {
+            "legal_name": "Aşağı Kurtboğan",
+            "osm_id": "16264695",
+            "source_name": "Aşağıkurtboğan"
+          },
+          {
+            "legal_name": "Taşpınar",
+            "osm_id": "16264694",
+            "source_name": "Taşpınar"
+          },
+          {
+            "legal_name": "Taşköy",
+            "osm_id": "16264691",
+            "source_name": "Taşköy"
+          },
+          {
+            "legal_name": "Madenliköy",
+            "osm_id": "16264689",
+            "source_name": "Madenliköy"
+          },
+          {
+            "legal_name": "Lefke",
+            "osm_id": "16264684",
+            "source_name": "Lefke"
+          },
+          {
+            "legal_name": "Doğancı",
+            "osm_id": "16264693",
+            "source_name": "Doğancı"
+          },
+          {
+            "legal_name": "Gaziveren",
+            "osm_id": "16264692",
+            "source_name": "Gaziveren"
+          },
+          {
+            "legal_name": "Cengizköy",
+            "osm_id": "16264687",
+            "source_name": "Cengizköy"
+          },
+          {
+            "legal_name": "Çamlıköy",
+            "osm_id": "16264688",
+            "source_name": "Çamlıköy"
+          },
+          {
+            "legal_name": "Bağlıköy",
+            "osm_id": "16264681",
+            "source_name": "Bağlıköy"
+          },
+          {
+            "legal_name": "Gemikonağı",
+            "osm_id": "16264683",
+            "source_name": "Gemikonağı"
+          },
+          {
+            "legal_name": "Yedidalga",
+            "osm_id": "16264680",
+            "source_name": "Yedidalga"
+          },
+          {
+            "legal_name": "Bademliköy",
+            "osm_id": "16264677",
+            "source_name": "Bademliköy"
+          },
+          {
+            "legal_name": "Ömerli",
+            "osm_id": "16264679",
+            "source_name": "Ömerli"
+          },
+          {
+            "legal_name": "Şirinköy",
+            "osm_id": "16264678",
+            "source_name": "Şirinköy"
+          },
+          {
+            "legal_name": "Yağmuralan",
+            "osm_id": "16264674",
+            "source_name": "Yağmuralan"
+          },
+          {
+            "legal_name": "Süleymaniye",
+            "osm_id": "16264673",
+            "source_name": "Süleymaniye"
+          },
+          {
+            "legal_name": "Günebakan",
+            "osm_id": "16264672",
+            "source_name": "Günebakan"
+          },
+          {
+            "legal_name": "Yeşilırmak",
+            "osm_id": "16264676",
+            "source_name": "Yeşilırmak"
+          },
+          {
+            "legal_name": "Denizli",
+            "osm_id": "16264682",
+            "source_name": "Denizli"
+          },
+          {
+            "legal_name": "Yeşilyurt",
+            "osm_id": "16264690",
+            "source_name": "Yeşilyurt"
+          },
+          {
+            "legal_name": "Erenköy",
+            "osm_id": "16264510",
+            "source_name": "Erenköy"
+          }
+        ],
+        "unmatched_legal_names": [],
+        "additional_spatial_names": [
+          {
+            "osm_id": "16264675",
+            "name": "Yukarı Yeşilırmak"
+          },
+          {
+            "osm_id": "16264686",
+            "name": "Katidata"
+          },
+          {
+            "osm_id": "16264685",
+            "name": "Kalapanayot"
+          },
+          {
+            "osm_id": "18711553",
+            "name": "Yamaç"
+          },
+          {
+            "osm_id": "16264512",
+            "name": "Mosfili"
+          },
+          {
+            "osm_id": "16264511",
+            "name": "Mansur"
+          }
+        ]
+      }
+    },
+    {
+      "id": "geofabrik:CYN:7:16283807",
+      "name": "Değirmenlik-Akıncılar Belediyesi",
+      "osm_id": 16283807,
+      "osm_version": 10,
+      "osm_timestamp": "2026-10-15T18:28:39Z",
+      "legal_schedule_number": 7,
+      "legal_name": "DEĞİRMENLİK - AKINCILAR BELEDİYESİ",
+      "legal_settlement_count": 22,
+      "settlement_name_audit": {
+        "method": "Exact normalized native name and original village representative point inside the original municipality; no alias inference",
+        "exact_match_count": 21,
+        "exact_matches": [
+          {
+            "legal_name": "Değirmenlik",
+            "osm_id": "16283782",
+            "source_name": "Değirmenlik"
+          },
+          {
+            "legal_name": "Kalavaç",
+            "osm_id": "16283783",
+            "source_name": "Kalavaç"
+          },
+          {
+            "legal_name": "Beyköy",
+            "osm_id": "16283785",
+            "source_name": "Beyköy"
+          },
+          {
+            "legal_name": "Yeniceköy",
+            "osm_id": "16283784",
+            "source_name": "Yeniceköy"
+          },
+          {
+            "legal_name": "Cihangir",
+            "osm_id": "16283786",
+            "source_name": "Cihangir"
+          },
+          {
+            "legal_name": "Çukurova",
+            "osm_id": "16283787",
+            "source_name": "Çukurova"
+          },
+          {
+            "legal_name": "Gökhan",
+            "osm_id": "16283789",
+            "source_name": "Gökhan"
+          },
+          {
+            "legal_name": "Demirhan",
+            "osm_id": "16283790",
+            "source_name": "Demirhan"
+          },
+          {
+            "legal_name": "Minareliköy",
+            "osm_id": "16283791",
+            "source_name": "Minareliköy"
+          },
+          {
+            "legal_name": "Düzova",
+            "osm_id": "16283788",
+            "source_name": "Düzova"
+          },
+          {
+            "legal_name": "Balıkesir",
+            "osm_id": "16283792",
+            "source_name": "Balıkesir"
+          },
+          {
+            "legal_name": "Meriç",
+            "osm_id": "16283793",
+            "source_name": "Meriç"
+          },
+          {
+            "legal_name": "Kırklar",
+            "osm_id": "16283795",
+            "source_name": "Kırklar"
+          },
+          {
+            "legal_name": "Gaziköy",
+            "osm_id": "16283794",
+            "source_name": "Gaziköy"
+          },
+          {
+            "legal_name": "Dilekkaya",
+            "osm_id": "16283796",
+            "source_name": "Dilekkaya"
+          },
+          {
+            "legal_name": "Yiğitler",
+            "osm_id": "16283803",
+            "source_name": "Yiğitler"
+          },
+          {
+            "legal_name": "Kiracıköy",
+            "osm_id": "16283800",
+            "source_name": "Kiracıköy"
+          },
+          {
+            "legal_name": "Gaziler",
+            "osm_id": "16283799",
+            "source_name": "Gaziler"
+          },
+          {
+            "legal_name": "Akıncılar",
+            "osm_id": "16283805",
+            "source_name": "Akıncılar"
+          },
+          {
+            "legal_name": "Erdemli",
+            "osm_id": "16283802",
+            "source_name": "Erdemli"
+          },
+          {
+            "legal_name": "Kırıkkale",
+            "osm_id": "16283801",
+            "source_name": "Kırıkkale"
+          }
+        ],
+        "unmatched_legal_names": [
+          "Dereliköy"
+        ],
+        "additional_spatial_names": [
+          {
+            "osm_id": "16283806",
+            "name": "Limbya"
+          },
+          {
+            "osm_id": "16283798",
+            "name": "Margo"
+          },
+          {
+            "osm_id": "16283804",
+            "name": "Trulli"
+          }
+        ]
+      }
+    },
+    {
+      "id": "geofabrik:CYN:7:16272281",
+      "name": "Lapta-Alsancak-Çamlıbel Belediyesi",
+      "osm_id": 16272281,
+      "osm_version": 4,
+      "osm_timestamp": "2024-07-14T15:51:25Z",
+      "legal_schedule_number": 8,
+      "legal_name": "LAPTA - ALSANCAK – ÇAMLIBEL BELEDİYESİ",
+      "legal_settlement_count": 20,
+      "settlement_name_audit": {
+        "method": "Exact normalized native name and original village representative point inside the original municipality; no alias inference",
+        "exact_match_count": 19,
+        "exact_matches": [
+          {
+            "legal_name": "Sadrazamköy",
+            "osm_id": "16272263",
+            "source_name": "Sadrazamköy"
+          },
+          {
+            "legal_name": "Koruçam",
+            "osm_id": "16272262",
+            "source_name": "Koruçam"
+          },
+          {
+            "legal_name": "Kayalar",
+            "osm_id": "16272268",
+            "source_name": "Kayalar"
+          },
+          {
+            "legal_name": "Geçitköy",
+            "osm_id": "16272267",
+            "source_name": "Geçitköy"
+          },
+          {
+            "legal_name": "Çamlıbel",
+            "osm_id": "16272266",
+            "source_name": "Çamlıbel"
+          },
+          {
+            "legal_name": "Kozan",
+            "osm_id": "16272272",
+            "source_name": "Kozan"
+          },
+          {
+            "legal_name": "Alemdağ",
+            "osm_id": "16272274",
+            "source_name": "Alemdağ"
+          },
+          {
+            "legal_name": "Malatya",
+            "osm_id": "16272279",
+            "source_name": "Malatya"
+          },
+          {
+            "legal_name": "Ilgaz",
+            "osm_id": "16272280",
+            "source_name": "Ilgaz"
+          },
+          {
+            "legal_name": "İncesu",
+            "osm_id": "16272278",
+            "source_name": "İncesu"
+          },
+          {
+            "legal_name": "Lapta",
+            "osm_id": "16272275",
+            "source_name": "Lapta"
+          },
+          {
+            "legal_name": "Alsancak",
+            "osm_id": "16272276",
+            "source_name": "Alsancak"
+          },
+          {
+            "legal_name": "Yeşiltepe",
+            "osm_id": "16272277",
+            "source_name": "Yeşiltepe"
+          },
+          {
+            "legal_name": "Akdeniz",
+            "osm_id": "16272261",
+            "source_name": "Akdeniz"
+          },
+          {
+            "legal_name": "Tepebaşı",
+            "osm_id": "16272264",
+            "source_name": "Tepebaşı"
+          },
+          {
+            "legal_name": "Karpaşa",
+            "osm_id": "16272265",
+            "source_name": "Karpaşa"
+          },
+          {
+            "legal_name": "Özhan",
+            "osm_id": "16272270",
+            "source_name": "Özhan"
+          },
+          {
+            "legal_name": "Hisarköy",
+            "osm_id": "16272271",
+            "source_name": "Hisarköy"
+          },
+          {
+            "legal_name": "Karşıyaka",
+            "osm_id": "16272269",
+            "source_name": "Karşıyaka"
+          }
+        ],
+        "unmatched_legal_names": [
+          "Kılıçarslan"
+        ],
+        "additional_spatial_names": [
+          {
+            "osm_id": "16272273",
+            "name": "Kılıçaslan"
+          }
+        ]
+      }
+    },
+    {
+      "id": "geofabrik:CYN:7:16337159",
+      "name": "Erenköy-Karpaz Belediyesi",
+      "osm_id": 16337159,
+      "osm_version": 8,
+      "osm_timestamp": "2025-06-09T08:59:25Z",
+      "legal_schedule_number": 9,
+      "legal_name": "ERENKÖY - KARPAZ BELEDİYESİ",
+      "legal_settlement_count": 14,
+      "settlement_name_audit": {
+        "method": "Exact normalized native name and original village representative point inside the original municipality; no alias inference",
+        "exact_match_count": 14,
+        "exact_matches": [
+          {
+            "legal_name": "Gelincik",
+            "osm_id": "16337158",
+            "source_name": "Gelincik"
+          },
+          {
+            "legal_name": "Ziyamet",
+            "osm_id": "16337156",
+            "source_name": "Ziyamet"
+          },
+          {
+            "legal_name": "Boltaşlı",
+            "osm_id": "16337160",
+            "source_name": "Boltaşlı"
+          },
+          {
+            "legal_name": "Taşlıca",
+            "osm_id": "16337162",
+            "source_name": "Taşlıca"
+          },
+          {
+            "legal_name": "Derince",
+            "osm_id": "16337161",
+            "source_name": "Derince"
+          },
+          {
+            "legal_name": "Esenköy",
+            "osm_id": "16337157",
+            "source_name": "Esenköy"
+          },
+          {
+            "legal_name": "Yeşilköy",
+            "osm_id": "16337164",
+            "source_name": "Yeşilköy"
+          },
+          {
+            "legal_name": "Avtepe",
+            "osm_id": "16337163",
+            "source_name": "Avtepe"
+          },
+          {
+            "legal_name": "Adaçay",
+            "osm_id": "16337165",
+            "source_name": "Adaçay"
+          },
+          {
+            "legal_name": "Kuruova",
+            "osm_id": "16337168",
+            "source_name": "Kuruova"
+          },
+          {
+            "legal_name": "Kaleburnu",
+            "osm_id": "16337169",
+            "source_name": "Kaleburnu"
+          },
+          {
+            "legal_name": "Sipahi",
+            "osm_id": "16337167",
+            "source_name": "Sipahi"
+          },
+          {
+            "legal_name": "Yeni Erenköy",
+            "osm_id": "16337166",
+            "source_name": "Yenierenköy"
+          },
+          {
+            "legal_name": "Dipkarpaz",
+            "osm_id": "16337170",
+            "source_name": "Dipkarpaz"
+          }
+        ],
+        "unmatched_legal_names": [],
+        "additional_spatial_names": []
+      }
+    },
+    {
+      "id": "geofabrik:CYN:7:16335158",
+      "name": "Mehmetçik-Büyükkonuk Belediyesi",
+      "osm_id": 16335158,
+      "osm_version": 3,
+      "osm_timestamp": "2025-06-09T08:59:25Z",
+      "legal_schedule_number": 10,
+      "legal_name": "MEHMETÇİK - BÜYÜKKONUK BELEDİYESİ",
+      "legal_settlement_count": 10,
+      "settlement_name_audit": {
+        "method": "Exact normalized native name and original village representative point inside the original municipality; no alias inference",
+        "exact_match_count": 10,
+        "exact_matches": [
+          {
+            "legal_name": "Yedikonuk",
+            "osm_id": "16335159",
+            "source_name": "Yedikonuk"
+          },
+          {
+            "legal_name": "Mehmetçik",
+            "osm_id": "16335163",
+            "source_name": "Mehmetçik"
+          },
+          {
+            "legal_name": "Büyükkonuk",
+            "osm_id": "16335157",
+            "source_name": "Büyükkonuk"
+          },
+          {
+            "legal_name": "Kumyalı",
+            "osm_id": "16335167",
+            "source_name": "Kumyalı"
+          },
+          {
+            "legal_name": "Pamuklu",
+            "osm_id": "16335166",
+            "source_name": "Pamuklu"
+          },
+          {
+            "legal_name": "Sazlıköy",
+            "osm_id": "16335162",
+            "source_name": "Sazlıköy"
+          },
+          {
+            "legal_name": "Çayırova",
+            "osm_id": "16335164",
+            "source_name": "Çayırova"
+          },
+          {
+            "legal_name": "Bafra",
+            "osm_id": "16335165",
+            "source_name": "Bafra"
+          },
+          {
+            "legal_name": "Zeybekköy",
+            "osm_id": "16335161",
+            "source_name": "Zeybekköy"
+          },
+          {
+            "legal_name": "Balalan",
+            "osm_id": "16335160",
+            "source_name": "Balalan"
+          }
+        ],
+        "unmatched_legal_names": [],
+        "additional_spatial_names": []
+      }
+    },
+    {
+      "id": "geofabrik:CYN:7:16300875",
+      "name": "Geçitkale-Serdarlı Belediyesi",
+      "osm_id": 16300875,
+      "osm_version": 4,
+      "osm_timestamp": "2025-05-25T09:58:03Z",
+      "legal_schedule_number": 11,
+      "legal_name": "GEÇİTKALE - SERDARLI BELEDİYESİ",
+      "legal_settlement_count": 16,
+      "settlement_name_audit": {
+        "method": "Exact normalized native name and original village representative point inside the original municipality; no alias inference",
+        "exact_match_count": 16,
+        "exact_matches": [
+          {
+            "legal_name": "Nergisli",
+            "osm_id": "16300872",
+            "source_name": "Nergisli"
+          },
+          {
+            "legal_name": "Pınarlı",
+            "osm_id": "16300871",
+            "source_name": "Pınarlı"
+          },
+          {
+            "legal_name": "Sütlüce",
+            "osm_id": "16300869",
+            "source_name": "Sütlüce"
+          },
+          {
+            "legal_name": "Geçitkale",
+            "osm_id": "16300870",
+            "source_name": "Geçitkale"
+          },
+          {
+            "legal_name": "Çamlıca",
+            "osm_id": "16300868",
+            "source_name": "Çamlıca"
+          },
+          {
+            "legal_name": "Gönendere",
+            "osm_id": "16300867",
+            "source_name": "Gönendere"
+          },
+          {
+            "legal_name": "Tirmen",
+            "osm_id": "16300863",
+            "source_name": "Tirmen"
+          },
+          {
+            "legal_name": "Yamaçköy",
+            "osm_id": "16300862",
+            "source_name": "Yamaçköy"
+          },
+          {
+            "legal_name": "Arıdamı",
+            "osm_id": "16300860",
+            "source_name": "Arıdamı"
+          },
+          {
+            "legal_name": "Çınarlı",
+            "osm_id": "16300859",
+            "source_name": "Çınarlı"
+          },
+          {
+            "legal_name": "Mallıdağ",
+            "osm_id": "16300861",
+            "source_name": "Mallıdağ"
+          },
+          {
+            "legal_name": "Görneç",
+            "osm_id": "16300865",
+            "source_name": "Görneç"
+          },
+          {
+            "legal_name": "Ergenekon",
+            "osm_id": "16300864",
+            "source_name": "Ergenekon"
+          },
+          {
+            "legal_name": "Serdarlı",
+            "osm_id": "16300866",
+            "source_name": "Serdarlı"
+          },
+          {
+            "legal_name": "Ulukışla",
+            "osm_id": "16300873",
+            "source_name": "Ulukışla"
+          },
+          {
+            "legal_name": "Kurudere",
+            "osm_id": "16300874",
+            "source_name": "Kurudere"
+          }
+        ],
+        "unmatched_legal_names": [],
+        "additional_spatial_names": []
+      }
+    },
+    {
+      "id": "geofabrik:CYN:7:16301043",
+      "name": "Mesarya Belediyesi",
+      "osm_id": 16301043,
+      "osm_version": 6,
+      "osm_timestamp": "2026-10-15T18:48:53Z",
+      "legal_schedule_number": 12,
+      "legal_name": "MESARYA BELEDİYESİ",
+      "legal_settlement_count": 9,
+      "settlement_name_audit": {
+        "method": "Exact normalized native name and original village representative point inside the original municipality; no alias inference",
+        "exact_match_count": 9,
+        "exact_matches": [
+          {
+            "legal_name": "Akdoğan",
+            "osm_id": "16301042",
+            "source_name": "Akdoğan"
+          },
+          {
+            "legal_name": "Paşaköy",
+            "osm_id": "16301035",
+            "source_name": "Paşaköy"
+          },
+          {
+            "legal_name": "Vadili",
+            "osm_id": "16301037",
+            "source_name": "Vadili"
+          },
+          {
+            "legal_name": "İnönü",
+            "osm_id": "16301038",
+            "source_name": "İnönü"
+          },
+          {
+            "legal_name": "Korkuteli",
+            "osm_id": "16301041",
+            "source_name": "Korkuteli"
+          },
+          {
+            "legal_name": "Dörtyol",
+            "osm_id": "16301040",
+            "source_name": "Dörtyol"
+          },
+          {
+            "legal_name": "Pirhan",
+            "osm_id": "16301039",
+            "source_name": "Pirhan"
+          },
+          {
+            "legal_name": "Turunçlu",
+            "osm_id": "16301036",
+            "source_name": "Turunçlu"
+          },
+          {
+            "legal_name": "Aslanköy",
+            "osm_id": "16301034",
+            "source_name": "Aslanköy"
+          }
+        ],
+        "unmatched_legal_names": [],
+        "additional_spatial_names": [
+          {
+            "osm_id": "16301080",
+            "name": "İksilodimbu"
+          }
+        ]
+      }
+    },
+    {
+      "id": "geofabrik:CYN:7:16283617",
+      "name": "Gönyeli-Alayköy Belediyesi",
+      "osm_id": 16283617,
+      "osm_version": 8,
+      "osm_timestamp": "2024-09-04T12:57:45Z",
+      "legal_schedule_number": 13,
+      "legal_name": "GÖNYELİ - ALAYKÖY BELEDİYESİ",
+      "legal_settlement_count": 7,
+      "settlement_name_audit": {
+        "method": "Exact normalized native name and original village representative point inside the original municipality; no alias inference",
+        "exact_match_count": 7,
+        "exact_matches": [
+          {
+            "legal_name": "Alayköy",
+            "osm_id": "16283614",
+            "source_name": "Alayköy"
+          },
+          {
+            "legal_name": "Gönyeli",
+            "osm_id": "16283616",
+            "source_name": "Gönyeli"
+          },
+          {
+            "legal_name": "Kanlıköy",
+            "osm_id": "16283615",
+            "source_name": "Kanlıköy"
+          },
+          {
+            "legal_name": "Türkeli",
+            "osm_id": "16283612",
+            "source_name": "Türkeli"
+          },
+          {
+            "legal_name": "Yılmazköy",
+            "osm_id": "16283611",
+            "source_name": "Yılmazköy"
+          },
+          {
+            "legal_name": "Gürpınar",
+            "osm_id": "16283610",
+            "source_name": "Gürpınar"
+          },
+          {
+            "legal_name": "İkidere",
+            "osm_id": "16283609",
+            "source_name": "İkidere"
+          }
+        ],
+        "unmatched_legal_names": [],
+        "additional_spatial_names": [
+          {
+            "osm_id": "16283607",
+            "name": "Akaça"
+          },
+          {
+            "osm_id": "16283613",
+            "name": "Mammar"
+          },
+          {
+            "osm_id": "16283608",
+            "name": "Denya"
+          }
+        ]
+      }
+    },
+    {
+      "id": "geofabrik:CYN:7:16300958",
+      "name": "Yeniboğaziçi Belediyesi",
+      "osm_id": 16300958,
+      "osm_version": 6,
+      "osm_timestamp": "2025-05-25T09:58:03Z",
+      "legal_schedule_number": 14,
+      "legal_name": "YENİBOĞAZİÇİ BELEDİYESİ",
+      "legal_settlement_count": 8,
+      "settlement_name_audit": {
+        "method": "Exact normalized native name and original village representative point inside the original municipality; no alias inference",
+        "exact_match_count": 8,
+        "exact_matches": [
+          {
+            "legal_name": "Mormenekşe",
+            "osm_id": "16300956",
+            "source_name": "Mormenekşe"
+          },
+          {
+            "legal_name": "Yeniboğaziçi",
+            "osm_id": "16300957",
+            "source_name": "Yeniboğaziçi"
+          },
+          {
+            "legal_name": "Atlılar",
+            "osm_id": "16300955",
+            "source_name": "Atlılar"
+          },
+          {
+            "legal_name": "Sandallar",
+            "osm_id": "16300954",
+            "source_name": "Sandallar"
+          },
+          {
+            "legal_name": "Muratağa",
+            "osm_id": "16300953",
+            "source_name": "Muratağa"
+          },
+          {
+            "legal_name": "Alaniçi",
+            "osm_id": "16300952",
+            "source_name": "Alaniçi"
+          },
+          {
+            "legal_name": "Yıldırım",
+            "osm_id": "16300951",
+            "source_name": "Yıldırım"
+          },
+          {
+            "legal_name": "Akova",
+            "osm_id": "16300950",
+            "source_name": "Akova"
+          }
+        ],
+        "unmatched_legal_names": [],
+        "additional_spatial_names": []
+      }
+    },
+    {
+      "id": "geofabrik:CYN:7:16272365",
+      "name": "Çatalköy-Esentepe Belediyesi",
+      "osm_id": 16272365,
+      "osm_version": 5,
+      "osm_timestamp": "2024-01-29T00:47:37Z",
+      "legal_schedule_number": 15,
+      "legal_name": "ÇATALKÖY – ESENTEPE BELEDİYESİ",
+      "legal_settlement_count": 6,
+      "settlement_name_audit": {
+        "method": "Exact normalized native name and original village representative point inside the original municipality; no alias inference",
+        "exact_match_count": 6,
+        "exact_matches": [
+          {
+            "legal_name": "Çatalköy",
+            "osm_id": "16272360",
+            "source_name": "Çatalköy"
+          },
+          {
+            "legal_name": "Esentepe",
+            "osm_id": "16272364",
+            "source_name": "Esentepe"
+          },
+          {
+            "legal_name": "Arapköy",
+            "osm_id": "16272361",
+            "source_name": "Arapköy"
+          },
+          {
+            "legal_name": "Beşparmak",
+            "osm_id": "16272362",
+            "source_name": "Beşparmak"
+          },
+          {
+            "legal_name": "Karaağaç",
+            "osm_id": "16272363",
+            "source_name": "Karaağaç"
+          },
+          {
+            "legal_name": "Bahçeli",
+            "osm_id": "16272367",
+            "source_name": "Bahçeli"
+          }
+        ],
+        "unmatched_legal_names": [],
+        "additional_spatial_names": []
+      }
+    },
+    {
+      "id": "geofabrik:CYN:7:16272310",
+      "name": "Dikmen Belediyesi",
+      "osm_id": 16272310,
+      "osm_version": 7,
+      "osm_timestamp": "2024-07-14T15:51:25Z",
+      "legal_schedule_number": 16,
+      "legal_name": "DİKMEN BELEDİYESİ",
+      "legal_settlement_count": 13,
+      "settlement_name_audit": {
+        "method": "Exact normalized native name and original village representative point inside the original municipality; no alias inference",
+        "exact_match_count": 13,
+        "exact_matches": [
+          {
+            "legal_name": "Şirinevler",
+            "osm_id": "16272298",
+            "source_name": "Şirinevler"
+          },
+          {
+            "legal_name": "Dağyolu",
+            "osm_id": "16272300",
+            "source_name": "Dağyolu"
+          },
+          {
+            "legal_name": "Aşağı Dikmen",
+            "osm_id": "16272306",
+            "source_name": "Aşağıdikmen"
+          },
+          {
+            "legal_name": "Yukarı Dikmen",
+            "osm_id": "16272305",
+            "source_name": "Yukarıdikmen"
+          },
+          {
+            "legal_name": "Yukarı Taşkent",
+            "osm_id": "16272308",
+            "source_name": "Yukarıtaşkent"
+          },
+          {
+            "legal_name": "Aşağı Taşkent",
+            "osm_id": "16272307",
+            "source_name": "Aşağıtaşkent"
+          },
+          {
+            "legal_name": "Güngör",
+            "osm_id": "16272309",
+            "source_name": "Güngör"
+          },
+          {
+            "legal_name": "Pınarbaşı",
+            "osm_id": "16272301",
+            "source_name": "Pınarbaşı"
+          },
+          {
+            "legal_name": "Boğazköy",
+            "osm_id": "16272304",
+            "source_name": "Boğazköy"
+          },
+          {
+            "legal_name": "Ağırdağ",
+            "osm_id": "16272303",
+            "source_name": "Ağırdağ"
+          },
+          {
+            "legal_name": "Kömürcü",
+            "osm_id": "16272302",
+            "source_name": "Kömürcü"
+          },
+          {
+            "legal_name": "Göçeri",
+            "osm_id": "16272299",
+            "source_name": "Göçeri"
+          },
+          {
+            "legal_name": "Akçiçek",
+            "osm_id": "16272297",
+            "source_name": "Akçiçek"
+          }
+        ],
+        "unmatched_legal_names": [],
+        "additional_spatial_names": []
+      }
+    },
+    {
+      "id": "geofabrik:CYN:7:16300858",
+      "name": "Tatlısu Belediyesi",
+      "osm_id": 16300858,
+      "osm_version": 2,
+      "osm_timestamp": "2023-11-25T12:20:32Z",
+      "legal_schedule_number": 17,
+      "legal_name": "TATLISU BELEDİYESİ",
+      "legal_settlement_count": 1,
+      "settlement_name_audit": {
+        "method": "Exact normalized native name and original village representative point inside the original municipality; no alias inference",
+        "exact_match_count": 1,
+        "exact_matches": [
+          {
+            "legal_name": "Tatlısu",
+            "osm_id": "16300857",
+            "source_name": "Tatlısu"
+          }
+        ],
+        "unmatched_legal_names": [],
+        "additional_spatial_names": []
+      }
+    },
+    {
+      "id": "geofabrik:CYN:7:16301085",
+      "name": "Beyarmudu Belediyesi",
+      "osm_id": 16301085,
+      "osm_version": 9,
+      "osm_timestamp": "2026-10-15T19:31:14Z",
+      "legal_schedule_number": 18,
+      "legal_name": "BEYARMUDU BELEDİYESİ",
+      "legal_settlement_count": 7,
+      "settlement_name_audit": {
+        "method": "Exact normalized native name and original village representative point inside the original municipality; no alias inference",
+        "exact_match_count": 7,
+        "exact_matches": [
+          {
+            "legal_name": "Beyarmudu",
+            "osm_id": "16301082",
+            "source_name": "Beyarmudu"
+          },
+          {
+            "legal_name": "Düzce",
+            "osm_id": "16301079",
+            "source_name": "Düzce"
+          },
+          {
+            "legal_name": "İncirli",
+            "osm_id": "16301081",
+            "source_name": "İncirli"
+          },
+          {
+            "legal_name": "Türkmenköy",
+            "osm_id": "16301083",
+            "source_name": "Türkmenköy"
+          },
+          {
+            "legal_name": "Köprülü",
+            "osm_id": "16301084",
+            "source_name": "Köprülü"
+          },
+          {
+            "legal_name": "Çayönü",
+            "osm_id": "16301078",
+            "source_name": "Çayönü"
+          },
+          {
+            "legal_name": "Güvercinlik",
+            "osm_id": "16301076",
+            "source_name": "Güvercinlik"
+          }
+        ],
+        "unmatched_legal_names": [],
+        "additional_spatial_names": [
+          {
+            "osm_id": "18962243",
+            "name": "Pile"
+          },
+          {
+            "osm_id": "16301077",
+            "name": "Avgoru"
+          }
+        ]
+      }
+    }
+  ],
+  "note": "Raw legal texts remain only in the ignored source cache. The runtime receives factual names/roles, source IDs, links and hashes."
+}

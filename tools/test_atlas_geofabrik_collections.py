@@ -1,6 +1,8 @@
 import importlib.util
 from pathlib import Path
 import unittest
+import tempfile
+import json
 
 PATH = Path(__file__).with_name("atlas_geofabrik_collections.py")
 module = None
@@ -296,3 +298,36 @@ class CollectionTests(unittest.TestCase):
         proof['matches'][0]['name']='Fremder Ort'
         with self.assertRaisesRegex(ValueError,'identity'):
             quarantine([parent,child],proof)
+
+    def test_azerbaijan_preparation_cannot_reactivate_obsolete_unqualified_r3_cache(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            cache=Path(temporary)
+            stage=cache/'stage';stage.mkdir()
+            data=stage/'immutable.bin';data.write_bytes(b'verified source bytes')
+            for revision,identifier in [('r3','unqualified-old'),('r4-role-review','quarantined-reviewed')]:
+                receipt={'sources':[{'id':identifier,'cache_file':'stage/immutable.bin','sha256':module.core.digest(data.read_bytes())}]}
+                (stage/f'normalized-AZ-v4-{revision}.receipt.json').write_text(json.dumps(receipt),encoding='utf-8')
+            prepared=module.prepare_country(cache,'AZ',stage)
+            self.assertEqual(prepared['sources'][0]['id'],'quarantined-reviewed')
+
+    def test_lebanon_preparation_cannot_reactivate_twelve_false_beirut_municipalities(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            cache=Path(temporary)
+            stage=cache/'stage';stage.mkdir()
+            data=stage/'immutable.bin';data.write_bytes(b'verified source bytes')
+            for revision,identifier in [('r3','unqualified-old'),('r4-beirut-role-review','one-beirut-municipality')]:
+                receipt={'sources':[{'id':identifier,'cache_file':'stage/immutable.bin','sha256':module.core.digest(data.read_bytes())}]}
+                (stage/f'normalized-LB-v4-{revision}.receipt.json').write_text(json.dumps(receipt),encoding='utf-8')
+            prepared=module.prepare_country(cache,'LB',stage)
+            self.assertEqual(prepared['sources'][0]['id'],'one-beirut-municipality')
+
+    def test_kazakhstan_preparation_retains_reviewed_city_administration_roles(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            cache=Path(temporary)
+            stage=cache/'stage';stage.mkdir()
+            data=stage/'immutable.bin';data.write_bytes(b'verified source bytes')
+            for revision,identifier in [('r3','generic-audans'),('r4-city-administrations','qualified-city-administrations')]:
+                receipt={'sources':[{'id':identifier,'cache_file':'stage/immutable.bin','sha256':module.core.digest(data.read_bytes())}]}
+                (stage/f'normalized-KZ-v4-{revision}.receipt.json').write_text(json.dumps(receipt),encoding='utf-8')
+            prepared=module.prepare_country(cache,'KZ',stage)
+            self.assertEqual(prepared['sources'][0]['id'],'qualified-city-administrations')

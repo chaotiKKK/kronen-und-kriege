@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "review_date": "2026-11-09",
+  "review_date": "2026-11-10",
   "sources": [
     {
       "id": "swisstopo-land-LI-2026",
@@ -894,6 +894,343 @@
       "independent_of_target_municipalities": true,
       "derivation": "Whole original EEA physical island polygons wholly contained in a separately ISO-verified national OSM frame; no target municipal union and no island/continental clipping",
       "limitations": "Physical source is a historical 2017 product at1:100000 scale. Residual shoreline differences are measured. National marine frames select membership only; they never supply physical land area."
+    },
+    {
+      "id": "ne-physical-water-AM-20261108",
+      "country": "AM",
+      "source_type": "ne-territorial-physical-land",
+      "derivation_version": 1,
+      "physical_product": "NaturalEarth:10m_land:v5.1.2",
+      "water_product": "Geofabrik:gis_osm_water_a_free",
+      "national_frame": {
+        "ISO3166-1": "AM",
+        "product": "NaturalEarth:admin0:v5.1.2",
+        "territorial_policy": "original-reference-unchanged"
+      },
+      "cache_file": "land-references/AM-NE-territorial-physical-water-20261108.geojson",
+      "bytes": 5323655,
+      "sha256": "dada31040bbf1dd61c6106cb27f3dfe7dc2095bc9aba783a154e0475cfcf4562",
+      "url": "https://download.geofabrik.de/asia/armenia-261108-free.shp.zip",
+      "metadata_url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_10m_admin_0_countries.geojson",
+      "date": "2026-11-08",
+      "retrieved": "2026-11-10",
+      "physical_source_version": "Natural Earth v5.1.2; publication version retained separately from 2026 OSM snapshot",
+      "input_files": [
+        {
+          "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_10m_land.geojson",
+          "bytes": 10157965,
+          "sha256": "1ac90796408bc6ad6911d69448485d3c4dbf2190370080368a09976e1c9f7416",
+          "cache_file": "audit/AM-KZ-IL-20261110/ne_10m_land-v5.1.2.geojson"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_10m_admin_0_countries.geojson",
+          "retrieved_utc": "2026-11-09T20:12:52+00:00",
+          "bytes": 13287234,
+          "sha256": "239eec57ac17f100a11e2536cffc56752c318b50ae765b0918ff7aab4ce8f255",
+          "cache_file": "ne_10m_admin_0_countries.geojson"
+        },
+        {
+          "name": "gis_osm_water_a_free_1.cpg",
+          "bytes": 6,
+          "compressed_bytes": 6,
+          "crc32": "59b2d65b",
+          "sha256": "146d6789ffe033a5297c1ad046e6a62ee35319b86b021444f05b6ea2aa8a1f4a",
+          "stream_chunk_bytes": 1048576,
+          "cache_file": "audit/AM-KZ-IL-20261110/AM-water-stage/members/gis_osm_water_a_free_1.cpg",
+          "url": "https://download.geofabrik.de/asia/armenia-261108-free.shp.zip"
+        },
+        {
+          "name": "gis_osm_water_a_free_1.dbf",
+          "bytes": 448647,
+          "compressed_bytes": 19233,
+          "crc32": "9f174dbd",
+          "sha256": "83136811446f46014dda7bab07a782812d2a32bcfbcc9bab3ee6853126448d8e",
+          "stream_chunk_bytes": 1048576,
+          "cache_file": "audit/AM-KZ-IL-20261110/AM-water-stage/members/gis_osm_water_a_free_1.dbf",
+          "url": "https://download.geofabrik.de/asia/armenia-261108-free.shp.zip"
+        },
+        {
+          "name": "gis_osm_water_a_free_1.prj",
+          "bytes": 144,
+          "compressed_bytes": 122,
+          "crc32": "0bbee490",
+          "sha256": "ffc9162903c37f0867d1e7f36c20036a165f7aa555dda24c1ae0ee4328d2977f",
+          "stream_chunk_bytes": 1048576,
+          "cache_file": "audit/AM-KZ-IL-20261110/AM-water-stage/members/gis_osm_water_a_free_1.prj",
+          "url": "https://download.geofabrik.de/asia/armenia-261108-free.shp.zip"
+        },
+        {
+          "name": "gis_osm_water_a_free_1.shp",
+          "bytes": 2054276,
+          "compressed_bytes": 1378253,
+          "crc32": "50c4140c",
+          "sha256": "310cd5c9bdffb342f55f9036d896283cb67ec24b7933a55067970c72ad7b0fc6",
+          "stream_chunk_bytes": 1048576,
+          "cache_file": "audit/AM-KZ-IL-20261110/AM-water-stage/members/gis_osm_water_a_free_1.shp",
+          "url": "https://download.geofabrik.de/asia/armenia-261108-free.shp.zip"
+        },
+        {
+          "name": "gis_osm_water_a_free_1.shx",
+          "bytes": 24844,
+          "compressed_bytes": 12146,
+          "crc32": "14a5a645",
+          "sha256": "1e858e1d1a5dfeb04917cdd525f2edac922f01e46daa22671d8324644bfec17f",
+          "stream_chunk_bytes": 1048576,
+          "cache_file": "audit/AM-KZ-IL-20261110/AM-water-stage/members/gis_osm_water_a_free_1.shx",
+          "url": "https://download.geofabrik.de/asia/armenia-261108-free.shp.zip"
+        },
+        {
+          "name": "README",
+          "bytes": 652,
+          "compressed_bytes": 372,
+          "crc32": "89c2ebf4",
+          "sha256": "5cb090d056bbd94ffbd78fa43799d1bc8d25f87502ed4363061e77e055896f6c",
+          "stream_chunk_bytes": 1048576,
+          "cache_file": "audit/AM-KZ-IL-20261110/AM-water-stage/members/README",
+          "url": "https://download.geofabrik.de/asia/armenia-261108-free.shp.zip"
+        }
+      ],
+      "water_archive_snapshot": {
+        "url": "https://download.geofabrik.de/asia/armenia-261108-free.shp.zip",
+        "bytes": 112672685,
+        "etag": "\"6b73fad-65fcdf303ade2\"",
+        "last_modified": "Mon, 09 Nov 2026 01:33:30 GMT",
+        "retrieved_utc": "2026-11-10T00:06:05.351093+00:00",
+        "head_headers": {
+          "status": 200,
+          "date": "Mon, 09 Nov 2026 08:15:35 GMT",
+          "server": "Apache",
+          "last-modified": "Mon, 09 Nov 2026 01:33:30 GMT",
+          "etag": "\"6b73fad-65fcdf303ade2\"",
+          "accept-ranges": "bytes",
+          "content-length": "112672685",
+          "cache-control": "max-age=63072000, public",
+          "content-type": "application/zip",
+          "age": "57031",
+          "cache-status": "download-proxy11;hit;detail=match",
+          "via": "1.1 download-proxy11 (squid/6.14)",
+          "connection": "keep-alive"
+        }
+      },
+      "original_water_class_counts": {
+        "water": 2328,
+        "reservoir": 368,
+        "wetland": 212,
+        "riverbank": 121,
+        "glacier": 20,
+        "wetland_marsh": 18,
+        "wetland_bog": 3,
+        "wetland_wet_meadow": 19,
+        "wetland_fen": 2,
+        "wetland_swamp": 1,
+        "wetland_reedbed": 1
+      },
+      "open_water_feature_count": 2817,
+      "excluded_water_classes": {
+        "water": 8200,
+        "reservoir": 8201,
+        "riverbank": 8202,
+        "dock": 8203
+      },
+      "retained_classes": [
+        "glacier",
+        "wetland",
+        "wetland_bog",
+        "wetland_fen",
+        "wetland_marsh",
+        "wetland_reedbed",
+        "wetland_swamp",
+        "wetland_wet_meadow"
+      ],
+      "license": "ODbL 1.0 (original physical-water polygons); Public Domain (unchanged Natural Earth national reference and independent physical coastline)",
+      "license_url": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "license_layers": [
+        {
+          "scope": "unmodified physical open-water polygons",
+          "license": "ODbL 1.0",
+          "url": "https://opendatacommons.org/licenses/odbl/1-0/"
+        },
+        {
+          "scope": "original national frame and global physical land/coast",
+          "license": "Public Domain",
+          "url": "https://www.naturalearthdata.com/about/terms-of-use/"
+        }
+      ],
+      "attribution": "© OpenStreetMap contributors; Geofabrik GmbH, physical-water polygons, snapshot2026-11-08. Made with Natural Earth v5.1.2 unchanged national reference and physical land. Downloaded2026-11-10.",
+      "product_url": "https://download.geofabrik.de/osm-data-in-gis-formats-free.pdf",
+      "independent_of_target_municipalities": true,
+      "reference_area_km2": 28167.155701465872,
+      "derivation": "Original project Natural Earth national territorial frame intersected with independent global physical coastline, minus every original open-water/reservoir/riverbank/dock polygon. No change of national assignment and no target municipality/district union; wetlands and glaciers remain land.",
+      "water_geometry_policy": "Unmodified original geographic water geometry; invalid or missing polygons fail. No repair, buffer, rounding, snapping, invented boundary or omission based on coverage.",
+      "limitations": "The project's original Natural Earth national assignment is retained exactly. Its generalized border/coast uncertainties remain; the independently measured more detailed OSM national proposal is not integrated because it would change neighbouring country assignments. This physical correction does not certify administrative borders or resolve remaining gaps."
+    },
+    {
+      "id": "ne-physical-water-IL-20261108",
+      "country": "IL",
+      "source_type": "ne-territorial-physical-land",
+      "derivation_version": 1,
+      "physical_product": "NaturalEarth:10m_land:v5.1.2",
+      "water_product": "Geofabrik:gis_osm_water_a_free",
+      "national_frame": {
+        "ISO3166-1": "IL",
+        "product": "NaturalEarth:admin0:v5.1.2",
+        "territorial_policy": "original-reference-unchanged"
+      },
+      "cache_file": "land-references/IL-NE-territorial-physical-water-20261108.geojson",
+      "bytes": 4649748,
+      "sha256": "a8403cbb3fac112d7321733c407a9cdfdd26852f7563bef603ddfd9f60c3b56e",
+      "url": "https://download.geofabrik.de/asia/israel-and-palestine-261108-free.shp.zip",
+      "metadata_url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_10m_admin_0_countries.geojson",
+      "date": "2026-11-08",
+      "retrieved": "2026-11-10",
+      "physical_source_version": "Natural Earth v5.1.2; publication version retained separately from 2026 OSM snapshot",
+      "input_files": [
+        {
+          "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_10m_land.geojson",
+          "bytes": 10157965,
+          "sha256": "1ac90796408bc6ad6911d69448485d3c4dbf2190370080368a09976e1c9f7416",
+          "cache_file": "audit/AM-KZ-IL-20261110/ne_10m_land-v5.1.2.geojson"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_10m_admin_0_countries.geojson",
+          "retrieved_utc": "2026-11-09T20:12:52+00:00",
+          "bytes": 13287234,
+          "sha256": "239eec57ac17f100a11e2536cffc56752c318b50ae765b0918ff7aab4ce8f255",
+          "cache_file": "ne_10m_admin_0_countries.geojson"
+        },
+        {
+          "name": "gis_osm_water_a_free_1.cpg",
+          "bytes": 6,
+          "compressed_bytes": 6,
+          "crc32": "59b2d65b",
+          "sha256": "146d6789ffe033a5297c1ad046e6a62ee35319b86b021444f05b6ea2aa8a1f4a",
+          "stream_chunk_bytes": 1048576,
+          "cache_file": "audit/AM-KZ-IL-20261110/IL-water-stage/members/gis_osm_water_a_free_1.cpg",
+          "url": "https://download.geofabrik.de/asia/israel-and-palestine-261108-free.shp.zip"
+        },
+        {
+          "name": "gis_osm_water_a_free_1.dbf",
+          "bytes": 636132,
+          "compressed_bytes": 26766,
+          "crc32": "ea619abb",
+          "sha256": "c4374d56bcdff6ff68f1b89f9990034f0c826551fd57c66c19e6113071f66101",
+          "stream_chunk_bytes": 1048576,
+          "cache_file": "audit/AM-KZ-IL-20261110/IL-water-stage/members/gis_osm_water_a_free_1.dbf",
+          "url": "https://download.geofabrik.de/asia/israel-and-palestine-261108-free.shp.zip"
+        },
+        {
+          "name": "gis_osm_water_a_free_1.prj",
+          "bytes": 144,
+          "compressed_bytes": 122,
+          "crc32": "0bbee490",
+          "sha256": "ffc9162903c37f0867d1e7f36c20036a165f7aa555dda24c1ae0ee4328d2977f",
+          "stream_chunk_bytes": 1048576,
+          "cache_file": "audit/AM-KZ-IL-20261110/IL-water-stage/members/gis_osm_water_a_free_1.prj",
+          "url": "https://download.geofabrik.de/asia/israel-and-palestine-261108-free.shp.zip"
+        },
+        {
+          "name": "gis_osm_water_a_free_1.shp",
+          "bytes": 1739716,
+          "compressed_bytes": 1116959,
+          "crc32": "fd550747",
+          "sha256": "5c3f75b27c1e033413450a8fb92c2a12ad59ed80f9d0913585988f81c7085c21",
+          "stream_chunk_bytes": 1048576,
+          "cache_file": "audit/AM-KZ-IL-20261110/IL-water-stage/members/gis_osm_water_a_free_1.shp",
+          "url": "https://download.geofabrik.de/asia/israel-and-palestine-261108-free.shp.zip"
+        },
+        {
+          "name": "gis_osm_water_a_free_1.shx",
+          "bytes": 35188,
+          "compressed_bytes": 16940,
+          "crc32": "c10a9e78",
+          "sha256": "cdbddb1a1463db26456813db0592a67f38aa30eb595883e7e151c4855cb6c126",
+          "stream_chunk_bytes": 1048576,
+          "cache_file": "audit/AM-KZ-IL-20261110/IL-water-stage/members/gis_osm_water_a_free_1.shx",
+          "url": "https://download.geofabrik.de/asia/israel-and-palestine-261108-free.shp.zip"
+        },
+        {
+          "name": "README",
+          "bytes": 665,
+          "compressed_bytes": 380,
+          "crc32": "a29c8b42",
+          "sha256": "e41beb0696c08cfa82926e19ba3bee8bcebcead7569b62c02637a48049aa22f5",
+          "stream_chunk_bytes": 1048576,
+          "cache_file": "audit/AM-KZ-IL-20261110/IL-water-stage/members/README",
+          "url": "https://download.geofabrik.de/asia/israel-and-palestine-261108-free.shp.zip"
+        }
+      ],
+      "water_archive_snapshot": {
+        "url": "https://download.geofabrik.de/asia/israel-and-palestine-261108-free.shp.zip",
+        "bytes": 218791122,
+        "etag": "\"d0a7cd2-65fcf7e8d4b05\"",
+        "last_modified": "Mon, 09 Nov 2026 03:24:06 GMT",
+        "retrieved_utc": "2026-11-10T00:09:21.297327+00:00",
+        "head_headers": {
+          "status": 200,
+          "date": "Mon, 09 Nov 2026 08:16:10 GMT",
+          "server": "Apache",
+          "last-modified": "Mon, 09 Nov 2026 03:24:06 GMT",
+          "etag": "\"d0a7cd2-65fcf7e8d4b05\"",
+          "accept-ranges": "bytes",
+          "content-length": "218791122",
+          "cache-control": "max-age=63072000, public",
+          "content-type": "application/zip",
+          "age": "57192",
+          "cache-status": "download-proxy11;hit;detail=match",
+          "via": "1.1 download-proxy11 (squid/6.14)",
+          "connection": "keep-alive"
+        }
+      },
+      "original_water_class_counts": {
+        "reservoir": 1143,
+        "water": 3077,
+        "wetland": 83,
+        "riverbank": 44,
+        "wetland_reedbed": 14,
+        "wetland_wet_meadow": 7,
+        "wetland_marsh": 6,
+        "wetland_swamp": 8,
+        "wetland_tidalflat": 1,
+        "dock": 1,
+        "wetland_bog": 2
+      },
+      "open_water_feature_count": 4265,
+      "excluded_water_classes": {
+        "water": 8200,
+        "reservoir": 8201,
+        "riverbank": 8202,
+        "dock": 8203
+      },
+      "retained_classes": [
+        "wetland",
+        "wetland_bog",
+        "wetland_marsh",
+        "wetland_reedbed",
+        "wetland_swamp",
+        "wetland_tidalflat",
+        "wetland_wet_meadow"
+      ],
+      "license": "ODbL 1.0 (original physical-water polygons); Public Domain (unchanged Natural Earth national reference and independent physical coastline)",
+      "license_url": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "license_layers": [
+        {
+          "scope": "unmodified physical open-water polygons",
+          "license": "ODbL 1.0",
+          "url": "https://opendatacommons.org/licenses/odbl/1-0/"
+        },
+        {
+          "scope": "original national frame and global physical land/coast",
+          "license": "Public Domain",
+          "url": "https://www.naturalearthdata.com/about/terms-of-use/"
+        }
+      ],
+      "attribution": "© OpenStreetMap contributors; Geofabrik GmbH, physical-water polygons, snapshot2026-11-08. Made with Natural Earth v5.1.2 unchanged national reference and physical land. Downloaded2026-11-10.",
+      "product_url": "https://download.geofabrik.de/osm-data-in-gis-formats-free.pdf",
+      "independent_of_target_municipalities": true,
+      "reference_area_km2": 21695.98965571512,
+      "derivation": "Original project Natural Earth national territorial frame intersected with independent global physical coastline, minus every original open-water/reservoir/riverbank/dock polygon. No change of national assignment and no target municipality/district union; wetlands and glaciers remain land.",
+      "water_geometry_policy": "Unmodified original geographic water geometry; invalid or missing polygons fail. No repair, buffer, rounding, snapping, invented boundary or omission based on coverage.",
+      "limitations": "The project's original Natural Earth national assignment is retained exactly. Its generalized border/coast uncertainties remain; the independently measured more detailed OSM national proposal is not integrated because it would change neighbouring country assignments. This physical correction does not certify administrative borders or resolve remaining gaps."
     }
   ],
   "purpose": "Independent country outlines and coverage denominators; never unions of the target country's imported communes",

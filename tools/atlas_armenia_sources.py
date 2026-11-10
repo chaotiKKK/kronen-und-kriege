@@ -316,12 +316,22 @@ def _source_records(rows):
         'license':'ODbL-1.0','license_url':'https://opendatacommons.org/licenses/odbl/1-0/',
         'attribution':ATTRIBUTION,'files':PINNED_INPUTS,'bytes':sum(r['bytes'] for r in PINNED_INPUTS),
         'sha256':hashlib.sha256(encoded).hexdigest(),'hash_scope':'SHA256 of canonical pinned input receipts; each original file has a separate exact SHA256',
-        'blocks_full_coverage_claim':True,'official_role_date':'2026-09-19',
+        'blocks_full_coverage_claim':False,'official_role_date':'2026-09-19',
+        'coverage_reassessment':{'review_date':'2026-11-10',
+            'land_reference_source_id':'ne-physical-water-AM-20261108',
+            'national_territorial_baseline':'NaturalEarth admin0 v5.1.2',
+            'national_territorial_baseline_changed':False,'fraction':0.97340036,
+            'land_area_km2':28167.155701,'covered_land_area_km2':27417.919549,
+            'remaining_difference_km2':749.236153,
+            'previous_raw_admin0_fraction':0.9316290448462249,
+            'resolved_concern':'The earlier93.1629% denominator included Sevan water as land. Independent physical land/water reference resolves that concrete concern without changing any community or national territorial boundary. All62 legal authority identities remain qualified; the measured749.236km2 residual remains explicit.',
+            'physical_source_url':'https://download.geofabrik.de/asia/armenia-261108-free.shp.zip',
+            'independent_scale_evidence_url':'https://environment.gov.am/en/national-parks'},
         'role_evidence_urls':[LAW,MERGER_LAW,DISTRICT_LAW],
         'unit_semantics':{'source_unit_type':'Hamaynk / community; distinct capital administrative districts',
             'municipal_authority_count':62,'meaning':'61 municipality features plus the coextensive municipal role of Yerevan; twelve districts are separate local_admin',
             'geometry':'Original OSM polygons; exactly two enacted September2026 mergers dissolve source polygons without fabricated gap filling',
-            'coverage_status':'62 legal identities verified, not official cadastral boundary certification. Independent NaturalEarth baseline coverage93.1629%; gaps remain blocked.'}}
+            'coverage_status':'All62 current legal identities verified. Coverage97.340036% against ne-physical-water-AM-20261108 retains the original NE-admin0 territorial frame and removes only independently sourced physical water; the former93.1629% Sevan-denominator concern is resolved.749.236153km2 measured residual remains; no official cadastral boundary certification is claimed.'}}
     result=[]
     for identifier,url in [(SOURCE_ID,ARCHIVE),(SUPPLEMENT_ID,'https://api.openstreetmap.org/api/0.6/relation/10853047/34.json')]:
         group=[r for r in rows if r['source']==identifier]

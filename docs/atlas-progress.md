@@ -1,105 +1,99 @@
-# Banger Queens 1.6.0 – Atlas und Prüfstand
+# Banger Queens 1.6.1 – Verwaltungsatlas und Prüfbericht
 
-Prüfzeit: 2026-11-10T00:18:40.682400+01:00. Projekt: `C:\Crusader Kings III\mobile-godot`. Geprüfter Kandidat für die Testveröffentlichung 1.6.0.
+Prüfstand: 2026-11-10T02:26:42.084989+01:00. Projekt: `C:\Crusader Kings III\mobile-godot`. Geprüfte Testfassung für Windows und Android. Die vollständige vergleichbare Abdeckung bleibt bei **acht Gebieten offen**; diese Fassung schließt sieben der zuvor 15 offenen Fälle nach dem begrenzten fachlichen Kriterium.
 
-Der Nutzer verlangt echte vergleichbar detaillierte Verwaltungsebenen über den gesamten vorhandenen Kartenausschnitt. Der Atlas verwendet reale Quellen, einheitliche Bildschirmregeln und eine explizite landesweise Abdeckungsprüfung. Die 49 Simulationsgebiete tragen weiterhin Wirtschaft, Eigentum, Krieg und Speicherstände. Zusätzliche Referenzflächen erzeugen keine zusätzlichen Ressourcen.
-
-## Eingebetteter Bestand
+## Bestand und Aussagegrenzen
 
 | Darstellungsobjekt | Anzahl |
 |---|---:|
-| country | 70 |
-| district | 4520 |
-| local_admin | 17531 |
-| municipality | 116652 |
-| region | 986 |
+| Länder-/Gebietsrahmen | 70 |
+| Obere Regionalflächen | 997 |
+| Kreis-/Bezirksflächen | 4.521 |
+| Kommunale Darstellungsflächen | 114.761 |
+| Weitere örtliche Verwaltungsflächen | 19.222 |
 | GeoNames-Orte | 23463 |
 | Flussgruppen | 175 |
 
-Der Kartenraum reicht von −12 bis 52° Länge und 33 bis 72° Breite. Die Datenstände unterscheiden sich und werden je Quelle genannt. Die Objektzahl ist keine weltweite Behördenvollzählung: Territorialteile können dieselbe ursprüngliche Gemeinde in mehreren Referenzgebieten darstellen. Quellenkennung und originale Einheit bleiben nachvollziehbar.
+Insgesamt 139.571 Kartenobjekte. Das Rechteck reicht von −12° bis 52° Länge und 33° bis 72° Breite: Europa und Nachbargebiete, kein vollständiger Weltatlas. Mehrere territoriale Teile können dieselbe ursprüngliche Verwaltungseinheit darstellen; Kennungen und Herkunft bleiben erhalten. Die 49 Spielgebiete tragen weiterhin Wirtschaft, Besitz, Krieg und Speicherstände. Referenzflächen erzeugen keine zusätzlichen Ressourcen.
 
-## Vergleichbare Ebenen und korrigierte Quellen
+`complete` bedeutet mindestens 95 % gemessene örtliche Verwaltungsabdeckung und hinreichend belegte Rollen ohne fortbestehende Quellensperre. Das ist weder eine hundertprozentige Vermessung noch eine nationale Behördenvollzählung. Die Gesamtzählung lautet **59 complete, fünf source_review, drei gap und drei single_jurisdiction**. Die drei strukturellen Sonderfälle MC, VA und GI erhalten keine erfundenen Untergemeinden.
 
-Deutschland besitzt 16 Länder, 400 Kreise, 10.751 Gemeinden und 198 gemeindefreie Gebiete. Frankreich erhält 13 obere regionale Einheiten einschließlich Corse, Italien 20 Regioni, Spanien 18 im Kartenausschnitt liegende Autonomien/Städte und das Vereinigte Königreich vier Constituent Countries. Die spanischen Provinzidentitäten bleiben als eigene Kreisrolle erhalten; die falsche pauschale NE-Typangabe wird überstimmt. Vorhandene Départements, Provinzen und Gemeinden werden durch den regionalen Rahmen nicht entfernt.
+## Was die neue Fassung verbessert
 
-Norwegen enthält 357 amtlich namensabgeglichene Gemeinden einschließlich der gezielt nachgelieferten Røros-Grenze. Tschechien enthält 6.253 Gemeindeobjekte und Prahas zusätzliche Gemeinderolle, zusammen 6.254 zivile Behörden; vier Militärbezirke bleiben gesondert. Luxemburg verwendet 100 amtliche Gemeinden und zwölf Kantone. Armenien verwendet 61 Gemeindeobjekte und Jerewans belegte Gemeinderolle, zusammen 62 rechtlich abgeglichene Identitäten; zwölf Hauptstadtbezirke bleiben getrennt. Zwei Fusionen vom September 2026 werden ausschließlich aus ihren Originalflächen vereinigt. Der ungeeignete alte AM39-Notfallregionssatz ist dokumentiert ausgeschlossen.
+- Armenien: 62 rechtlich abgeglichene kommunale Identitäten bleiben erhalten. Die unabhängige physische Landreferenz zählt tatsächliches Wasser nicht als Land, ohne nationale Zuordnungen zu verschieben. Abdeckung 97,340036 %. [Quellenvergleich](atlas-AM-KZ-IL-audit.md).
+- Republik Zypern: Original-DLS-Flächen mit CYSTAT 2026 und Reform 2024 verbunden; 20 aktuelle Gemeinden, 91 Quartiere und 511 territoriale Community-Einheiten fachlich getrennt. CY erreicht 98,991744 %, Akrotiri 96,375101 %. [Zypern und SBA](atlas-cyprus-sources.md).
+- Nordzypern: 18 tatsächliche kommunale Identitäten mit Gesetz und ursprünglichen Quellrelationen abgeglichen. Expliziter Schnitt ausschließlich am bestehenden CYN-Rahmen, Abdeckung 95,169134 %. [Identitäten und Grenzen](atlas-north-cyprus-sources.md).
+- Dekelia: Zwei belegte Teile von Lysi und Ammochostos additiv als örtliche Verwaltung aufgenommen, ausschließlich innerhalb ESB. Abdeckung 95,597840 %, rund 5,61 km² Rest. Crown-/Militärausnahmen und die fehlende Aussage uneingeschränkter tatsächlicher Machtausübung sind deutsch sichtbar. [Rechts- und Geometriebeleg](atlas-cyprus-sources.md).
+- Iran: 1.188 positiv typisierte Dehestan im Ausschnitt. Die alte beschädigte gemischte Quelle bleibt für administrative Darstellung ausgeschlossen. Die 52 zusätzlich ausgeschlossenen Kandidaten und die fehlende Bushehr-Referenz liegen vollständig außerhalb des Rechtecks; die gemessenen 2,40 % Rest bleiben ungeklärt. Abdeckung 97,597428 %. [Qualifizierung und reproduzierbarer Stager](atlas-iran-sources.md).
+- Jordanien: Ruwaished bleibt ein `district` mit ausdrücklich belegter terminaler staatlicher örtlicher Zuständigkeit. Die 95,817014 % sind keine Behauptung einer Gemeindegrenze. [Getrennter Rollenbeleg](atlas-jordan-sources.md).
+- Falsche Gemeindezuordnungen in Aserbaidschan und Beirut korrigiert. Drei echte kasachische Stadtverwaltungsrollen zusätzlich belegt. Marokkos 44 Rechtspunkte wurden nachvollziehbar rekonstruiert; die problematischen Kandidaten gelangen ausdrücklich nicht in die Runtime. [Marokko-Audit](atlas-morocco-legal-audit.md).
 
-Die Türkei erhält genau 30 belegte flächengleiche Metropolrollen auf vorhandenen Provinzgeometrien. Elf aufgehobene frühere Belde bleiben mit Originalgeometrie und Rechtsbeleg im Quellenbestand, tragen aber nicht als heutige Gemeinden zur Darstellung oder Abdeckung bei. Die 974 Kreisrollen werden nicht pauschal zu Gemeinden erklärt. Tunesiens echte boundary=municipality-Ebene liefert 335 im Ausschnitt liegende Quellobjekte; Imada und Nahiya bleiben anders bezeichnete lokale Verwaltung.
+Sinkende Werte bei einzelnen Gebieten sind ein Ergebnis strengerer Rollen- und Quellenkorrekturen. Höhere Verwaltungsebenen, Siedlungspunkte und künstliche Restpolygone wurden nicht benutzt, um örtliche Lücken zu verdecken. Der vollständige [Vorher-/Nachher-Bericht für alle 15 Fälle](atlas-remaining-15-audit.md) nennt je Gebiet die konkrete weitere Quelle.
 
-136 einzeln belegte OSM-/Geofabrik-Doppelrepräsentationen werden zugunsten des versionierten Originalrecords zusammengeführt. Identität, Quelle, native Ebene, Versionskohärenz und tatsächliche Geometrie werden erneut geprüft. Provenienz und belegte Elternzuordnung bleiben erhalten; die Abdeckungsrechnung verwendet nur die gewählte Geometrie.
+## Acht verbleibende Fälle
 
-Unabhängige physische Referenzen korrigieren die Landnenner von LI, SM, AX, LU, FO, EE, GG und JE. Zielgemeinden bilden keinen dieser Nenner. Sark und Alderney behalten ihre echten Jurisdiction-Regionen mit belegter lokaler Eigenregierung; zusätzliche Gemeinden werden nicht erfunden. Historische zyprische Gemeinde-Referenzteile bleiben auch innerhalb CNM erhalten, ohne eine UN-Kommunalverwaltung zu behaupten. [Küstenaudit](atlas-small-country-audit.md), [Quellen und Verarbeitung](atlas-sources.md).
-
-## Abdeckung und offene Arbeit
-
-Statuszählung: {'complete': 52, 'source_review': 10, 'gap': 5, 'single_jurisdiction': 3}. `complete` bedeutet mindestens 95 % geometrische Abdeckung ohne verbleibende Quellensperre; es ist kein allgemeiner amtlicher Vollzählungs- oder Aktualitätsnachweis. **Die geforderte durchgehend vergleichbare Gesamtabdeckung ist noch nicht vollständig erreicht.**
-
-| Gebiet | Abdeckung | Status |
+| Gebiet | Gemessene Abdeckung | Konkreter offener Punkt |
 |---|---:|---|
-| AM | 93.16 % | source_review |
-| AZ | 3.45 % | gap |
-| CNM | 99.87 % | source_review |
-| CY | 99.02 % | source_review |
-| CYN | 98.05 % | source_review |
-| ESB | 95.87 % | source_review |
-| IL | 92.75 % | gap |
-| IR | 98.74 % | source_review |
-| JO | 0.00 % | gap |
-| KZ | 77.57 % | source_review |
-| LB | 61.67 % | gap |
-| LY | 0.00 % | gap |
-| MA | 99.48 % | source_review |
-| TR | 55.59 % | source_review |
-| WSB | 96.97 % | source_review |
+| AZ · Aserbaidschan | 0,000000 % | Aktuelle Gemeindegrenzen mit belegten Identitäten und Weitergabe; acht falsche Altzuordnungen ausgeschlossen. |
+| CNM · UN-Pufferzone Zypern | 99,841186 % | Territoriale Referenzteile sind vorhanden; tatsächliche lokale Zuständigkeiten sind gesondert zu qualifizieren. |
+| IL · Israel | 92,696891 % | Rund 95,26 km² echte Flächen-/Referenzdifferenz im kleinen nördlichen Kartenausschnitt. |
+| KZ · Kasachstan | 78,685806 % | Ländliche Okrug-Grenzen fehlen; höhere Bezirksflächen sind kein Ersatz. |
+| LB · Libanon | 61,665802 % | Gemeinden, Quartiere, Katasterflächen und nichtkommunale Gebiete brauchen weiterhin konkrete Abgrenzung. |
+| LY · Libyen | 0,000000 % | Kein geeigneter aktueller Baladiya-Polygonsatz; gefundene HDX-Objekte sind Punkte. |
+| MA · Marokko | 99,475034 % | Sidi Mohamed Benmansour fehlt; die neue Rechtsrekonstruktion bleibt wegen konkreter Geometrieprobleme gesperrt. |
+| TR · Türkei | 55,590184 % | Echte lokale Grenzpolygone fehlen; für 30 Osmaniye-Kandidaten fehlen verifizierbare ursprüngliche Nutzungsbedingungen. |
 
-MC, VA und GI werden anhand ihrer belegten gebietsweiten Verwaltung gesondert erklärt; fehlende Untergemeinden werden nicht durch erfundene Polygone ersetzt. Weitere Verbesserungen benötigen tatsächlich belegte tiefere Verwaltungsgeometrien und bei manchen Beständen neuere Rollen-/Reformabgleiche.
+Die Quellenanzeige hält diese Vorbehalte sichtbar. Der amtliche AZ-Katasterweg und die genaue ursprüngliche TR-ULASAV-Ressource wurden zusätzlich begrenzt geprüft; es entstand daraus kein positiv qualifizierter weiterer Import. Der CNM-Rollenhinweis bleibt trotz nachgewiesener ziviler UN-Koordinationsaufgaben bestehen.
 
-## Darstellung und geprüfte Bedienung
+## Tests und tatsächliche Paketprüfung
 
-Regionen erscheinen ab 2×, Kreise ab 6× und Gemeinden/weitere lokale Flächen ab 24× bei mindestens 256 projizierten Boundingbox-Pixel². Zoom reicht bis 64×. Ortsnamen besitzen mindestens 13–14 Canvas-Pixel und bei 200 % mindestens 26–28. Kollisionsprüfung hält Namen auseinander. Unbekannte Quellnamen bleiben echte auswählbare Geometrien und werden nicht erfunden.
+**391 Python-Tests** bestanden ohne ausgelassene Fälle. **Alle 41 Godot-Suiten** bestanden mit **31.746 Assertions**, darunter Daten, Quellenrollen, echte territoriale Eltern, Originalgeometrien, Kartenintegration, Suche, Touch, 200 % Textskalierung und Save-Migration. Die neue achteilige Semantikprüfung verlangt ausdrücklich deutsche nichtkommunale und gebietsbezogene Hinweise.
 
-Die Grenzebene puffert und clippt echte Linienzüge; nach LOD getrennte räumliche Indizes überspringen verborgene Detailstufen. Komponenten unter 0,75 Bildschirm-Pixeln werden vor der Dekodierung ausgelassen und beim Zoomen wieder verfügbar. Diese Darstellungsregel entfernt keine gespeicherten Originalkomponenten.
+Der endgültige Atlasbuild bewahrte alle 22 eingefrorenen Eingabereceipts. Es gibt keine doppelten Feature-IDs, offenen oder länderfremden Elternverweise. Die JSON-Datei liegt unter GitHubs 100-MiB-Blobgrenze; keine qualifizierten Daten wurden dafür entfernt.
 
-Der Tipp auf eine Fläche benutzt die tatsächliche angeklickte Spielgebietsfläche; versetzt gezeichnete Ortsnamen benutzen ihren Ortsanker. In der Nahansicht hat die lokale Verwaltung Vorrang vor einer gröberen überlagernden Region. Orte außerhalb der Simulation behalten keine fremde Herrschaft. Der große Kartenmodus bewahrt den geografischen Mittelpunkt.
+Die endgültige Windows-EXE wurde aus einem leeren Arbeitsverzeichnis mit getrenntem Benutzer- und Temporärprofil geprüft. **148 Paketlauf-Prüfungen** bestanden: reale Loading-/Main-Szene, neue Partie, internationale und neue Gebietsauswahlen, Quellen bei 200 %, sichtbare Schließen-Aktion sowie Speichern und Wiederladen einer absichtlich veränderten Partie. Der tatsächliche Benutzerpfad blieb im Sandboxprofil. Der erste Diagnoselauf legte einen typstrengen Ganzzahl-/JSON-Gleitkommazahlvergleich im Prüfharness offen; nach isoliert belegter Normalisierung blieb der exakte Rollenbestandsvergleich erhalten und der neue Lauf war vollständig grün. Produktive Daten und Pakete wurden für diesen Fix nicht verändert.
 
-Die Quellenanzeige zeigt vollständige Credits, individuelle Lizenzen und konkrete Einschränkungen einschließlich teilweiser Rollenquarantäne. Suchergebnisse und Quellen sind auch bei 200 % scrollbar; die Schließen-Aktion bleibt außerhalb des Rollinhalts erreichbar. Die sechs Lesbarkeitsthemen bleiben erhalten, Walnuss ist der Standard.
+Beide Pakete enthalten alle **19 eingefrorenen JSON-/Binärdateien bytegleich**. Sämtliche 592 PCK-Einträge wurden gegen ihre MD5-Werte geprüft; alle 707 APK-Einträge bestehen CRC-Prüfung. Private Referenzen, Rohcaches, Tools, Tests, Dokumente und Keystores sind nicht eingebettet. Das originale 613-Byte-Windowsmanifest blieb bytegleich; native Ressourcen und Code stimmen mit der vor dem Packen vorbereiteten Vorlage überein.
 
-## Validierung
+Die APK ist v2-signiert und zipaligned, Paket `org.example.kronen`, Version 1.6.1 / Code 10, minSdk 24 / targetSdk 35, ARM64 und ARMv7. Der aktualisierte öffentliche APK-Verifier bestätigt dieselben Werte. Zertifikat-SHA256: `da3c6296edd521ad9f67d6d52d1cfe71fa5115e8d7ee0dfbca0a5c2c663802ac`. **Ein physischer Poco-/Android-Gerätelauf dieser Fassung wurde nicht durchgeführt.**
 
-Alle **40 Godot-Suiten** bestanden mit **31697 Assertions**. Die aktuelle Python-Sammlung bestand mit **260 Tests ohne ausgelassene Fälle**. Die gerenderten internationalen Vergleiche umfassen DE, FR, IT, PL, HU, CZ, NO, LU, RU, TR, AM, ES und GB auf derselben lokalen Zoomstufe; FR/IT/ES/GB zusätzlich auf 3× regionaler Stufe. Protokolle und Bilder liegen in `build/tests/` und `build/verify/`.
-
-Echter Kameraschwenk, nicht nur Neuzeichnen einer stehenden Karte:
+Ein tatsächlicher Kameraschwenk im 1600×900-Viewport auf dem vorhandenen Windows-Rechner mit RTX 5070 Laptop / OpenGL Compatibility:
 
 ```text
-MAPPERF zoom4-pan        zoom=4.00 redraw=yes frames=149 wall=4.024 fps=37.0 p50=26.96ms p95=27.87ms p99=28.90ms low1=34.6 draw_calls=5548 primitives=1363652 pan=yes pan_distance=107.6
+MAPPERF zoom4-pan        zoom=4.00 redraw=yes frames=147 wall=4.005 fps=36.7 p50=27.12ms p95=28.20ms p99=28.50ms low1=35.1 draw_calls=5548 primitives=1363652 pan=yes pan_distance=107.6
 ```
 
-Gemessen auf dem vorhandenen Windows-Rechner mit RTX 5070 Laptop/OpenGL-Compatibility und echtem 1600×900-Viewport. Diese Messung ist kein Poco-FPS-Nachweis.
+36,7 FPS beim Schwenk, 85,4 FPS in der Übersicht ohne Schwenk. Die Messung belegt keine allgemeine Leistungssteigerung gegenüber dem vorherigen Stand und ist keine Poco-FPS-Aussage.
 
-Beide Exporte enthalten die aktuellen Atlasdateien bytegleich. Die Android-APK ist v2-signiert und zipaligned, Paket org.example.kronen, versionCode 9/1.6.0, minSdk 24/targetSdk 35, ARM64/v7a. Private Referenzen, Tests, Tools und Keystores sind nicht verpackt. Die Windows-EXE enthält ihre PCK und wurde mit isoliertem Ressourcenpfad und getrenntem Benutzerprofil geprüft: echte Partie starten, mehrere internationale Nahansichten rendern, speichern/wiederladen, Quellen bei 200 % öffnen/schließen; 32 Prüfungen bestanden. Der zusätzliche normale Fensterstart wurde separat geprüft. Kein physischer Android-Gerätelauf wurde für diesen Kandidaten durchgeführt.
-
-Der Windows-Vorbereiter sichert das originale Anwendungsmanifest gegen den bekannten [Godot-4.5-Exportfehler #111316](https://github.com/godotengine/godot/pull/111316). Acht zusätzliche Tests, die bytegleichen Nicht-Ressourcen-Abschnitte, das 613-Byte-Originalmanifest, alle sieben Iconbilder und Version 1.6.0.0 wurden geprüft. Die Ressourcen werden vor dem Einbetten der PCK auf einer privaten Templatekopie vorbereitet; Godots erneute Ressourcenänderung ist im Windows-Preset deaktiviert. Die zuvor beobachtete Common-Controls-Warnung ist im erneuten normalen und isolierten Lauf verschwunden.
-
-## Exportdateien und Reproduktion
+## Dateien und Prüfsummen
 
 | Datei | Bytes | SHA-256 |
 |---|---:|---|
-| `build/exports/banger-queens.exe` | 317302944 | `b13b8972399fcc53ef9dae3ff81f51e0a4b08397b4d8ecb6e6a505087aa2aa1a` |
-| `build/exports/banger-queens.apk` | 269453133 | `053e43e3ca05c08085a928dd7fa0f59d2fe6d637bf5b94a65dbc41b0238428bb` |
-| `data/atlas.json` | 97749149 | `3df29746045fb714146926f48eb1f1ed337e12a2a5c1f82732ae0b96e27178fc` |
-| `data/atlas_geometry.bin` | 57424392 | `e5040e6f85521b2ee2a5076b9d7c85a0948e20f768ca5d236820e0ecd5be1540` |
+| `banger-queens-1.6.1.exe` | 319012192 | `32122fa497e3e5e3fd5311b5342c2cba1130a4039a4a869b07be05e044d848f7` |
+| `banger-queens-1.6.1.apk` | 269636854 | `8899c7615bb65d64153d9657ca08d51014f374d9ead0da88ee11aa145a0e471a` |
+| `atlas.json` | 99101714 | `9d3e7aa80cf0497d6aea940748a887b84fad78081d8382b2fefb65b395a60cfc` |
+| `atlas_geometry.bin` | 57445584 | `42e529cb7495d58029ecb949f38f6d2499568b116b74b14c7e49a6b423b72d83` |
 
-Alle Laufzeitdaten liegen in der APK beziehungsweise der eingebetteten Windows-PCK; Spielen benötigt keinen Datenimport oder nachträglichen Download. Source- und Lizenzmanifeste sowie sämtliche Importer sind im Repository. Bytegleiche Datenreproduktion benötigt die dokumentierten hashgleichen Rohcaches; öffentliche APIs können sich ändern. Der Metadatenprüfrahmen wurde für den real erweiterten Bestand von 64 auf 128 MB angehoben, der Binärpool bleibt auf 100 MB begrenzt. Die tatsächlichen Paket- und Datengrößen stehen oben.
+Die Pakete liegen unter `build/exports/`; die Datendateien unter `data/`. `SHA256SUMS-1.6.1.txt` enthält die beiden Paketprüfsummen. Die zuvor veröffentlichte Version 1.6.0 bleibt unter ihren bisherigen Namen unverändert als Rückfallstand erhalten.
+
+Alle Laufzeitdaten sind Bestandteil der APK beziehungsweise der eingebetteten Windows-PCK. Spielen benötigt weder manuellen Import noch Daten-Download. Dies ist das eigenständige Godot-Spiel Banger Queens; es ist keine vollständige native Rekonstruktion der CK3-Engine oder bereits abgeschlossene AAA-/Weltkommunensimulation.
+
+## Reproduktion
+
+Godot 4.5, lokale Exportvorlagen, JDK/Android-SDK und Python mit Shapely müssen wie dokumentiert bereitgestellt sein. Hashgleiche private Rohcaches sind für bytegleiche Datenreproduktion nötig; öffentliche APIs können sich inzwischen verändert haben. Die separaten Provider dokumentieren ihre Wiederherstellungs- und Prüfwege.
 
 ```powershell
-python tools/build_atlas_data.py
-python -m unittest discover -s tools -p "test_atlas*.py"
-python -m unittest discover -s tools -p test_prepare_windows_export_template.py
-# Godot-Suiten: tools/run_all_tests.sh
-# Export: APPDATA auf die vorbereitete lokale Godot-Profilstruktur setzen
-python tools/prepare_windows_export_template.py
-.tools/godot.exe --headless --path . --editor --export-release "Windows Desktop" build/exports/banger-queens.exe
-.tools/godot.exe --headless --path . --editor --export-debug Android build/exports/banger-queens.apk
+python -X utf8 tools/build_atlas_data.py
+python -X utf8 -m unittest discover -s tools -p 'test_*.py' -v
+# Git Bash verwenden; Fensterposition an den rechtesten Monitor anpassen.
+$env:GODOT_WINDOW_POSITION='100,60'
+bash tools/run_all_tests.sh
+python -X utf8 tools/release_validation/atlas_release_validation.py prepare --output build/verify/meine-pruefung
+# Versionierte Exportwrapper verweigern bereits vorhandene Ausgabedateien.
+bash export_windows.sh
+bash export_android.sh
+python -X utf8 tools/release_validation/atlas_release_validation.py static --frozen build/verify/meine-pruefung/frozen-data.json --exe build/exports/banger-queens-1.6.1.exe --apk build/exports/banger-queens-1.6.1.apk --output build/verify/meine-pruefung
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/release_validation/run_atlas_release_smoke.ps1 -Exe build/exports/banger-queens-1.6.1.exe -Frozen build/verify/meine-pruefung/frozen-data.json
 ```
 
-Die Fassung bleibt ein eigenständiges Godot-Spiel. Eine vollständige AAA-Produktion und die vollständig ausmodellierte Geschichte von 2000 v. Chr. bis 2200 n. Chr. werden durch die Atlasarbeit nicht nachgewiesen.
+Die endgültigen lokalen Belege liegen unter `build/verify/release-1.6.1-final-esb-r2/`, die vollständigen Suiteprotokolle unter `build/tests/`. Atlasbuild-, Python- und Exportprotokolle stehen unter `build/verify/atlas-remaining-final-*` beziehungsweise `build/verify/atlas-161-*`.

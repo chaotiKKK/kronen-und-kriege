@@ -61,6 +61,17 @@ class AdministrativeMeaningTests(unittest.TestCase):
         self.assertEqual(natural_earth_role("EE", {"iso_3166_2": "EE-74", "type": "Novads", "type_en": "Municipality"}),
                          ("region", "Maakond"))
 
+    def test_azerbaijan_city_administration_is_not_a_verified_municipal_boundary(self):
+        # Baku contains several municipalities; Ganja's Kapaz municipality
+        # explicitly excludes Hajikend. NE's city frame proves neither boundary.
+        for native in ("Sahar", "Sahari"):
+            with self.subTest(native=native):
+                self.assertEqual(natural_earth_role("AZ", {
+                    "type": native, "type_en": "Municipality", "iso_3166_2": "AZ-BA"}),
+                    ("region", native))
+        self.assertEqual(natural_earth_role("AZ", {"type": "Rayon", "type_en": "District"}),
+                         ("region", "Rayon"))
+
     def test_union_coverage_does_not_count_overlapping_units_twice(self):
         result = land_coverage(box(0, 40, 2, 42), [box(0, 40, 1, 42), box(0, 40, 1, 42)])
         self.assertAlmostEqual(result["fraction"], 0.5, places=6)
@@ -77,6 +88,87 @@ class AdministrativeMeaningTests(unittest.TestCase):
 
 
 class CrossCountryOutputTests(unittest.TestCase):
+    def test_statutory_sba_parts_survive_merge_only_in_the_eastern_base(self):
+        data = json.loads((ROOT / "data/atlas.json").read_text(encoding="utf-8"))
+        identifier = "DLS-SBA-overlapping-local-areas-2024-CYSTAT20260609"
+        rows = [f for f in data["features"] if f.get("source") == identifier]
+        self.assertEqual({f["name"] for f in rows}, {"Lysi", "Ammochostos"})
+        self.assertEqual(len(rows), 2)
+        self.assertTrue(all(f["kind"] == "local_admin" and f["country"] == "ESB" for f in rows))
+        self.assertTrue(all(f.get("source_geometry_clipped_to_scope") is True for f in rows))
+        ids = {f["id"]: f for f in data["features"]}
+        self.assertTrue(all(ids[f["parent_id"]]["country"] == "ESB" for f in rows))
+        coverage = data["administrative_coverage"]["ESB"]
+        self.assertEqual(coverage["status"], "complete")
+        self.assertGreater(coverage["fraction"], .955)
+        self.assertLess(coverage["fraction"], .957)
+        source = next(s for s in data["sources"] if s["id"] == identifier)
+        self.assertIn("Crown-Eigentum und Militärliegenschaften", source["territorial_scope_note"])
+
+    def test_only_three_reviewed_kazakh_city_administrations_gain_the_local_role(self):
+        data = json.loads((ROOT / "data/atlas.json").read_text(encoding="utf-8"))
+        rows = [f for f in data["features"] if f.get("country") == "KZ" and f["kind"] == "district"
+                and f.get("local_government_role") == "local_admin"]
+        self.assertEqual({str(f["original_source_id"]) for f in rows}, {"3389541", "3767383", "5515125"})
+        for row in rows:
+            proof = row["local_government_role_evidence"]
+            self.assertEqual(proof["type"], "exact-native-city-administration")
+            self.assertEqual(str(proof["osm_relation_id"]), str(row["original_source_id"]))
+            self.assertTrue(proof["source_urls"])
+            self.assertTrue(all(url.startswith("https://") for url in proof["source_urls"]))
+        self.assertTrue(all("Қалалық әкімдік" in f["unit_type"] for f in rows))
+
+    def test_iran_displays_only_positively_qualified_current_local_geometry(self):
+        data = json.loads((ROOT / "data/atlas.json").read_text(encoding="utf-8"))
+        rows = [f for f in data["features"] if f.get("source") == "geofabrik-IR-Dehestan-20261108"]
+        self.assertGreater(len(rows), 100)
+        self.assertTrue(all(f["country"] == "IR" and f["kind"] == "local_admin" for f in rows))
+        self.assertTrue(all("?" not in f["name"] for f in rows))
+        self.assertFalse(any(f.get("source") == "gbOpen-IRN-ADM4" for f in data["features"]))
+        coverage = data["administrative_coverage"]["IR"]
+        self.assertIn("gbOpen-IRN-ADM4", coverage["excluded_administrative_sources"])
+        self.assertEqual(coverage["status"], "complete")
+        self.assertFalse(coverage["blocks_full_coverage_claim"])
+        self.assertGreater(coverage["unblocked_source_fraction"], 0.95)
+
+    def test_northern_cyprus_uses_its_actual_eighteen_reviewed_municipalities(self):
+        data = json.loads((ROOT / "data/atlas.json").read_text(encoding="utf-8"))
+        rows = [f for f in data["features"] if f.get("source") == "geofabrik-CYN-261108-law15-2022"]
+        self.assertEqual(len(rows), 18)
+        self.assertTrue(all(f["country"] == "CYN" and f["kind"] == "municipality" for f in rows))
+        self.assertTrue(all(f.get("source_geometry_clipped_to_scope") is True for f in rows))
+        coverage = data["administrative_coverage"]["CYN"]
+        self.assertEqual(coverage["status"], "complete")
+        self.assertGreaterEqual(coverage["fraction"], 0.95)
+
+    def test_current_cyprus_territorial_units_use_the_qualified_reform_source(self):
+        data = json.loads((ROOT / "data/atlas.json").read_text(encoding="utf-8"))
+        rows = [f for f in data["features"] if f.get("source") == "DLS-CY-reform2024-CYSTAT20260609"]
+        self.assertGreater(len(rows), 500)
+        self.assertEqual(sum(f["kind"] == "municipality" and f["country"] == "CY" for f in rows), 20)
+        self.assertFalse(any(f["country"] == "CYN" for f in rows), "Republic claims are not the actual northern municipal system")
+        self.assertTrue({"CY", "CNM", "ESB", "WSB"}.issubset({f["country"] for f in rows}))
+        indexed = {f["id"]: f for f in data["features"]}
+        quarters = [f for f in rows if f.get("source_parent_id", "").startswith("dls:CY:municipality:")]
+        self.assertGreater(len(quarters), 40)
+        for row in quarters:
+            parent = indexed[row["parent_id"]]
+            self.assertEqual(parent["country"], row["country"])
+            self.assertEqual(parent["kind"], "municipality")
+
+    def test_new_country_audits_do_not_hide_nonmunicipal_roles_or_change_state_reference(self):
+        data = json.loads((ROOT / "data/atlas.json").read_text(encoding="utf-8"))
+        coverage = data["administrative_coverage"]
+        self.assertEqual(coverage["AM"]["land_reference_source"], "ne-physical-water-AM-20261108")
+        self.assertEqual(coverage["AM"]["status"], "complete")
+        self.assertAlmostEqual(coverage["AM"]["fraction"], 0.97340036, places=6)
+        self.assertEqual(coverage["IL"]["status"], "gap")
+        self.assertEqual(coverage["JO"]["nonmunicipal_terminal_administration"][0]["municipal_boundary_status"],
+                         "not-established-by-this-source")
+        self.assertGreater(coverage["JO"]["fraction"], 0.95)
+        self.assertFalse(any(f.get("country") == "AZ" and f["kind"] == "municipality" for f in data["features"]))
+        self.assertEqual(len(coverage["AZ"]["excluded_administrative_units"]), 8)
+
     def test_real_regional_frames_are_distinct_from_provinces_and_local_units(self):
         data = json.loads((ROOT / "data/atlas.json").read_text(encoding="utf-8"))
         features = data["features"]
@@ -117,8 +209,10 @@ class CrossCountryOutputTests(unittest.TestCase):
         with self.subTest(country="TN"):
             self.assertEqual(sum(f["source"] == "map-tunisia-municipalities-OSM20261016" and f["kind"] == "municipality" for f in features), 335)
         with self.subTest(country="CNM"):
-            parts = [f for f in features if f.get("country") == "CNM" and f["kind"] == "municipality"]
+            parts = [f for f in features if f.get("country") == "CNM" and f["kind"] in {"municipality", "local_admin"}]
             self.assertGreater(len(parts), 50)
+            self.assertTrue(any(f["kind"] == "local_admin" for f in parts), "Territorial communities and quarters are not all municipal governments")
+            self.assertTrue(all(f["source"] == "DLS-CY-reform2024-CYSTAT20260609" for f in parts))
             self.assertTrue(all(f.get("source_country") == "CY" for f in parts))
             self.assertEqual(data["administrative_coverage"]["CNM"]["status"], "source_review")
         for country, reference in [("EE", "maaruum-physical-land-EE-20261101"),
@@ -226,6 +320,107 @@ class CrossCountryOutputTests(unittest.TestCase):
 
 
 class MultiTerritorySourceTests(unittest.TestCase):
+    def test_explicit_single_territory_clip_preserves_provenance_even_for_official_identity(self):
+        geometry = box(30, 35, 32, 36)
+        land = box(30.5, 35, 31.5, 36)
+        source = {"id": "northern", "country": "CYN", "scope_countries": ["CYN"],
+                  "clip_to_scope": True, "scope_clip_basis": "Existing atlas territorial reference; no certified state-boundary claim",
+                  "scope_clip_evidence_url": "https://official.example/existing-territorial-reference"}
+        row = {"id": "northern:municipality:1", "country": "CYN", "kind": "municipality",
+               "name": "Belediye", "source": "northern", "parent_id": "country:CYN",
+               "country_assignment_method": "official_code", "geometry": geometry}
+        result = list(administration._territory_rows([row], {"northern": source}, {"CYN": land}))
+        self.assertEqual(len(result), 1)
+        self.assertTrue(result[0]["geometry"].equals(land))
+        self.assertTrue(row["geometry"].equals(geometry))
+        self.assertTrue(result[0]["source_geometry_clipped_to_scope"])
+        self.assertEqual(result[0]["scope_clip_evidence_url"], source["scope_clip_evidence_url"])
+
+    def test_explicit_clip_requires_unambiguous_flag_scope_and_evidence(self):
+        source = {"id": "northern", "country": "CYN", "scope_countries": ["CYN"],
+                  "clip_to_scope": True, "scope_clip_basis": "Declared reference scope",
+                  "scope_clip_evidence_url": "https://official.example/scope"}
+        row = {"id": "northern:1", "country": "CYN", "kind": "municipality", "source": "northern",
+               "geometry": box(30, 35, 32, 36)}
+        for invalid in ({"clip_to_scope": "true"}, {"scope_countries": "CYN"},
+                        {"scope_countries": ["CYN", "CYN"]}, {"scope_clip_basis": ""},
+                        {"scope_clip_evidence_url": ""}):
+            with self.subTest(invalid=invalid):
+                with self.assertRaises(ValueError):
+                    list(administration._territory_rows([row], {"northern": {**source, **invalid}},
+                                                       {"CYN": box(30.5, 35, 31.5, 36)}))
+
+    def _cyprus_parts(self, *, blocked_countries=None, reverse_rows=False):
+        lands = {"CY": box(10, 35, 11, 36), "CNM": box(11, 35, 12, 36)}
+        source = dict(id="cy", country="CY", kind="municipality", scope_countries=["CY", "CNM"],
+                      blocks_full_coverage_claim_countries=blocked_countries or [])
+        parent = dict(id="cy:municipality:1", name="Gemeinde", country="CY", source="cy", kind="municipality",
+                      parent_id="country:CY", geometry=box(10, 35, 12, 36))
+        child = dict(id="cy:quarter:1", name="Quartier", country="CY", source="cy", kind="local_admin",
+                     parent_id=parent["id"], geometry=box(10.5, 35.1, 11.5, 35.9))
+        rows = [child, parent] if reverse_rows else [parent, child]
+        pool = GeometryPool()
+        provinces = ProvinceIndex(ROOT / "data/europe_geometry.json")
+        features = [feature_record(pool, provinces, geometry, feature_id="country:" + country, name=country,
+                    kind="country", parent_id="", country=country, source="land", tolerance=0)
+                    for country, geometry in lands.items()]
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "data").mkdir()
+            (root / "data/atlas_cyprus_sources.json").write_text(json.dumps({"sources": [source]}))
+            reader = SimpleNamespace(__name__="atlas_cyprus_sources", iter_boundaries=lambda *_: iter(rows))
+            with patch("atlas_administration.importlib.import_module", return_value=reader):
+                _, coverage, _ = supplement(features, pool, provinces, feature_record, lands, [], root, root)
+        return features, coverage
+
+    def test_split_children_use_their_real_parent_in_each_territory_even_if_parent_follows(self):
+        features, _ = self._cyprus_parts(reverse_rows=True)
+        indexed = {row["id"]: row for row in features}
+        for country in ("CY", "CNM"):
+            child_id = "cy:quarter:1:atlas-part:" + country
+            parent_id = "cy:municipality:1:atlas-part:" + country
+            self.assertIn(child_id, indexed)
+            self.assertEqual(indexed[child_id]["parent_id"], parent_id)
+            self.assertIn(parent_id, indexed)
+            self.assertEqual(indexed[child_id]["source_parent_id"], "cy:municipality:1")
+
+    def test_source_review_for_one_territory_does_not_block_other_verified_parts(self):
+        _, coverage = self._cyprus_parts(blocked_countries=["CNM"])
+        self.assertEqual(coverage["CY"]["status"], "complete")
+        self.assertEqual(coverage["CNM"]["status"], "source_review")
+        self.assertTrue(coverage["CNM"]["blocks_full_coverage_claim"])
+
+    def test_source_cannot_block_undeclared_territories_or_use_ambiguous_flag_types(self):
+        for value in (["AZ"], "CNM", [True], ["CNM", "CNM"]):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    self._cyprus_parts(blocked_countries=value)
+
+    def test_terminal_jordan_jurisdiction_is_counted_without_a_municipal_claim(self):
+        land = box(37, 33, 38, 33.3)
+        row = dict(id="jo:terminal", country="JO", source="jo", name="Ruwaished", kind="district",
+                   unit_type="Liwa", local_government_role="local_admin",
+                   local_government_role_evidence="https://official.example/terminal-jurisdiction",
+                   terminal_scope="Ruwaished Liwa; atlas intersection north of 33 degrees",
+                   municipal_boundary_status="not-established-by-this-source", geometry=land)
+        pool = GeometryPool()
+        provinces = ProvinceIndex(ROOT / "data/europe_geometry.json")
+        features = []
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "data").mkdir()
+            (root / "data/atlas_jordan_sources.json").write_text(json.dumps({"sources": [
+                dict(id="jo", country="JO", kind="district")]}))
+            reader = SimpleNamespace(__name__="atlas_jordan_sources", iter_boundaries=lambda *_: iter([row]))
+            with patch("atlas_administration.importlib.import_module", return_value=reader):
+                _, coverage, _ = supplement(features, pool, provinces, feature_record, {"JO": land}, [], root, root)
+        self.assertEqual(len(features), 1)
+        self.assertEqual(features[0]["kind"], "district")
+        self.assertAlmostEqual(coverage["JO"]["fraction"], 1.0)
+        self.assertEqual(coverage["JO"]["nonmunicipal_terminal_administration"][0]["id"], "jo:terminal")
+        self.assertEqual(coverage["JO"]["nonmunicipal_terminal_administration"][0]["municipal_boundary_status"],
+                         "not-established-by-this-source")
+
     def test_one_disproved_local_unit_does_not_quarantine_its_valid_neighbors(self):
         land = box(30, 40, 32, 41)
         rows = [dict(id="valid:1", country="TR", source="mixed", name="Echte Gemeinde", kind="municipality", geometry=box(30, 40, 31, 41)),

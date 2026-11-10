@@ -37,6 +37,16 @@ class ArmeniaSourceTests(unittest.TestCase):
     def setUp(self):
         self.assertIsNotNone(provider,'The authorized Armenian provider has not been implemented yet')
 
+    def test_reviewed_identity_sources_use_the_conservative_physical_land_reassessment(self):
+        manifest=json.loads((Path(__file__).resolve().parents[1]/'data/atlas_armenia_sources.json').read_text(encoding='utf-8'))
+        self.assertEqual(sum(s['municipal_authorities'] for s in manifest['sources']),62)
+        for entry in manifest['sources']:
+            self.assertIs(entry['blocks_full_coverage_claim'],False)
+            assessment=entry['coverage_reassessment']
+            self.assertEqual(assessment['land_reference_source_id'],'ne-physical-water-AM-20261108')
+            self.assertFalse(assessment['national_territorial_baseline_changed'])
+            self.assertAlmostEqual(assessment['fraction'],0.97340036,places=8)
+
     def test_law_parser_reads_municipal_column_instead_of_settlement_names(self):
         document='<TABLE><TR><TD>Համայնքի անվանումը</TD><TD>Բնակավայրի անվանումը</TD></TR><TR><TD>1. Արարատ</TD><TD>Վեդի քաղաք</TD></TR><TR><TD></TD><TD>Ավշար գյուղ</TD></TR></TABLE>'
         self.assertEqual([r['name'] for r in provider.parse_official_communities(document)],['Արարատ','Երևան'])

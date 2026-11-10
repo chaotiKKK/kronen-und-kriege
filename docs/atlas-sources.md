@@ -7,10 +7,10 @@ Der Atlas umfasst Länge −12 bis 52° und Breite 33 bis 72° im Kartenraum 120
 | Objekt | Anzahl |
 |---|---:|
 | country | 70 |
-| district | 4520 |
-| local_admin | 17531 |
-| municipality | 116652 |
-| region | 986 |
+| district | 4521 |
+| local_admin | 19222 |
+| municipality | 114761 |
+| region | 997 |
 | Städte (GeoNames) | 23463 |
 | Flussnamen/-gruppen | 175 |
 
@@ -34,6 +34,8 @@ Die folgende Tabelle nennt den tatsächlich benutzten Stand und den SHA-256 der 
 | [maaruum-physical-land-EE-20261101](https://s3.pilw.io/rp-kemit-kataster/EHAK/eesti_mask_json.zip) | 2026-11-01 | [Maa- ja Ruumiamet public data-service terms (Maatoimingute platvorm), 2024-03](https://kataster.ee/sites/default/files/documents/2024-03/MTP_andmeteenuste_kasutustingimused.pdf) | 88160252 | `527f3f0526f946da49a99659383e0b3c2fb9f5d7010ef1a0d75922ddcf4c32eb` |
 | [eea-physical-islands-GG-v3-2017](https://marine.discomap.eea.europa.eu/arcgis/rest/services/Marine/EEA_coastline_2017/MapServer/0) | 2017-03-01 | [CC BY 4.0 (EEA physical coastline); ODbL 1.0 (separate OSM national territorial reference)](https://creativecommons.org/licenses/by/4.0/) | 221935 | `8eea76d18e835dcb85ce8c16c2e381ef3ee57d031464bf28d95927c352f77b96` |
 | [eea-physical-islands-JE-v3-2017](https://marine.discomap.eea.europa.eu/arcgis/rest/services/Marine/EEA_coastline_2017/MapServer/0) | 2017-03-01 | [CC BY 4.0 (EEA physical coastline); ODbL 1.0 (separate OSM national territorial reference)](https://creativecommons.org/licenses/by/4.0/) | 76880 | `ad77aeefc1bafecc00fffd71b07a4b05d01e1c556b8d7fcc0d517c867ca1d700` |
+| [ne-physical-water-AM-20261108](https://download.geofabrik.de/asia/armenia-261108-free.shp.zip) | 2026-11-08 | [ODbL 1.0 (original physical-water polygons); Public Domain (unchanged Natural Earth national reference and independent physical coastline)](https://opendatacommons.org/licenses/odbl/1-0/) | 5323655 | `dada31040bbf1dd61c6106cb27f3dfe7dc2095bc9aba783a154e0475cfcf4562` |
+| [ne-physical-water-IL-20261108](https://download.geofabrik.de/asia/israel-and-palestine-261108-free.shp.zip) | 2026-11-08 | [ODbL 1.0 (original physical-water polygons); Public Domain (unchanged Natural Earth national reference and independent physical coastline)](https://opendatacommons.org/licenses/odbl/1-0/) | 4649748 | `a8403cbb3fac112d7321733c407a9cdfdd26852f7563bef603ddfd9f60c3b56e` |
 | [bkg-vg250-vg250_lan](https://sgx.geodatenzentrum.de/wfs_vg250?service=WFS&version=2.0.0&request=GetFeature&typeNames=vg250%3Avg250_lan&outputFormat=application%2Fjson&srsName=EPSG%3A4326&CQL_FILTER=gf%3D4&sortBy=objid) | 2025-01-01 | [DL-DE-BY-2.0](https://www.govdata.de/dl-de/by-2-0) | 2658048 | `205e86d6016f93c7fc9446a9b9e906d3647436d86d64fe0c9e12de6c7424886e` |
 | [bkg-vg250-vg250_krs](https://sgx.geodatenzentrum.de/wfs_vg250?service=WFS&version=2.0.0&request=GetFeature&typeNames=vg250%3Avg250_krs&outputFormat=application%2Fjson&srsName=EPSG%3A4326&CQL_FILTER=gf%3D4&sortBy=objid) | 2025-01-01 | [DL-DE-BY-2.0](https://www.govdata.de/dl-de/by-2-0) | 9288008 | `0c301c12f3f6e896775d0a2264b00241d74d1a43350577223f851fee71fdd147` |
 | [bkg-vg250-vg250_gem](https://sgx.geodatenzentrum.de/wfs_vg250?service=WFS&version=2.0.0&request=GetFeature&typeNames=vg250%3Avg250_gem&outputFormat=application%2Fjson&srsName=EPSG%3A4326&CQL_FILTER=gf%3D4&sortBy=objid) | 2025-01-01 | [DL-DE-BY-2.0](https://www.govdata.de/dl-de/by-2-0) | 39633224 | `312f044c05430a743fb56caa7761864e9cd71cee0c4de490e901624822f3feff` |
@@ -101,9 +103,9 @@ Die folgende Tabelle nennt den tatsächlich benutzten Stand und den SHA-256 der 
 | [geofabrik-RU-admin6-district](https://download.geofabrik.de/russia/volga-fed-district-latest-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 36045835 | `287855b2d385b4a8894821b782decfd9ec5615bc254f019120c5a396c558a9ea` |
 | [geofabrik-RU-admin8-municipality](https://download.geofabrik.de/russia/volga-fed-district-latest-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 36045835 | `287855b2d385b4a8894821b782decfd9ec5615bc254f019120c5a396c558a9ea` |
 | [geofabrik-RU-admin9-local_admin](https://download.geofabrik.de/russia/volga-fed-district-latest-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 36045835 | `287855b2d385b4a8894821b782decfd9ec5615bc254f019120c5a396c558a9ea` |
-| [geofabrik-LB-admin4-region](https://download.geofabrik.de/asia/lebanon-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 914774 | `90f0adfddec49dafa604ca95d0476ac33439c9d47498eae611af9dd2ce5e9e25` |
-| [geofabrik-LB-admin5-district](https://download.geofabrik.de/asia/lebanon-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 914774 | `90f0adfddec49dafa604ca95d0476ac33439c9d47498eae611af9dd2ce5e9e25` |
-| [geofabrik-LB-admin7-municipality](https://download.geofabrik.de/asia/lebanon-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 914774 | `90f0adfddec49dafa604ca95d0476ac33439c9d47498eae611af9dd2ce5e9e25` |
+| [geofabrik-LB-admin4-region](https://download.geofabrik.de/asia/lebanon-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 915987 | `260bcf2a44ec36c388df64186a6cd387d0a9f3e9d2807d0a6af96ca217f1b489` |
+| [geofabrik-LB-admin5-district](https://download.geofabrik.de/asia/lebanon-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 915987 | `260bcf2a44ec36c388df64186a6cd387d0a9f3e9d2807d0a6af96ca217f1b489` |
+| [geofabrik-LB-admin7-municipality](https://download.geofabrik.de/asia/lebanon-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 915987 | `260bcf2a44ec36c388df64186a6cd387d0a9f3e9d2807d0a6af96ca217f1b489` |
 | [geofabrik-BY-admin4-region](https://download.geofabrik.de/europe/belarus-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 8008990 | `6ab84987de8ef4b75115f04fcc545841e4b5720a0b9512f6419a3d8a14f34e6d` |
 | [geofabrik-BY-admin6-district](https://download.geofabrik.de/europe/belarus-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 8008990 | `6ab84987de8ef4b75115f04fcc545841e4b5720a0b9512f6419a3d8a14f34e6d` |
 | [geofabrik-BY-admin8-municipality](https://download.geofabrik.de/europe/belarus-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 8008990 | `6ab84987de8ef4b75115f04fcc545841e4b5720a0b9512f6419a3d8a14f34e6d` |
@@ -116,15 +118,15 @@ Die folgende Tabelle nennt den tatsächlich benutzten Stand und den SHA-256 der 
 | [geofabrik-TN-admin4-region](https://download.geofabrik.de/africa/tunisia-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 7096574 | `002bb51b00d40739540a98b8572f25e599e0966cfc2b8b57c9368b5f6eb03d65` |
 | [geofabrik-TN-admin5-district](https://download.geofabrik.de/africa/tunisia-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 7096574 | `002bb51b00d40739540a98b8572f25e599e0966cfc2b8b57c9368b5f6eb03d65` |
 | [geofabrik-TN-admin6-local_admin](https://download.geofabrik.de/africa/tunisia-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 7096574 | `002bb51b00d40739540a98b8572f25e599e0966cfc2b8b57c9368b5f6eb03d65` |
-| [geofabrik-KZ-admin4-region](https://download.geofabrik.de/asia/kazakhstan-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 6079840 | `1c1320b5d38a28c3a3794fd4db1ec3754e00b799f5b008cd3ff5c3b888938aac` |
-| [geofabrik-KZ-admin6-district](https://download.geofabrik.de/asia/kazakhstan-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 6079840 | `1c1320b5d38a28c3a3794fd4db1ec3754e00b799f5b008cd3ff5c3b888938aac` |
-| [geofabrik-KZ-admin8-municipality](https://download.geofabrik.de/asia/kazakhstan-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 6079840 | `1c1320b5d38a28c3a3794fd4db1ec3754e00b799f5b008cd3ff5c3b888938aac` |
+| [geofabrik-KZ-admin4-region](https://download.geofabrik.de/asia/kazakhstan-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 6081397 | `6e3e6be1a6b2e3264971f2c707f5dc537fd52c5f2a37ae9e31634d54447f6571` |
+| [geofabrik-KZ-admin6-district](https://download.geofabrik.de/asia/kazakhstan-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 6081397 | `6e3e6be1a6b2e3264971f2c707f5dc537fd52c5f2a37ae9e31634d54447f6571` |
+| [geofabrik-KZ-admin8-municipality](https://download.geofabrik.de/asia/kazakhstan-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 6081397 | `6e3e6be1a6b2e3264971f2c707f5dc537fd52c5f2a37ae9e31634d54447f6571` |
 | [geofabrik-IL-admin4-region](https://download.geofabrik.de/asia/israel-and-palestine-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 1449235 | `31c23c169b7e65823e10bae0c5f2e5061817abba549194a32a41475984764dff` |
 | [geofabrik-IL-admin5-district](https://download.geofabrik.de/asia/israel-and-palestine-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 1449235 | `31c23c169b7e65823e10bae0c5f2e5061817abba549194a32a41475984764dff` |
 | [geofabrik-IL-admin8-municipality](https://download.geofabrik.de/asia/israel-and-palestine-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 1449235 | `31c23c169b7e65823e10bae0c5f2e5061817abba549194a32a41475984764dff` |
 | [geofabrik-JO-admin4-region](https://download.geofabrik.de/asia/jordan-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 191735 | `dc2422f96624f84e8d2b822fa2ffbe2c73e262f1f90d067e4658c4625ab6f280` |
 | [geofabrik-LY-admin4-region](https://download.geofabrik.de/africa/libya-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 83776 | `1220d00bdc219070b9543bd4c24d66ffb8590f58b23684ff6bfbd2f8fb008500` |
-| [geofabrik-AZ-admin8-municipality](https://download.geofabrik.de/asia/azerbaijan-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 11161 | `884b02c20728c5c740a37c3e7dbb228904353080350d6222b1891edcbea5e6a2` |
+| [geofabrik-AZ-admin8-municipality](https://download.geofabrik.de/asia/azerbaijan-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 11818 | `06ded9ee16dcdcc4f7a1ac79712fb70b1c689cbb9cb452c1cefe37af9e3d019b` |
 | [gbOpen-FRA-ADM5](https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/FRA/ADM5/geoBoundaries-FRA-ADM5_simplified.geojson) | 2020 | [Open Data Commons Attribution License 1.0](https://opendatacommons.org/licenses/by/1-0/) | 58886663 | `35ca1a1c457d3f8911a78f614257c7d623970f6efb8bed3ec62c5c51c7b6468b` |
 | [gbOpen-ITA-ADM4](https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/ITA/ADM4/geoBoundaries-ITA-ADM4_simplified.geojson) | 2023 | [Creative Commons Attribution 3.0 License](https://creativecommons.org/licenses/by/3.0/) | 18353080 | `3f3d441797c9fb6631ae787ed0f00f84500824dda4ed0ed98d8529cb3cca4bbd` |
 | [gbOpen-ESP-ADM3](https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/ESP/ADM3/geoBoundaries-ESP-ADM3_simplified.geojson) | 2018 | [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/) | 18613175 | `e5bfa1c3889ea763ca2bb82c7f1e8ff9eff715dcb99ce405293a03de7ac85862` |
@@ -158,6 +160,11 @@ Die folgende Tabelle nennt den tatsächlich benutzten Stand und den SHA-256 der 
 | [map-tunisia-municipalities-OSM20261016](https://github.com/Alaa-Taieb/map-tunisia/tree/2b704248c6105ceb2d8963ef9cfa052c683d0457) | 2026-10-16T20:21:21Z | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 6840764 | `1423f9731ecb6c70e01341a0b034499d81b0111670d30b014e282703fad41ba8` |
 | [geofabrik-AM-261108-qualified](https://download.geofabrik.de/asia/armenia-261108-free.shp.zip) | 2026-11-08T21:21:00Z | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 4411103 | `00b18c15f7618b893f8f4f5003512f95c7f88724bada72544040935fe3ad6a81` |
 | [osm-api-AM-Chambarak-20261108](https://api.openstreetmap.org/api/0.6/relation/10853047/34.json) | 2026-11-08T21:21:00Z | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 4411103 | `00b18c15f7618b893f8f4f5003512f95c7f88724bada72544040935fe3ad6a81` |
+| [geofabrik-JO-Ruwaished-terminal-20261108](https://download.geofabrik.de/asia/jordan-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 63628 | `6e0b9291044e1d0760688740c4c6672b6d8d28c8599d38fe1e62e6ed864cdc88` |
+| [DLS-CY-reform2024-CYSTAT20260609](https://www.data.gov.cy/en/dataset/187) | 2024-07-01 reform; CYSTAT2026-06-09; DLS retrieval2026-11-10 | [CC BY4.0 (DLS geometry); CYSTAT attribution/reuse policy (classification)](https://creativecommons.org/licenses/by/4.0/) | 25655887 | `daf932baf2c8baedad23940a4d5d469982805bc5e0e771423c43cab006730bb1` |
+| [DLS-SBA-overlapping-local-areas-2024-CYSTAT20260609](https://www.data.gov.cy/en/dataset/187) | 2024-07-01 reform; CYSTAT2026-06-09; DLS retrieval2026-11-10 | [CC BY4.0 (DLS geometry); CYSTAT attribution/reuse policy (classification)](https://creativecommons.org/licenses/by/4.0/) | 25655887 | `daf932baf2c8baedad23940a4d5d469982805bc5e0e771423c43cab006730bb1` |
+| [geofabrik-CYN-261108-law15-2022](https://download.geofabrik.de/europe/cyprus-261108-free.shp.zip) | 2026-11-08T21:21:00Z | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 11214507 | `9f22f610109500a5210f6341a0e8d23422dfcec7fa195250145f65164c3134a7` |
+| [geofabrik-IR-Dehestan-20261108](https://download.geofabrik.de/asia/iran-261108-free.shp.zip) | 2026-11-08 | [ODbL-1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 4480172 | `d49610c674f9f9e46fb083988bbfd790359ef591fa45120c173f4d221b2226c8` |
 | [gbOpen-regional-FRA-ADM1](https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/FRA/ADM1/geoBoundaries-FRA-ADM1_simplified.geojson) | 2022 | [Etalab Open License 2.0](https://github.com/etalab/licence-ouverte/blob/master/LO.md) | 1674230 | `7dc61e5c7e4c81f5fa10d339e6a5bc8428f1346f43f4426d9d165d2e44fc3a7e` |
 | [gbOpen-regional-ITA-ADM2](https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/ITA/ADM2/geoBoundaries-ITA-ADM2_simplified.geojson) | 2023 | [Creative Commons Attribution 3.0 License](https://creativecommons.org/licenses/by/3.0/) | 1259295 | `a01b6408d7d9061318034f8f4f54b377b99b5f8dcf5a7f84c5fa1e8ee3c86549` |
 | [gbOpen-regional-ESP-ADM1](https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/ESP/ADM1/geoBoundaries-ESP-ADM1_simplified.geojson) | 2017 | [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/) | 974041 | `b61a1bf661b90883763f633f5e9dbc27e7356309e42cbe56b60d2ceab5112f63` |
@@ -195,8 +202,8 @@ Der Python-Test umfasst zehn gezielte Pipelinefälle und vier Prüfungen des vol
 
 | Builddatei | Bytes | SHA-256 |
 |---|---:|---|
-| `data/atlas.json` | 97749149 | `3df29746045fb714146926f48eb1f1ed337e12a2a5c1f82732ae0b96e27178fc` |
-| `data/atlas_geometry.bin` | 57424392 | `e5040e6f85521b2ee2a5076b9d7c85a0948e20f768ca5d236820e0ecd5be1540` |
+| `data/atlas.json` | 99101714 | `9d3e7aa80cf0497d6aea940748a887b84fad78081d8382b2fefb65b395a60cfc` |
+| `data/atlas_geometry.bin` | 57445584 | `42e529cb7495d58029ecb949f38f6d2499568b116b74b14c7e49a6b423b72d83` |
 
 ## Landesweise Abdeckung lokaler Verwaltung
 
@@ -206,25 +213,25 @@ Die Prozentwerte messen echte lokale Flächen gegen eine unabhängige Landrefere
 |---|---|---:|---|---|
 | AD | Andorra | 100.00 % | Prüfwert erreicht | natural-earth-countries |
 | AL | Albanien | 98.58 % | Prüfwert erreicht | natural-earth-countries |
-| AM | Armenien | 93.16 % | Quellprüfung offen | natural-earth-countries |
+| AM | Armenien | 97.34 % | Prüfwert erreicht | ne-physical-water-AM-20261108 |
 | AT | Österreich | 98.97 % | Prüfwert erreicht | natural-earth-countries |
 | AX | Åland | 100.00 % | Prüfwert erreicht | syke-physical-land-AX-MML2025 |
-| AZ | Aserbaidschan | 3.45 % | Lücke | natural-earth-countries |
+| AZ | Aserbaidschan | 0.00 % | Quellprüfung offen | natural-earth-countries |
 | BA | Bosnien und Herzegowina | 98.14 % | Prüfwert erreicht | natural-earth-countries |
 | BE | Belgien | 98.37 % | Prüfwert erreicht | natural-earth-countries |
 | BG | Bulgarien | 97.91 % | Prüfwert erreicht | natural-earth-countries |
 | BY | Belarus | 98.51 % | Prüfwert erreicht | natural-earth-countries |
 | CH | Schweiz | 98.26 % | Prüfwert erreicht | natural-earth-countries |
-| CNM | UN-Pufferzone in Zypern | 99.87 % | Quellprüfung offen | natural-earth-countries |
-| CY | Republik Zypern | 99.02 % | Quellprüfung offen | natural-earth-countries |
-| CYN | Türkische Republik Nordzypern | 98.05 % | Quellprüfung offen | natural-earth-countries |
+| CNM | UN-Pufferzone in Zypern | 99.84 % | Quellprüfung offen | natural-earth-countries |
+| CY | Republik Zypern | 98.99 % | Prüfwert erreicht | natural-earth-countries |
+| CYN | Türkische Republik Nordzypern | 95.17 % | Prüfwert erreicht | natural-earth-countries |
 | CZ | Tschechien | 99.01 % | Prüfwert erreicht | natural-earth-countries |
 | DE | Deutschland | 99.31 % | Prüfwert erreicht | natural-earth-countries |
 | DK | Dänemark | 97.34 % | Prüfwert erreicht | natural-earth-countries |
 | DZ | Algerien | 99.63 % | Prüfwert erreicht | natural-earth-countries |
 | EE | Estland | 99.97 % | Prüfwert erreicht | maaruum-physical-land-EE-20261101 |
 | ES | Spanien | 99.54 % | Prüfwert erreicht | natural-earth-countries |
-| ESB | Dekelia | 95.87 % | Quellprüfung offen | natural-earth-countries |
+| ESB | Dekelia | 95.60 % | Prüfwert erreicht | natural-earth-countries |
 | FI | Finnland | 99.41 % | Prüfwert erreicht | natural-earth-countries |
 | FO | Färöer | 99.73 % | Prüfwert erreicht | us-physical-islands-FO-20261109 |
 | FR | Frankreich | 99.61 % | Prüfwert erreicht | natural-earth-countries |
@@ -236,15 +243,15 @@ Die Prozentwerte messen echte lokale Flächen gegen eine unabhängige Landrefere
 | HR | Kroatien | 98.15 % | Prüfwert erreicht | natural-earth-countries |
 | HU | Ungarn | 98.98 % | Prüfwert erreicht | natural-earth-countries |
 | IE | Irland | 99.14 % | Prüfwert erreicht | natural-earth-countries |
-| IL | Israel | 92.75 % | Lücke | natural-earth-countries |
+| IL | Israel | 92.70 % | Lücke | ne-physical-water-IL-20261108 |
 | IM | Isle of Man | 96.51 % | Prüfwert erreicht | natural-earth-countries |
 | IQ | Irak | 97.03 % | Prüfwert erreicht | natural-earth-countries |
-| IR | Iran | 98.74 % | Quellprüfung offen | natural-earth-countries |
+| IR | Iran | 97.60 % | Prüfwert erreicht | natural-earth-countries |
 | IT | Italien | 99.34 % | Prüfwert erreicht | natural-earth-countries |
 | JE | Jersey | 99.26 % | Prüfwert erreicht | eea-physical-islands-JE-v3-2017 |
-| JO | Jordanien | 0.00 % | Lücke | natural-earth-countries |
-| KZ | Kasachstan | 77.57 % | Quellprüfung offen | natural-earth-countries |
-| LB | Libanon | 61.67 % | Lücke | natural-earth-countries |
+| JO | Jordanien | 95.82 % | Prüfwert erreicht | natural-earth-countries |
+| KZ | Kasachstan | 78.69 % | Lücke | natural-earth-countries |
+| LB | Libanon | 61.67 % | Quellprüfung offen | natural-earth-countries |
 | LI | Liechtenstein | 99.59 % | Prüfwert erreicht | swisstopo-land-LI-2026 |
 | LT | Litauen | 98.82 % | Prüfwert erreicht | natural-earth-countries |
 | LU | Luxemburg | 100.00 % | Prüfwert erreicht | act-national-LU-20261105 |
@@ -272,7 +279,7 @@ Die Prozentwerte messen echte lokale Flächen gegen eine unabhängige Landrefere
 | TR | Türkei | 55.59 % | Quellprüfung offen | natural-earth-countries |
 | UA | Ukraine | 99.40 % | Prüfwert erreicht | natural-earth-countries |
 | VA | Vatikanstadt | entfällt (Strukturklassifikation) | Gebietsweite Verwaltung ohne zusätzliche Kommunalgliederung | natural-earth-countries |
-| WSB | Akrotiri | 96.97 % | Quellprüfung offen | natural-earth-countries |
+| WSB | Akrotiri | 96.38 % | Prüfwert erreicht | natural-earth-countries |
 | XK | Kosovo | 96.76 % | Prüfwert erreicht | natural-earth-countries |
 
 Noch nicht eingebettete Quellen: atlas_overture_sources.

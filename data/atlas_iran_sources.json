@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "sources": [
+    {
+      "id": "geofabrik-IR-Dehestan-20261108",
+      "country": "IR",
+      "scope_countries": [
+        "IR"
+      ],
+      "kind": "local_admin",
+      "unit_type": "Dehestan / دهستان",
+      "native_type": "دهستان",
+      "admin_level": 7,
+      "url": "https://download.geofabrik.de/asia/iran-261108-free.shp.zip",
+      "date": "2026-11-08",
+      "osm_timestamp": "2026-11-08T21:21:00Z",
+      "source_unit_count": 2679,
+      "expected_unit_count": 2679,
+      "raw_positive_type_count": 2731,
+      "cache_file": "iran-dehestan-261108/v1/boundaries.jsonl.gz",
+      "sha256": "d49610c674f9f9e46fb083988bbfd790359ef591fa45120c173f4d221b2226c8",
+      "bytes": 4480172,
+      "license": "ODbL-1.0",
+      "license_url": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "attribution": "© OpenStreetMap contributors; Geofabrik GmbH",
+      "replacement_scope": "feature",
+      "role_evidence_urls": [
+        "https://download.geofabrik.de/osm-data-in-gis-formats-free.pdf",
+        "https://wiki.openstreetmap.org/wiki/Template:Admin_level",
+        "https://download.geofabrik.de/asia/iran.html"
+      ],
+      "blocks_full_coverage_claim": false,
+      "unit_semantics": {
+        "render_role": "local_admin",
+        "native_role": "Explicit native Dehestan; not a blanket municipality promotion",
+        "coverage_status": "Partial source scope, not a national authority inventory"
+      },
+      "qualification_audit_file": "iran-dehestan-261108/v1/audit.json",
+      "qualification_audit_sha256": "0bdf8761cf151da8618c6f184ac21aa662af74a03233634730afddcabca058b4",
+      "scope_note": "30 positively ISO-verified source provinces; unverified outside-scope typed areas retained in raw audit, not assigned by archive filename",
+      "coverage_note": "2.679 positiv qualifizierte Dehestan-Flächen mit originalen Kennungen und Verwaltungsrollen. Im geprüften Atlasstand sind 97,597428 % der Referenzlandfläche im Kartenausschnitt belegt; 2,402572 % Restfläche bleiben räumlich noch nicht erklärt und werden nicht ergänzt. Dies sind örtliche Verwaltungsflächen, keine pauschalen Stadt- oder Gemeinderollen; eine aktuelle landesweit vollständige Behördenliste ist nicht belegt.",
+      "territorial_scope_note": "Die Landeszuordnung beruht auf 30 positiv bestätigten ursprünglichen iranischen Provinzflächen. 52 Dehestan außerhalb dieser Provinzreferenz wurden nicht aufgenommen. Alle 52 liegen vollständig südlich von 33° N (nördlichste Grenze: 30,2949624° N), ebenso die fehlende Bushehr-Provinzreferenz. Sie liegen außerhalb des Atlas-Kartenausschnitts (-12, 33, 52, 72) und erklären dessen Restfläche nicht. Die Originalgeometrien und die unabhängige Landreferenz bleiben unverändert."
+    }
+  ]
+}

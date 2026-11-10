@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
-# Einziger Exportweg für dieses Projekt.
-# Schreibt immer F:/ck3-kronen-kriege.apk – Name und Ort sind hier und in
-# export_presets.cfg identisch hinterlegt. Kein manueller Pfad nötig.
+# Nativer Android-Export mit dem vorbereiteten lokalen Godot/JDK-Profil.
+# Aufruf: bash export_android.sh [AUSGABE.apk]; relative Ziele gelten ab Projektwurzel.
 set -euo pipefail
-
-NAME="ck3-kronen-kriege"
-TARGET="F:/${NAME}.apk"
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TOOLS="$HERE/.tools"
@@ -13,18 +9,31 @@ GODOT="$TOOLS/godot.exe"
 JDK="$TOOLS/jdk17"
 
 fail() { echo "FEHLER: $*" >&2; exit 1; }
+[ "$#" -le 1 ] || fail "Aufruf: bash export_android.sh [AUSGABE.apk]"
+VERSION=$(sed -n 's/^config\/version="\([^"]*\)".*/\1/p' "$HERE/project.godot" | tr -d '\r')
+[[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "Ungültige Projektversion: $VERSION"
+TARGET="${1:-$HERE/build/exports/banger-queens-$VERSION.apk}"
+if command -v cygpath >/dev/null; then TARGET=$(cygpath -u "$TARGET"); fi
+[[ "$TARGET" == /* ]] || TARGET="$HERE/$TARGET"
+[[ "$TARGET" == *.apk ]] || fail "Die Ausgabedatei muss .apk heißen: $TARGET"
+[ ! -e "$TARGET" ] || fail "Ausgabedatei existiert bereits; bitte einen neuen Pfad wählen: $TARGET"
 
 [ -f "$GODOT" ] || fail "Godot fehlt: $GODOT"
 [ -f "$JDK/bin/java.exe" ] || fail "JDK 17 fehlt: $JDK"
 [ -d "$TOOLS/appdata/Godot/export_templates/4.5.stable" ] || fail "Godot-4.5-Exportvorlagen fehlen"
 [ -d "$HERE/android/build" ] || fail "Android-Buildvorlage fehlt: $HERE/android/build"
 
-mkdir -p "$HERE/build"
-rm -f "$TARGET"
+mkdir -p "$(dirname "$TARGET")"
+BUILD_APPDATA="$TOOLS/appdata"
+BUILD_JAVA_HOME="$JDK"
+if command -v cygpath >/dev/null; then
+    BUILD_APPDATA=$(cygpath -m "$BUILD_APPDATA")
+    BUILD_JAVA_HOME=$(cygpath -m "$BUILD_JAVA_HOME")
+fi
 
 echo "Exportiere nach $TARGET"
-APPDATA="$TOOLS/appdata" \
-JAVA_HOME="$JDK" \
+APPDATA="$BUILD_APPDATA" \
+JAVA_HOME="$BUILD_JAVA_HOME" \
 PATH="$JDK/bin:$PATH" \
 "$GODOT" --headless --path "$HERE" --export-debug "Android" "$TARGET"
 

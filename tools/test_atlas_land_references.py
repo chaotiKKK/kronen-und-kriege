@@ -322,6 +322,91 @@ class IndependentLandReferenceTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 land.load_references(cache, [source])
 
+    def test_national_physical_land_excludes_actual_water_but_preserves_wetland_and_glacier(self):
+        frame = box(43, 39, 47, 42)
+        physical = box(44, 39, 47, 42)  # Independently excludes the marine side.
+        water = [{"properties": {"osm_id": "36956", "fclass": "water", "code": 8200},
+                  "geometry": mapping(box(45, 40, 46, 41))},
+                 {"properties": {"osm_id": "w2", "fclass": "wetland", "code": 8220},
+                  "geometry": mapping(box(44, 39, 45, 40))},
+                 {"properties": {"osm_id": "g1", "fclass": "glacier", "code": 8211},
+                  "geometry": mapping(box(46, 41, 47, 42))}]
+        original = json.dumps(water, sort_keys=True)
+        geometry = land.national_physical_land(frame, physical, water, country="AM")
+        self.assertAlmostEqual(geometry.area, 8)
+        self.assertEqual(json.dumps(water, sort_keys=True), original)
+        self.assertTrue(geometry.covers(box(44.1, 39.1, 44.9, 39.9)))
+        self.assertTrue(geometry.covers(box(46.1, 41.1, 46.9, 41.9)))
+
+    def test_national_water_geometry_is_never_repaired_or_guessed(self):
+        properties = {"osm_id": "36956", "fclass": "water", "code": 8200}
+        invalid = {"type": "Polygon", "coordinates": [[[44, 40], [46, 41], [44, 41], [46, 40], [44, 40]]]}
+        for feature in [{"properties": properties, "geometry": None}, {"properties": properties, "geometry": invalid},
+                        {"properties": {**properties, "code": 8220}, "geometry": mapping(box(44, 40, 45, 41))}]:
+            with self.assertRaises(ValueError):
+                land.national_physical_land(box(43, 39, 47, 42), box(43, 39, 47, 42), [feature], country="AM")
+
+    def test_detailed_national_frame_requires_independent_original_iso_and_complete_boundary(self):
+        stamp = "2026-11-06T12:00:00Z"
+        nodes = [{"type": "node", "id": i+1, "version": 1, "timestamp": stamp, "lon": xy[0], "lat": xy[1]}
+                 for i, xy in enumerate([(43, 39), (47, 39), (47, 42), (43, 42)])]
+        way = {"type": "way", "id": 10, "version": 1, "timestamp": stamp, "nodes": [1, 2, 3, 4, 1]}
+        relation = {"type": "relation", "id": 364066, "version": 441, "timestamp": stamp,
+                    "tags": {"ISO3166-1": "AM", "admin_level": "2", "boundary": "administrative", "type": "boundary"},
+                    "members": [{"type": "way", "ref": 10, "role": "outer"}]}
+        payload = {"elements": [*nodes, way, relation]}
+        self.assertAlmostEqual(land.detailed_national_frame(payload, country="AM").area, 12)
+        with self.assertRaises(ValueError):
+            land.detailed_national_frame(payload, country="IL")
+        with self.assertRaises(ValueError):
+            land.detailed_national_frame({"elements": [*nodes, {**way, "nodes": [1, 2, 3]}, relation]}, country="AM")
+
+    def test_detailed_physical_reference_requires_separate_frame_water_and_all_hashes(self):
+        with tempfile.TemporaryDirectory() as folder:
+            cache = Path(folder)
+            raw = cache / "water.shp"; raw.write_bytes(b"original physical water")
+            output = cache / "am.geojson"; output.write_text(json.dumps(mapping(box(44, 40, 45, 41))), encoding="utf-8")
+            source = {"country": "AM", "source_type": "national-physical-land",
+                      "physical_product": "NaturalEarth:10m_land:v5.1.2", "water_product": "Geofabrik:gis_osm_water_a_free",
+                      "national_frame": {"ISO3166-1": "AM", "admin_level": 2, "relation_id": 364066, "relation_version": 441},
+                      "independent_of_target_municipalities": True, "cache_file": output.name, "bytes": output.stat().st_size,
+                      "sha256": hashlib.sha256(output.read_bytes()).hexdigest(),
+                      "input_files": [{"cache_file": raw.name, "bytes": raw.stat().st_size, "sha256": hashlib.sha256(raw.read_bytes()).hexdigest()}]}
+            self.assertIn("AM", land.load_references(cache, [source]))
+            with self.assertRaises(ValueError):
+                land.load_references(cache, [{**source, "water_product": "target municipality union"}])
+            raw.write_bytes(b"modified")
+            with self.assertRaises(ValueError):
+                land.load_references(cache, [source])
+
+    def test_conservative_reference_never_changes_the_existing_national_assignment(self):
+        original = box(44, 39, 46, 41)
+        countries = {"features": [{"properties": {"ISO_A2": "AM", "ADMIN": "Armenia"}, "geometry": mapping(original)},
+                                  {"properties": {"ISO_A2": "AZ", "ADMIN": "Azerbaijan"}, "geometry": mapping(box(46, 39, 47, 41))}]}
+        physical = box(43, 38, 48, 42)
+        water = [{"properties": {"osm_id": "36956", "fclass": "water", "code": 8200},
+                  "geometry": mapping(box(45, 40, 45.5, 40.5))}]
+        geometry = land.conservative_physical_land(countries, physical, water, country="AM")
+        self.assertAlmostEqual(geometry.area, 3.75)
+        self.assertTrue(original.covers(geometry))
+        with self.assertRaises(ValueError):
+            land.conservative_physical_land({"features": countries["features"]*2}, physical, water, country="AM")
+
+    def test_conservative_cached_reference_requires_original_ne_territorial_policy(self):
+        with tempfile.TemporaryDirectory() as folder:
+            cache = Path(folder)
+            original = cache / "country.json"; original.write_text("{}", encoding="utf-8")
+            output = cache / "land.geojson"; output.write_text(json.dumps(mapping(box(44, 40, 45, 41))), encoding="utf-8")
+            source = {"country": "AM", "source_type": "ne-territorial-physical-land",
+                      "physical_product": "NaturalEarth:10m_land:v5.1.2", "water_product": "Geofabrik:gis_osm_water_a_free",
+                      "national_frame": {"ISO3166-1": "AM", "product": "NaturalEarth:admin0:v5.1.2", "territorial_policy": "original-reference-unchanged"},
+                      "independent_of_target_municipalities": True, "cache_file": output.name, "bytes": output.stat().st_size,
+                      "sha256": hashlib.sha256(output.read_bytes()).hexdigest(),
+                      "input_files": [{"cache_file": original.name, "bytes": original.stat().st_size, "sha256": hashlib.sha256(original.read_bytes()).hexdigest()}]}
+            self.assertIn("AM", land.load_references(cache, [source]))
+            with self.assertRaises(ValueError):
+                land.load_references(cache, [{**source, "national_frame": {"ISO3166-1": "AM", "product": "OSM current national claims"}}])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -34,6 +34,11 @@ def natural_earth_role(country: str, properties: dict) -> tuple[str | None, str]
         return "region", "Woblast"
     if country == "EE" and iso == "EE-74":
         return "region", "Maakond"
+    if country == "AZ" and native in {"Sahar", "Sahari"}:
+        # Independent city administrations are not the municipalities within
+        # them. The municipal boundary needs its own positive territorial proof:
+        # https://ganja-ih.gov.az/az/belediyyeler.html (Kapaz excludes Hajikend).
+        return "region", native
     if country == "LU" and english == "District":
         return None, native
     if country == "FR" and english in {"Metropolitan department", "Overseas department"}:
@@ -83,7 +88,8 @@ def _territory_rows(rows, sources, lands):
         source = sources.get(row["source"], {})
         geometry = make_valid(row["geometry"])
         scope = source.get("scope_countries", [row["country"]])
-        if len(scope) == 1 or row.get("country_assignment_method") == "official_code":
+        explicit_clip = _scope_clip_requested(source)
+        if not explicit_clip and (len(scope) == 1 or row.get("country_assignment_method") == "official_code"):
             # A verified source-country key outranks an exaggerated/generalised
             # small-country map. Keep genuine islands and boundary detail.
             if row["country"] in lands:
@@ -98,6 +104,12 @@ def _territory_rows(rows, sources, lands):
                 parts.append((country, part))
         for country, part in parts:
             item = {**row, "country": country, "geometry": part}
+            if explicit_clip:
+                item.update(source_geometry_clipped_to_scope=True,
+                            scope_clip_basis=source["scope_clip_basis"],
+                            scope_clip_evidence_url=source["scope_clip_evidence_url"])
+            if row.get("parent_id") and not row["parent_id"].startswith("country:"):
+                item["source_parent_id"] = row["parent_id"]
             if len(parts) > 1:
                 item.update(id=row["id"] + ":atlas-part:" + country,
                             source_unit_id=row["id"], source_country=row["country"],
@@ -106,6 +118,43 @@ def _territory_rows(rows, sources, lands):
                 item["source_country"] = row["country"]
                 item["parent_id"] = "country:" + country
             yield item
+
+
+def _scope_clip_requested(source):
+    requested = source.get("clip_to_scope", False)
+    if not isinstance(requested, bool):
+        raise ValueError("Scope clipping requires an explicit boolean flag")
+    if requested:
+        scope = source.get("scope_countries")
+        basis = source.get("scope_clip_basis")
+        evidence = source.get("scope_clip_evidence_url")
+        if (not isinstance(scope, list) or not scope
+                or any(not isinstance(code, str) or not code for code in scope)
+                or len(scope) != len(set(scope))
+                or not isinstance(basis, str) or not basis.strip()
+                or not isinstance(evidence, str) or not evidence.startswith("https://")):
+            raise ValueError("Scope clipping requires distinct territorial codes, an explicit derivation basis and source evidence")
+    return requested
+
+
+def _source_quality_blocked(source, country):
+    global_flag = source.get("blocks_full_coverage_claim", False)
+    blocked = source.get("blocks_full_coverage_claim_countries", [])
+    scope = source.get("scope_countries", [source.get("country")])
+    if (not isinstance(global_flag, bool) or not isinstance(blocked, list)
+            or any(not isinstance(code, str) or code not in scope for code in blocked)
+            or len(blocked) != len(set(blocked))):
+        raise ValueError("Source quality blocks require distinct explicitly scoped country codes and a boolean global flag")
+    return global_flag or country in blocked
+
+
+def _restore_territorial_parents(features, part_ids):
+    existing = {feature["id"] for feature in features}
+    for feature in features:
+        source_parent = feature.get("source_parent_id")
+        parent = part_ids.get((source_parent, feature.get("country")))
+        if parent in existing and parent != feature["id"]:
+            feature["parent_id"] = parent
 
 
 def _source_priority(source, default):
@@ -228,6 +277,10 @@ def supplement(features, pool, provinces, make_feature, country_geometries, base
         ("atlas_communal_sources", "atlas_communal_sources.json", 2),
         ("atlas_tunisia_sources", "atlas_tunisia_sources.json", 3),
         ("atlas_armenia_sources", "atlas_armenia_sources.json", 3),
+        ("atlas_jordan_sources", "atlas_jordan_sources.json", 3),
+        ("atlas_cyprus_sources", "atlas_cyprus_sources.json", 4),
+        ("atlas_north_cyprus_sources", "atlas_north_cyprus_sources.json", 5),
+        ("atlas_iran_sources", "atlas_iran_sources.json", 3),
         ("atlas_regional_sources", "atlas_regional_sources.json", 3),
         ("atlas_official_sources", "atlas_official_sources.json", 3),
         ("atlas_morocco_sources", "atlas_morocco_sources.json", 3),
@@ -243,6 +296,8 @@ def supplement(features, pool, provinces, make_feature, country_geometries, base
         entries = json.loads(manifest.read_text(encoding="utf-8"))["sources"]
         for entry in entries:
             _regional_frame_kinds(entry)
+            _source_quality_blocked(entry, None)
+            _scope_clip_requested(entry)
         module = importlib.import_module(module_name)
         sources.extend(entries)
         batches.append((module, entries, priority))
@@ -264,6 +319,8 @@ def supplement(features, pool, provinces, make_feature, country_geometries, base
     quality_blocks = defaultdict(bool)
     excluded_sources = defaultdict(set)
     excluded_units = defaultdict(list)
+    terminal_administrations = defaultdict(list)
+    territorial_part_ids = {}
     for index, (country, geometry, source_id) in enumerate(base_local_geometries):
         if country not in local_priority or country == "DE":
             local_shapes[country].append(("base:" + str(index), geometry))
@@ -329,6 +386,7 @@ def supplement(features, pool, provinces, make_feature, country_geometries, base
                 continue
             _replace_reference_features(features, item, row)
             features.append(item)
+            territorial_part_ids[(row.get("source_unit_id", row["id"]), country)] = item["id"]
             regional_frames[country].update(_regional_frame_kinds(source))
             if row.get("verified_source_alias"):
                 alias_rows.append(row)
@@ -338,15 +396,21 @@ def supplement(features, pool, provinces, make_feature, country_geometries, base
                 frame_countries.add(country)
             if is_local_coverage_area(row):
                 local_shapes[country].append((row["id"], geometry))
-                if not source.get("blocks_full_coverage_claim", False):
+                if row.get("terminal_scope") and row.get("local_government_role") == "local_admin":
+                    terminal_administrations[country].append({
+                        "id": row["id"], "source": row["source"], "unit_type": row.get("unit_type", ""),
+                        "scope": row["terminal_scope"], "evidence": row["local_government_role_evidence"],
+                        "municipal_boundary_status": row.get("municipal_boundary_status", "not-established-by-this-source")})
+                if not _source_quality_blocked(source, country):
                     trusted_local_shapes[country].append((row["id"], geometry))
                 local_sources[country].add(row["source"])
-                quality_blocks[country] |= bool(source.get("blocks_full_coverage_claim", False))
+                quality_blocks[country] |= _source_quality_blocked(source, country)
 
     features[:] = [f for f in features if not (
         f["source"] == "natural-earth-regions" and (
             (f["country"] in frame_countries and f["kind"] != "municipality")
             or f["kind"] in regional_frames[f["country"]]))]
+    _restore_territorial_parents(features, territorial_part_ids)
     removed_aliases = _merge_verified_aliases(features, alias_rows, alias_geometries)
     feature_index = {feature["id"]: feature for feature in features}
     # A partial country query does not disqualify the independently verified
@@ -389,6 +453,8 @@ def supplement(features, pool, provinces, make_feature, country_geometries, base
             result["excluded_administrative_sources"] = sorted(excluded_sources[country])
         if excluded_units[country]:
             result["excluded_administrative_units"] = sorted(excluded_units[country], key=lambda row: row["id"])
+        if terminal_administrations[country]:
+            result["nonmunicipal_terminal_administration"] = sorted(terminal_administrations[country], key=lambda row: row["id"])
         coverage[country] = result
-        print(f"Kommunale Landabdeckung {country}: {100 * result['fraction']:.2f}% ({result['status']})", flush=True)
+        print(f"Örtliche Verwaltungsabdeckung {country}: {100 * result['fraction']:.2f}% ({result['status']})", flush=True)
     return sources, coverage, pending

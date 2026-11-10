@@ -66,6 +66,13 @@ CHANNEL_SNAPSHOT = "2026-11-08T21:21:00Z"
 CHANNEL_ISLAND_LIMIT_M2 = 500_000_000
 CHANNEL_QUERY = {"geometry": "-2.8,48.8,-1.8,49.9", "geometryType": "esriGeometryEnvelope", "inSR": 4326,
                  "outFields": "FID,OBJECTID,Id,Shape_Area"}
+DETAILED_FRAMES = {"AM": (364066, 441), "IL": (1473946, 345)}
+DETAILED_ARCHIVES = {"AM": "https://download.geofabrik.de/asia/armenia-261108-free.shp.zip",
+                     "IL": "https://download.geofabrik.de/asia/israel-and-palestine-261108-free.shp.zip"}
+ACTUAL_WATER_CLASSES = {"water": 8200, "reservoir": 8201, "riverbank": 8202, "dock": 8203}
+DETAILED_DIRECTORY = "audit/AM-KZ-IL-20261110/"
+NE_LAND_URL = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_10m_land.geojson"
+NE_COUNTRIES_URL = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_10m_admin_0_countries.geojson"
 
 
 def _area(geometry):
@@ -716,6 +723,211 @@ def prepare_channel_islands_references(cache: Path) -> list[dict]:
     return result
 
 
+def detailed_national_frame(payload: dict, *, country: str):
+    from atlas_osm_sources import full_geometry_relations, _member_lines, _closed_polygons
+    if country not in DETAILED_FRAMES:
+        raise ValueError("Unreviewed detailed national reference")
+    identifier, version = DETAILED_FRAMES[country]
+    related = full_geometry_relations(payload, CHANNEL_SNAPSHOT)
+    relation = related.get(identifier, {})
+    tags = relation.get("tags", {})
+    if (relation.get("version") != version or tags.get("ISO3166-1") != country
+            or tags.get("admin_level") != "2" or tags.get("boundary") != "administrative"):
+        raise ValueError("Detailed national frame lacks its original reviewed ISO/level/version identity")
+    outer, inner = _member_lines(relation, related)
+    geometry = unary_union(_closed_polygons(outer, identifier, "outer"))
+    if inner:
+        geometry = geometry.difference(unary_union(_closed_polygons(inner, identifier, "inner")))
+    if not geometry.is_valid:
+        raise ValueError("Original national frame is invalid; no boundary repair or guessed closing segment allowed")
+    return _area(geometry)
+
+
+def national_physical_land(national_frame, physical_land, water_features: list[dict], *, country: str):
+    if country not in DETAILED_FRAMES:
+        raise ValueError("Unreviewed detailed physical country")
+    water = []
+    for feature in water_features:
+        properties = feature.get("properties") or {}
+        category = properties.get("fclass")
+        if category not in ACTUAL_WATER_CLASSES:
+            continue  # Wetlands and glaciers are not open-water exclusions.
+        if properties.get("code") != ACTUAL_WATER_CLASSES[category] or not isinstance(feature.get("geometry"), dict):
+            raise ValueError("Physical-water source has conflicting original class/code or missing geometry")
+        geometry = shape(feature["geometry"])
+        if (geometry.geom_type not in ("Polygon", "MultiPolygon") or geometry.is_empty
+                or not geometry.is_valid or geometry.area <= 0):
+            raise ValueError("Original physical-water geometry is invalid; no buffer, snapping, repair or invented closure allowed")
+        if geometry.intersects(national_frame):
+            water.append(geometry)
+    return _area(_area(national_frame).intersection(_area(physical_land)).difference(unary_union(water)))
+
+
+def _physical_water_inputs(cache: Path, country: str):
+    from atlas_geofabrik_sources import RangeSource, RemoteZip
+    directory = DETAILED_DIRECTORY + country + "-water-stage/"
+    folder = cache / directory
+    receipt_path = folder / "receipt.json"
+    if not receipt_path.exists():
+        remote = RangeSource(folder, DETAILED_ARCHIVES[country])
+        members = []
+        with zipfile.ZipFile(RemoteZip(remote.snapshot["bytes"], remote.fetch)) as archive:
+            names = ["gis_osm_water_a_free_1." + extension for extension in ("cpg", "dbf", "prj", "shp", "shx")]
+            for name in [*names, "README"]:
+                if archive.namelist().count(name) != 1:
+                    raise ValueError("Reviewed physical-water archive lacks a unique original component")
+                info = archive.getinfo(name)
+                if info.file_size > 16*1024*1024:
+                    raise ValueError("Physical-water original component exceeds the reviewed bounded size")
+                payload = archive.read(info)  # Original ZIP CRC checked by zipfile.
+                target = folder / "members" / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                temporary = target.with_suffix(target.suffix + ".partial")
+                temporary.write_bytes(payload)
+                temporary.replace(target)
+                item = {"name": name, "bytes": len(payload), "sha256": hashlib.sha256(payload).hexdigest(), "crc32": f"{info.CRC:08x}"}
+                if name == "README":
+                    readme = item
+                else:
+                    members.append(item)
+        _write_json(receipt_path, {"snapshot": remote.snapshot, "members": members, "readme": readme})
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    if receipt.get("snapshot", {}).get("url") != DETAILED_ARCHIVES[country]:
+        raise ValueError("Physical-water source changed its reviewed original dated archive")
+    wanted = {"gis_osm_water_a_free_1." + extension for extension in ("cpg", "dbf", "prj", "shp", "shx")}
+    if {r.get("name") for r in receipt.get("members", [])} != wanted or len(receipt["members"]) != 5:
+        raise ValueError("Physical-water archive components are incomplete or duplicated")
+    inputs = []
+    for item in [*receipt["members"], receipt["readme"]]:
+        relative = directory + "members/" + item["name"]
+        verify_source(cache / relative, item)
+        inputs.append({**item, "cache_file": relative, "url": DETAILED_ARCHIVES[country]})
+    readme_text = (folder / "members/README").read_text(encoding="utf-8")
+    if "data as of " + CHANNEL_SNAPSHOT not in readme_text:
+        raise ValueError("Original physical-water README does not match the fixed OSM snapshot")
+    return inputs, receipt
+
+
+def _validate_detailed_physical_source(source: dict):
+    country = source.get("country")
+    frame = source.get("national_frame", {})
+    if (country not in DETAILED_FRAMES or source.get("physical_product") != "NaturalEarth:10m_land:v5.1.2"
+            or source.get("water_product") != "Geofabrik:gis_osm_water_a_free"
+            or frame.get("ISO3166-1") != country or frame.get("admin_level") != 2
+            or (frame.get("relation_id"), frame.get("relation_version")) != DETAILED_FRAMES[country]
+            or not source.get("independent_of_target_municipalities") or not source.get("input_files")):
+        raise ValueError("Detailed physical land requires separate original national, physical-coast and physical-water products")
+
+
+def _baseline_national_frame(document: dict, *, country: str):
+    matches = [f for f in document.get("features", []) if country in (
+        f.get("properties", {}).get("ISO_A2"), f.get("properties", {}).get("ISO_A2_EH"))]
+    if country not in DETAILED_FRAMES or len(matches) != 1:
+        raise ValueError("The original Natural Earth national reference is absent or ambiguous")
+    if matches[0].get("properties", {}).get("ADMIN") != {"AM": "Armenia", "IL": "Israel"}[country]:
+        raise ValueError("Natural Earth original ISO country and source name disagree")
+    return _area(shape(matches[0]["geometry"]))
+
+
+def conservative_physical_land(countries: dict, physical_land, water_features: list[dict], *, country: str):
+    """Retain the project's territorial decision; correct only physical water."""
+    frame = _baseline_national_frame(countries, country=country)
+    return national_physical_land(frame, physical_land, water_features, country=country)
+
+
+def _validate_conservative_physical_source(source: dict):
+    country = source.get("country")
+    frame = source.get("national_frame", {})
+    if (country not in DETAILED_FRAMES or source.get("physical_product") != "NaturalEarth:10m_land:v5.1.2"
+            or source.get("water_product") != "Geofabrik:gis_osm_water_a_free"
+            or frame.get("ISO3166-1") != country or frame.get("product") != "NaturalEarth:admin0:v5.1.2"
+            or frame.get("territorial_policy") != "original-reference-unchanged"
+            or not source.get("independent_of_target_municipalities") or not source.get("input_files")):
+        raise ValueError("Conservative physical reference must retain the original Natural Earth territorial assignment")
+
+
+def prepare_detailed_physical_references(cache: Path) -> list[dict]:
+    from collections import Counter
+    from atlas_geofabrik_sources import _shapefile
+    derived = cache / "land-references/AM-IL-NE-territorial-physical-sources-20261108.json"
+    if derived.exists():
+        document = json.loads(derived.read_text(encoding="utf-8"))
+        if document.get("derivation_version") != 1 or len(document.get("sources", [])) != 2:
+            raise ValueError("Unreviewed detailed national/physical reference derivation")
+        for source in document["sources"]:
+            _validate_conservative_physical_source(source)
+            verify_source(cache / source["cache_file"], source)
+            for dependency in source["input_files"]:
+                verify_source(cache / dependency["cache_file"], dependency)
+        return document["sources"]
+    relative = DETAILED_DIRECTORY + "ne_10m_land-v5.1.2.geojson"
+    land_receipt = {**_download_cached(NE_LAND_URL, cache / relative), "cache_file": relative}
+    document = json.loads((cache / relative).read_text(encoding="utf-8"))
+    if document.get("type") != "FeatureCollection" or not document.get("features"):
+        raise ValueError("Independent global physical land product is missing")
+    physical = _area(unary_union([_area(shape(f["geometry"])) for f in document["features"]]))
+    # Reuse the exact baseline source without modifying the builder's cache.
+    relative = "ne_10m_admin_0_countries.geojson"
+    baseline_meta = cache / (relative + ".meta.json")
+    if (cache / relative).exists() and baseline_meta.exists():
+        country_receipt = json.loads(baseline_meta.read_text(encoding="utf-8"))
+        if country_receipt.get("url") != NE_COUNTRIES_URL:
+            raise ValueError("Project national baseline is not the reviewed Natural Earth release")
+        verify_source(cache / relative, country_receipt)
+    else:
+        relative = DETAILED_DIRECTORY + "ne_10m_admin_0_countries-v5.1.2.geojson"
+        country_receipt = _download_cached(NE_COUNTRIES_URL, cache / relative)
+    country_receipt = {**country_receipt, "cache_file": relative}
+    countries = json.loads((cache / relative).read_text(encoding="utf-8"))
+    sources = []
+    for country, (identifier, version) in DETAILED_FRAMES.items():
+        frame = _baseline_national_frame(countries, country=country)
+        water_inputs, water_receipt = _physical_water_inputs(cache, country)
+        stem = cache / (DETAILED_DIRECTORY + country + "-water-stage/members/gis_osm_water_a_free_1")
+        if stem.with_suffix(".cpg").read_text(encoding="ascii").strip().upper() != "UTF-8":
+            raise ValueError("Physical-water original encoding is not the reviewed UTF-8")
+        prj = stem.with_suffix(".prj").read_text(encoding="utf-8")
+        if 'GEOGCS["GCS_WGS_1984"' not in prj or 'UNIT["Degree",0.017453292519943295]' not in prj:
+            raise ValueError("Physical-water source no longer declares its reviewed WGS84 longitude/latitude coordinates")
+        reader = _shapefile().Reader(str(stem), encoding="utf-8")
+        fields = [f[0] for f in reader.fields[1:]]
+        features, class_counts = [], Counter()
+        for record in reader.iterShapeRecords():
+            properties = dict(zip(fields, record.record))
+            class_counts[properties.get("fclass")] += 1
+            if properties.get("fclass") not in ACTUAL_WATER_CLASSES:
+                continue
+            if not record.shape.points:
+                raise ValueError("Physical-water source contains a missing original water geometry")
+            features.append({"properties": properties, "geometry": record.shape.__geo_interface__})
+        geometry = national_physical_land(frame, physical, features, country=country)
+        relative = f"land-references/{country}-NE-territorial-physical-water-20261108.geojson"
+        _write_json(cache / relative, mapping(geometry))
+        source = {"id": f"ne-physical-water-{country}-20261108", "country": country,
+                  "source_type": "ne-territorial-physical-land", "derivation_version": 1,
+                  "physical_product": "NaturalEarth:10m_land:v5.1.2", "water_product": "Geofabrik:gis_osm_water_a_free",
+                  "national_frame": {"ISO3166-1": country, "product": "NaturalEarth:admin0:v5.1.2", "territorial_policy": "original-reference-unchanged"},
+                  "cache_file": relative, "bytes": (cache / relative).stat().st_size, "sha256": sha256_file(cache / relative),
+                  "url": DETAILED_ARCHIVES[country], "metadata_url": NE_COUNTRIES_URL, "date": "2026-11-08", "retrieved": "2026-11-10",
+                  "physical_source_version": "Natural Earth v5.1.2; publication version retained separately from 2026 OSM snapshot",
+                  "input_files": [land_receipt, country_receipt, *water_inputs], "water_archive_snapshot": water_receipt["snapshot"],
+                  "original_water_class_counts": dict(class_counts), "open_water_feature_count": len(features),
+                  "excluded_water_classes": ACTUAL_WATER_CLASSES, "retained_classes": sorted(set(class_counts)-set(ACTUAL_WATER_CLASSES)),
+                  "license": "ODbL 1.0 (original physical-water polygons); Public Domain (unchanged Natural Earth national reference and independent physical coastline)",
+                  "license_url": "https://opendatacommons.org/licenses/odbl/1-0/",
+                  "license_layers": [{"scope": "unmodified physical open-water polygons", "license": "ODbL 1.0", "url": "https://opendatacommons.org/licenses/odbl/1-0/"},
+                                     {"scope": "original national frame and global physical land/coast", "license": "Public Domain", "url": "https://www.naturalearthdata.com/about/terms-of-use/"}],
+                  "attribution": "© OpenStreetMap contributors; Geofabrik GmbH, physical-water polygons, snapshot2026-11-08. Made with Natural Earth v5.1.2 unchanged national reference and physical land. Downloaded2026-11-10.",
+                  "product_url": "https://download.geofabrik.de/osm-data-in-gis-formats-free.pdf",
+                  "independent_of_target_municipalities": True, "reference_area_km2": _equal_area(geometry).area/1e6,
+                  "derivation": "Original project Natural Earth national territorial frame intersected with independent global physical coastline, minus every original open-water/reservoir/riverbank/dock polygon. No change of national assignment and no target municipality/district union; wetlands and glaciers remain land.",
+                  "water_geometry_policy": "Unmodified original geographic water geometry; invalid or missing polygons fail. No repair, buffer, rounding, snapping, invented boundary or omission based on coverage.",
+                  "limitations": "The project's original Natural Earth national assignment is retained exactly. Its generalized border/coast uncertainties remain; the independently measured more detailed OSM national proposal is not integrated because it would change neighbouring country assignments. This physical correction does not certify administrative borders or resolve remaining gaps."}
+        sources.append(source)
+    _write_json(derived, {"derivation_version": 1, "sources": sources})
+    return sources
+
+
 def prepare_sources(cache: Path) -> list[dict]:
     cache = Path(cache)
     li_relative = "land-references/LI-swisstopo-identify-2026.json"
@@ -769,9 +981,10 @@ def prepare_sources(cache: Path) -> list[dict]:
     faroe = prepare_faroe_reference(cache)
     estonia = prepare_estonia_reference(cache)
     channel_islands = prepare_channel_islands_references(cache)
-    sources = [li, sm, aland, luxembourg, faroe, estonia, *channel_islands]
+    detailed = prepare_detailed_physical_references(cache)
+    sources = [li, sm, aland, luxembourg, faroe, estonia, *channel_islands, *detailed]
     _write_json(ROOT / "data/atlas_land_references.json", {
-        "schema": 1, "review_date": "2026-11-09", "sources": sources,
+        "schema": 1, "review_date": "2026-11-10", "sources": sources,
         "purpose": "Independent country outlines and coverage denominators; never unions of the target country's imported communes",
         "unresolved": {}})
     return sources
@@ -818,6 +1031,16 @@ def load_references(cache: Path, sources: list[dict]) -> dict:
             geometry = _area(shape(document))
         elif source_type == "eea-physical-islands":
             _validate_channel_source(source)
+            for dependency in source["input_files"]:
+                verify_source(Path(cache) / dependency["cache_file"], dependency)
+            geometry = _area(shape(document))
+        elif source_type == "national-physical-land":
+            _validate_detailed_physical_source(source)
+            for dependency in source["input_files"]:
+                verify_source(Path(cache) / dependency["cache_file"], dependency)
+            geometry = _area(shape(document))
+        elif source_type == "ne-territorial-physical-land":
+            _validate_conservative_physical_source(source)
             for dependency in source["input_files"]:
                 verify_source(Path(cache) / dependency["cache_file"], dependency)
             geometry = _area(shape(document))

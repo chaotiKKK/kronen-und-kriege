@@ -3010,9 +3010,9 @@
       "admin_level": 4,
       "source_unit_count": 9,
       "expected_unit_count": 9,
-      "cache_file": "geofabrik-mena-stage/lebanon/normalized-LB-v4-r3.jsonl.gz",
-      "sha256": "90f0adfddec49dafa604ca95d0476ac33439c9d47498eae611af9dd2ce5e9e25",
-      "bytes": 914774,
+      "cache_file": "geofabrik-mena-stage/lebanon/normalized-LB-v4-r4-beirut-role-review.jsonl.gz",
+      "sha256": "260bcf2a44ec36c388df64186a6cd387d0a9f3e9d2807d0a6af96ca217f1b489",
+      "bytes": 915987,
       "url": "https://download.geofabrik.de/asia/lebanon-261108-free.shp.zip",
       "date": "2026-11-08",
       "osm_timestamp": "2026-11-08T21:21:00Z",
@@ -3022,7 +3022,9 @@
       "specification_url": "https://download.geofabrik.de/osm-data-in-gis-formats-free.pdf",
       "role_evidence_urls": [
         "https://wiki.openstreetmap.org/wiki/Template:Admin_level",
-        "https://legallaw.ul.edu.lb/Law.aspx?lawId=244078"
+        "https://legallaw.ul.edu.lb/Law.aspx?lawId=244078",
+        "https://moim.gov.lb/wp-content/uploads/2025/07/نتائج-الانتخابات-البلدية2025-محافظة-بيروت.pdf",
+        "https://www.lebarmy.gov.lb/ar/node/137335"
       ],
       "replacement_scope": "feature",
       "unit_semantics": {
@@ -3031,7 +3033,15 @@
           "Mouhafazah"
         ],
         "coverage_status": "Independent land-mask coverage is measured downstream; actual extraction count is not completeness"
-      }
+      },
+      "blocks_full_coverage_claim": true,
+      "qualification_review_date": "2026-11-10",
+      "qualification_audit_file": "geofabrik-mena-stage/lebanon/beirut-role-audit-v1.json",
+      "qualification_audit_sha256": "d410675b1bd31ffe38324266d572b0395a64d018dc265e4a27cdc82997e40d99",
+      "qualification_review_note": "Twelve Beirut quarters retained but excluded as independent Baladiya claims. Existing Beirut region has one evidenced municipality role. Actual Lebanese towns without municipalities are documented; municipal area coverage is not a count of missing polygons.",
+      "combined_local_government_roles": [
+        "geofabrik:LB:4:316552"
+      ]
     },
     {
       "id": "geofabrik-LB-admin5-district",
@@ -3047,9 +3057,9 @@
       "admin_level": 5,
       "source_unit_count": 25,
       "expected_unit_count": 25,
-      "cache_file": "geofabrik-mena-stage/lebanon/normalized-LB-v4-r3.jsonl.gz",
-      "sha256": "90f0adfddec49dafa604ca95d0476ac33439c9d47498eae611af9dd2ce5e9e25",
-      "bytes": 914774,
+      "cache_file": "geofabrik-mena-stage/lebanon/normalized-LB-v4-r4-beirut-role-review.jsonl.gz",
+      "sha256": "260bcf2a44ec36c388df64186a6cd387d0a9f3e9d2807d0a6af96ca217f1b489",
+      "bytes": 915987,
       "url": "https://download.geofabrik.de/asia/lebanon-261108-free.shp.zip",
       "date": "2026-11-08",
       "osm_timestamp": "2026-11-08T21:21:00Z",
@@ -3059,7 +3069,9 @@
       "specification_url": "https://download.geofabrik.de/osm-data-in-gis-formats-free.pdf",
       "role_evidence_urls": [
         "https://wiki.openstreetmap.org/wiki/Template:Admin_level",
-        "https://legallaw.ul.edu.lb/Law.aspx?lawId=244078"
+        "https://legallaw.ul.edu.lb/Law.aspx?lawId=244078",
+        "https://moim.gov.lb/wp-content/uploads/2025/07/نتائج-الانتخابات-البلدية2025-محافظة-بيروت.pdf",
+        "https://www.lebarmy.gov.lb/ar/node/137335"
       ],
       "replacement_scope": "feature",
       "unit_semantics": {
@@ -3068,7 +3080,12 @@
           "Qadaa"
         ],
         "coverage_status": "Independent land-mask coverage is measured downstream; actual extraction count is not completeness"
-      }
+      },
+      "blocks_full_coverage_claim": true,
+      "qualification_review_date": "2026-11-10",
+      "qualification_audit_file": "geofabrik-mena-stage/lebanon/beirut-role-audit-v1.json",
+      "qualification_audit_sha256": "d410675b1bd31ffe38324266d572b0395a64d018dc265e4a27cdc82997e40d99",
+      "qualification_review_note": "Twelve Beirut quarters retained but excluded as independent Baladiya claims. Existing Beirut region has one evidenced municipality role. Actual Lebanese towns without municipalities are documented; municipal area coverage is not a count of missing polygons."
     },
     {
       "id": "geofabrik-LB-admin7-municipality",
@@ -3084,9 +3101,9 @@
       "admin_level": 7,
       "source_unit_count": 1031,
       "expected_unit_count": 1031,
-      "cache_file": "geofabrik-mena-stage/lebanon/normalized-LB-v4-r3.jsonl.gz",
-      "sha256": "90f0adfddec49dafa604ca95d0476ac33439c9d47498eae611af9dd2ce5e9e25",
-      "bytes": 914774,
+      "cache_file": "geofabrik-mena-stage/lebanon/normalized-LB-v4-r4-beirut-role-review.jsonl.gz",
+      "sha256": "260bcf2a44ec36c388df64186a6cd387d0a9f3e9d2807d0a6af96ca217f1b489",
+      "bytes": 915987,
       "url": "https://download.geofabrik.de/asia/lebanon-261108-free.shp.zip",
       "date": "2026-11-08",
       "osm_timestamp": "2026-11-08T21:21:00Z",
@@ -3096,7 +3113,9 @@
       "specification_url": "https://download.geofabrik.de/osm-data-in-gis-formats-free.pdf",
       "role_evidence_urls": [
         "https://wiki.openstreetmap.org/wiki/Template:Admin_level",
-        "https://legallaw.ul.edu.lb/Law.aspx?lawId=244078"
+        "https://legallaw.ul.edu.lb/Law.aspx?lawId=244078",
+        "https://moim.gov.lb/wp-content/uploads/2025/07/نتائج-الانتخابات-البلدية2025-محافظة-بيروت.pdf",
+        "https://www.lebarmy.gov.lb/ar/node/137335"
       ],
       "replacement_scope": "feature",
       "unit_semantics": {
@@ -3105,7 +3124,27 @@
           "Baladiya"
         ],
         "coverage_status": "Independent land-mask coverage is measured downstream; actual extraction count is not completeness"
-      }
+      },
+      "blocks_full_coverage_claim": true,
+      "qualification_review_date": "2026-11-10",
+      "qualification_audit_file": "geofabrik-mena-stage/lebanon/beirut-role-audit-v1.json",
+      "qualification_audit_sha256": "d410675b1bd31ffe38324266d572b0395a64d018dc265e4a27cdc82997e40d99",
+      "qualification_review_note": "Twelve Beirut quarters retained but excluded as independent Baladiya claims. Existing Beirut region has one evidenced municipality role. Actual Lebanese towns without municipalities are documented; municipal area coverage is not a count of missing polygons.",
+      "excluded_administrative_unit_ids": [
+        "geofabrik:LB:7:3074290",
+        "geofabrik:LB:7:3074291",
+        "geofabrik:LB:7:3074292",
+        "geofabrik:LB:7:3074293",
+        "geofabrik:LB:7:3074294",
+        "geofabrik:LB:7:3074295",
+        "geofabrik:LB:7:3074296",
+        "geofabrik:LB:7:3074297",
+        "geofabrik:LB:7:3074298",
+        "geofabrik:LB:7:3074299",
+        "geofabrik:LB:7:3074300",
+        "geofabrik:LB:7:3074301"
+      ],
+      "admitted_original_unit_count": 1019
     },
     {
       "id": "geofabrik-BY-admin4-region",
@@ -3565,9 +3604,9 @@
       "admin_level": 4,
       "source_unit_count": 20,
       "expected_unit_count": 20,
-      "cache_file": "geofabrik-mena-stage/kazakhstan/normalized-KZ-v4-r3.jsonl.gz",
-      "sha256": "1c1320b5d38a28c3a3794fd4db1ec3754e00b799f5b008cd3ff5c3b888938aac",
-      "bytes": 6079840,
+      "cache_file": "geofabrik-mena-stage/kazakhstan/normalized-KZ-v4-r4-city-administrations.jsonl.gz",
+      "sha256": "6e3e6be1a6b2e3264971f2c707f5dc537fd52c5f2a37ae9e31634d54447f6571",
+      "bytes": 6081397,
       "url": "https://download.geofabrik.de/asia/kazakhstan-261108-free.shp.zip",
       "date": "2026-11-08",
       "osm_timestamp": "2026-11-08T21:21:00Z",
@@ -3577,7 +3616,11 @@
       "specification_url": "https://download.geofabrik.de/osm-data-in-gis-formats-free.pdf",
       "role_evidence_urls": [
         "https://wiki.openstreetmap.org/wiki/Template:Admin_level",
-        "https://old.adilet.zan.kz/eng/docs/Z010000148_"
+        "https://old.adilet.zan.kz/eng/docs/Z010000148_",
+        "https://old.adilet.zan.kz/rus/docs/Z010000148_",
+        "https://old.adilet.zan.kz/rus/docs/G22TA00877A",
+        "https://www.gov.kz/org/uralsk?lang=ru",
+        "https://www.gov.kz/org/akimat-goroda-aktau?lang=ru"
       ],
       "replacement_scope": "feature",
       "unit_semantics": {
@@ -3595,16 +3638,17 @@
         "KZ"
       ],
       "kind": "district",
-      "unit_type": "Audan",
+      "unit_type": "Audan; Қалалық әкімдік / City administration",
       "unit_types": [
-        "Audan"
+        "Audan",
+        "Қалалық әкімдік / City administration"
       ],
       "admin_level": 6,
       "source_unit_count": 228,
       "expected_unit_count": 228,
-      "cache_file": "geofabrik-mena-stage/kazakhstan/normalized-KZ-v4-r3.jsonl.gz",
-      "sha256": "1c1320b5d38a28c3a3794fd4db1ec3754e00b799f5b008cd3ff5c3b888938aac",
-      "bytes": 6079840,
+      "cache_file": "geofabrik-mena-stage/kazakhstan/normalized-KZ-v4-r4-city-administrations.jsonl.gz",
+      "sha256": "6e3e6be1a6b2e3264971f2c707f5dc537fd52c5f2a37ae9e31634d54447f6571",
+      "bytes": 6081397,
       "url": "https://download.geofabrik.de/asia/kazakhstan-261108-free.shp.zip",
       "date": "2026-11-08",
       "osm_timestamp": "2026-11-08T21:21:00Z",
@@ -3614,16 +3658,37 @@
       "specification_url": "https://download.geofabrik.de/osm-data-in-gis-formats-free.pdf",
       "role_evidence_urls": [
         "https://wiki.openstreetmap.org/wiki/Template:Admin_level",
-        "https://old.adilet.zan.kz/eng/docs/Z010000148_"
+        "https://old.adilet.zan.kz/eng/docs/Z010000148_",
+        "https://old.adilet.zan.kz/rus/docs/Z010000148_",
+        "https://old.adilet.zan.kz/rus/docs/G22TA00877A",
+        "https://www.gov.kz/org/uralsk?lang=ru",
+        "https://www.gov.kz/org/akimat-goroda-aktau?lang=ru"
       ],
       "replacement_scope": "feature",
       "unit_semantics": {
         "render_role": "district",
         "source_unit_types": [
-          "Audan"
+          "Audan",
+          "Қалалық әкімдік / City administration"
         ],
         "coverage_status": "Independent land-mask coverage is measured downstream; actual extraction count is not completeness"
-      }
+      },
+      "combined_local_government_roles": [
+        {
+          "id": "geofabrik:KZ:6:3389541",
+          "role": "local_admin"
+        },
+        {
+          "id": "geofabrik:KZ:6:3767383",
+          "role": "local_admin"
+        },
+        {
+          "id": "geofabrik:KZ:6:5515125",
+          "role": "local_admin"
+        }
+      ],
+      "qualification_audit_file": "geofabrik-mena-stage/kazakhstan/city-administrations-v1/audit.json",
+      "qualification_audit_sha256": "83fb59aecd0027574392f325b0f2f5d029b61abeb1b694ea0a077c53edc6e718"
     },
     {
       "id": "geofabrik-KZ-admin8-municipality",
@@ -3639,9 +3704,9 @@
       "admin_level": 8,
       "source_unit_count": 908,
       "expected_unit_count": 908,
-      "cache_file": "geofabrik-mena-stage/kazakhstan/normalized-KZ-v4-r3.jsonl.gz",
-      "sha256": "1c1320b5d38a28c3a3794fd4db1ec3754e00b799f5b008cd3ff5c3b888938aac",
-      "bytes": 6079840,
+      "cache_file": "geofabrik-mena-stage/kazakhstan/normalized-KZ-v4-r4-city-administrations.jsonl.gz",
+      "sha256": "6e3e6be1a6b2e3264971f2c707f5dc537fd52c5f2a37ae9e31634d54447f6571",
+      "bytes": 6081397,
       "url": "https://download.geofabrik.de/asia/kazakhstan-261108-free.shp.zip",
       "date": "2026-11-08",
       "osm_timestamp": "2026-11-08T21:21:00Z",
@@ -3651,7 +3716,11 @@
       "specification_url": "https://download.geofabrik.de/osm-data-in-gis-formats-free.pdf",
       "role_evidence_urls": [
         "https://wiki.openstreetmap.org/wiki/Template:Admin_level",
-        "https://old.adilet.zan.kz/eng/docs/Z010000148_"
+        "https://old.adilet.zan.kz/eng/docs/Z010000148_",
+        "https://old.adilet.zan.kz/rus/docs/Z010000148_",
+        "https://old.adilet.zan.kz/rus/docs/G22TA00877A",
+        "https://www.gov.kz/org/uralsk?lang=ru",
+        "https://www.gov.kz/org/akimat-goroda-aktau?lang=ru"
       ],
       "replacement_scope": "feature",
       "unit_semantics": {
@@ -3660,13 +3729,7 @@
           "Rural okrug"
         ],
         "coverage_status": "Independent land-mask coverage is measured downstream; actual extraction count is not completeness"
-      },
-      "blocks_full_coverage_claim": true,
-      "source_geometry_defect_count": 1,
-      "source_geometry_defect_ids": [
-        "21402276"
-      ],
-      "source_geometry_defect_note": "Actual zero-point source polygons omitted with unresolved country; no substitute geometry generated"
+      }
     },
     {
       "id": "geofabrik-IL-admin4-region",
@@ -3867,9 +3930,9 @@
       "admin_level": 8,
       "source_unit_count": 8,
       "expected_unit_count": 8,
-      "cache_file": "geofabrik-mena-stage/azerbaijan/normalized-AZ-v4-r3.jsonl.gz",
-      "sha256": "884b02c20728c5c740a37c3e7dbb228904353080350d6222b1891edcbea5e6a2",
-      "bytes": 11161,
+      "cache_file": "geofabrik-mena-stage/azerbaijan/normalized-AZ-v4-r4-role-review.jsonl.gz",
+      "sha256": "06ded9ee16dcdcc4f7a1ac79712fb70b1c689cbb9cb452c1cefe37af9e3d019b",
+      "bytes": 11818,
       "url": "https://download.geofabrik.de/asia/azerbaijan-261108-free.shp.zip",
       "date": "2026-11-08",
       "osm_timestamp": "2026-11-08T21:21:00Z",
@@ -3888,7 +3951,10 @@
           "Belediyye"
         ],
         "coverage_status": "Independent land-mask coverage is measured downstream; actual extraction count is not completeness"
-      }
+      },
+      "blocks_full_coverage_claim": true,
+      "qualification_review_date": "2026-11-10",
+      "qualification_review_note": "All eight admin8 candidates retained as excluded original evidence: city/district identity is not a positively proved municipal boundary; one country identity requires review."
     }
   ],
   "datasets": [
@@ -101001,9 +101067,9 @@
           "admin_level": 4,
           "source_unit_count": 9,
           "expected_unit_count": 9,
-          "cache_file": "geofabrik-mena-stage/lebanon/normalized-LB-v4-r3.jsonl.gz",
-          "sha256": "90f0adfddec49dafa604ca95d0476ac33439c9d47498eae611af9dd2ce5e9e25",
-          "bytes": 914774,
+          "cache_file": "geofabrik-mena-stage/lebanon/normalized-LB-v4-r4-beirut-role-review.jsonl.gz",
+          "sha256": "260bcf2a44ec36c388df64186a6cd387d0a9f3e9d2807d0a6af96ca217f1b489",
+          "bytes": 915987,
           "url": "https://download.geofabrik.de/asia/lebanon-261108-free.shp.zip",
           "date": "2026-11-08",
           "osm_timestamp": "2026-11-08T21:21:00Z",
@@ -101013,7 +101079,9 @@
           "specification_url": "https://download.geofabrik.de/osm-data-in-gis-formats-free.pdf",
           "role_evidence_urls": [
             "https://wiki.openstreetmap.org/wiki/Template:Admin_level",
-            "https://legallaw.ul.edu.lb/Law.aspx?lawId=244078"
+            "https://legallaw.ul.edu.lb/Law.aspx?lawId=244078",
+            "https://moim.gov.lb/wp-content/uploads/2025/07/نتائج-الانتخابات-البلدية2025-محافظة-بيروت.pdf",
+            "https://www.lebarmy.gov.lb/ar/node/137335"
           ],
           "replacement_scope": "feature",
           "unit_semantics": {
@@ -101022,7 +101090,15 @@
               "Mouhafazah"
             ],
             "coverage_status": "Independent land-mask coverage is measured downstream; actual extraction count is not completeness"
-          }
+          },
+          "blocks_full_coverage_claim": true,
+          "qualification_review_date": "2026-11-10",
+          "qualification_audit_file": "geofabrik-mena-stage/lebanon/beirut-role-audit-v1.json",
+          "qualification_audit_sha256": "d410675b1bd31ffe38324266d572b0395a64d018dc265e4a27cdc82997e40d99",
+          "qualification_review_note": "Twelve Beirut quarters retained but excluded as independent Baladiya claims. Existing Beirut region has one evidenced municipality role. Actual Lebanese towns without municipalities are documented; municipal area coverage is not a count of missing polygons.",
+          "combined_local_government_roles": [
+            "geofabrik:LB:4:316552"
+          ]
         },
         {
           "id": "geofabrik-LB-admin5-district",
@@ -101038,9 +101114,9 @@
           "admin_level": 5,
           "source_unit_count": 25,
           "expected_unit_count": 25,
-          "cache_file": "geofabrik-mena-stage/lebanon/normalized-LB-v4-r3.jsonl.gz",
-          "sha256": "90f0adfddec49dafa604ca95d0476ac33439c9d47498eae611af9dd2ce5e9e25",
-          "bytes": 914774,
+          "cache_file": "geofabrik-mena-stage/lebanon/normalized-LB-v4-r4-beirut-role-review.jsonl.gz",
+          "sha256": "260bcf2a44ec36c388df64186a6cd387d0a9f3e9d2807d0a6af96ca217f1b489",
+          "bytes": 915987,
           "url": "https://download.geofabrik.de/asia/lebanon-261108-free.shp.zip",
           "date": "2026-11-08",
           "osm_timestamp": "2026-11-08T21:21:00Z",
@@ -101050,7 +101126,9 @@
           "specification_url": "https://download.geofabrik.de/osm-data-in-gis-formats-free.pdf",
           "role_evidence_urls": [
             "https://wiki.openstreetmap.org/wiki/Template:Admin_level",
-            "https://legallaw.ul.edu.lb/Law.aspx?lawId=244078"
+            "https://legallaw.ul.edu.lb/Law.aspx?lawId=244078",
+            "https://moim.gov.lb/wp-content/uploads/2025/07/نتائج-الانتخابات-البلدية2025-محافظة-بيروت.pdf",
+            "https://www.lebarmy.gov.lb/ar/node/137335"
           ],
           "replacement_scope": "feature",
           "unit_semantics": {
@@ -101059,7 +101137,12 @@
               "Qadaa"
             ],
             "coverage_status": "Independent land-mask coverage is measured downstream; actual extraction count is not completeness"
-          }
+          },
+          "blocks_full_coverage_claim": true,
+          "qualification_review_date": "2026-11-10",
+          "qualification_audit_file": "geofabrik-mena-stage/lebanon/beirut-role-audit-v1.json",
+          "qualification_audit_sha256": "d410675b1bd31ffe38324266d572b0395a64d018dc265e4a27cdc82997e40d99",
+          "qualification_review_note": "Twelve Beirut quarters retained but excluded as independent Baladiya claims. Existing Beirut region has one evidenced municipality role. Actual Lebanese towns without municipalities are documented; municipal area coverage is not a count of missing polygons."
         },
         {
           "id": "geofabrik-LB-admin7-municipality",
@@ -101075,9 +101158,9 @@
           "admin_level": 7,
           "source_unit_count": 1031,
           "expected_unit_count": 1031,
-          "cache_file": "geofabrik-mena-stage/lebanon/normalized-LB-v4-r3.jsonl.gz",
-          "sha256": "90f0adfddec49dafa604ca95d0476ac33439c9d47498eae611af9dd2ce5e9e25",
-          "bytes": 914774,
+          "cache_file": "geofabrik-mena-stage/lebanon/normalized-LB-v4-r4-beirut-role-review.jsonl.gz",
+          "sha256": "260bcf2a44ec36c388df64186a6cd387d0a9f3e9d2807d0a6af96ca217f1b489",
+          "bytes": 915987,
           "url": "https://download.geofabrik.de/asia/lebanon-261108-free.shp.zip",
           "date": "2026-11-08",
           "osm_timestamp": "2026-11-08T21:21:00Z",
@@ -101087,7 +101170,9 @@
           "specification_url": "https://download.geofabrik.de/osm-data-in-gis-formats-free.pdf",
           "role_evidence_urls": [
             "https://wiki.openstreetmap.org/wiki/Template:Admin_level",
-            "https://legallaw.ul.edu.lb/Law.aspx?lawId=244078"
+            "https://legallaw.ul.edu.lb/Law.aspx?lawId=244078",
+            "https://moim.gov.lb/wp-content/uploads/2025/07/نتائج-الانتخابات-البلدية2025-محافظة-بيروت.pdf",
+            "https://www.lebarmy.gov.lb/ar/node/137335"
           ],
           "replacement_scope": "feature",
           "unit_semantics": {
@@ -101096,7 +101181,27 @@
               "Baladiya"
             ],
             "coverage_status": "Independent land-mask coverage is measured downstream; actual extraction count is not completeness"
-          }
+          },
+          "blocks_full_coverage_claim": true,
+          "qualification_review_date": "2026-11-10",
+          "qualification_audit_file": "geofabrik-mena-stage/lebanon/beirut-role-audit-v1.json",
+          "qualification_audit_sha256": "d410675b1bd31ffe38324266d572b0395a64d018dc265e4a27cdc82997e40d99",
+          "qualification_review_note": "Twelve Beirut quarters retained but excluded as independent Baladiya claims. Existing Beirut region has one evidenced municipality role. Actual Lebanese towns without municipalities are documented; municipal area coverage is not a count of missing polygons.",
+          "excluded_administrative_unit_ids": [
+            "geofabrik:LB:7:3074290",
+            "geofabrik:LB:7:3074291",
+            "geofabrik:LB:7:3074292",
+            "geofabrik:LB:7:3074293",
+            "geofabrik:LB:7:3074294",
+            "geofabrik:LB:7:3074295",
+            "geofabrik:LB:7:3074296",
+            "geofabrik:LB:7:3074297",
+            "geofabrik:LB:7:3074298",
+            "geofabrik:LB:7:3074299",
+            "geofabrik:LB:7:3074300",
+            "geofabrik:LB:7:3074301"
+          ],
+          "admitted_original_unit_count": 1019
         }
       ],
       "source_snapshot": {
@@ -101953,7 +102058,11 @@
       "parent_relationship_counts": {
         "hierarchy-not-supplied": 9,
         "inferred-area-containment": 1056
-      }
+      },
+      "cache_revision": 4,
+      "cache_revision_note": "Exact Beirut special-role qualification, all1065identities and geometries retained",
+      "qualification_audit_file": "geofabrik-mena-stage/lebanon/beirut-role-audit-v1.json",
+      "qualification_audit_sha256": "d410675b1bd31ffe38324266d572b0395a64d018dc265e4a27cdc82997e40d99"
     },
     {
       "country": "BY",
@@ -107294,9 +107403,9 @@
           "admin_level": 4,
           "source_unit_count": 20,
           "expected_unit_count": 20,
-          "cache_file": "geofabrik-mena-stage/kazakhstan/normalized-KZ-v4-r3.jsonl.gz",
-          "sha256": "1c1320b5d38a28c3a3794fd4db1ec3754e00b799f5b008cd3ff5c3b888938aac",
-          "bytes": 6079840,
+          "cache_file": "geofabrik-mena-stage/kazakhstan/normalized-KZ-v4-r4-city-administrations.jsonl.gz",
+          "sha256": "6e3e6be1a6b2e3264971f2c707f5dc537fd52c5f2a37ae9e31634d54447f6571",
+          "bytes": 6081397,
           "url": "https://download.geofabrik.de/asia/kazakhstan-261108-free.shp.zip",
           "date": "2026-11-08",
           "osm_timestamp": "2026-11-08T21:21:00Z",
@@ -107306,7 +107415,11 @@
           "specification_url": "https://download.geofabrik.de/osm-data-in-gis-formats-free.pdf",
           "role_evidence_urls": [
             "https://wiki.openstreetmap.org/wiki/Template:Admin_level",
-            "https://old.adilet.zan.kz/eng/docs/Z010000148_"
+            "https://old.adilet.zan.kz/eng/docs/Z010000148_",
+            "https://old.adilet.zan.kz/rus/docs/Z010000148_",
+            "https://old.adilet.zan.kz/rus/docs/G22TA00877A",
+            "https://www.gov.kz/org/uralsk?lang=ru",
+            "https://www.gov.kz/org/akimat-goroda-aktau?lang=ru"
           ],
           "replacement_scope": "feature",
           "unit_semantics": {
@@ -107324,16 +107437,17 @@
             "KZ"
           ],
           "kind": "district",
-          "unit_type": "Audan",
+          "unit_type": "Audan; Қалалық әкімдік / City administration",
           "unit_types": [
-            "Audan"
+            "Audan",
+            "Қалалық әкімдік / City administration"
           ],
           "admin_level": 6,
           "source_unit_count": 228,
           "expected_unit_count": 228,
-          "cache_file": "geofabrik-mena-stage/kazakhstan/normalized-KZ-v4-r3.jsonl.gz",
-          "sha256": "1c1320b5d38a28c3a3794fd4db1ec3754e00b799f5b008cd3ff5c3b888938aac",
-          "bytes": 6079840,
+          "cache_file": "geofabrik-mena-stage/kazakhstan/normalized-KZ-v4-r4-city-administrations.jsonl.gz",
+          "sha256": "6e3e6be1a6b2e3264971f2c707f5dc537fd52c5f2a37ae9e31634d54447f6571",
+          "bytes": 6081397,
           "url": "https://download.geofabrik.de/asia/kazakhstan-261108-free.shp.zip",
           "date": "2026-11-08",
           "osm_timestamp": "2026-11-08T21:21:00Z",
@@ -107343,16 +107457,37 @@
           "specification_url": "https://download.geofabrik.de/osm-data-in-gis-formats-free.pdf",
           "role_evidence_urls": [
             "https://wiki.openstreetmap.org/wiki/Template:Admin_level",
-            "https://old.adilet.zan.kz/eng/docs/Z010000148_"
+            "https://old.adilet.zan.kz/eng/docs/Z010000148_",
+            "https://old.adilet.zan.kz/rus/docs/Z010000148_",
+            "https://old.adilet.zan.kz/rus/docs/G22TA00877A",
+            "https://www.gov.kz/org/uralsk?lang=ru",
+            "https://www.gov.kz/org/akimat-goroda-aktau?lang=ru"
           ],
           "replacement_scope": "feature",
           "unit_semantics": {
             "render_role": "district",
             "source_unit_types": [
-              "Audan"
+              "Audan",
+              "Қалалық әкімдік / City administration"
             ],
             "coverage_status": "Independent land-mask coverage is measured downstream; actual extraction count is not completeness"
-          }
+          },
+          "combined_local_government_roles": [
+            {
+              "id": "geofabrik:KZ:6:3389541",
+              "role": "local_admin"
+            },
+            {
+              "id": "geofabrik:KZ:6:3767383",
+              "role": "local_admin"
+            },
+            {
+              "id": "geofabrik:KZ:6:5515125",
+              "role": "local_admin"
+            }
+          ],
+          "qualification_audit_file": "geofabrik-mena-stage/kazakhstan/city-administrations-v1/audit.json",
+          "qualification_audit_sha256": "83fb59aecd0027574392f325b0f2f5d029b61abeb1b694ea0a077c53edc6e718"
         },
         {
           "id": "geofabrik-KZ-admin8-municipality",
@@ -107368,9 +107503,9 @@
           "admin_level": 8,
           "source_unit_count": 908,
           "expected_unit_count": 908,
-          "cache_file": "geofabrik-mena-stage/kazakhstan/normalized-KZ-v4-r3.jsonl.gz",
-          "sha256": "1c1320b5d38a28c3a3794fd4db1ec3754e00b799f5b008cd3ff5c3b888938aac",
-          "bytes": 6079840,
+          "cache_file": "geofabrik-mena-stage/kazakhstan/normalized-KZ-v4-r4-city-administrations.jsonl.gz",
+          "sha256": "6e3e6be1a6b2e3264971f2c707f5dc537fd52c5f2a37ae9e31634d54447f6571",
+          "bytes": 6081397,
           "url": "https://download.geofabrik.de/asia/kazakhstan-261108-free.shp.zip",
           "date": "2026-11-08",
           "osm_timestamp": "2026-11-08T21:21:00Z",
@@ -107380,7 +107515,11 @@
           "specification_url": "https://download.geofabrik.de/osm-data-in-gis-formats-free.pdf",
           "role_evidence_urls": [
             "https://wiki.openstreetmap.org/wiki/Template:Admin_level",
-            "https://old.adilet.zan.kz/eng/docs/Z010000148_"
+            "https://old.adilet.zan.kz/eng/docs/Z010000148_",
+            "https://old.adilet.zan.kz/rus/docs/Z010000148_",
+            "https://old.adilet.zan.kz/rus/docs/G22TA00877A",
+            "https://www.gov.kz/org/uralsk?lang=ru",
+            "https://www.gov.kz/org/akimat-goroda-aktau?lang=ru"
           ],
           "replacement_scope": "feature",
           "unit_semantics": {
@@ -107389,13 +107528,7 @@
               "Rural okrug"
             ],
             "coverage_status": "Independent land-mask coverage is measured downstream; actual extraction count is not completeness"
-          },
-          "blocks_full_coverage_claim": true,
-          "source_geometry_defect_count": 1,
-          "source_geometry_defect_ids": [
-            "21402276"
-          ],
-          "source_geometry_defect_note": "Actual zero-point source polygons omitted with unresolved country; no substitute geometry generated"
+          }
         }
       ],
       "source_snapshot": {
@@ -109794,7 +109927,11 @@
       "parent_relationship_counts": {
         "hierarchy-not-supplied": 20,
         "inferred-area-containment": 1136
-      }
+      },
+      "cache_revision": 4,
+      "cache_revision_note": "Exactly3City-administration identities qualified; no geometry or other Audan role changed",
+      "qualification_audit_file": "geofabrik-mena-stage/kazakhstan/city-administrations-v1/audit.json",
+      "qualification_audit_sha256": "83fb59aecd0027574392f325b0f2f5d029b61abeb1b694ea0a077c53edc6e718"
     },
     {
       "country": "IL",
@@ -112620,9 +112757,9 @@
           "admin_level": 8,
           "source_unit_count": 8,
           "expected_unit_count": 8,
-          "cache_file": "geofabrik-mena-stage/azerbaijan/normalized-AZ-v4-r3.jsonl.gz",
-          "sha256": "884b02c20728c5c740a37c3e7dbb228904353080350d6222b1891edcbea5e6a2",
-          "bytes": 11161,
+          "cache_file": "geofabrik-mena-stage/azerbaijan/normalized-AZ-v4-r4-role-review.jsonl.gz",
+          "sha256": "06ded9ee16dcdcc4f7a1ac79712fb70b1c689cbb9cb452c1cefe37af9e3d019b",
+          "bytes": 11818,
           "url": "https://download.geofabrik.de/asia/azerbaijan-261108-free.shp.zip",
           "date": "2026-11-08",
           "osm_timestamp": "2026-11-08T21:21:00Z",
@@ -112641,7 +112778,10 @@
               "Belediyye"
             ],
             "coverage_status": "Independent land-mask coverage is measured downstream; actual extraction count is not completeness"
-          }
+          },
+          "blocks_full_coverage_claim": true,
+          "qualification_review_date": "2026-11-10",
+          "qualification_review_note": "All eight admin8 candidates retained as excluded original evidence: city/district identity is not a positively proved municipal boundary; one country identity requires review."
         }
       ],
       "source_snapshot": {
@@ -113449,7 +113589,18 @@
         }
       ],
       "independent_land_disagreement_ids": [],
-      "native_role_qualifications": {},
+      "native_role_qualifications": {
+        "AZ-admin8-identity-review-v1": {
+          "reviewed": 8,
+          "quarantined": 8,
+          "new_municipal_boundaries_inferred": 0,
+          "evidence_urls": [
+            "https://ganja-ih.gov.az/az/belediyyeler.html",
+            "https://www.taxes.gov.az/az/post/195",
+            "https://e-belediyye.gov.az/"
+          ]
+        }
+      },
       "source_geometry_defects": [],
       "parent_relationship_counts": {
         "hierarchy-not-supplied": 8
@@ -113460,10 +113611,12 @@
   "note": "HU v3 byte-for-byte baseline retained; later country collections use separate v4 cache files",
   "limitations": {
     "TR": "Exactly30 current TBB metropolitan governments match native admin4 province ISO/name identities and are legally coextensive under6360Art6/5216Art5. Exactly11 original obsolete metropolitan Belde claims are quarantined at row level under6360Art1(3), preserving all85 source records and geometry. Other51 provinces and974 district roles remain unpromoted; fine local-layer completeness is separate",
-    "AZ": "Only8 municipal source polygons; official685-count proves the local source is partial; coarser administrative level conventions conflict and remain unqualified",
+    "AZ": "All8 original admin8 candidates remain in individually qualified role quarantine;6 citydistricts,1unproven Sumqayit municipal extent and1unresolved territorial village. No current municipal geometry is inferred from admin8 or coarse national overlap.",
     "JO": "Only the12 governorates admitted; local municipality/subdistrict source roles are not yet independently qualified",
     "LY": "Only23 source Shabiya polygons; no actual municipal layer is present",
     "municipal_vs_local": "Iraqi/Syrian Nahiya and Tunisian Imada are native local_admin, not municipal self-government",
-    "coverage": "All source counts describe actual extracted records; independent visible land coverage and official identity completeness are separate audits"
+    "coverage": "All source counts describe actual extracted records; independent visible land coverage and official identity completeness are separate audits",
+    "LB": "Twelve exact Beirut quarters are retained but quarantined as independent municipalities; one combined Beirut governorate/municipality role is positively evidenced by MoIM2025. Other1019 admitted Baladiya records do not establish national completeness. Official2025 publication reports1065 municipalities for1634 towns: actual towns without municipalities exist, and uncovered land is not simply a missing-polygon count",
+    "KZ": "Only three exact admin6 identities Atyrau3389541,Oral3767383,Aktau5515125 are qualified as native City administrations with additional local_admin role; district geometry stays unchanged and other Audans are not promoted. Rural-Okrug and fine lower-government completeness remain separate"
   }
 }

@@ -232,6 +232,24 @@ def select_source(metadata: list[dict], country: str) -> dict:
                        "metadata_count_status": correction["status"],
                        "metadata_count_evidence": correction["evidence"],
                        "blocks_full_coverage_claim": correction["blocks_full_coverage_claim"]})
+    if country == "IR" and match.group(1) == "9469f09":
+        source.update(administrative_geometry_eligible=False, blocks_full_coverage_claim=True,
+            administrative_ineligibility_note=(
+                "The original producer SHP contains2815 records but preserves only Level and Name fields; "
+                "OSM boundary classes, native per-feature roles and original relation identities are absent. "
+                "It mixes explicit city names with the canonical Dehestan label, and2514 release names contain literal question marks already present in the producer DBF. "
+                "The2772 release geometries are retained as original evidence; neither a municipality role nor a generic administrative role is inferred for every row. "
+                "Input and release unions are almost identical, so43 fewer release records must not be called43 missing municipalities."),
+            administrative_ineligibility_evidence_urls=[
+                "https://github.com/wmgeolab/geoBoundaries/blob/9469f09/sourceData/gbOpen/IRN_ADM4.zip",
+                "https://github.com/wmgeolab/geoBoundaries/blob/9469f09/releaseData/gbOpen/IRN/ADM4/geoBoundaries-IRN-ADM4.geojson",
+                "https://osm-boundaries.com/about/documentation"],
+            source_review={"status":"quarantined-lost-native-roles-and-identities", "review_date":"2026-11-10",
+                           "original_producer_zip_sha256":"909ddf98c95aa32198f94adee78941efddd1dbc1338ebfc0003aeb42c69bb874",
+                           "producer_input_feature_count":2815, "release_feature_count":2772,
+                           "raw_release_union_iou":0.9999999997984395},
+            source_name_corrupted_count=2514)
+        source["unit_semantics"]["coverage_status"] = "Quarantined: lost native source roles and original identities; not a present municipal inventory"
     return source
 
 
@@ -366,12 +384,16 @@ def normalize_feature(feature: dict, source: dict) -> dict:
     bounds = geometry.bounds
     if not all(math.isfinite(value) for value in bounds) or not (-180 <= bounds[0] <= bounds[2] <= 180 and -90 <= bounds[1] <= bounds[3] <= 90):
         raise ValueError(f"Non-geographic source geometry: {source['id']}/{identifier}")
-    return {"country": source["country"], "id": f"gbOpen:{source['country_iso3']}:ADM{source['admin_level']}:{identifier}",
+    result = {"country": source["country"], "id": f"gbOpen:{source['country_iso3']}:ADM{source['admin_level']}:{identifier}",
             "name": display_name, "name_known": name_known, "original_name": name,
             "kind": "municipality", "geometry": geometry,
             "parent_id": "country:" + source["country"], "source": source["id"],
             "admin_level": int(source["admin_level"]),
             "unit_type": source.get("unit_type_overrides", {}).get(str(identifier), source["unit_type"])}
+    if source["id"] == "gbOpen-IRN-ADM4":
+        from atlas_iran_qualification import qualify_row
+        result = qualify_row(result, source)
+    return result
 
 
 def iter_boundaries(cache: Path, sources: list[dict]) -> Iterator[dict]:

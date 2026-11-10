@@ -36,6 +36,7 @@ mkdir -p "$LOGDIR"
 
 # Logik- und UI-Tests ohne Renderpfad.
 HEADLESS=(
+	AtlasCoverageSemanticsTest
 	AtlasDataTest
 	CampaignTest
 	InfrastructureTest

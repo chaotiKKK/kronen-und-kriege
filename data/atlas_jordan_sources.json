@@ -1,0 +1,61 @@
+{
+  "sources": [
+    {
+      "id": "geofabrik-JO-Ruwaished-terminal-20261108",
+      "country": "JO",
+      "kind": "district",
+      "admin_level": 5,
+      "cache_file": "jordan-terminal-20261110/Ruwaished-Liwa.geojson",
+      "sha256": "6e0b9291044e1d0760688740c4c6672b6d8d28c8599d38fe1e62e6ed864cdc88",
+      "bytes": 63628,
+      "source_unit_count": 1,
+      "expected_unit_count": 1,
+      "replacement_scope": "feature",
+      "url": "https://download.geofabrik.de/asia/jordan-261108-free.shp.zip",
+      "date": "2026-11-08",
+      "osm_timestamp": "2026-11-08T21:21:00Z",
+      "license": "ODbL-1.0",
+      "license_url": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "attribution": "© OpenStreetMap contributors; Geofabrik GmbH",
+      "role_evidence_urls": [
+        "https://www.moi.gov.jo/ebv4.0/root_storage/ar/eb_list_page/نظام_التشكيلات_الادارية_.pdf",
+        "https://dosweb.dos.gov.jo/databank/Population/Population_Estimares/PopulationEstimates.pdf",
+        "https://culture.gov.jo/AR/ListDetails/أرشيف_مدن_الثقافة_الأردنية/96/4",
+        "https://www.rscn.org.jo/public/reserve/5"
+      ],
+      "unit_semantics": {
+        "render_role": "district",
+        "additional_role": "terminal deconcentrated local administration",
+        "municipal_boundary_status": "not-established-by-this-source",
+        "coverage_scope": "Only the actual atlas intersection; no whole-Jordan municipal completeness claim."
+      },
+      "original_members": [
+        {
+          "name": "gis_osm_adminareas_a_free_1.cpg",
+          "bytes": 6,
+          "sha256": "146d6789ffe033a5297c1ad046e6a62ee35319b86b021444f05b6ea2aa8a1f4a"
+        },
+        {
+          "name": "gis_osm_adminareas_a_free_1.dbf",
+          "bytes": 22782,
+          "sha256": "00e68cf324ce9b96d234bde67893874baf7f2c1477b490535ff308e852810b6c"
+        },
+        {
+          "name": "gis_osm_adminareas_a_free_1.prj",
+          "bytes": 144,
+          "sha256": "ffc9162903c37f0867d1e7f36c20036a165f7aa555dda24c1ae0ee4328d2977f"
+        },
+        {
+          "name": "gis_osm_adminareas_a_free_1.shp",
+          "bytes": 1470808,
+          "sha256": "d0324d2730b412b6f3c6e5c63d0a72bf7ef7310954b85e2dc17ecdae1717be4a"
+        },
+        {
+          "name": "gis_osm_adminareas_a_free_1.shx",
+          "bytes": 1348,
+          "sha256": "2e2b50df6103e236ebda92a167a69ef8680cc3c872ccca3e3bd43bafe3ee2f1b"
+        }
+      ]
+    }
+  ]
+}

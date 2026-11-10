@@ -1,0 +1,4721 @@
+{
+  "schema": 1,
+  "sources": [
+    {
+      "id": "DLS-CY-reform2024-CYSTAT20260609",
+      "country": "CY",
+      "country_iso3": "CYP",
+      "scope_countries": [
+        "CY",
+        "CNM",
+        "ESB",
+        "WSB"
+      ],
+      "kind": "municipality",
+      "replacement_scope": "country",
+      "merge_priority": 4,
+      "url": "https://www.data.gov.cy/en/dataset/187",
+      "metadata_url": "https://www.cystat.gov.cy/el/Announcement?id=74185",
+      "date": "2024-07-01 reform; CYSTAT2026-06-09; DLS retrieval2026-11-10",
+      "license": "CC BY4.0 (DLS geometry); CYSTAT attribution/reuse policy (classification)",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "license_evidence_url": "https://www.data.gov.cy/en/dataset/187",
+      "attribution": "© Republic of Cyprus, Department of Lands and Surveys, CC BY4.0; © Republic of Cyprus, Statistical Service, geographical codes2026. Für den Atlas wurden kommunale Originalflächen vereinigt und Klassifikationen zugeordnet. CYSTAT übernimmt keine Verantwortung für diese Bearbeitung oder ihre Folgen; keine amtliche Unterstützung wird behauptet.",
+      "license_layers": [
+        {
+          "scope": "DLS geometry and native labels",
+          "license": "CC BY4.0",
+          "url": "https://www.data.gov.cy/en/dataset/187"
+        },
+        {
+          "scope": "CYSTAT2026 geographical codes and names",
+          "license": "CYSTAT free commercial/non-commercial reuse with attribution; modification notice and liability disclaimer",
+          "url": "https://www.cystat.gov.cy/el/StaticPage?id=1490"
+        }
+      ],
+      "unit_type": "Δήμος; Δημοτικό διαμέρισμα; Κοινότητα (territorial community)",
+      "files": [
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/CY-layer11-original.geojson",
+          "url": "https://eservices.dls.moi.gov.cy/arcgis/rest/services/National/AdminBoundaries_Indexes_GR/MapServer/11/query?where=1%3D1&outFields=%2A&returnGeometry=true&outSR=4326&f=geojson",
+          "bytes": 22806472,
+          "sha256": "ec0cb841e862486ab6921732b7fca5e7df370863f2fe987e04659310d425d7fd"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/CY-DLS-layer11-metadata.json",
+          "url": "https://eservices.dls.moi.gov.cy/arcgis/rest/services/National/AdminBoundaries_Indexes_GR/MapServer/11?f=pjson",
+          "bytes": 4326,
+          "sha256": "0a798820d832ee4addd676bd0046f80835417b98995617e92dd083f3b3a19465"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/CY-layer15-attributes.json",
+          "url": "https://eservices.dls.moi.gov.cy/arcgis/rest/services/National/AdminBoundaries_Indexes_GR/MapServer/15/query?where=1%3D1&outFields=%2A&returnGeometry=false&f=json",
+          "bytes": 15119,
+          "sha256": "79284256fdec915f5396ccf34477d95ccb13a216d7f82405c7bdf6236575e90d"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/CY-DLS-layer15-metadata.json",
+          "url": "https://eservices.dls.moi.gov.cy/arcgis/rest/services/National/AdminBoundaries_Indexes_GR/MapServer/15?f=pjson",
+          "bytes": 5034,
+          "sha256": "bc5bef98697bb65c4e637612d2c6038a6b4dd93b2e020548cbc5c5d8250eaf9c"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/CY-geocodes-20260609.xlsx",
+          "url": "https://library.cystat.gov.cy/NEW/Geocodes_with%20Toponyms-EN-090626.xlsx",
+          "bytes": 153859,
+          "sha256": "cec2ff44b08ef84a6c78355a4a29d2ad472b33c3f0431ba53d6a0f5877c9e3b5"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/CY-DLS-opendata-license.html",
+          "url": "https://www.data.gov.cy/en/dataset/187",
+          "bytes": 67307,
+          "sha256": "aecac21fd58943d754139730dfb8731bb6dbbb32f67c098755ff46554acb8f46"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/CY-CYSTAT-20260609-announcement.html",
+          "url": "https://www.cystat.gov.cy/el/Announcement?id=74185",
+          "bytes": 54112,
+          "sha256": "23589987794a81da7a46f66014a316d0e3a266a74e8390ede360abd4a12ea70b"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/SBA-overlapping-communities-2024.pdf",
+          "url": "https://www.sbaadministration.org/home/legislation/01_02_09_05_ORDINANCES/01_02_09_05_65_ORD_2024/20240628_ORD-13_G2093.pdf",
+          "bytes": 1212832,
+          "sha256": "8d43fde76b5e11b285f317a2a516f3170a8f73e48fd95832f70906ce7d60866f"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/SBA-overlapping-municipalities-2024.pdf",
+          "url": "https://www.sbaadministration.org/home/legislation/01_02_09_05_ORDINANCES/01_02_09_05_65_ORD_2024/20240628_ORD-14_G2093.pdf",
+          "bytes": 1281234,
+          "sha256": "0aca7c3928976359b3655bfa3d236235bbdef230e7b72f5133f73833968a1cdc"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/CY-CYSTAT-reuse-policy.html",
+          "url": "https://www.cystat.gov.cy/el/StaticPage?id=1490",
+          "bytes": 55592,
+          "sha256": "776b27375d8d82a2504e79367a9dd78e17c34fa863f164cb31ae62a674538f0b"
+        }
+      ],
+      "bytes": 25655887,
+      "sha256": "daf932baf2c8baedad23940a4d5d469982805bc5e0e771423c43cab006730bb1",
+      "hash_scope": "SHA256 of the canonical ordered original input receipts; every original file is separately pinned",
+      "source_feature_count": 613,
+      "source_unit_count": 622,
+      "normalized_unit_count": 622,
+      "role_counts": {
+        "municipality": 20,
+        "local_admin": 602
+      },
+      "municipal_authorities": 20,
+      "municipal_quarters": 91,
+      "territorial_communities": 511,
+      "excluded_claimed_northern_municipalities": 9,
+      "blocks_full_coverage_claim": false,
+      "blocks_full_coverage_claim_countries": [
+        "CNM"
+      ],
+      "territorial_review_caveats": {
+        "CNM": "Die Quelle belegt territoriale Teile der Republik Zypern, aber keine kommunalen UN-Körperschaften oder tatsächlich flächendeckend ausgeübte Gemeindebefugnisse im UN-Puffer. Diese gebietsbezogene Rollenprüfung bleibt offen."
+      },
+      "territorial_scope_note": "Die ursprünglichen DLS-Ortsgebiete und nach der Reform vereinigten Gemeindeflächen werden nur an den unabhängigen Länderrahmen CY, CNM, ESB und WSB geteilt. Die SBA-Verordnungen 13/2024 und 14/2024 belegen überlappende zivile Gemeinde- und Community-Aufgaben innerhalb der Basen; keine gesamte Basis und kein UN-Puffer wird dadurch zur Gemeinde. Die eigene nördliche Kommunalverwaltung CYN wird von dieser Quelle nicht importiert. Die zusätzlichen ESB-Teile von Lysi und Ammochostos gehören ausschließlich zur getrennten, ausdrücklich auf ESB begrenzten Zusatzquelle mit ihren Crown- und Militärausnahmen.",
+      "coverage_note": "Nach den zwei gesondert gesetzlich qualifizierten ESB-Ergänzungen ergibt der Originaldatenvergleich gegen den unveränderten unabhängigen Länderrahmen für ESB rund 95,60 % örtliche Flächenabdeckung; rund 5,61 km² Restfläche bleiben offen. Die Werte bezeichnen weder eine vollständige amtliche Grenzvermessung noch überall tatsächlich ausgeübte Gemeindebefugnisse. Rundungen der Atlasdarstellung können geringfügig abweichen. Für CNM bleibt die gesonderte territoriale Rollenprüfung bestehen.",
+      "role_evidence_urls": [
+        "https://www.cystat.gov.cy/el/Announcement?id=74185",
+        "https://www.sbaadministration.org/home/legislation/01_02_09_05_ORDINANCES/01_02_09_05_65_ORD_2024/20240628_ORD-13_G2093.pdf",
+        "https://www.sbaadministration.org/home/legislation/01_02_09_05_ORDINANCES/01_02_09_05_65_ORD_2024/20240628_ORD-14_G2093.pdf"
+      ],
+      "unit_semantics": {
+        "render_role": "20 municipalities plus distinct local_admin territorial units",
+        "geometry": "Exact original DLS component polygons, united only for the official current municipal membership codes",
+        "classification_date": "2026-06-09",
+        "reform_effective_date": "2024-07-01",
+        "community_council_caveat": "511 statistical community territories do not establish511 independently elected councils. The ministry reports286 councils in government-controlled areas and137 in the north; no per-territory council identity is inferred.",
+        "coverage_status": "CY und die belegten überlappenden örtlichen SBA-Rollen sind qualifiziert. Einschließlich der getrennten ESB-Zusatzquelle liegt der Originaldatenvergleich dort bei rund 95,60 %; rund 5,61 km² geometrische Restfläche bleiben offen. Die territoriale Abdeckung in CNM ist getrennt von der weiterhin offenen Befugnisfrage zu betrachten; keine kommunale UN-Körperschaft wird daraus abgeleitet."
+      }
+    },
+    {
+      "url": "https://www.data.gov.cy/en/dataset/187",
+      "metadata_url": "https://www.cystat.gov.cy/el/Announcement?id=74185",
+      "date": "2024-07-01 reform; CYSTAT2026-06-09; DLS retrieval2026-11-10",
+      "license": "CC BY4.0 (DLS geometry); CYSTAT attribution/reuse policy (classification)",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "license_evidence_url": "https://www.data.gov.cy/en/dataset/187",
+      "attribution": "© Republic of Cyprus, Department of Lands and Surveys, CC BY4.0; © Republic of Cyprus, Statistical Service, geographical codes2026. Für den Atlas wurden kommunale Originalflächen vereinigt und Klassifikationen zugeordnet. CYSTAT übernimmt keine Verantwortung für diese Bearbeitung oder ihre Folgen; keine amtliche Unterstützung wird behauptet.",
+      "license_layers": [
+        {
+          "scope": "DLS geometry and native labels",
+          "license": "CC BY4.0",
+          "url": "https://www.data.gov.cy/en/dataset/187"
+        },
+        {
+          "scope": "CYSTAT2026 geographical codes and names",
+          "license": "CYSTAT free commercial/non-commercial reuse with attribution; modification notice and liability disclaimer",
+          "url": "https://www.cystat.gov.cy/el/StaticPage?id=1490"
+        }
+      ],
+      "files": [
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/CY-layer11-original.geojson",
+          "url": "https://eservices.dls.moi.gov.cy/arcgis/rest/services/National/AdminBoundaries_Indexes_GR/MapServer/11/query?where=1%3D1&outFields=%2A&returnGeometry=true&outSR=4326&f=geojson",
+          "bytes": 22806472,
+          "sha256": "ec0cb841e862486ab6921732b7fca5e7df370863f2fe987e04659310d425d7fd"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/CY-DLS-layer11-metadata.json",
+          "url": "https://eservices.dls.moi.gov.cy/arcgis/rest/services/National/AdminBoundaries_Indexes_GR/MapServer/11?f=pjson",
+          "bytes": 4326,
+          "sha256": "0a798820d832ee4addd676bd0046f80835417b98995617e92dd083f3b3a19465"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/CY-layer15-attributes.json",
+          "url": "https://eservices.dls.moi.gov.cy/arcgis/rest/services/National/AdminBoundaries_Indexes_GR/MapServer/15/query?where=1%3D1&outFields=%2A&returnGeometry=false&f=json",
+          "bytes": 15119,
+          "sha256": "79284256fdec915f5396ccf34477d95ccb13a216d7f82405c7bdf6236575e90d"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/CY-DLS-layer15-metadata.json",
+          "url": "https://eservices.dls.moi.gov.cy/arcgis/rest/services/National/AdminBoundaries_Indexes_GR/MapServer/15?f=pjson",
+          "bytes": 5034,
+          "sha256": "bc5bef98697bb65c4e637612d2c6038a6b4dd93b2e020548cbc5c5d8250eaf9c"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/CY-geocodes-20260609.xlsx",
+          "url": "https://library.cystat.gov.cy/NEW/Geocodes_with%20Toponyms-EN-090626.xlsx",
+          "bytes": 153859,
+          "sha256": "cec2ff44b08ef84a6c78355a4a29d2ad472b33c3f0431ba53d6a0f5877c9e3b5"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/CY-DLS-opendata-license.html",
+          "url": "https://www.data.gov.cy/en/dataset/187",
+          "bytes": 67307,
+          "sha256": "aecac21fd58943d754139730dfb8731bb6dbbb32f67c098755ff46554acb8f46"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/CY-CYSTAT-20260609-announcement.html",
+          "url": "https://www.cystat.gov.cy/el/Announcement?id=74185",
+          "bytes": 54112,
+          "sha256": "23589987794a81da7a46f66014a316d0e3a266a74e8390ede360abd4a12ea70b"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/SBA-overlapping-communities-2024.pdf",
+          "url": "https://www.sbaadministration.org/home/legislation/01_02_09_05_ORDINANCES/01_02_09_05_65_ORD_2024/20240628_ORD-13_G2093.pdf",
+          "bytes": 1212832,
+          "sha256": "8d43fde76b5e11b285f317a2a516f3170a8f73e48fd95832f70906ce7d60866f"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/SBA-overlapping-municipalities-2024.pdf",
+          "url": "https://www.sbaadministration.org/home/legislation/01_02_09_05_ORDINANCES/01_02_09_05_65_ORD_2024/20240628_ORD-14_G2093.pdf",
+          "bytes": 1281234,
+          "sha256": "0aca7c3928976359b3655bfa3d236235bbdef230e7b72f5133f73833968a1cdc"
+        },
+        {
+          "cache_file": "audit/cy-ir-ma-current-20261110/CY-CYSTAT-reuse-policy.html",
+          "url": "https://www.cystat.gov.cy/el/StaticPage?id=1490",
+          "bytes": 55592,
+          "sha256": "776b27375d8d82a2504e79367a9dd78e17c34fa863f164cb31ae62a674538f0b"
+        }
+      ],
+      "bytes": 25655887,
+      "sha256": "daf932baf2c8baedad23940a4d5d469982805bc5e0e771423c43cab006730bb1",
+      "hash_scope": "SHA256 of the canonical ordered original input receipts; every original file is separately pinned",
+      "id": "DLS-SBA-overlapping-local-areas-2024-CYSTAT20260609",
+      "country": "ESB",
+      "country_iso3": "ESB",
+      "scope_countries": [
+        "ESB"
+      ],
+      "kind": "local_admin",
+      "replacement_scope": "feature",
+      "merge_priority": 4,
+      "clip_to_scope": true,
+      "scope_clip_reference_source": "natural-earth-countries",
+      "scope_clip_basis": "Exact original DLS polygons intersected only with the unchanged Natural Earth ESB territorial frame; no territory is imported outside ESB",
+      "scope_clip_evidence_url": "https://www.sbaadministration.org/home/legislation/01_02_09_05_ORDINANCES/01_02_09_05_65_ORD_2024/20240628_ORD-14_G2093.pdf",
+      "unit_type": "Gesetzlich anerkanntes überlappendes örtliches Verwaltungsgebiet (SBA)",
+      "source_feature_count": 613,
+      "qualified_original_feature_count": 2,
+      "source_unit_count": 2,
+      "normalized_unit_count": 2,
+      "role_counts": {
+        "local_admin": 2
+      },
+      "municipal_authorities_created": 0,
+      "blocks_full_coverage_claim": false,
+      "territorial_scope_note": "Nur die innerhalb des unveränderten ESB-Rahmens liegenden Original-DLS-Teile von Ammochostos und Lysi werden als gesetzlich anerkannte überlappende örtliche Verwaltungsgebiete dargestellt. Ordinance 14/2024, §§ 2, 6, 42, 43 und 155, belegt Rechtspersönlichkeit und zivile örtliche Aufgaben im Basisanteil. Nach §§ 160–161 gelten Ausnahmen für Crown-Eigentum und Militärliegenschaften; auf militärischen Grundstücken gilt die Verordnung nur im Umfang einer öffentlichen Anordnung des Administrators. Daraus folgt keine tatsächliche uneingeschränkte Machtausübung auf jedem Grundstück. Es entstehen keine neuen Gemeinden, keine CYN-Einträge und keine Zuständigkeiten außerhalb ESB.",
+      "coverage_note": "Diese additive Quelle qualifiziert ausschließlich zwei vorhandene territoriale ESB-Teile. Sie bescheinigt keine vollständige Flächenabdeckung oder uneingeschränkte tatsächliche Gemeindemacht; die übrige geometrische Restlücke bleibt gemessen.",
+      "role_evidence_urls": [
+        "https://www.cystat.gov.cy/el/Announcement?id=74185",
+        "https://www.sbaadministration.org/home/legislation/01_02_09_05_ORDINANCES/01_02_09_05_65_ORD_2024/20240628_ORD-14_G2093.pdf"
+      ],
+      "role_legal_sections": [
+        2,
+        6,
+        42,
+        43,
+        155
+      ],
+      "role_limiting_sections": [
+        160,
+        161
+      ],
+      "legal_reference": {
+        "ordinance": "Overlapping Municipalities Ordinance 14/2024",
+        "published": "2024-06-28",
+        "positive_sections": [
+          2,
+          6,
+          42,
+          43,
+          155
+        ],
+        "positive_pdf_pages": [
+          6,
+          7,
+          8,
+          9,
+          10,
+          32
+        ],
+        "limiting_sections": [
+          160,
+          161
+        ],
+        "limiting_pdf_pages": [
+          33,
+          34
+        ],
+        "section_number_note": "The actual Council section is155; the table of contents calls it156."
+      },
+      "evidence": [
+        {
+          "country": "ESB",
+          "title": "SBA Ordinance 14/2024: überlappende örtliche Aufgaben und Crown-/Militärausnahmen",
+          "url": "https://www.sbaadministration.org/home/legislation/01_02_09_05_ORDINANCES/01_02_09_05_65_ORD_2024/20240628_ORD-14_G2093.pdf"
+        }
+      ],
+      "unit_semantics": {
+        "reference_note": "Positiver gesetzlicher territorialer Rollennachweis; keine neue Gemeinde und kein Beleg tatsächlich uneingeschränkter Kompetenzausübung auf Militärliegenschaften."
+      }
+    }
+  ],
+  "official_role_identities": [
+    {
+      "code": "11010000",
+      "role": "MUNICIPALITY",
+      "name": "Lefkosia",
+      "previous_code": "n.a.",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "11011000",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Lefkosia",
+      "previous_code": "1000",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "11011010",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Agios Dometios",
+      "previous_code": "1010",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "11011011",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Egkomi",
+      "previous_code": "1011",
+      "territorial_note": ""
+    },
+    {
+      "code": "11011013",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Aglangia / Aglantzia",
+      "previous_code": "1013",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "11021012",
+      "role": "MUNICIPALITY",
+      "name": "Strovolos",
+      "previous_code": "1012",
+      "territorial_note": ""
+    },
+    {
+      "code": "11030000",
+      "role": "MUNICIPALITY",
+      "name": "Lakatameia",
+      "previous_code": "n.a.",
+      "territorial_note": ""
+    },
+    {
+      "code": "11031021",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Lakatameia",
+      "previous_code": "1021",
+      "territorial_note": ""
+    },
+    {
+      "code": "11031022",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Synoikismos Anthoupolis",
+      "previous_code": "1022",
+      "territorial_note": ""
+    },
+    {
+      "code": "11031225",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Tseri",
+      "previous_code": "1225",
+      "territorial_note": ""
+    },
+    {
+      "code": "11040000",
+      "role": "MUNICIPALITY",
+      "name": "Lakkia (Latsia) - Geri",
+      "previous_code": "n.a.",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "11041023",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Lakkia (Latsia)",
+      "previous_code": "1023",
+      "territorial_note": ""
+    },
+    {
+      "code": "11041024",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Geri",
+      "previous_code": "1024",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "11050000",
+      "role": "MUNICIPALITY",
+      "name": "Notia Lefkosia - Idalion",
+      "previous_code": "n.a.",
+      "territorial_note": ""
+    },
+    {
+      "code": "11051102",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Alampra",
+      "previous_code": "1102",
+      "territorial_note": ""
+    },
+    {
+      "code": "11051105",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Nisou",
+      "previous_code": "1105",
+      "territorial_note": ""
+    },
+    {
+      "code": "11051106",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Pera Chorio",
+      "previous_code": "1106",
+      "territorial_note": ""
+    },
+    {
+      "code": "11051107",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Idalion",
+      "previous_code": "1107",
+      "territorial_note": ""
+    },
+    {
+      "code": "11051108",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Lympia",
+      "previous_code": "1108",
+      "territorial_note": ""
+    },
+    {
+      "code": "11051120",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Potamia",
+      "previous_code": "1120",
+      "territorial_note": ""
+    },
+    {
+      "code": "11061340",
+      "role": "MUNICIPALITY",
+      "name": "Morfou",
+      "previous_code": "1340",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "11071139",
+      "role": "MUNICIPALITY",
+      "name": "Kythrea",
+      "previous_code": "1139",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001014",
+      "role": "COMMUNITY",
+      "name": "Ortakioï",
+      "previous_code": "1014",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001015",
+      "role": "COMMUNITY",
+      "name": "Trachonas",
+      "previous_code": "1015",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001100",
+      "role": "COMMUNITY",
+      "name": "Sia",
+      "previous_code": "1100",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001101",
+      "role": "COMMUNITY",
+      "name": "Mathiatis",
+      "previous_code": "1101",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001103",
+      "role": "COMMUNITY",
+      "name": "Agia Varvara (Lefkosias)",
+      "previous_code": "1103",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001104",
+      "role": "COMMUNITY",
+      "name": "Kotsiatis",
+      "previous_code": "1104",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001109",
+      "role": "COMMUNITY",
+      "name": "Lythrodontas",
+      "previous_code": "1109",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001110",
+      "role": "COMMUNITY",
+      "name": "Louroukina",
+      "previous_code": "1110",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001121",
+      "role": "COMMUNITY",
+      "name": "Agios Sozomenos",
+      "previous_code": "1121",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001122",
+      "role": "COMMUNITY",
+      "name": "Pyrogi",
+      "previous_code": "1122",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001123",
+      "role": "COMMUNITY",
+      "name": "Margo",
+      "previous_code": "1123",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001124",
+      "role": "COMMUNITY",
+      "name": "Agia",
+      "previous_code": "1124",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001125",
+      "role": "COMMUNITY",
+      "name": "Tymvou",
+      "previous_code": "1125",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001130",
+      "role": "COMMUNITY",
+      "name": "Mora",
+      "previous_code": "1130",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001131",
+      "role": "COMMUNITY",
+      "name": "Mia Milia",
+      "previous_code": "1131",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001132",
+      "role": "COMMUNITY",
+      "name": "Mandres (Lefkosias)",
+      "previous_code": "1132",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001133",
+      "role": "COMMUNITY",
+      "name": "Palaikythro",
+      "previous_code": "1133",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001134",
+      "role": "COMMUNITY",
+      "name": "Exo Metochi",
+      "previous_code": "1134",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001135",
+      "role": "COMMUNITY",
+      "name": "Epicho",
+      "previous_code": "1135",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001136",
+      "role": "COMMUNITY",
+      "name": "Voni",
+      "previous_code": "1136",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001137",
+      "role": "COMMUNITY",
+      "name": "Trachoni (Lefkosias)",
+      "previous_code": "1137",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001138",
+      "role": "COMMUNITY",
+      "name": "Neo Chorio (Lefkosias)",
+      "previous_code": "1138",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001141",
+      "role": "COMMUNITY",
+      "name": "Beikioï",
+      "previous_code": "1141",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001142",
+      "role": "COMMUNITY",
+      "name": "Petra tou Digeni",
+      "previous_code": "1142",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001143",
+      "role": "COMMUNITY",
+      "name": "Kalyvakia",
+      "previous_code": "1143",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001144",
+      "role": "COMMUNITY",
+      "name": "Kourou Monastiri",
+      "previous_code": "1144",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001200",
+      "role": "COMMUNITY",
+      "name": "Kampi",
+      "previous_code": "1200",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001201",
+      "role": "COMMUNITY",
+      "name": "Farmakas",
+      "previous_code": "1201",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001202",
+      "role": "COMMUNITY",
+      "name": "Apliki",
+      "previous_code": "1202",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001203",
+      "role": "COMMUNITY",
+      "name": "Lazanias",
+      "previous_code": "1203",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001204",
+      "role": "COMMUNITY",
+      "name": "Gourri",
+      "previous_code": "1204",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001205",
+      "role": "COMMUNITY",
+      "name": "Fikardou",
+      "previous_code": "1205",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001206",
+      "role": "COMMUNITY",
+      "name": "Agios Epifanios (Oreinis)",
+      "previous_code": "1206",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001207",
+      "role": "COMMUNITY",
+      "name": "Kalo Chorio (Oreinis)",
+      "previous_code": "1207",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001208",
+      "role": "COMMUNITY",
+      "name": "Malounta",
+      "previous_code": "1208",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001209",
+      "role": "COMMUNITY",
+      "name": "Klirou",
+      "previous_code": "1209",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001210",
+      "role": "COMMUNITY",
+      "name": "Arediou",
+      "previous_code": "1210",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001211",
+      "role": "COMMUNITY",
+      "name": "Agios Ioannis (Lefkosias)",
+      "previous_code": "1211",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001212",
+      "role": "COMMUNITY",
+      "name": "Agrokipia",
+      "previous_code": "1212",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001213",
+      "role": "COMMUNITY",
+      "name": "Mitsero",
+      "previous_code": "1213",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001220",
+      "role": "COMMUNITY",
+      "name": "Kapedes",
+      "previous_code": "1220",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001221",
+      "role": "COMMUNITY",
+      "name": "Kataliontas",
+      "previous_code": "1221",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001222",
+      "role": "COMMUNITY",
+      "name": "Analiontas",
+      "previous_code": "1222",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001223",
+      "role": "COMMUNITY",
+      "name": "Kampia",
+      "previous_code": "1223",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001224",
+      "role": "COMMUNITY",
+      "name": "Marki",
+      "previous_code": "1224",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001226",
+      "role": "COMMUNITY",
+      "name": "Politiko",
+      "previous_code": "1226",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001227",
+      "role": "COMMUNITY",
+      "name": "Pera",
+      "previous_code": "1227",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001228",
+      "role": "COMMUNITY",
+      "name": "Episkopeio",
+      "previous_code": "1228",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001229",
+      "role": "COMMUNITY",
+      "name": "Psimolofou",
+      "previous_code": "1229",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001230",
+      "role": "COMMUNITY",
+      "name": "Ergates",
+      "previous_code": "1230",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001231",
+      "role": "COMMUNITY",
+      "name": "Anageia",
+      "previous_code": "1231",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001232",
+      "role": "COMMUNITY",
+      "name": "Pano Deftera",
+      "previous_code": "1232",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001233",
+      "role": "COMMUNITY",
+      "name": "Kato Deftera",
+      "previous_code": "1233",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001240",
+      "role": "COMMUNITY",
+      "name": "Agioi Trimithias",
+      "previous_code": "1240",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001241",
+      "role": "COMMUNITY",
+      "name": "Palaiometocho",
+      "previous_code": "1241",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001242",
+      "role": "COMMUNITY",
+      "name": "Deneia",
+      "previous_code": "1242",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001243",
+      "role": "COMMUNITY",
+      "name": "Kokkinotrimithia",
+      "previous_code": "1243",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001244",
+      "role": "COMMUNITY",
+      "name": "Mammari",
+      "previous_code": "1244",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001245",
+      "role": "COMMUNITY",
+      "name": "Gerolakkos",
+      "previous_code": "1245",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001246",
+      "role": "COMMUNITY",
+      "name": "Agia Marina (Skyllouras)",
+      "previous_code": "1246",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001247",
+      "role": "COMMUNITY",
+      "name": "Skylloura",
+      "previous_code": "1247",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001248",
+      "role": "COMMUNITY",
+      "name": "Agios Vasileios",
+      "previous_code": "1248",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001249",
+      "role": "COMMUNITY",
+      "name": "Dyo Potamoi",
+      "previous_code": "1249",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001250",
+      "role": "COMMUNITY",
+      "name": "Kanli",
+      "previous_code": "1250",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001251",
+      "role": "COMMUNITY",
+      "name": "Kioneli",
+      "previous_code": "1251",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001300",
+      "role": "COMMUNITY",
+      "name": "Palaichori (Morfou)",
+      "previous_code": "1300",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001301",
+      "role": "COMMUNITY",
+      "name": "Askas",
+      "previous_code": "1301",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001302",
+      "role": "COMMUNITY",
+      "name": "Alona",
+      "previous_code": "1302",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001303",
+      "role": "COMMUNITY",
+      "name": "Fterikoudi",
+      "previous_code": "1303",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001304",
+      "role": "COMMUNITY",
+      "name": "Polystypos",
+      "previous_code": "1304",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001305",
+      "role": "COMMUNITY",
+      "name": "Lagoudera",
+      "previous_code": "1305",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001306",
+      "role": "COMMUNITY",
+      "name": "Saranti",
+      "previous_code": "1306",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001307",
+      "role": "COMMUNITY",
+      "name": "Livadia (Lefkosias)",
+      "previous_code": "1307",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001308",
+      "role": "COMMUNITY",
+      "name": "Alithinou",
+      "previous_code": "1308",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001309",
+      "role": "COMMUNITY",
+      "name": "Platanistasa",
+      "previous_code": "1309",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001310",
+      "role": "COMMUNITY",
+      "name": "Palaichori (Oreinis)",
+      "previous_code": "1310",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001320",
+      "role": "COMMUNITY",
+      "name": "Xyliatos",
+      "previous_code": "1320",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001321",
+      "role": "COMMUNITY",
+      "name": "Agios Georgios Kafkallou",
+      "previous_code": "1321",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001322",
+      "role": "COMMUNITY",
+      "name": "Nikitari",
+      "previous_code": "1322",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001323",
+      "role": "COMMUNITY",
+      "name": "Vyzakia",
+      "previous_code": "1323",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001324",
+      "role": "COMMUNITY",
+      "name": "Agia Marina (Xyliatou)",
+      "previous_code": "1324",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001325",
+      "role": "COMMUNITY",
+      "name": "Agioi Iliofotoi",
+      "previous_code": "1325",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001326",
+      "role": "COMMUNITY",
+      "name": "Kato Moni",
+      "previous_code": "1326",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001327",
+      "role": "COMMUNITY",
+      "name": "Orounta",
+      "previous_code": "1327",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001328",
+      "role": "COMMUNITY",
+      "name": "Pano Koutrafas",
+      "previous_code": "1328",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001329",
+      "role": "COMMUNITY",
+      "name": "Kato Koutrafas",
+      "previous_code": "1329",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001330",
+      "role": "COMMUNITY",
+      "name": "Potami",
+      "previous_code": "1330",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001350",
+      "role": "COMMUNITY",
+      "name": "Pano Zodeia",
+      "previous_code": "1350",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001351",
+      "role": "COMMUNITY",
+      "name": "Kato Zodeia",
+      "previous_code": "1351",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001352",
+      "role": "COMMUNITY",
+      "name": "Kazivera",
+      "previous_code": "1352",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001353",
+      "role": "COMMUNITY",
+      "name": "Prastio (Lefkosias)",
+      "previous_code": "1353",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001354",
+      "role": "COMMUNITY",
+      "name": "Nikitas",
+      "previous_code": "1354",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001355",
+      "role": "COMMUNITY",
+      "name": "Syrianochori",
+      "previous_code": "1355",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001357",
+      "role": "COMMUNITY",
+      "name": "Kalo Chorio Kapouti",
+      "previous_code": "1357",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001360",
+      "role": "COMMUNITY",
+      "name": "Akaki",
+      "previous_code": "1360",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001361",
+      "role": "COMMUNITY",
+      "name": "Peristerona (Lefkosias)",
+      "previous_code": "1361",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001362",
+      "role": "COMMUNITY",
+      "name": "Astromeritis",
+      "previous_code": "1362",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001363",
+      "role": "COMMUNITY",
+      "name": "Avlona",
+      "previous_code": "1363",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001364",
+      "role": "COMMUNITY",
+      "name": "Katokopia",
+      "previous_code": "1364",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001365",
+      "role": "COMMUNITY",
+      "name": "Argaki",
+      "previous_code": "1365",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001366",
+      "role": "COMMUNITY",
+      "name": "Masari",
+      "previous_code": "1366",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001367",
+      "role": "COMMUNITY",
+      "name": "Fyllia",
+      "previous_code": "1367",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001368",
+      "role": "COMMUNITY",
+      "name": "Meniko",
+      "previous_code": "1368",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001369",
+      "role": "COMMUNITY",
+      "name": "Kyra",
+      "previous_code": "1369",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001400",
+      "role": "COMMUNITY",
+      "name": "Spilia",
+      "previous_code": "1400",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001402",
+      "role": "COMMUNITY",
+      "name": "Agia Eirini (Lefkosias)",
+      "previous_code": "1402",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001403",
+      "role": "COMMUNITY",
+      "name": "Kannavia",
+      "previous_code": "1403",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001404",
+      "role": "COMMUNITY",
+      "name": "Kakopetria",
+      "previous_code": "1404",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001405",
+      "role": "COMMUNITY",
+      "name": "Agios Theodoros (Soleas)",
+      "previous_code": "1405",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001406",
+      "role": "COMMUNITY",
+      "name": "Galata",
+      "previous_code": "1406",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001407",
+      "role": "COMMUNITY",
+      "name": "Sina Oros",
+      "previous_code": "1407",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001408",
+      "role": "COMMUNITY",
+      "name": "Kaliana",
+      "previous_code": "1408",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001409",
+      "role": "COMMUNITY",
+      "name": "Temvria",
+      "previous_code": "1409",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001410",
+      "role": "COMMUNITY",
+      "name": "Korakou",
+      "previous_code": "1410",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001411",
+      "role": "COMMUNITY",
+      "name": "Evrychou",
+      "previous_code": "1411",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001412",
+      "role": "COMMUNITY",
+      "name": "Flasou",
+      "previous_code": "1412",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001414",
+      "role": "COMMUNITY",
+      "name": "Agios Epifanios (Soleas)",
+      "previous_code": "1414",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001415",
+      "role": "COMMUNITY",
+      "name": "Linou",
+      "previous_code": "1415",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001416",
+      "role": "COMMUNITY",
+      "name": "Katydata",
+      "previous_code": "1416",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001417",
+      "role": "COMMUNITY",
+      "name": "Skouriotissa",
+      "previous_code": "1417",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001420",
+      "role": "COMMUNITY",
+      "name": "Pedoulas",
+      "previous_code": "1420",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001421",
+      "role": "COMMUNITY",
+      "name": "Mylikouri",
+      "previous_code": "1421",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001422",
+      "role": "COMMUNITY",
+      "name": "Moutoullas",
+      "previous_code": "1422",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001423",
+      "role": "COMMUNITY",
+      "name": "Oikos",
+      "previous_code": "1423",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001424",
+      "role": "COMMUNITY",
+      "name": "Kalopanagiotis",
+      "previous_code": "1424",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001425",
+      "role": "COMMUNITY",
+      "name": "Gerakies",
+      "previous_code": "1425",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001426",
+      "role": "COMMUNITY",
+      "name": "Tsakistra",
+      "previous_code": "1426",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001427",
+      "role": "COMMUNITY",
+      "name": "Kampos",
+      "previous_code": "1427",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001430",
+      "role": "COMMUNITY",
+      "name": "Agios Nikolaos (Lefkosias)",
+      "previous_code": "1430",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001431",
+      "role": "COMMUNITY",
+      "name": "Agios Georgios (Lefkosias)",
+      "previous_code": "1431",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001432",
+      "role": "COMMUNITY",
+      "name": "Petra",
+      "previous_code": "1432",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001433",
+      "role": "COMMUNITY",
+      "name": "Kalo Chorio (Soleas)",
+      "previous_code": "1433",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001435",
+      "role": "COMMUNITY",
+      "name": "Lefka",
+      "previous_code": "1435",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001436",
+      "role": "COMMUNITY",
+      "name": "Ampelikou",
+      "previous_code": "1436",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001437",
+      "role": "COMMUNITY",
+      "name": "Peristeronari",
+      "previous_code": "1437",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001438",
+      "role": "COMMUNITY",
+      "name": "Elia (Lefkosias)",
+      "previous_code": "1438",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001439",
+      "role": "COMMUNITY",
+      "name": "Karavostasi",
+      "previous_code": "1439",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001441",
+      "role": "COMMUNITY",
+      "name": "Pentageia",
+      "previous_code": "1441",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001443",
+      "role": "COMMUNITY",
+      "name": "Angolemi",
+      "previous_code": "1443",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001450",
+      "role": "COMMUNITY",
+      "name": "Variseia",
+      "previous_code": "1450",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001451",
+      "role": "COMMUNITY",
+      "name": "Galini",
+      "previous_code": "1451",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001452",
+      "role": "COMMUNITY",
+      "name": "Xerovounos",
+      "previous_code": "1452",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001453",
+      "role": "COMMUNITY",
+      "name": "Loutros",
+      "previous_code": "1453",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "12001454",
+      "role": "COMMUNITY",
+      "name": "Agios Ioannis Selemani",
+      "previous_code": "1454",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001455",
+      "role": "COMMUNITY",
+      "name": "Ammadies",
+      "previous_code": "1455",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001456",
+      "role": "COMMUNITY",
+      "name": "Pano Pyrgos",
+      "previous_code": "1456",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001457",
+      "role": "COMMUNITY",
+      "name": "Kato Pyrgos",
+      "previous_code": "1457",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001458",
+      "role": "COMMUNITY",
+      "name": "Selladi tou Appi",
+      "previous_code": "1458",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001459",
+      "role": "COMMUNITY",
+      "name": "Alevga",
+      "previous_code": "1459",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001460",
+      "role": "COMMUNITY",
+      "name": "Pigenia",
+      "previous_code": "1460",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001461",
+      "role": "COMMUNITY",
+      "name": "Pachyammos",
+      "previous_code": "1461",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001464",
+      "role": "COMMUNITY",
+      "name": "Kokkina",
+      "previous_code": "1464",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001465",
+      "role": "COMMUNITY",
+      "name": "Frodisia",
+      "previous_code": "1465",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001466",
+      "role": "COMMUNITY",
+      "name": "Agios Theodoros (Tillirias)",
+      "previous_code": "1466",
+      "territorial_note": ""
+    },
+    {
+      "code": "12001467",
+      "role": "COMMUNITY",
+      "name": "Mansoura",
+      "previous_code": "1467",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "12001468",
+      "role": "COMMUNITY",
+      "name": "Mosfili",
+      "previous_code": "1468",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "21012000",
+      "role": "MUNICIPALITY",
+      "name": "Keryneia",
+      "previous_code": "2000",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "21022222",
+      "role": "MUNICIPALITY",
+      "name": "Lapithos",
+      "previous_code": "2222",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "21032217",
+      "role": "MUNICIPALITY",
+      "name": "Karavas",
+      "previous_code": "2217",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002100",
+      "role": "COMMUNITY",
+      "name": "Pano Dikomo",
+      "previous_code": "2100",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002101",
+      "role": "COMMUNITY",
+      "name": "Kato Dikomo",
+      "previous_code": "2101",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002102",
+      "role": "COMMUNITY",
+      "name": "Koutsoventis",
+      "previous_code": "2102",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002103",
+      "role": "COMMUNITY",
+      "name": "Vouno",
+      "previous_code": "2103",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002104",
+      "role": "COMMUNITY",
+      "name": "Sichari",
+      "previous_code": "2104",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002110",
+      "role": "COMMUNITY",
+      "name": "Fota",
+      "previous_code": "2110",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002111",
+      "role": "COMMUNITY",
+      "name": "Krini",
+      "previous_code": "2111",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002112",
+      "role": "COMMUNITY",
+      "name": "Pileri",
+      "previous_code": "2112",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002113",
+      "role": "COMMUNITY",
+      "name": "Kiomourtzou",
+      "previous_code": "2113",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002114",
+      "role": "COMMUNITY",
+      "name": "Agirta",
+      "previous_code": "2114",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002120",
+      "role": "COMMUNITY",
+      "name": "Agios Ermolaos",
+      "previous_code": "2120",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002121",
+      "role": "COMMUNITY",
+      "name": "Sysklipos",
+      "previous_code": "2121",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002122",
+      "role": "COMMUNITY",
+      "name": "Kontemenos",
+      "previous_code": "2122",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002123",
+      "role": "COMMUNITY",
+      "name": "Asomatos (Keryneias)",
+      "previous_code": "2123",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002124",
+      "role": "COMMUNITY",
+      "name": "Kampyli",
+      "previous_code": "2124",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002125",
+      "role": "COMMUNITY",
+      "name": "Karpaseia",
+      "previous_code": "2125",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002126",
+      "role": "COMMUNITY",
+      "name": "Myrtou",
+      "previous_code": "2126",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002127",
+      "role": "COMMUNITY",
+      "name": "Diorios",
+      "previous_code": "2127",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002128",
+      "role": "COMMUNITY",
+      "name": "Agia Eirini (Keryneias)",
+      "previous_code": "2128",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002129",
+      "role": "COMMUNITY",
+      "name": "Kormakitis",
+      "previous_code": "2129",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002130",
+      "role": "COMMUNITY",
+      "name": "Livera",
+      "previous_code": "2130",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002200",
+      "role": "COMMUNITY",
+      "name": "Kalograia",
+      "previous_code": "2200",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002201",
+      "role": "COMMUNITY",
+      "name": "Agios Amvrosios (Keryneias)",
+      "previous_code": "2201",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002202",
+      "role": "COMMUNITY",
+      "name": "Charkeia",
+      "previous_code": "2202",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002203",
+      "role": "COMMUNITY",
+      "name": "Trapeza",
+      "previous_code": "2203",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002204",
+      "role": "COMMUNITY",
+      "name": "Klepini",
+      "previous_code": "2204",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002205",
+      "role": "COMMUNITY",
+      "name": "Agios Epiktitos",
+      "previous_code": "2205",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002206",
+      "role": "COMMUNITY",
+      "name": "Belapais",
+      "previous_code": "2206",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002207",
+      "role": "COMMUNITY",
+      "name": "Kazafani",
+      "previous_code": "2207",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002208",
+      "role": "COMMUNITY",
+      "name": "Thermeia",
+      "previous_code": "2208",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002209",
+      "role": "COMMUNITY",
+      "name": "Karakoumi",
+      "previous_code": "2209",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002210",
+      "role": "COMMUNITY",
+      "name": "Templos",
+      "previous_code": "2210",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002211",
+      "role": "COMMUNITY",
+      "name": "Karmi",
+      "previous_code": "2211",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002212",
+      "role": "COMMUNITY",
+      "name": "Ftericha",
+      "previous_code": "2212",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002213",
+      "role": "COMMUNITY",
+      "name": "Trimithi",
+      "previous_code": "2213",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002214",
+      "role": "COMMUNITY",
+      "name": "Palaiosofos",
+      "previous_code": "2214",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002215",
+      "role": "COMMUNITY",
+      "name": "Motides",
+      "previous_code": "2215",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002216",
+      "role": "COMMUNITY",
+      "name": "Elia (Keryneias)",
+      "previous_code": "2216",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002218",
+      "role": "COMMUNITY",
+      "name": "Agios Georgios (Keryneias)",
+      "previous_code": "2218",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002220",
+      "role": "COMMUNITY",
+      "name": "Agridaki",
+      "previous_code": "2220",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002221",
+      "role": "COMMUNITY",
+      "name": "Larnakas Lapithou",
+      "previous_code": "2221",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002223",
+      "role": "COMMUNITY",
+      "name": "Vasileia",
+      "previous_code": "2223",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002224",
+      "role": "COMMUNITY",
+      "name": "Panagra",
+      "previous_code": "2224",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "22002226",
+      "role": "COMMUNITY",
+      "name": "Orga",
+      "previous_code": "2226",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "31010000",
+      "role": "MUNICIPALITY",
+      "name": "Paralimni - Deryneia",
+      "previous_code": "n.a.",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "31013101",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Paralimni",
+      "previous_code": "3101",
+      "territorial_note": ""
+    },
+    {
+      "code": "31013102",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Deryneia",
+      "previous_code": "3102",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "31013105",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Frenaros",
+      "previous_code": "3105",
+      "territorial_note": ""
+    },
+    {
+      "code": "31013114",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Acheritou",
+      "previous_code": "3114",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "31020000",
+      "role": "MUNICIPALITY",
+      "name": "Agia Napa",
+      "previous_code": "n.a.",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "31023100",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Agia Napa",
+      "previous_code": "3100",
+      "territorial_note": ""
+    },
+    {
+      "code": "31023103",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Sotira",
+      "previous_code": "3103",
+      "territorial_note": ""
+    },
+    {
+      "code": "31023104",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Liopetri",
+      "previous_code": "3104",
+      "territorial_note": ""
+    },
+    {
+      "code": "31023110",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Avgorou",
+      "previous_code": "3110",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "31023111",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Achna",
+      "previous_code": "3111",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "31033000",
+      "role": "MUNICIPALITY",
+      "name": "Ammochostos",
+      "previous_code": "3000",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "31043221",
+      "role": "MUNICIPALITY",
+      "name": "Lefkonoiko",
+      "previous_code": "3221",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "31053304",
+      "role": "MUNICIPALITY",
+      "name": "Akanthou",
+      "previous_code": "3304",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "31063202",
+      "role": "MUNICIPALITY",
+      "name": "Lysi",
+      "previous_code": "3202",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "32003112",
+      "role": "COMMUNITY",
+      "name": "Makrasyka",
+      "previous_code": "3112",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003113",
+      "role": "COMMUNITY",
+      "name": "Kalopsida",
+      "previous_code": "3113",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003120",
+      "role": "COMMUNITY",
+      "name": "Egkomi (Ammochostou)",
+      "previous_code": "3120",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003121",
+      "role": "COMMUNITY",
+      "name": "Agios Sergios",
+      "previous_code": "3121",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003122",
+      "role": "COMMUNITY",
+      "name": "Stylloi",
+      "previous_code": "3122",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003123",
+      "role": "COMMUNITY",
+      "name": "Limnia",
+      "previous_code": "3123",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003124",
+      "role": "COMMUNITY",
+      "name": "Aloda",
+      "previous_code": "3124",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003130",
+      "role": "COMMUNITY",
+      "name": "Spathariko",
+      "previous_code": "3130",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003131",
+      "role": "COMMUNITY",
+      "name": "Arnadi",
+      "previous_code": "3131",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003132",
+      "role": "COMMUNITY",
+      "name": "Agios Georgios (Ammochostou)",
+      "previous_code": "3132",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003133",
+      "role": "COMMUNITY",
+      "name": "Perivolia (Trikomou)",
+      "previous_code": "3133",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003134",
+      "role": "COMMUNITY",
+      "name": "Sygkrasi",
+      "previous_code": "3134",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003135",
+      "role": "COMMUNITY",
+      "name": "Lapathos",
+      "previous_code": "3135",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003136",
+      "role": "COMMUNITY",
+      "name": "Trikomo",
+      "previous_code": "3136",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003200",
+      "role": "COMMUNITY",
+      "name": "Kouklia (Ammochostou)",
+      "previous_code": "3200",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003201",
+      "role": "COMMUNITY",
+      "name": "Kontea",
+      "previous_code": "3201",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003203",
+      "role": "COMMUNITY",
+      "name": "Vatili",
+      "previous_code": "3203",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003204",
+      "role": "COMMUNITY",
+      "name": "Strongylos",
+      "previous_code": "3204",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003205",
+      "role": "COMMUNITY",
+      "name": "Sinta",
+      "previous_code": "3205",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003210",
+      "role": "COMMUNITY",
+      "name": "Gaidouras / Nea Sparti",
+      "previous_code": "3210",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003211",
+      "role": "COMMUNITY",
+      "name": "Prastio (Ammochostou)",
+      "previous_code": "3211",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003212",
+      "role": "COMMUNITY",
+      "name": "Pyrga (Ammochostou)",
+      "previous_code": "3212",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003213",
+      "role": "COMMUNITY",
+      "name": "Mousoulita",
+      "previous_code": "3213",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003214",
+      "role": "COMMUNITY",
+      "name": "Santalaris",
+      "previous_code": "3214",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003215",
+      "role": "COMMUNITY",
+      "name": "Maratha",
+      "previous_code": "3215",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003216",
+      "role": "COMMUNITY",
+      "name": "Peristerona (Ammochostou)",
+      "previous_code": "3216",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003217",
+      "role": "COMMUNITY",
+      "name": "Pigi",
+      "previous_code": "3217",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003218",
+      "role": "COMMUNITY",
+      "name": "Genagra",
+      "previous_code": "3218",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003219",
+      "role": "COMMUNITY",
+      "name": "Milia (Ammochostou)",
+      "previous_code": "3219",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003220",
+      "role": "COMMUNITY",
+      "name": "Gypsou",
+      "previous_code": "3220",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003222",
+      "role": "COMMUNITY",
+      "name": "Psyllatos",
+      "previous_code": "3222",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003223",
+      "role": "COMMUNITY",
+      "name": "Knodara",
+      "previous_code": "3223",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003224",
+      "role": "COMMUNITY",
+      "name": "Goufes",
+      "previous_code": "3224",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003231",
+      "role": "COMMUNITY",
+      "name": "Askeia / Αsseia",
+      "previous_code": "3231",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003232",
+      "role": "COMMUNITY",
+      "name": "Afaneia-Ornithi",
+      "previous_code": "3232",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003233",
+      "role": "COMMUNITY",
+      "name": "Angastina",
+      "previous_code": "3233",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003234",
+      "role": "COMMUNITY",
+      "name": "Marathovounos",
+      "previous_code": "3234",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003235",
+      "role": "COMMUNITY",
+      "name": "Vitsada",
+      "previous_code": "3235",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003236",
+      "role": "COMMUNITY",
+      "name": "Kiados",
+      "previous_code": "3236",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003237",
+      "role": "COMMUNITY",
+      "name": "Kornokipos",
+      "previous_code": "3237",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003238",
+      "role": "COMMUNITY",
+      "name": "Agios Chariton",
+      "previous_code": "3238",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003239",
+      "role": "COMMUNITY",
+      "name": "Trypimeni",
+      "previous_code": "3239",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003300",
+      "role": "COMMUNITY",
+      "name": "Artemi",
+      "previous_code": "3300",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003301",
+      "role": "COMMUNITY",
+      "name": "Agios Nikolaos (Ammochostou)",
+      "previous_code": "3301",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003303",
+      "role": "COMMUNITY",
+      "name": "Platani",
+      "previous_code": "3303",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003305",
+      "role": "COMMUNITY",
+      "name": "Melounta",
+      "previous_code": "3305",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003310",
+      "role": "COMMUNITY",
+      "name": "Agios Iakovos",
+      "previous_code": "3310",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003311",
+      "role": "COMMUNITY",
+      "name": "Agios Andronikos (Trikomou)",
+      "previous_code": "3311",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003312",
+      "role": "COMMUNITY",
+      "name": "Mandres (Ammochostou)",
+      "previous_code": "3312",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003313",
+      "role": "COMMUNITY",
+      "name": "Ardana",
+      "previous_code": "3313",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003314",
+      "role": "COMMUNITY",
+      "name": "Flamoudi",
+      "previous_code": "3314",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003320",
+      "role": "COMMUNITY",
+      "name": "Bogazi",
+      "previous_code": "3320",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003321",
+      "role": "COMMUNITY",
+      "name": "Monarga",
+      "previous_code": "3321",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003322",
+      "role": "COMMUNITY",
+      "name": "Agios Ilias",
+      "previous_code": "3322",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003323",
+      "role": "COMMUNITY",
+      "name": "Gastria",
+      "previous_code": "3323",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003324",
+      "role": "COMMUNITY",
+      "name": "Avgolida",
+      "previous_code": "3324",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003325",
+      "role": "COMMUNITY",
+      "name": "Patriki",
+      "previous_code": "3325",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003326",
+      "role": "COMMUNITY",
+      "name": "Gerani",
+      "previous_code": "3326",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003327",
+      "role": "COMMUNITY",
+      "name": "Ovgoros",
+      "previous_code": "3327",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003328",
+      "role": "COMMUNITY",
+      "name": "Davlos",
+      "previous_code": "3328",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003330",
+      "role": "COMMUNITY",
+      "name": "Agios Theodoros (Ammochostou)",
+      "previous_code": "3330",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003331",
+      "role": "COMMUNITY",
+      "name": "Vokolida",
+      "previous_code": "3331",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003332",
+      "role": "COMMUNITY",
+      "name": "Tavrou",
+      "previous_code": "3332",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003333",
+      "role": "COMMUNITY",
+      "name": "Agios Efstathios",
+      "previous_code": "3333",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003334",
+      "role": "COMMUNITY",
+      "name": "Livadia (Ammochostou)",
+      "previous_code": "3334",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003335",
+      "role": "COMMUNITY",
+      "name": "Krideia",
+      "previous_code": "3335",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003336",
+      "role": "COMMUNITY",
+      "name": "Komi",
+      "previous_code": "3336",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003337",
+      "role": "COMMUNITY",
+      "name": "Galateia",
+      "previous_code": "3337",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003338",
+      "role": "COMMUNITY",
+      "name": "Eptakomi",
+      "previous_code": "3338",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003340",
+      "role": "COMMUNITY",
+      "name": "Koma tou Gialou",
+      "previous_code": "3340",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003341",
+      "role": "COMMUNITY",
+      "name": "Neta",
+      "previous_code": "3341",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003342",
+      "role": "COMMUNITY",
+      "name": "Vοthylakas",
+      "previous_code": "3342",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003343",
+      "role": "COMMUNITY",
+      "name": "Lythragkomi",
+      "previous_code": "3343",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003344",
+      "role": "COMMUNITY",
+      "name": "Vasili",
+      "previous_code": "3344",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003345",
+      "role": "COMMUNITY",
+      "name": "Leonarisso",
+      "previous_code": "3345",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003346",
+      "role": "COMMUNITY",
+      "name": "Platanissos",
+      "previous_code": "3346",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003347",
+      "role": "COMMUNITY",
+      "name": "Koilanemos",
+      "previous_code": "3347",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003348",
+      "role": "COMMUNITY",
+      "name": "Agios Andronikos (Karpasias)",
+      "previous_code": "3348",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003350",
+      "role": "COMMUNITY",
+      "name": "Agios Symeon",
+      "previous_code": "3350",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003351",
+      "role": "COMMUNITY",
+      "name": "Melanarga",
+      "previous_code": "3351",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003352",
+      "role": "COMMUNITY",
+      "name": "Aigialousa",
+      "previous_code": "3352",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003353",
+      "role": "COMMUNITY",
+      "name": "Agia Triada",
+      "previous_code": "3353",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003354",
+      "role": "COMMUNITY",
+      "name": "Koroveia",
+      "previous_code": "3354",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003355",
+      "role": "COMMUNITY",
+      "name": "Galinoporni",
+      "previous_code": "3355",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "32003356",
+      "role": "COMMUNITY",
+      "name": "Rizokarpaso",
+      "previous_code": "3356",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "41010000",
+      "role": "MUNICIPALITY",
+      "name": "Larnaka",
+      "previous_code": "n.a.",
+      "territorial_note": ""
+    },
+    {
+      "code": "41014000",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Larnaka",
+      "previous_code": "4000",
+      "territorial_note": ""
+    },
+    {
+      "code": "41014011",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Livadia",
+      "previous_code": "4011",
+      "territorial_note": ""
+    },
+    {
+      "code": "41014102",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Voroklini",
+      "previous_code": "4102",
+      "territorial_note": ""
+    },
+    {
+      "code": "41020000",
+      "role": "MUNICIPALITY",
+      "name": "Aradippou",
+      "previous_code": "n.a.",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "41024010",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Aradippou",
+      "previous_code": "4010",
+      "territorial_note": ""
+    },
+    {
+      "code": "41024100",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Kellia",
+      "previous_code": "4100",
+      "territorial_note": ""
+    },
+    {
+      "code": "41024101",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Troulloi",
+      "previous_code": "4101",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "41030000",
+      "role": "MUNICIPALITY",
+      "name": "Dromolaxia - Meneou",
+      "previous_code": "n.a.",
+      "territorial_note": ""
+    },
+    {
+      "code": "41034014",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Dromolaxia - Meneou",
+      "previous_code": "4014",
+      "territorial_note": ""
+    },
+    {
+      "code": "41034110",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Kition - Kiti",
+      "previous_code": "4110",
+      "territorial_note": ""
+    },
+    {
+      "code": "41034111",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Perivolia",
+      "previous_code": "4111",
+      "territorial_note": ""
+    },
+    {
+      "code": "41034112",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Tersefanou",
+      "previous_code": "4112",
+      "territorial_note": ""
+    },
+    {
+      "code": "41040000",
+      "role": "MUNICIPALITY",
+      "name": "Athienou",
+      "previous_code": "n.a.",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "41044103",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Avdellero",
+      "previous_code": "4103",
+      "territorial_note": ""
+    },
+    {
+      "code": "41044202",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Athienou",
+      "previous_code": "4202",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "41050000",
+      "role": "MUNICIPALITY",
+      "name": "Lefkara",
+      "previous_code": "n.a.",
+      "territorial_note": ""
+    },
+    {
+      "code": "41054215",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Kornos",
+      "previous_code": "4215",
+      "territorial_note": ""
+    },
+    {
+      "code": "41054216",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Delikipos",
+      "previous_code": "4216",
+      "territorial_note": ""
+    },
+    {
+      "code": "41054308",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Skarinou",
+      "previous_code": "4308",
+      "territorial_note": ""
+    },
+    {
+      "code": "41054310",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Kato Lefkara",
+      "previous_code": "4310",
+      "territorial_note": ""
+    },
+    {
+      "code": "41054311",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Lefkara",
+      "previous_code": "4311",
+      "territorial_note": ""
+    },
+    {
+      "code": "41054313",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Vavla",
+      "previous_code": "4313",
+      "territorial_note": ""
+    },
+    {
+      "code": "41054314",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Lageia",
+      "previous_code": "4314",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004104",
+      "role": "COMMUNITY",
+      "name": "Pyla",
+      "previous_code": "4104",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004105",
+      "role": "COMMUNITY",
+      "name": "Xylotymvou",
+      "previous_code": "4105",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004106",
+      "role": "COMMUNITY",
+      "name": "Ormideia",
+      "previous_code": "4106",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004107",
+      "role": "COMMUNITY",
+      "name": "Xylofagou",
+      "previous_code": "4107",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004108",
+      "role": "COMMUNITY",
+      "name": "Pergamos",
+      "previous_code": "4108",
+      "territorial_note": "Partly occupied"
+    },
+    {
+      "code": "42004113",
+      "role": "COMMUNITY",
+      "name": "Softades",
+      "previous_code": "4113",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004120",
+      "role": "COMMUNITY",
+      "name": "Mazotos",
+      "previous_code": "4120",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004121",
+      "role": "COMMUNITY",
+      "name": "Alaminos",
+      "previous_code": "4121",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004122",
+      "role": "COMMUNITY",
+      "name": "Anafotida",
+      "previous_code": "4122",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004123",
+      "role": "COMMUNITY",
+      "name": "Aplanta",
+      "previous_code": "4123",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004124",
+      "role": "COMMUNITY",
+      "name": "Kivisili",
+      "previous_code": "4124",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004125",
+      "role": "COMMUNITY",
+      "name": "Alethriko",
+      "previous_code": "4125",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004126",
+      "role": "COMMUNITY",
+      "name": "Klavdia",
+      "previous_code": "4126",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004127",
+      "role": "COMMUNITY",
+      "name": "Anglisides",
+      "previous_code": "4127",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004128",
+      "role": "COMMUNITY",
+      "name": "Menogeia",
+      "previous_code": "4128",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004201",
+      "role": "COMMUNITY",
+      "name": "Petrofani",
+      "previous_code": "4201",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004203",
+      "role": "COMMUNITY",
+      "name": "Melouseia",
+      "previous_code": "4203",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "42004204",
+      "role": "COMMUNITY",
+      "name": "Tremetousia",
+      "previous_code": "4204",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "42004205",
+      "role": "COMMUNITY",
+      "name": "Arsos (Larnakas)",
+      "previous_code": "4205",
+      "territorial_note": "Occupied"
+    },
+    {
+      "code": "42004210",
+      "role": "COMMUNITY",
+      "name": "Kalo Chorio (Larnakas)",
+      "previous_code": "4210",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004211",
+      "role": "COMMUNITY",
+      "name": "Agia Anna",
+      "previous_code": "4211",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004212",
+      "role": "COMMUNITY",
+      "name": "Mosfiloti",
+      "previous_code": "4212",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004213",
+      "role": "COMMUNITY",
+      "name": "Psevdas",
+      "previous_code": "4213",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004214",
+      "role": "COMMUNITY",
+      "name": "Pyrga (Larnakas)",
+      "previous_code": "4214",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004300",
+      "role": "COMMUNITY",
+      "name": "Zygi",
+      "previous_code": "4300",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004301",
+      "role": "COMMUNITY",
+      "name": "Mari",
+      "previous_code": "4301",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004302",
+      "role": "COMMUNITY",
+      "name": "Kalavasos",
+      "previous_code": "4302",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004303",
+      "role": "COMMUNITY",
+      "name": "Tochni",
+      "previous_code": "4303",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004304",
+      "role": "COMMUNITY",
+      "name": "Choirokoitia",
+      "previous_code": "4304",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004305",
+      "role": "COMMUNITY",
+      "name": "Psematismenos",
+      "previous_code": "4305",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004306",
+      "role": "COMMUNITY",
+      "name": "Maroni",
+      "previous_code": "4306",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004307",
+      "role": "COMMUNITY",
+      "name": "Agios Theodoros (Larnakas)",
+      "previous_code": "4307",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004309",
+      "role": "COMMUNITY",
+      "name": "Kofinou",
+      "previous_code": "4309",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004312",
+      "role": "COMMUNITY",
+      "name": "Kato Drys",
+      "previous_code": "4312",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004315",
+      "role": "COMMUNITY",
+      "name": "Ora",
+      "previous_code": "4315",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004316",
+      "role": "COMMUNITY",
+      "name": "Melini",
+      "previous_code": "4316",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004317",
+      "role": "COMMUNITY",
+      "name": "Odou",
+      "previous_code": "4317",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004318",
+      "role": "COMMUNITY",
+      "name": "Agioi Vavatsinias",
+      "previous_code": "4318",
+      "territorial_note": ""
+    },
+    {
+      "code": "42004319",
+      "role": "COMMUNITY",
+      "name": "Vavatsinia",
+      "previous_code": "4319",
+      "territorial_note": ""
+    },
+    {
+      "code": "51010000",
+      "role": "MUNICIPALITY",
+      "name": "Lemesos",
+      "previous_code": "n.a.",
+      "territorial_note": ""
+    },
+    {
+      "code": "51015000",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Lemesos",
+      "previous_code": "5000",
+      "territorial_note": ""
+    },
+    {
+      "code": "51015011",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Mesa Geitonia",
+      "previous_code": "5011",
+      "territorial_note": ""
+    },
+    {
+      "code": "51015202",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Tserkezoi",
+      "previous_code": "5202",
+      "territorial_note": ""
+    },
+    {
+      "code": "51020000",
+      "role": "MUNICIPALITY",
+      "name": "Amathous",
+      "previous_code": "n.a.",
+      "territorial_note": ""
+    },
+    {
+      "code": "51025012",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Agios Athanasios",
+      "previous_code": "5012",
+      "territorial_note": ""
+    },
+    {
+      "code": "51025013",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Germasogeia",
+      "previous_code": "5013",
+      "territorial_note": ""
+    },
+    {
+      "code": "51025104",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Mathikoloni",
+      "previous_code": "5104",
+      "territorial_note": ""
+    },
+    {
+      "code": "51025120",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Mouttagiaka",
+      "previous_code": "5120",
+      "territorial_note": ""
+    },
+    {
+      "code": "51025121",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Armenochori",
+      "previous_code": "5121",
+      "territorial_note": ""
+    },
+    {
+      "code": "51025122",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Foinikaria",
+      "previous_code": "5122",
+      "territorial_note": ""
+    },
+    {
+      "code": "51025123",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Akrounta",
+      "previous_code": "5123",
+      "territorial_note": ""
+    },
+    {
+      "code": "51025124",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Agios Tychonas",
+      "previous_code": "5124",
+      "territorial_note": ""
+    },
+    {
+      "code": "51030000",
+      "role": "MUNICIPALITY",
+      "name": "Polemidia",
+      "previous_code": "n.a.",
+      "territorial_note": ""
+    },
+    {
+      "code": "51035020",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Pano Polemidia",
+      "previous_code": "5020",
+      "territorial_note": ""
+    },
+    {
+      "code": "51035022",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Kato Polemidia",
+      "previous_code": "5022",
+      "territorial_note": ""
+    },
+    {
+      "code": "51040000",
+      "role": "MUNICIPALITY",
+      "name": "Kourion",
+      "previous_code": "n.a.",
+      "territorial_note": ""
+    },
+    {
+      "code": "51045021",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Ypsonas",
+      "previous_code": "5021",
+      "territorial_note": ""
+    },
+    {
+      "code": "51045200",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Akrotiri",
+      "previous_code": "5200",
+      "territorial_note": ""
+    },
+    {
+      "code": "51045201",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Asomatos",
+      "previous_code": "5201",
+      "territorial_note": ""
+    },
+    {
+      "code": "51045203",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Trachoni",
+      "previous_code": "5203",
+      "territorial_note": ""
+    },
+    {
+      "code": "51045210",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Kolossi",
+      "previous_code": "5210",
+      "territorial_note": ""
+    },
+    {
+      "code": "51045211",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Erimi",
+      "previous_code": "5211",
+      "territorial_note": ""
+    },
+    {
+      "code": "51045212",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Episkopi",
+      "previous_code": "5212",
+      "territorial_note": ""
+    },
+    {
+      "code": "51045213",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Kantou",
+      "previous_code": "5213",
+      "territorial_note": ""
+    },
+    {
+      "code": "51045214",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Sotira",
+      "previous_code": "5214",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005100",
+      "role": "COMMUNITY",
+      "name": "Palodeia",
+      "previous_code": "5100",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005101",
+      "role": "COMMUNITY",
+      "name": "Paramytha",
+      "previous_code": "5101",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005102",
+      "role": "COMMUNITY",
+      "name": "Spitali",
+      "previous_code": "5102",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005103",
+      "role": "COMMUNITY",
+      "name": "Fasoula (Lemesou)",
+      "previous_code": "5103",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005105",
+      "role": "COMMUNITY",
+      "name": "Gerasa",
+      "previous_code": "5105",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005106",
+      "role": "COMMUNITY",
+      "name": "Apsiou",
+      "previous_code": "5106",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005107",
+      "role": "COMMUNITY",
+      "name": "Apesia",
+      "previous_code": "5107",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005108",
+      "role": "COMMUNITY",
+      "name": "Korfi",
+      "previous_code": "5108",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005109",
+      "role": "COMMUNITY",
+      "name": "Limnatis",
+      "previous_code": "5109",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005110",
+      "role": "COMMUNITY",
+      "name": "Kapileio",
+      "previous_code": "5110",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005125",
+      "role": "COMMUNITY",
+      "name": "Parekklisia",
+      "previous_code": "5125",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005126",
+      "role": "COMMUNITY",
+      "name": "Pentakomo",
+      "previous_code": "5126",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005127",
+      "role": "COMMUNITY",
+      "name": "Monagroulli",
+      "previous_code": "5127",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005128",
+      "role": "COMMUNITY",
+      "name": "Moni",
+      "previous_code": "5128",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005129",
+      "role": "COMMUNITY",
+      "name": "Pyrgos",
+      "previous_code": "5129",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005130",
+      "role": "COMMUNITY",
+      "name": "Asgata",
+      "previous_code": "5130",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005131",
+      "role": "COMMUNITY",
+      "name": "Vasa (Kellakiou)",
+      "previous_code": "5131",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005132",
+      "role": "COMMUNITY",
+      "name": "Sanida",
+      "previous_code": "5132",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005133",
+      "role": "COMMUNITY",
+      "name": "Prastio (Kellakiou)",
+      "previous_code": "5133",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005134",
+      "role": "COMMUNITY",
+      "name": "Klonari",
+      "previous_code": "5134",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005135",
+      "role": "COMMUNITY",
+      "name": "Vikla",
+      "previous_code": "5135",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005136",
+      "role": "COMMUNITY",
+      "name": "Kellaki",
+      "previous_code": "5136",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005137",
+      "role": "COMMUNITY",
+      "name": "Akapnou",
+      "previous_code": "5137",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005138",
+      "role": "COMMUNITY",
+      "name": "Eptagoneia",
+      "previous_code": "5138",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005140",
+      "role": "COMMUNITY",
+      "name": "Dierona",
+      "previous_code": "5140",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005141",
+      "role": "COMMUNITY",
+      "name": "Arakapas",
+      "previous_code": "5141",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005142",
+      "role": "COMMUNITY",
+      "name": "Agios Pavlos",
+      "previous_code": "5142",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005143",
+      "role": "COMMUNITY",
+      "name": "Agios Konstantinos",
+      "previous_code": "5143",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005144",
+      "role": "COMMUNITY",
+      "name": "Sykopetra",
+      "previous_code": "5144",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005145",
+      "role": "COMMUNITY",
+      "name": "Louvaras",
+      "previous_code": "5145",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005146",
+      "role": "COMMUNITY",
+      "name": "Kalo Chorio (Lemesou)",
+      "previous_code": "5146",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005147",
+      "role": "COMMUNITY",
+      "name": "Zoopigi",
+      "previous_code": "5147",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005220",
+      "role": "COMMUNITY",
+      "name": "Prastio (Avdimou)",
+      "previous_code": "5220",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005221",
+      "role": "COMMUNITY",
+      "name": "Paramali",
+      "previous_code": "5221",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005222",
+      "role": "COMMUNITY",
+      "name": "Avdimou",
+      "previous_code": "5222",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005223",
+      "role": "COMMUNITY",
+      "name": "Platanisteia",
+      "previous_code": "5223",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005224",
+      "role": "COMMUNITY",
+      "name": "Agios Thomas",
+      "previous_code": "5224",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005225",
+      "role": "COMMUNITY",
+      "name": "Alektora",
+      "previous_code": "5225",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005226",
+      "role": "COMMUNITY",
+      "name": "Anogyra",
+      "previous_code": "5226",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005227",
+      "role": "COMMUNITY",
+      "name": "Pissouri",
+      "previous_code": "5227",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005300",
+      "role": "COMMUNITY",
+      "name": "Souni-Zanakia",
+      "previous_code": "5300",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005302",
+      "role": "COMMUNITY",
+      "name": "Alassa",
+      "previous_code": "5302",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005303",
+      "role": "COMMUNITY",
+      "name": "Kato Kivides",
+      "previous_code": "5303",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005304",
+      "role": "COMMUNITY",
+      "name": "Pano Kivides",
+      "previous_code": "5304",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005305",
+      "role": "COMMUNITY",
+      "name": "Agios Amvrosios (Lemesou)",
+      "previous_code": "5305",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005306",
+      "role": "COMMUNITY",
+      "name": "Agios Therapon",
+      "previous_code": "5306",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005307",
+      "role": "COMMUNITY",
+      "name": "Lofou",
+      "previous_code": "5307",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005308",
+      "role": "COMMUNITY",
+      "name": "Pachna",
+      "previous_code": "5308",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005310",
+      "role": "COMMUNITY",
+      "name": "Agios Georgios (Lemesou)",
+      "previous_code": "5310",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005311",
+      "role": "COMMUNITY",
+      "name": "Doros",
+      "previous_code": "5311",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005312",
+      "role": "COMMUNITY",
+      "name": "Laneia",
+      "previous_code": "5312",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005313",
+      "role": "COMMUNITY",
+      "name": "Silikou",
+      "previous_code": "5313",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005314",
+      "role": "COMMUNITY",
+      "name": "Monagri",
+      "previous_code": "5314",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005315",
+      "role": "COMMUNITY",
+      "name": "Trimiklini",
+      "previous_code": "5315",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005316",
+      "role": "COMMUNITY",
+      "name": "Agios Mamas",
+      "previous_code": "5316",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005317",
+      "role": "COMMUNITY",
+      "name": "Kouka",
+      "previous_code": "5317",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005318",
+      "role": "COMMUNITY",
+      "name": "Moniatis",
+      "previous_code": "5318",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005320",
+      "role": "COMMUNITY",
+      "name": "Dora",
+      "previous_code": "5320",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005321",
+      "role": "COMMUNITY",
+      "name": "Gerovasa",
+      "previous_code": "5321",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005322",
+      "role": "COMMUNITY",
+      "name": "Arsos (Lemesou)",
+      "previous_code": "5322",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005323",
+      "role": "COMMUNITY",
+      "name": "Kissousa",
+      "previous_code": "5323",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005324",
+      "role": "COMMUNITY",
+      "name": "Malia",
+      "previous_code": "5324",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005325",
+      "role": "COMMUNITY",
+      "name": "Vasa (Koilaniou)",
+      "previous_code": "5325",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005326",
+      "role": "COMMUNITY",
+      "name": "Vouni",
+      "previous_code": "5326",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005327",
+      "role": "COMMUNITY",
+      "name": "Pera Pedi",
+      "previous_code": "5327",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005328",
+      "role": "COMMUNITY",
+      "name": "Mandria (Lemesou)",
+      "previous_code": "5328",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005329",
+      "role": "COMMUNITY",
+      "name": "Potamiou",
+      "previous_code": "5329",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005330",
+      "role": "COMMUNITY",
+      "name": "Omodos",
+      "previous_code": "5330",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005331",
+      "role": "COMMUNITY",
+      "name": "Koilani",
+      "previous_code": "5331",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005340",
+      "role": "COMMUNITY",
+      "name": "Agios Dimitrios",
+      "previous_code": "5340",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005341",
+      "role": "COMMUNITY",
+      "name": "Palaiomylos",
+      "previous_code": "5341",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005342",
+      "role": "COMMUNITY",
+      "name": "Prodromos",
+      "previous_code": "5342",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005343",
+      "role": "COMMUNITY",
+      "name": "Kaminaria",
+      "previous_code": "5343",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005344",
+      "role": "COMMUNITY",
+      "name": "Treis Elies",
+      "previous_code": "5344",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005345",
+      "role": "COMMUNITY",
+      "name": "Lemithou",
+      "previous_code": "5345",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005350",
+      "role": "COMMUNITY",
+      "name": "Kato Platres",
+      "previous_code": "5350",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005351",
+      "role": "COMMUNITY",
+      "name": "Pano Platres",
+      "previous_code": "5351",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005352",
+      "role": "COMMUNITY",
+      "name": "Foini",
+      "previous_code": "5352",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005355",
+      "role": "COMMUNITY",
+      "name": "Amiantos",
+      "previous_code": "5355",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005356",
+      "role": "COMMUNITY",
+      "name": "Troodos",
+      "previous_code": "5356",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005360",
+      "role": "COMMUNITY",
+      "name": "Agios Theodoros (Lemesou)",
+      "previous_code": "5360",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005361",
+      "role": "COMMUNITY",
+      "name": "Agios Ioannis (Lemesou)",
+      "previous_code": "5361",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005362",
+      "role": "COMMUNITY",
+      "name": "Kato Mylos",
+      "previous_code": "5362",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005363",
+      "role": "COMMUNITY",
+      "name": "Potamitissa",
+      "previous_code": "5363",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005364",
+      "role": "COMMUNITY",
+      "name": "Dymes",
+      "previous_code": "5364",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005365",
+      "role": "COMMUNITY",
+      "name": "Pelendri",
+      "previous_code": "5365",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005366",
+      "role": "COMMUNITY",
+      "name": "Agros",
+      "previous_code": "5366",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005367",
+      "role": "COMMUNITY",
+      "name": "Agridia",
+      "previous_code": "5367",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005368",
+      "role": "COMMUNITY",
+      "name": "Chandria",
+      "previous_code": "5368",
+      "territorial_note": ""
+    },
+    {
+      "code": "52005369",
+      "role": "COMMUNITY",
+      "name": "Kyperounta",
+      "previous_code": "5369",
+      "territorial_note": ""
+    },
+    {
+      "code": "61016000",
+      "role": "MUNICIPALITY",
+      "name": "Pafos",
+      "previous_code": "6000",
+      "territorial_note": ""
+    },
+    {
+      "code": "61020000",
+      "role": "MUNICIPALITY",
+      "name": "Ierokipia",
+      "previous_code": "n.a.",
+      "territorial_note": ""
+    },
+    {
+      "code": "61026010",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Geroskipou",
+      "previous_code": "6010",
+      "territorial_note": ""
+    },
+    {
+      "code": "61026011",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Konia",
+      "previous_code": "6011",
+      "territorial_note": ""
+    },
+    {
+      "code": "61026012",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Agia Marinouda",
+      "previous_code": "6012",
+      "territorial_note": ""
+    },
+    {
+      "code": "61026014",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Acheleia",
+      "previous_code": "6014",
+      "territorial_note": ""
+    },
+    {
+      "code": "61026104",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Timi",
+      "previous_code": "6104",
+      "territorial_note": ""
+    },
+    {
+      "code": "61030000",
+      "role": "MUNICIPALITY",
+      "name": "Akamas",
+      "previous_code": "n.a.",
+      "territorial_note": ""
+    },
+    {
+      "code": "61036027",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Kissonerga",
+      "previous_code": "6027",
+      "territorial_note": ""
+    },
+    {
+      "code": "61036130",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Akoursos",
+      "previous_code": "6130",
+      "territorial_note": ""
+    },
+    {
+      "code": "61036132",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Kathikas",
+      "previous_code": "6132",
+      "territorial_note": ""
+    },
+    {
+      "code": "61036133",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Pegeia",
+      "previous_code": "6133",
+      "territorial_note": ""
+    },
+    {
+      "code": "61036350",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Kato Arodes",
+      "previous_code": "6350",
+      "territorial_note": ""
+    },
+    {
+      "code": "61036351",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Pano Arodes",
+      "previous_code": "6351",
+      "territorial_note": ""
+    },
+    {
+      "code": "61036352",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Ineia",
+      "previous_code": "6352",
+      "territorial_note": ""
+    },
+    {
+      "code": "61040000",
+      "role": "MUNICIPALITY",
+      "name": "Poli Chrysochous",
+      "previous_code": "n.a.",
+      "territorial_note": ""
+    },
+    {
+      "code": "61046335",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Tera",
+      "previous_code": "6335",
+      "territorial_note": ""
+    },
+    {
+      "code": "61046336",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Kritou Tera",
+      "previous_code": "6336",
+      "territorial_note": ""
+    },
+    {
+      "code": "61046341",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Chrysochou",
+      "previous_code": "6341",
+      "territorial_note": ""
+    },
+    {
+      "code": "61046343",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Poli Chrysochous",
+      "previous_code": "6343",
+      "territorial_note": ""
+    },
+    {
+      "code": "61046344",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Neo Chorio",
+      "previous_code": "6344",
+      "territorial_note": ""
+    },
+    {
+      "code": "61046353",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Drouseia",
+      "previous_code": "6353",
+      "territorial_note": ""
+    },
+    {
+      "code": "61046355",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Androlikou",
+      "previous_code": "6355",
+      "territorial_note": ""
+    },
+    {
+      "code": "61046360",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Pelathousa",
+      "previous_code": "6360",
+      "territorial_note": ""
+    },
+    {
+      "code": "61046362",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Makounta",
+      "previous_code": "6362",
+      "territorial_note": ""
+    },
+    {
+      "code": "61046363",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Argaka",
+      "previous_code": "6363",
+      "territorial_note": ""
+    },
+    {
+      "code": "61046364",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Gialia",
+      "previous_code": "6364",
+      "territorial_note": ""
+    },
+    {
+      "code": "61046365",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Agia Marina",
+      "previous_code": "6365",
+      "territorial_note": ""
+    },
+    {
+      "code": "61046366",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Nea Dimmata",
+      "previous_code": "6366",
+      "territorial_note": ""
+    },
+    {
+      "code": "61046367",
+      "role": "MUNICIPAL QUARTER",
+      "name": "Pomos",
+      "previous_code": "6367",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006020",
+      "role": "COMMUNITY",
+      "name": "Chlorakas",
+      "previous_code": "6020",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006021",
+      "role": "COMMUNITY",
+      "name": "Lempa",
+      "previous_code": "6021",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006022",
+      "role": "COMMUNITY",
+      "name": "Empa",
+      "previous_code": "6022",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006023",
+      "role": "COMMUNITY",
+      "name": "Tremithousa",
+      "previous_code": "6023",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006024",
+      "role": "COMMUNITY",
+      "name": "Mesa Chorio",
+      "previous_code": "6024",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006025",
+      "role": "COMMUNITY",
+      "name": "Mesogi",
+      "previous_code": "6025",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006026",
+      "role": "COMMUNITY",
+      "name": "Tala",
+      "previous_code": "6026",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006100",
+      "role": "COMMUNITY",
+      "name": "Kouklia (Pafou)",
+      "previous_code": "6100",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006101",
+      "role": "COMMUNITY",
+      "name": "Mandria (Pafou)",
+      "previous_code": "6101",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006102",
+      "role": "COMMUNITY",
+      "name": "Nikokleia",
+      "previous_code": "6102",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006103",
+      "role": "COMMUNITY",
+      "name": "Souskiou",
+      "previous_code": "6103",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006106",
+      "role": "COMMUNITY",
+      "name": "Agia Varvara (Pafou)",
+      "previous_code": "6106",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006107",
+      "role": "COMMUNITY",
+      "name": "Anarita",
+      "previous_code": "6107",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006108",
+      "role": "COMMUNITY",
+      "name": "Foinikas",
+      "previous_code": "6108",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006110",
+      "role": "COMMUNITY",
+      "name": "Marathounta",
+      "previous_code": "6110",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006111",
+      "role": "COMMUNITY",
+      "name": "Armou",
+      "previous_code": "6111",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006112",
+      "role": "COMMUNITY",
+      "name": "Episkopi (Pafou)",
+      "previous_code": "6112",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006113",
+      "role": "COMMUNITY",
+      "name": "Nata",
+      "previous_code": "6113",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006114",
+      "role": "COMMUNITY",
+      "name": "Choletria",
+      "previous_code": "6114",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006115",
+      "role": "COMMUNITY",
+      "name": "Axylou",
+      "previous_code": "6115",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006116",
+      "role": "COMMUNITY",
+      "name": "Eledio",
+      "previous_code": "6116",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006120",
+      "role": "COMMUNITY",
+      "name": "Tsada",
+      "previous_code": "6120",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006121",
+      "role": "COMMUNITY",
+      "name": "Koili",
+      "previous_code": "6121",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006122",
+      "role": "COMMUNITY",
+      "name": "Stroumpi",
+      "previous_code": "6122",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006123",
+      "role": "COMMUNITY",
+      "name": "Polemi",
+      "previous_code": "6123",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006124",
+      "role": "COMMUNITY",
+      "name": "Kallepeia",
+      "previous_code": "6124",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006125",
+      "role": "COMMUNITY",
+      "name": "Letymvou",
+      "previous_code": "6125",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006126",
+      "role": "COMMUNITY",
+      "name": "Pitargou",
+      "previous_code": "6126",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006127",
+      "role": "COMMUNITY",
+      "name": "Kourdaka",
+      "previous_code": "6127",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006128",
+      "role": "COMMUNITY",
+      "name": "Lemona",
+      "previous_code": "6128",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006129",
+      "role": "COMMUNITY",
+      "name": "Choulou",
+      "previous_code": "6129",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006200",
+      "role": "COMMUNITY",
+      "name": "Pano Archimandrita",
+      "previous_code": "6200",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006201",
+      "role": "COMMUNITY",
+      "name": "Fasoula (Pafou)",
+      "previous_code": "6201",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006202",
+      "role": "COMMUNITY",
+      "name": "Mousere",
+      "previous_code": "6202",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006203",
+      "role": "COMMUNITY",
+      "name": "Maronas",
+      "previous_code": "6203",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006204",
+      "role": "COMMUNITY",
+      "name": "Mamonia",
+      "previous_code": "6204",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006205",
+      "role": "COMMUNITY",
+      "name": "Agios Georgios (Pafou)",
+      "previous_code": "6205",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006206",
+      "role": "COMMUNITY",
+      "name": "Stavrokonnou",
+      "previous_code": "6206",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006207",
+      "role": "COMMUNITY",
+      "name": "Prastio (Pafou)",
+      "previous_code": "6207",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006208",
+      "role": "COMMUNITY",
+      "name": "Trachypedoula",
+      "previous_code": "6208",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006210",
+      "role": "COMMUNITY",
+      "name": "Kelokedara",
+      "previous_code": "6210",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006211",
+      "role": "COMMUNITY",
+      "name": "Salamiou",
+      "previous_code": "6211",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006212",
+      "role": "COMMUNITY",
+      "name": "Kidasi",
+      "previous_code": "6212",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006213",
+      "role": "COMMUNITY",
+      "name": "Kedares",
+      "previous_code": "6213",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006214",
+      "role": "COMMUNITY",
+      "name": "Mesana",
+      "previous_code": "6214",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006215",
+      "role": "COMMUNITY",
+      "name": "Praitori",
+      "previous_code": "6215",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006216",
+      "role": "COMMUNITY",
+      "name": "Filousa (Kelokedaron)",
+      "previous_code": "6216",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006217",
+      "role": "COMMUNITY",
+      "name": "Arminou",
+      "previous_code": "6217",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006218",
+      "role": "COMMUNITY",
+      "name": "Agios Nikolaos (Pafou)",
+      "previous_code": "6218",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006219",
+      "role": "COMMUNITY",
+      "name": "Agios Ioannis (Pafou)",
+      "previous_code": "6219",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006220",
+      "role": "COMMUNITY",
+      "name": "Amargeti",
+      "previous_code": "6220",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006221",
+      "role": "COMMUNITY",
+      "name": "Agia Marina (Kelokedaron)",
+      "previous_code": "6221",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006222",
+      "role": "COMMUNITY",
+      "name": "Pentalia",
+      "previous_code": "6222",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006223",
+      "role": "COMMUNITY",
+      "name": "Faleia",
+      "previous_code": "6223",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006224",
+      "role": "COMMUNITY",
+      "name": "Galataria",
+      "previous_code": "6224",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006225",
+      "role": "COMMUNITY",
+      "name": "Koilineia",
+      "previous_code": "6225",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006226",
+      "role": "COMMUNITY",
+      "name": "Vretsia",
+      "previous_code": "6226",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006227",
+      "role": "COMMUNITY",
+      "name": "Statos-Agios Fotios",
+      "previous_code": "6227",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006228",
+      "role": "COMMUNITY",
+      "name": "Lapithiou",
+      "previous_code": "6228",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006229",
+      "role": "COMMUNITY",
+      "name": "Mamountali",
+      "previous_code": "6229",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006230",
+      "role": "COMMUNITY",
+      "name": "Pano Panagia",
+      "previous_code": "6230",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006231",
+      "role": "COMMUNITY",
+      "name": "Asprogia",
+      "previous_code": "6231",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006300",
+      "role": "COMMUNITY",
+      "name": "Psathi",
+      "previous_code": "6300",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006301",
+      "role": "COMMUNITY",
+      "name": "Agios Dimitrianos",
+      "previous_code": "6301",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006302",
+      "role": "COMMUNITY",
+      "name": "Kannaviou - Melamiou",
+      "previous_code": "6302",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006303",
+      "role": "COMMUNITY",
+      "name": "Drynia",
+      "previous_code": "6303",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006304",
+      "role": "COMMUNITY",
+      "name": "Milia (Pafou)",
+      "previous_code": "6304",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006305",
+      "role": "COMMUNITY",
+      "name": "Kritou Marottou",
+      "previous_code": "6305",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006306",
+      "role": "COMMUNITY",
+      "name": "Fyti",
+      "previous_code": "6306",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006307",
+      "role": "COMMUNITY",
+      "name": "Lasa",
+      "previous_code": "6307",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006308",
+      "role": "COMMUNITY",
+      "name": "Drymou",
+      "previous_code": "6308",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006310",
+      "role": "COMMUNITY",
+      "name": "Simou",
+      "previous_code": "6310",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006311",
+      "role": "COMMUNITY",
+      "name": "Anadiou",
+      "previous_code": "6311",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006312",
+      "role": "COMMUNITY",
+      "name": "Sarama",
+      "previous_code": "6312",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006313",
+      "role": "COMMUNITY",
+      "name": "Evretou",
+      "previous_code": "6313",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006314",
+      "role": "COMMUNITY",
+      "name": "Trimithousa",
+      "previous_code": "6314",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006315",
+      "role": "COMMUNITY",
+      "name": "Filousa (Chrysochous)",
+      "previous_code": "6315",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006316",
+      "role": "COMMUNITY",
+      "name": "Kios",
+      "previous_code": "6316",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006317",
+      "role": "COMMUNITY",
+      "name": "Zacharia",
+      "previous_code": "6317",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006318",
+      "role": "COMMUNITY",
+      "name": "Meladeia",
+      "previous_code": "6318",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006319",
+      "role": "COMMUNITY",
+      "name": "Melandra",
+      "previous_code": "6319",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006320",
+      "role": "COMMUNITY",
+      "name": "Lysos",
+      "previous_code": "6320",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006321",
+      "role": "COMMUNITY",
+      "name": "Peristerona (Pafou)",
+      "previous_code": "6321",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006330",
+      "role": "COMMUNITY",
+      "name": "Theletra",
+      "previous_code": "6330",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006331",
+      "role": "COMMUNITY",
+      "name": "Giolou",
+      "previous_code": "6331",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006332",
+      "role": "COMMUNITY",
+      "name": "Pano Akourdaleia",
+      "previous_code": "6332",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006333",
+      "role": "COMMUNITY",
+      "name": "Miliou",
+      "previous_code": "6333",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006334",
+      "role": "COMMUNITY",
+      "name": "Kato Akourdaleia",
+      "previous_code": "6334",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006337",
+      "role": "COMMUNITY",
+      "name": "Skoulli",
+      "previous_code": "6337",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006338",
+      "role": "COMMUNITY",
+      "name": "Choli",
+      "previous_code": "6338",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006339",
+      "role": "COMMUNITY",
+      "name": "Loukrounou",
+      "previous_code": "6339",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006340",
+      "role": "COMMUNITY",
+      "name": "Karamoullides",
+      "previous_code": "6340",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006345",
+      "role": "COMMUNITY",
+      "name": "Goudi",
+      "previous_code": "6345",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006361",
+      "role": "COMMUNITY",
+      "name": "Kynousa",
+      "previous_code": "6361",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006368",
+      "role": "COMMUNITY",
+      "name": "Steni",
+      "previous_code": "6368",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006369",
+      "role": "COMMUNITY",
+      "name": "Agios Isidoros",
+      "previous_code": "6369",
+      "territorial_note": ""
+    },
+    {
+      "code": "62006370",
+      "role": "COMMUNITY",
+      "name": "Livadi",
+      "previous_code": "6370",
+      "territorial_note": ""
+    }
+  ],
+  "note": "Raw legal documents stay only in the ignored build cache; runtime metadata contains factual identities, links and hashes."
+}

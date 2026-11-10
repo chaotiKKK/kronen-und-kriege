@@ -1,0 +1,300 @@
+{
+  "schema": 1,
+  "purpose": "Exact publicly reproducible raw preparation only; admits no new administrative records",
+  "snapshot": "2026-11-08T21:21:00Z",
+  "archive": {
+    "url": "https://download.geofabrik.de/asia/iran-261108-free.shp.zip",
+    "bytes": 447069064,
+    "etag": "\"1aa5bb88-65fcd02ef5191\"",
+    "last_modified": "Mon, 09 Nov 2026 00:26:22 GMT"
+  },
+  "members": [
+    {
+      "name": "gis_osm_adminareas_a_free_1.cpg",
+      "bytes": 6,
+      "compressed_bytes": 6,
+      "crc32": "59b2d65b",
+      "sha256": "146d6789ffe033a5297c1ad046e6a62ee35319b86b021444f05b6ea2aa8a1f4a"
+    },
+    {
+      "name": "gis_osm_adminareas_a_free_1.dbf",
+      "bytes": 1553402,
+      "compressed_bytes": 140867,
+      "crc32": "f480f165",
+      "sha256": "9a47749eec47319b7920f30c2dab7e726f740358589bb1b9bcce52841cb54735"
+    },
+    {
+      "name": "gis_osm_adminareas_a_free_1.prj",
+      "bytes": 144,
+      "compressed_bytes": 122,
+      "crc32": "0bbee490",
+      "sha256": "ffc9162903c37f0867d1e7f36c20036a165f7aa555dda24c1ae0ee4328d2977f"
+    },
+    {
+      "name": "gis_osm_adminareas_a_free_1.shp",
+      "bytes": 26803164,
+      "compressed_bytes": 14916066,
+      "crc32": "4213e164",
+      "sha256": "a52bf11f74bb18ce0c56369fc63de020c4afe4d571ea82d93f7ef70b4862a3d7"
+    },
+    {
+      "name": "gis_osm_adminareas_a_free_1.shx",
+      "bytes": 85796,
+      "compressed_bytes": 52859,
+      "crc32": "6bac3939",
+      "sha256": "ef40785089a73d6939ae3a42f3c30ec2a8209dd859ad1e90eef3eb4ebbdeab2e"
+    }
+  ],
+  "readme": {
+    "name": "README",
+    "bytes": 649,
+    "compressed_bytes": 371,
+    "crc32": "4819775f",
+    "sha256": "c56628b0d96b023d80f303f7e391ec9289d3d6159d64b53fddbd3cbd8cc37694"
+  },
+  "budget_bytes": 30000000,
+  "maximum_single_range_bytes": 1048576,
+  "maximum_metadata_bytes": 500000,
+  "provinces": [
+    {
+      "id": 225444,
+      "version": 46,
+      "timestamp": "2026-03-17T05:10:44Z",
+      "name": "استان خراسان شمالی",
+      "iso3166_2": "IR-28",
+      "semantic_sha256": "6bd94cab59601458e824d271f1e250b3f4daee22083dbecd145924d4967c6ff3"
+    },
+    {
+      "id": 229593,
+      "version": 47,
+      "timestamp": "2026-01-07T04:52:53Z",
+      "name": "استان کرمان",
+      "iso3166_2": "IR-08",
+      "semantic_sha256": "e07d07d2acdbac426a73b7b3246764a7f902330b7151f2d9f8538a53e4db8f7b"
+    },
+    {
+      "id": 229766,
+      "version": 60,
+      "timestamp": "2026-02-08T10:25:15Z",
+      "name": "استان ایلام",
+      "iso3166_2": "IR-16",
+      "semantic_sha256": "c13e795208ead592a3fcb01dbc8ebc447cd6619c88678067c3e8838cd7836e62"
+    },
+    {
+      "id": 229893,
+      "version": 44,
+      "timestamp": "2026-02-08T10:25:15Z",
+      "name": "استان لرستان",
+      "iso3166_2": "IR-15",
+      "semantic_sha256": "66d9169417ad4778830ef94833e99bb331c32c06990e30051774b6e5a681d755"
+    },
+    {
+      "id": 229958,
+      "version": 59,
+      "timestamp": "2026-04-10T16:15:14Z",
+      "name": "استان مرکزی",
+      "iso3166_2": "IR-00",
+      "semantic_sha256": "78d57978a1871763612a9161e8e61dedb62eebd22c576ffd3c928afe6ad24ae5"
+    },
+    {
+      "id": 230033,
+      "version": 48,
+      "timestamp": "2026-01-07T03:38:08Z",
+      "name": "استان چهارمحال و بختیاری",
+      "iso3166_2": "IR-14",
+      "semantic_sha256": "484c7f4d0b19172c8ff7ab8d28765c2fd46b2cd2f9f809510ab8f343ddee139d"
+    },
+    {
+      "id": 241037,
+      "version": 67,
+      "timestamp": "2026-02-08T10:25:15Z",
+      "name": "استان کرمانشاه",
+      "iso3166_2": "IR-05",
+      "semantic_sha256": "1416a3fc762d91eb48634a75020b2b65be965841c5d2fd0c3424e66e853d1259"
+    },
+    {
+      "id": 241038,
+      "version": 43,
+      "timestamp": "2026-04-10T16:48:09Z",
+      "name": "استان همدان",
+      "iso3166_2": "IR-13",
+      "semantic_sha256": "c22405c5f6294147066589dc7c11c3c2cb04600c4979c77e563898377a91d0af"
+    },
+    {
+      "id": 241471,
+      "version": 48,
+      "timestamp": "2026-08-31T13:02:23Z",
+      "name": "استان قزوین",
+      "iso3166_2": "IR-26",
+      "semantic_sha256": "6ae42429212ebaf0561ef7cbb09db2693ed82181dcf583b43ad2909a154fea47"
+    },
+    {
+      "id": 241472,
+      "version": 86,
+      "timestamp": "2026-10-18T18:11:22Z",
+      "name": "استان گیلان",
+      "iso3166_2": "IR-01",
+      "semantic_sha256": "39ad3f9b0200a4e66f3f49413d43c9bf585d24d3fcb367807c673df73349be3c"
+    },
+    {
+      "id": 241473,
+      "version": 51,
+      "timestamp": "2026-01-03T05:55:38Z",
+      "name": "استان زنجان",
+      "iso3166_2": "IR-19",
+      "semantic_sha256": "7c257ed66e4a8da06e34b442d522e7047d6260af858f3cde432a2d8162bb3441"
+    },
+    {
+      "id": 241474,
+      "version": 51,
+      "timestamp": "2026-02-27T21:16:40Z",
+      "name": "استان سمنان",
+      "iso3166_2": "IR-20",
+      "semantic_sha256": "a70befb8f8e8870a753ea53f52131bc9091ed03542b0eda8cbddbb4009e0e38a"
+    },
+    {
+      "id": 241475,
+      "version": 66,
+      "timestamp": "2026-01-07T01:22:29Z",
+      "name": "استان اصفهان",
+      "iso3166_2": "IR-10",
+      "semantic_sha256": "717f3ab55fba6036c2a599745c1cf0c82eaf90f7d708f3a0f4b983c28c8dec21"
+    },
+    {
+      "id": 241478,
+      "version": 41,
+      "timestamp": "2026-01-03T08:16:43Z",
+      "name": "استان کهگیلویه و بویر احمد",
+      "iso3166_2": "IR-17",
+      "semantic_sha256": "87d1e312b2c10607b368c5935f43035ad17bf868b422295022f8357dac3bdd23"
+    },
+    {
+      "id": 241546,
+      "version": 77,
+      "timestamp": "2026-02-08T10:25:15Z",
+      "name": "استان کردستان",
+      "iso3166_2": "IR-12",
+      "semantic_sha256": "b00a65d22c42a6359f418f6c1963bcc7a8f6eddd41a46739cb95ab767495a9ce"
+    },
+    {
+      "id": 241593,
+      "version": 126,
+      "timestamp": "2026-02-07T12:29:49Z",
+      "name": "استان آذربایجان غربی",
+      "iso3166_2": "IR-04",
+      "semantic_sha256": "b99fcb8c142af17523c557eeb402ee764cac90062c4ac11a4006814343426d64"
+    },
+    {
+      "id": 255446,
+      "version": 73,
+      "timestamp": "2026-04-23T22:05:14Z",
+      "name": "استان فارس",
+      "iso3166_2": "IR-07",
+      "semantic_sha256": "2988a8bbfbad8117f4382b4ed18881191347b0a04b4a030e9aa00fc2026b857f"
+    },
+    {
+      "id": 269635,
+      "version": 69,
+      "timestamp": "2026-01-03T20:48:42Z",
+      "name": "استان اردبیل",
+      "iso3166_2": "IR-24",
+      "semantic_sha256": "2f15f04e59a1e06259dcb53eba847833c02e5f07ecac5f674def26d12bf00d91"
+    },
+    {
+      "id": 269900,
+      "version": 137,
+      "timestamp": "2026-02-25T14:23:24Z",
+      "name": "استان مازندران",
+      "iso3166_2": "IR-02",
+      "semantic_sha256": "7b1a5610d7f0f2ee01ed7643120ba99a2a5f697205d8420ef8d086dfa3dd6b04"
+    },
+    {
+      "id": 269903,
+      "version": 76,
+      "timestamp": "2026-03-12T21:13:32Z",
+      "name": "استان گلستان",
+      "iso3166_2": "IR-27",
+      "semantic_sha256": "ba0b3c7dfd6d8c8a238c5bf1cdfa5e60083f284d252450959294a9baac2783fc"
+    },
+    {
+      "id": 537657,
+      "version": 91,
+      "timestamp": "2026-04-22T15:42:59Z",
+      "name": "استان خراسان رضوی",
+      "iso3166_2": "IR-09",
+      "semantic_sha256": "3dbf6ecdf857273daf0ae39f05a472a2b86929a6509e7f6eb04254ed4e9035b8"
+    },
+    {
+      "id": 537658,
+      "version": 61,
+      "timestamp": "2026-04-22T15:42:59Z",
+      "name": "استان خراسان جنوبی",
+      "iso3166_2": "IR-29",
+      "semantic_sha256": "ac9da40fa1e24b51be5782b0a4bc1c8ea27727a0049f4b7da4fe652662c4c5d5"
+    },
+    {
+      "id": 537693,
+      "version": 108,
+      "timestamp": "2026-04-22T15:42:59Z",
+      "name": "استان سیستان و بلوچستان",
+      "iso3166_2": "IR-11",
+      "semantic_sha256": "9fc1f8d530bf34ee225e06c999e478981bad8d20064c300c7d8fef8da85ea11b"
+    },
+    {
+      "id": 537701,
+      "version": 155,
+      "timestamp": "2026-10-17T19:51:56Z",
+      "name": "استان تهران",
+      "iso3166_2": "IR-23",
+      "semantic_sha256": "ecb1f61187256254a610c5d3bcd663c489343600c9b9eb9f7fd04f38bd100016"
+    },
+    {
+      "id": 537702,
+      "version": 49,
+      "timestamp": "2025-10-20T11:22:13Z",
+      "name": "استان قم",
+      "iso3166_2": "IR-25",
+      "semantic_sha256": "7ef305b23102616e6023de40d7d4991bf706f39277c51b654afa25eaa8676079"
+    },
+    {
+      "id": 1015996,
+      "version": 104,
+      "timestamp": "2026-08-31T13:02:23Z",
+      "name": "استان البرز",
+      "iso3166_2": "IR-30",
+      "semantic_sha256": "c8b386f66d60eca209c1dfc7e9cfb5073892a3cc5556272c2184eff14eb66de8"
+    },
+    {
+      "id": 2232180,
+      "version": 112,
+      "timestamp": "2026-02-07T12:29:49Z",
+      "name": "استان آذربایجان شرقی",
+      "iso3166_2": "IR-03",
+      "semantic_sha256": "7687c924900b7ada414b0b57950020c405b973d7c2221db0aff5252f762b82ce"
+    },
+    {
+      "id": 3300249,
+      "version": 50,
+      "timestamp": "2026-10-01T10:03:10Z",
+      "name": "استان یزد",
+      "iso3166_2": "IR-21",
+      "semantic_sha256": "7d4f56fcf762b1f00cd018bad5729a9179a68737cfb7aba6e901981a3e935c3c"
+    },
+    {
+      "id": 3385992,
+      "version": 121,
+      "timestamp": "2026-01-03T07:33:32Z",
+      "name": "استان هرمزگان",
+      "iso3166_2": "IR-22",
+      "semantic_sha256": "c87510aaddb43c702b84332c31d35cd93c7989f9116ef297358ed7c3facbbe9a"
+    },
+    {
+      "id": 3661581,
+      "version": 93,
+      "timestamp": "2026-10-09T19:35:57Z",
+      "name": "استان خوزستان",
+      "iso3166_2": "IR-06",
+      "semantic_sha256": "259de168430e3bd5e266aa6ba9a24617dc4ab4e3fbfc2993331d81a761ad3490"
+    }
+  ]
+}

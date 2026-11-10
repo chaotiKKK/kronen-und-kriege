@@ -30,6 +30,28 @@ class CommunalSourceTests(unittest.TestCase):
         return {"type": "Feature", "properties": {"shapeID": "00001-ABC", "shapeName": "Évry-Courcouronnes", "shapeGroup": "FRA", "shapeType": "ADM5"},
                 "geometry": {"type": "Polygon", "coordinates": [[[2, 48], [3, 48], [3, 49], [2, 48]]]}}
 
+    def test_iran_2021_release_is_preserved_but_quarantined_after_original_producer_review(self):
+        metadata=[{"boundaryISO":"IRN","boundaryType":"ADM4","admUnitCount":"2815",
+                   "boundaryYearRepresented":"2021","boundaryCanonical":"Dehestan",
+                   "boundaryLicense":"Creative Commons Attribution-ShareAlike 2.0",
+                   "simplifiedGeometryGeoJSON":"https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/IRN/ADM4/geoBoundaries-IRN-ADM4_simplified.geojson"}]
+        source=module.select_source(metadata,"IR")
+        self.assertIs(source.get("administrative_geometry_eligible"),False)
+        self.assertTrue(source["blocks_full_coverage_claim"])
+        self.assertEqual(source["expected_unit_count"],2772)
+        self.assertIn("producer",source["administrative_ineligibility_note"])
+        self.assertEqual(source["original_metadata"]["boundaryCanonical"],"Dehestan")
+
+    def test_iran_destroyed_source_labels_are_not_exposed_as_known_place_names(self):
+        source={"id":"gbOpen-IRN-ADM4","country":"IR","country_iso3":"IRN","admin_level":4,
+                "unit_type":"Dehestan (rural district)","source_commit":"9469f09",
+                "sha256":"89d50a325cda34b4420b8b10ecbebe585825011a3c5969a3a813ef5ac386185c"}
+        feature=self.feature();feature["properties"].update(shapeID="25652852B52430274796162",shapeName="?????? ?????? ????",shapeGroup="IRN",shapeType="ADM4")
+        row=module.normalize_feature(feature,source)
+        self.assertFalse(row["name_known"])
+        self.assertEqual(row["original_name"],"?????? ?????? ????")
+        self.assertEqual(row["name"],"Verwaltungsgebiet (Name in Quelle beschädigt)")
+
     def test_france_uses_communes_not_departments(self):
         metadata = [{"boundaryISO": "FRA", "boundaryType": "ADM2", "admUnitCount": "96"},
                     {"boundaryISO": "FRA", "boundaryType": "ADM5", "admUnitCount": "35010",

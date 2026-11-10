@@ -14,6 +14,7 @@ from shapely.geometry import mapping, shape
 import atlas_geofabrik_sources as core
 
 VERSION = 4
+QUALIFICATION_REVISIONS = {"AZ":"r4-role-review", "LB":"r4-beirut-role-review", "KZ":"r4-city-administrations"}
 STAGES = {"SK":"slovakia","EE":"estonia","AL":"albania","MK":"macedonia","MD":"moldova",
           "GG":"guernsey-jersey","JE":"guernsey-jersey","IM":"isle-of-man","FO":"faroe-islands"}
 ROLE_ROWS = {
@@ -64,6 +65,12 @@ MENA_PROFILES={
 for _country,(_slug,_roles,_primary) in MENA_PROFILES.items():
     ROLE_ROWS[_country]=_roles
     EVIDENCE[_country]=["https://wiki.openstreetmap.org/wiki/Template:Admin_level",_primary]
+EVIDENCE["LB"] += ["https://moim.gov.lb/wp-content/uploads/2025/07/نتائج-الانتخابات-البلدية2025-محافظة-بيروت.pdf",
+                   "https://www.lebarmy.gov.lb/ar/node/137335"]
+EVIDENCE["KZ"] += ["https://old.adilet.zan.kz/rus/docs/Z010000148_",
+                   "https://old.adilet.zan.kz/rus/docs/G22TA00877A",
+                   "https://www.gov.kz/org/uralsk?lang=ru",
+                   "https://www.gov.kz/org/akimat-goroda-aktau?lang=ru"]
 REGIONAL_SLUGS={
     "CZ":["jihocesky","jihomoravsky","karlovarsky","kralovehradecky","liberecky","moravskoslezky","olomoucky","pardubicky","plzensky","praha","stredocesky","ustecky","vysocina","zlinsky"],
     "NO":["nord-norge","ostlandet","sorlandet","trondelag","vestlandet"],
@@ -512,7 +519,7 @@ def prepare_turkish_metropolitan_roles(cache,dataset):
 
 def prepare_country(cache: Path, country: str, directory: Path | None = None, *, territory_override=None) -> dict:
     directory = Path(directory) if directory is not None else cache/"geofabrik-stage"/STAGES[country]
-    revision="r5-"+territory_override[1]["geometry_sha256"][:12] if territory_override is not None else "r3"
+    revision="r5-"+territory_override[1]["geometry_sha256"][:12] if territory_override is not None else QUALIFICATION_REVISIONS.get(country,"r3")
     receipt_path = directory/f"normalized-{country}-v{VERSION}-{revision}.receipt.json"
     if receipt_path.exists():
         receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
@@ -647,6 +654,18 @@ def prepare_country(cache: Path, country: str, directory: Path | None = None, *,
     rows = merge_by_id(rows)
     core.infer_parents(rows)
     grouped_sources = source_groups(rows)
+    if country=="AZ":
+        from atlas_azerbaijan_qualification import qualify_row
+        rows=[qualify_row(row) for row in rows]
+        grouped_sources=source_groups(rows)
+    elif country=="LB":
+        from atlas_lebanon_qualification import qualify_row
+        rows=[qualify_row(row) for row in rows]
+        grouped_sources=source_groups(rows)
+    elif country=="KZ":
+        from atlas_kazakhstan_qualification import qualify_row
+        rows=[qualify_row(row) for row in rows]
+        grouped_sources=source_groups(rows)
     path = directory/f"normalized-{country}-v{VERSION}-{revision}.jsonl.gz"
     temporary = path.with_suffix(path.suffix+".partial")
     with temporary.open("wb") as raw,gzip.GzipFile(filename="",mode="wb",fileobj=raw,mtime=0) as compressed,io.TextIOWrapper(compressed,encoding="utf-8",newline="\n") as output:
@@ -668,6 +687,12 @@ def prepare_country(cache: Path, country: str, directory: Path | None = None, *,
             "unit_semantics":{"render_role":example["kind"],"source_unit_types":unit_types,
                 "coverage_status":"Independent land-mask coverage is measured downstream; actual extraction count is not completeness"},
             **example.get("source_metadata_override",{})})
+        if country=="AZ":
+            sources[-1].update(blocks_full_coverage_claim=True,qualification_review_date="2026-11-10",
+                qualification_review_note="Original admin8 records are retained in individually qualified role quarantine; administrative number and coarse land overlap do not prove a present municipal boundary")
+        if country=="LB":
+            sources[-1].update(blocks_full_coverage_claim=True,qualification_review_date="2026-11-10",
+                qualification_review_note="Twelve Beirut quarter records are preserved but excluded from independent-municipality claims; one combined Beirut governorate/municipality role is evidenced separately. Lebanon also has actual towns without municipalities; missing municipal area is not by itself missing polygons.")
     receipt = {"country":country,"normalizer_version":VERSION,"sources":sources,"source_snapshot":stage,
         "country_reference":land_reference,"territorial_assignment_reference":territorial_reference,
         "assigned_counts":dict(assigned_counts),"feature_count":len(rows),"ambiguous_country_assignments":ambiguous,
@@ -912,7 +937,7 @@ def prepare_collection(cache: Path) -> dict:
         datasets.append(dataset)
     additional=[("TR",cache/"geofabrik-stage/turkey/normalized-TR-v4-r3.receipt.json"),
         ("RU",cache/"geofabrik-regional-collections/RU-v4-r5.receipt.json")]
-    additional.extend((country,cache/"geofabrik-mena-stage"/profile[0]/f"normalized-{country}-v4-r3.receipt.json") for country,profile in MENA_PROFILES.items())
+    additional.extend((country,cache/"geofabrik-mena-stage"/profile[0]/f"normalized-{country}-v4-{QUALIFICATION_REVISIONS.get(country,'r3')}.receipt.json") for country,profile in MENA_PROFILES.items())
     for country,path in additional:
         if not path.exists():
             blockers[country]="Prepared normalized country cache is not available"
@@ -965,7 +990,9 @@ def prepare_collection(cache: Path) -> dict:
     result = {"schema":2,"collection_version":VERSION,"source_groups_version":3,"sources":sources,"datasets":datasets,"blockers":blockers,
         "note":"HU v3 byte-for-byte baseline retained; later country collections use separate v4 cache files",
         "limitations":{"TR":"Exactly30 current TBB metropolitan governments match original admin4 province ISO/name identities and are legally coextensive under6360Art6/5216Art5. The other51 provinces and974 district roles are not blindly promoted; fine local-layer completeness remains separate",
-            "AZ":"Only8 municipal source polygons; official685-count proves the local source is partial; coarser administrative level conventions conflict and remain unqualified",
+            "LB":"Twelve exact Beirut quarters are retained but quarantined as independent municipalities; one combined Beirut governorate/municipality role is positively evidenced by MoIM2025. Other1019 admitted Baladiya records do not establish national completeness. Official2025 publication reports1065 municipalities for1634 towns: actual towns without municipalities exist, and uncovered land is not simply a missing-polygon count",
+            "KZ":"Only three exact admin6 identities Atyrau3389541,Oral3767383,Aktau5515125 are qualified as native City administrations with additional local_admin role; district geometry stays unchanged and other Audans are not promoted. Rural-Okrug and fine lower-government completeness remain separate",
+            "AZ":"All8 original admin8 candidates are retained in role quarantine:6 citydistricts, unproved coextensive Sumqayit municipal territory, and1unresolved territorial village record. No positive present municipal geometry is inferred; official685-count remains a separate inventory",
             "JO":"Only the12 governorates admitted; local municipality/subdistrict source roles are not yet independently qualified",
             "LY":"Only23 source Shabiya polygons; no actual municipal layer is present",
             "municipal_vs_local":"Iraqi/Syrian Nahiya and Tunisian Imada are native local_admin, not municipal self-government",
@@ -982,7 +1009,7 @@ def write_docs(receipt):
         f"Die [Formatspezifikation]({core.SPEC}) erklärt fclass/code und die fehlende native Elternhierarchie. "
         "Pro Archiv werden ausschließlich ZIP-Verzeichnis, Adminareas-Mitglieder und README über geprüfte HTTP206-Ranges gelesen; "
         "starke ETag/If-Match, Content-Range, Bytezahl, ZIP-CRC32 und SHA-256 bleiben im Manifest erhalten.","",
-        "| Land | Originale Ebene | Darstellungsrolle | tatsächlicher Einheitstyp | Einheiten |","|---|---:|---|---|---:|"]
+        "| Land | Originale Ebene | Quellklassifikation | zugeordneter Einheitstyp | Originalrecords |","|---|---:|---|---|---:|"]
     for source in receipt["sources"]:
         lines.append(f"| {source['country']} | {source['admin_level']} | {source['kind']} | {source['unit_type']} | {source['source_unit_count']} |")
     lines += ["","## Nationale Rollen und Prüfgrenzen","",
@@ -1041,10 +1068,23 @@ def write_docs(receipt):
         "136 tatsächliche direkte OSM-/Geofabrik-Doppelrepräsentationen sind nach Kennung, Land, Ebene, Originalnamen und Polygon-IoU>0,999 belegt. "
         "Der Reader liefert einen geprüften verified_source_alias samt Zielversion und Audit-/Cachehash; erst der Hauptmerger entscheidet nach erneuter Geometrieprüfung über die Zusammenführung. "
         "Es gibt keine allgemeine Gleichsetzung nur nach common osm_id.","",
-        "Die zusätzlichen Länder behalten ihre tatsächlich belegten Rollen: LB7 Baladiya, BY8 örtliche Räte, KZ8 Rural Okrug, IL8 kommunale Local Authorities; "
+        "Die zusätzlichen Länder behalten ihre tatsächlich belegten Rollen: LB7 grundsätzlich Baladiya mit der gezielten Beirut-Ausnahme, BY8 örtliche Räte, KZ8 Rural Okrug, IL8 kommunale Local Authorities; "
+        "Die12 Originalquartiere Beiruts (r3074290–r3074301) bleiben mit unveränderten Geometrien und Quellklassen archiviert, sind jedoch als eigenständige Baladiya quarantänisiert. "
+        "Das [amtliche Wahlergebnis2025](https://moim.gov.lb/wp-content/uploads/2025/07/نتائج-الانتخابات-البلدية2025-محافظة-بيروت.pdf) nennt für Gouvernement, Bezirk und Gemeinde dieselbe Beirut-Identität und genau24 Gewinner für ein gemeinsames Gremium. "
+        "Die bestehende Beirut-Gouvernementsfläche r316552 trägt daher zusätzlich genau eine belegte Gemeinderolle; die12 Quartiere bilden geometrisch exakt dieselbe Fläche (IoU1,0), es entstehen keine neuen Grenzen. "
+        "1019 weitere Baladiya-Quellrecords bleiben zugelassen; eine vollständige heutige nationale Behördenliste ist damit nicht nachgewiesen. "
+        "Der [amtlich veröffentlichte Überblick2025](https://www.lebarmy.gov.lb/ar/node/137335) nennt1065Gemeinden bei1634Orten und damit reale Orte ohne Gemeinde. "
+        "Unbedeckte Fläche kann deshalb weder automatisch als fehlende Gemeindegeometrie interpretiert noch mit Katastergebieten aufgefüllt werden. "
+        "In KZ sind genau drei ursprüngliche admin6-Objekte ausdrücklich als Stadtverwaltungen identifiziert: Атырау3389541, Орал3767383 und Ақтау5515125. "
+        "Sie behalten ihre district-Darstellung und unveränderten Quellpolygone, tragen aber den tatsächlich benannten Typ Қалалық әкімдік und zusätzlich local_admin. "
+        "Originale OSM-Landes-/Grenztags, Versionen, Namen und territoriale Eltern wurden einzeln gegen den Snapshot geprüft. "
+        "Das [amtliche Kommunalgesetz148,Art1(4)](https://old.adilet.zan.kz/rus/docs/Z010000148_) belegt örtliche Staats-/Selbstverwaltungsfunktionen der Akimate auf ihrem Gebiet; "
+        "die [StadtverwaltungOral](https://www.gov.kz/org/uralsk?lang=ru) beschreibt ausdrücklich das Stadtgebiet einschließlich Vororten. "
+        "Dies ist keine pauschale Audan-Promotion, keine Umbenennung zu RuralOkrug und kein Nachweis einer vollständig wiederhergestellten feineren Ortsebene. "
         "IQ7 und SY6 Nahiya sowie TN6 Imada sind örtliche Verwaltung, ausdrücklich keine pauschalen selbstverwalteten Gemeinden. "
         "Libanesische Katastergebiete auf8 und tunesische Gemeinde-Kandidaten auf8 werden nicht automatisch zugelassen. "
-        "AZ hat lediglich8 tatsächliche Gemeindequellflächen gegenüber685 amtlichen Gemeinden und bleibt partiell. JO enthält nur12 Gouvernorate, "
+        "AZ behält8 ursprüngliche admin8-Kandidaten vollständig in einer belegten Rollenquarantäne:6 Stadtbezirke, eine nicht als kommunal flächengleich belegte Sumqayıt-Stadtfläche und einen territorial ungeklärten Dorfdatensatz. "
+        "Keine dieser8 Flächen wird ohne positiven Einzelbeleg als heutige bələdiyyə dargestellt oder gezählt; die amtliche685er-Behördenzahl ist ein getrennter Inventarbeleg. JO enthält nur12 Gouvernorate, "
         "LY nur23 Shabiya-Flächen: für beide ist damit keine örtliche Gemeindeebene hergestellt. "
         "TR hat zwei relevante leere admin8-Quellpolygone, KZ ein leeres admin8-Polygon. Sie werden mit Originalkennung, Eigenschaften und ungeklärter Landeszuordnung dokumentiert; "
         "keine Ersatzgeometrien entstehen, und die betroffenen Quellen blockieren eine vollständige Abdeckungsbehauptung. "
