@@ -64,6 +64,28 @@ func _ready() -> void:
 		return
 	if not check(restored.provinces.size() == 108, "Roundtrip erhält Regionszahl"):
 		return
+	if not check(game.has_method("region_capacity"), "Regionsgewichtete Aufgebotskapazität fehlt"):
+		return
+	var quarter := {"economic_share": 0.25, "levy": 100, "dev": 3}
+	var capacity: Dictionary = game.region_capacity(quarter)
+	if not check(capacity == {"maximum":1000, "recruit":40, "recruit_cost":8, "develop":30, "develop_cost":13, "annual_flat":1}, "Viertelregion erhält Viertelkapazität und anteilige Kosten"):
+		return
+	var growth_game = load("res://scripts/Game.gd").new(load("res://scripts/Data.gd"), 0)
+	growth_game.provinces = [{"id":"quarter", "name":"Viertel", "owner":0, "dev":3, "levy":100, "economic_share":0.25}, {"levy":100, "economic_share":0.75}]
+	growth_game._regenerate_province_levies()
+	if not check(int(growth_game.provinces[0].levy) == 103 and int(growth_game.provinces[1].levy) == 106, "Jährlicher Flachbonus skaliert mit der Regionskapazität"):
+		return
+	growth_game.houses[0].gold = 100
+	if not check(bool(growth_game.recruit("quarter").ok) and int(growth_game.provinces[0].levy) == 143 and int(growth_game.houses[0].gold) == 92, "Werbung nutzt echte Regionskosten und Kapazität"):
+		return
+	if not check(bool(growth_game.develop("quarter").ok) and int(growth_game.provinces[0].levy) == 173 and int(growth_game.houses[0].gold) == 79, "Ausbau nutzt echte Regionskosten und Kapazität"):
+		return
+	growth_game.provinces[0].levy = 1100
+	if not check(not bool(growth_game.recruit("quarter").ok) and int(growth_game.houses[0].gold) == 79 and int(growth_game.provinces[0].levy) == 1100, "Volle Region kostet kein Gold und verliert keine vorhandenen Truppen"):
+		return
+	growth_game._regenerate_province_levies()
+	if not check(int(growth_game.provinces[0].levy) == 1100, "Geerbter Überhang wird beim Jahreswechsel erhalten"):
+		return
 	print("GAMEREGIONDATATEST OK: %d Prüfungen" % checks)
 	get_tree().quit(0)
 

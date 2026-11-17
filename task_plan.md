@@ -9,13 +9,13 @@ Aktueller freigegebener Auftrag: Option 2 vollständig, inline ohne Subagenten. 
 1. Quellstand, Plan und Testumgebung wiederherstellen: **Status:** complete.
 2. Deterministischen Regionsgenerator und strikte Verträge rekonstruieren, reale Daten doppelt bauen: **Status:** complete (14 Pythonprüfungen; tatsächliche Atlasgrenzen; vier belegte harte Flächenausnahmen; Eingabefreeze der veröffentlichten Datensnapshots, originale Rohcaches nicht vorhanden).
 3. Runtimekatalog mit Hashprüfung und Raumindex einbinden: **Status:** complete (441 Godotprüfungen).
-4. Wertefluss und Data/Game auf Regionen umstellen: **Status:** in_progress (Adapter, Startwerte, jährliche Basiswirtschaft und neuer Save-Roundtrip geprüft; Rekrutierungs-/KI-/Gebäudewirkungsgewichtung und reguläre Menüaktivierung fehlen).
+4. Wertefluss und Data/Game auf Regionen umstellen: **Status:** in_progress (Adapter, Startwerte, jährliche Basiswirtschaft, gewichtete Werbung/Ausbau/Aufgebotsregeneration und neuer Save-Roundtrip geprüft; KI-/Gebäudewirkungsgewichtung und reguläre Menüaktivierung fehlen).
 5. Spielstandmigration Schema 12→13, Backup und WLAN-Protokoll 2: **Status:** pending.
 6. Kartenmodi, Suche, Vorschauen, Lesbarkeit und Touch: **Status:** pending.
 7. Befehle, sichtbare Infrastruktur, WLAN-Komfort und Spielablauf: **Status:** pending.
 8. Regressionen, reproduzierbare Windows-/Android-Pakete und reale Geräteabnahme: **Status:** pending.
 
-Nächste Aktion: Rekrutierungs-/Gebäudegewichtung abschließen und gemischte Schema-12-Besitzer in einer separaten Regionsmigration erhalten; erst nach Atomaritäts-, Integritäts- und Verlustfreiheitsnachweis den regulären Menüstarter umstellen. Kein Telefon ohne erneuten exklusiven Slot.
+Nächste Aktion: KI-/Gebäudegewichtung abschließen und gemischte Schema-12-Besitzer in einer separaten Regionsmigration erhalten; erst nach Atomaritäts-, Integritäts- und Verlustfreiheitsnachweis den regulären Menüstarter umstellen. Kein Telefon ohne erneuten exklusiven Slot.
 
 Stand: 10. November 2026. Fortsetzung des genehmigten Atlasentwurfs; die veröffentlichte Version 1.6.0 bleibt als Rückfallstand erhalten.
 

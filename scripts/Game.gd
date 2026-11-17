@@ -993,8 +993,7 @@ func _yearly() -> void:
 		_apply_fleet_upkeep(i)
 		_apply_court_amenities(i)
 		_apply_trait_effects(i)
-	for p in provinces:
-		p["levy"] = mini(4000, int(p["levy"]) + int(p["levy"] * 0.02) + 5)
+	_regenerate_province_levies()
 	for i in houses.size():
 		_apply_council_training(i)
 		_apply_chancellor_opinion(i)
@@ -1188,29 +1187,32 @@ func _trigger_event() -> void:
 
 func can_develop(id: String) -> bool:
 	var p := province(id)
-	return not p.is_empty() and int(p["owner"]) == player and int(p["dev"]) < 10 and int(house()["gold"]) >= 50
+	return not p.is_empty() and int(p["owner"]) == player and int(p["dev"]) < 10 and int(house()["gold"]) >= int(region_capacity(p).develop_cost)
 
 func develop(id: String) -> Dictionary:
 	if not can_develop(id):
-		return _res(false, "Ausbau nicht möglich (eigenes Land, Entwicklung < 10, 50 Gold).")
+		return _res(false, "Ausbau nicht möglich: eigenes Land, Entwicklung unter 10 und genügend Gold erforderlich.")
 	var p := province(id)
-	house()["gold"] = int(house()["gold"]) - 50
+	var capacity := region_capacity(p)
+	house()["gold"] = int(house()["gold"]) - int(capacity.develop_cost)
 	p["dev"] = int(p["dev"]) + 1
-	p["levy"] = mini(4000, int(p["levy"]) + 120)
+	p["levy"] = maxi(int(p["levy"]), mini(int(capacity.maximum), int(p["levy"]) + int(capacity.develop)))
 	note("%s ausgebaut: Entwicklung %d." % [p["name"], int(p["dev"])])
 	return _res(true, "%s blüht auf." % p["name"])
 
 func can_recruit(id: String) -> bool:
 	var p := province(id)
-	return not p.is_empty() and int(p["owner"]) == player and int(house()["gold"]) >= 30
+	return not p.is_empty() and int(p["owner"]) == player and int(p["levy"]) < int(region_capacity(p).maximum) and int(house()["gold"]) >= int(region_capacity(p).recruit_cost)
 
 func recruit(id: String) -> Dictionary:
 	if not can_recruit(id):
-		return _res(false, "Werben nicht möglich (eigenes Land, 30 Gold).")
+		return _res(false, "Werbung nicht möglich: eigenes Land, freie Aufgebotskapazität und genügend Gold erforderlich.")
 	var p := province(id)
-	house()["gold"] = int(house()["gold"]) - 30
-	p["levy"] = mini(4000, int(p["levy"]) + 160)
-	note("In %s werden 160 Mann angeworben." % p["name"])
+	var capacity := region_capacity(p)
+	house()["gold"] = int(house()["gold"]) - int(capacity.recruit_cost)
+	var before := int(p["levy"])
+	p["levy"] = mini(int(capacity.maximum), before + int(capacity.recruit))
+	note("In %s werden %d Mann angeworben." % [p["name"], maxi(0, int(p["levy"]) - before)])
 	return _res(true, "Truppen verstärkt.")
 
 func can_attack(id: String) -> bool:
@@ -3029,6 +3031,17 @@ func faction_power(house_index: int = -1) -> int:
 	for faction in houses[hi].get("factions", []):
 		power = maxi(power, int(faction.get("power", 0)))
 	return power
+
+func region_capacity(region: Dictionary) -> Dictionary:
+	var share := maxf(0.0, float(region.get("economic_share", 1.0)))
+	return {"maximum":maxi(1, roundi(4000 * share)), "recruit":maxi(1, roundi(160 * share)),
+		"recruit_cost":maxi(1, roundi(30 * share)), "develop":maxi(1, roundi(120 * share)),
+		"develop_cost":maxi(1, roundi(50 * share)), "annual_flat":maxi(0, roundi(5 * share))}
+
+func _regenerate_province_levies() -> void:
+	for p in provinces:
+		var capacity := region_capacity(p)
+		p["levy"] = maxi(int(p["levy"]), mini(int(capacity.maximum), int(p["levy"]) + int(p["levy"] * 0.02) + int(capacity.annual_flat)))
 
 func region_income(region: Dictionary) -> int:
 	if not region.has("base_income"):
