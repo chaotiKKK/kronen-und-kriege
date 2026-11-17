@@ -60,4 +60,4 @@ Files: runner registration, exportpreset/code18, release helpers, `docs/releases
 - [x] Run declared normal108-region campaign with all NPCs, actual costs/income, no seed/resource/ownership injection. Show defeat/recovery/retreat or successful fort campaign; record genuine remaining blockers rather than forcing success.
 - [x] Freeze source and verify all necessary regression coverage; preserve every red artifact and report full runs vs targeted closures accurately. Independent review.
 - [x] Build separate campaign EXE/APK; compare24data/new compiled modules, versions, signature and old installation identity. Actual packaged gameplay/ENet and project-only Android update when available.
-- [ ] Deliver hash-identical packages/report and scoped GitHub source. Keep the full gameplay/balance/performance objective active unless actually proven complete.
+- [x] Deliver hash-identical packages/report and scoped GitHub source. Keep the full gameplay/balance/performance objective active unless actually proven complete.
