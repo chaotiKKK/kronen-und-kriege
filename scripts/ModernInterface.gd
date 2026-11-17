@@ -32,6 +32,10 @@ var _hud_buttons: Array[Button] = []
 var province_inspector
 var title_tier: OptionButton
 var world_summary: Label
+var _title_menu: VBoxContainer
+var _title_actions: GridContainer
+var _title_buttons: Array[Button] = []
+var _title_version: Label
 
 func _font(control: Control, pixels: int) -> void:
 	control.set_meta("atlas_font_size", pixels)
@@ -224,7 +228,7 @@ func _recolor(node: Node) -> void:
 		if control is Label or control is Button or control is LineEdit:
 			var original: Color = control.get_meta("atlas_color", control.get_theme_color("font_color"))
 			control.set_meta("atlas_color", original)
-			control.add_theme_color_override("font_color", readable(original))
+			control.add_theme_color_override("font_color", original if control.get_meta("atlas_fixed_font_color", false) else readable(original))
 			if control is LineEdit:
 				control.add_theme_color_override("caret_color", readable(TEXT))
 				control.add_theme_color_override("font_placeholder_color", readable(MUTED))
@@ -555,62 +559,92 @@ func _rebuild_menu() -> void:
 	for child in main.start_layer.get_children():
 		main.start_layer.remove_child(child)
 		child.queue_free()
+	var background := ColorRect.new()
+	background.color = Color.BLACK
+	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	main.start_layer.add_child(background)
 	var art := TextureRect.new()
 	art.texture = main.TEX_TITLE
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	main.start_layer.add_child(art)
 	var shade := ColorRect.new()
-	shade.color = Color(0.04, 0.08, 0.12, 0.24)
+	shade.color = Color(0.04, 0.08, 0.12, 0.08)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	main.start_layer.add_child(shade)
-	var panel := PanelContainer.new()
-	panel.anchor_left = 0.54
-	panel.anchor_right = 1.0
-	panel.anchor_bottom = 1.0
-	panel.add_theme_stylebox_override("panel", surface(Color(0.063, 0.118, 0.169, 1.0), 34))
-	main.start_layer.add_child(panel)
-	var scroll := ScrollContainer.new()
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	panel.add_child(scroll)
-	var box := VBoxContainer.new()
-	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	box.add_theme_constant_override("separation", 12)
-	scroll.add_child(box)
-	box.add_child(main._label("D Y N A S T I E N  ·  M A C H T  ·  W A N D E L", 11, SEA))
-	var brand: Label = main._label("Banger\nQueens", 62, TEXT)
-	var display := SystemFont.new()
-	display.font_names = PackedStringArray(["Georgia", "Noto Serif", "serif"])
-	brand.add_theme_font_override("font", display)
-	box.add_child(brand)
-	var subtitle: Label = main._label("Eine Welt. Dein Vermächtnis.", 20, COPPER)
-	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	box.add_child(subtitle)
-	var timeline := PanelContainer.new()
-	timeline.add_theme_stylebox_override("panel", surface(Color("20394a"), 14))
-	box.add_child(timeline)
-	var period: Label = main._label("2000 v. Chr.    —    2200 n. Chr.\n4200 Jahre alternative Geschichte", 14, MUTED)
-	period.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	timeline.add_child(period)
+	_title_menu = VBoxContainer.new()
+	_title_menu.name = "TitleMenu"
+	_title_menu.anchor_left = 0.5
+	_title_menu.anchor_right = 0.5
+	_title_menu.anchor_top = 1.0
+	_title_menu.anchor_bottom = 1.0
+	_title_menu.add_theme_constant_override("separation", 8)
+	main.start_layer.add_child(_title_menu)
+	main.title_status = main._label("", 12, COPPER)
+	main.title_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	main.title_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_title_menu.add_child(main.title_status)
+	main.title_status.minimum_size_changed.connect(_fit_title_menu, CONNECT_DEFERRED)
+	_title_actions = GridContainer.new()
+	_title_actions.add_theme_constant_override("h_separation", 8)
+	_title_actions.add_theme_constant_override("v_separation", 8)
+	_title_menu.add_child(_title_actions)
 	for entry in [["Neues Spiel", main._show_newgame], ["Gemeinsam im WLAN", main._show_lan_menu], ["Spiel laden", main._load_from_title], ["Optionen", main._show_options], ["Beenden", main._quit_game]]:
 		var button: Button = main._button(str(entry[0]), entry[1])
 		if str(entry[0]) == "Gemeinsam im WLAN":
 			button.name = "LanEntryButton"
-		button.custom_minimum_size.y = 56
-		button.add_theme_font_size_override("font_size", 18)
 		_style_tool(button)
+		_font(button, 14)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		if str(entry[0]) == "Neues Spiel":
-			var primary := surface(Color("3c6e6d"), 14)
+			var primary := surface(Color("3c6e6d"), 6)
 			primary.border_color = SEA
 			button.add_theme_stylebox_override("normal", primary)
-		box.add_child(button)
-	main.title_status = main._label("", 12, COPPER)
-	main.title_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	box.add_child(main.title_status)
-	box.add_child(main._label("VERSION %s    ·    DEUTSCH    ·    OFFLINE" % ProjectSettings.get_setting("application/config/version"), 11, MUTED))
+		_title_actions.add_child(button)
+		_title_buttons.append(button)
+	_title_version = main._label("VERSION %s" % ProjectSettings.get_setting("application/config/version"), 11, Color.WHITE)
+	_title_version.name = "TitleVersion"
+	_title_version.set_meta("atlas_fixed_font_color", true)
+	_title_version.add_theme_color_override("font_color", Color.WHITE)
+	_title_version.add_theme_color_override("font_shadow_color", Color(0,0,0,0.9))
+	_title_version.add_theme_constant_override("shadow_offset_x", 1)
+	_title_version.add_theme_constant_override("shadow_offset_y", 1)
+	_title_version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_title_version.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_title_version.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	main.start_layer.add_child(_title_version)
+	_fit_title_menu()
+
+func _fit_title_menu() -> void:
+	if _title_menu == null or _title_version == null: return
+	var available := minf(1040,main.get_viewport_rect().size.x-48)
+	var button_width := 140.0
+	var button_height := 44.0 if touch_layout else 36.0
+	for button in _title_buttons:
+		button_width = maxf(button_width,button.get_minimum_size().x)
+		button_height = maxf(button_height,button.get_minimum_size().y)
+	var columns := clampi(int((available+8)/(button_width+8)),1,5)
+	_title_actions.columns = columns
+	for button in _title_buttons:
+		button.custom_minimum_size = Vector2(button_width,button_height)
+	var width := columns*button_width+(columns-1)*8
+	var rows := ceili(5.0/columns)
+	main.title_status.visible = not main.title_status.text.is_empty()
+	var status_height: float = main.title_status.get_combined_minimum_size().y+8 if main.title_status.visible else 0.0
+	var height: float = rows*button_height+(rows-1)*8+status_height
+	var footer_height := _title_version.get_combined_minimum_size().y
+	_title_menu.offset_left = -width/2
+	_title_menu.offset_right = width/2
+	_title_menu.offset_bottom = -footer_height-28
+	_title_menu.offset_top = _title_menu.offset_bottom-height
+	_title_version.offset_left = -maxf(200,_title_version.get_combined_minimum_size().x)-16
+	_title_version.offset_right = -16
+	_title_version.offset_top = -footer_height-12
+	_title_version.offset_bottom = -12
 
 func refresh_summary() -> void:
 	if main.game == null:
@@ -633,6 +667,7 @@ func fit_layout() -> void:
 	if main == null or navigation == null:
 		return
 	var width: float = main.get_viewport_rect().size.x
+	_fit_title_menu()
 	_fit_dialogs()
 	if is_equal_approx(width, last_width):
 		return

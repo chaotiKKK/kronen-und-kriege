@@ -87,6 +87,7 @@ HEADLESS=(
 # Suiten, die einen echten Viewport brauchen.
 # CourtShotTest gehört ebenfalls hierher; es war zuvor nicht registriert.
 WINDOWED=(
+	TitleMenuTest
 	StrategyUiTest
 	CompactHudTest
 	LanUiTest

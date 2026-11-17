@@ -40,7 +40,7 @@ func _run() -> void:
 	ui.set_text_scale(1.0)
 	main.refresh()
 	await _frames()
-	_check(str(ProjectSettings.get_setting("application/config/version")) == "1.9.0", "Embedded version is 1.9.0")
+	_check(str(ProjectSettings.get_setting("application/config/version")) == "1.9.1", "Embedded version is 1.9.1")
 	_check(main.game.provinces.size() == 108, "Regular game has 108 provinces")
 	var province: Dictionary = main.game.owned()[0]
 	ui.show_section("family")

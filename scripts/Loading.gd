@@ -3,6 +3,8 @@ extends Control
 ## während die Hauptszene geladen wird. Wechselt danach mit Fade.
 
 const TEX_TITLE = preload("res://assets/ui/bq_beta_title.jpg")
+const TEX_INTRO = preload("res://assets/ui/chaotiKKK_logo.png")
+const INTRO_SECONDS := 3.0
 const MAIN_PATH := "res://scenes/Main.tscn"
 const TIPS := [
 	"Ein Erbe sichert das Fortbestehen deines Hauses.",
@@ -24,23 +26,56 @@ var done: bool = false
 var load_failed: bool = false
 var loaded_ok: bool = false
 var main_scene: PackedScene
+var intro_layer: ColorRect
+var intro_image: TextureRect
+var intro_elapsed := 0.0
+var load_started := false
+var awaiting_loading_frame := false
+var loading_frame_presented := false
 
 func _ready() -> void:
 	_build()
-	# Synchron laden: Der Threaded-Loader scheitert im exportierten Windows-Build
-	# reproduzierbar an der eingebetteten PCK. Der Ladebildschirm bleibt sichtbar,
-	# weil der Wechsel erst nach 2,4 s und dem Fade erfolgt.
+	_build_intro()
+	# Main is deliberately not read here: the first screen gets three seconds
+	# before even a synchronous resource load can block rendering.
+	modulate.a = 1.0
+
+func _build_intro() -> void:
+	intro_layer = ColorRect.new()
+	intro_layer.name = "chaotiKKKIntro"
+	intro_layer.color = Color.BLACK
+	intro_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	intro_layer.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(intro_layer)
+	intro_image = TextureRect.new()
+	intro_image.texture = TEX_INTRO
+	intro_image.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	intro_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	intro_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	intro_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	intro_layer.add_child(intro_image)
+
+func _on_loading_frame_presented() -> void:
+	if not awaiting_loading_frame or intro_layer.visible:
+		return
+	awaiting_loading_frame = false
+	loading_frame_presented = true
+	# frame_post_draw has completed the first normal loading/title frame.
+	# Defer the synchronous reader so it cannot prolong the logo's last frame.
 	call_deferred("_load_main")
-	modulate.a = 0.0
-	var tw := create_tween()
-	tw.tween_property(self, "modulate:a", 1.0, 0.7)
 
 func _load_main() -> void:
-	main_scene = load(MAIN_PATH) as PackedScene
+	if load_started or not loading_frame_presented or intro_layer.visible:
+		return
+	load_started = true
+	main_scene = _read_main_scene()
 	loaded_ok = main_scene != null
 	if not loaded_ok:
 		load_failed = true
 		status.text = "Laden fehlgeschlagen. Bitte das Spiel neu starten."
+
+func _read_main_scene() -> PackedScene:
+	return load(MAIN_PATH) as PackedScene
 
 func _label(text: String, px: int, col: Color) -> Label:
 	var l := Label.new()
@@ -89,6 +124,7 @@ func _build() -> void:
 	bar.custom_minimum_size = Vector2(560, 16)
 	bar.max_value = 100.0
 	bar.value = 0.0
+	bar.visible = false
 	bar.show_percentage = false
 	var track := StyleBoxFlat.new()
 	track.bg_color = Color(0.05, 0.035, 0.02, 0.94)
@@ -133,6 +169,14 @@ func _process(delta: float) -> void:
 	if done:
 		return
 	elapsed += delta
+	if intro_layer.visible:
+		intro_elapsed += delta
+		if intro_elapsed >= INTRO_SECONDS:
+			intro_layer.hide()
+			percent.text = "Hauptszene wird geladen · %d s" % int(elapsed)
+			awaiting_loading_frame = true
+			RenderingServer.frame_post_draw.connect(_on_loading_frame_presented, CONNECT_ONE_SHOT)
+		return
 	tip_timer += delta
 	if tip_timer > 3.4:
 		tip_timer = 0.0
@@ -151,7 +195,7 @@ func _process(delta: float) -> void:
 		_finish()
 
 func _finish() -> void:
-	if done:
+	if done or not loaded_ok or main_scene == null:
 		return
 	done = true
 	set_process(false)

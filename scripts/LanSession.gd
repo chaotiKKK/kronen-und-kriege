@@ -373,13 +373,16 @@ func load_host_lobby(path: String = "user://lan_partie.json") -> Dictionary:
 	var legacy_file: bool = _data.has_method("catalog_hash") and Protocol.integer(envelope.get("v"), 1, 1) and str(envelope.get("app", "")).begins_with("1.7.") and str(envelope.state.get("world_layout", "")) != "regions108"
 	var file_app := str(envelope.get("app", ""))
 	var old_regional: bool = _data.has_method("catalog_hash") and Protocol.integer(envelope.get("v"), 2, Protocol.VERSION) and (file_app == _app or file_app.begins_with("1.8.")) and int(envelope.state.get("schema_version", 0)) == Save.CURRENT_VERSION and str(envelope.state.get("world_layout", "")) == "regions108" and str(envelope.state.get("region_catalog_hash", "")) == _data.catalog_hash()
-	if error != "" and not legacy_file and not old_regional:
+	# 1.9.1 only moves the title menu. Accept its exact preceding local file
+	# format with matching content, while wire handshakes remain version-exact.
+	var previous_ui: bool = _app == "1.9.1" and file_app == "1.9.0" and _data.has_method("catalog_hash") and Protocol.integer(envelope.get("v"), 3, 3) and envelope.get("fingerprint") == _fingerprint and int(envelope.state.get("schema_version", 0)) == Save.CURRENT_VERSION and str(envelope.state.get("world_layout", "")) == "regions108" and str(envelope.state.get("region_catalog_hash", "")) == _data.catalog_hash()
+	if error != "" and not legacy_file and not old_regional and not previous_ui:
 		return _failure(error)
 	var restored = GameScript.new(_data, 0)
 	if not restored.restore(envelope.state) or restored.human_houses.size() < 2:
 		return _failure("Der WLAN-Spielstand enthält keine gültige gemeinsame Partie.")
-	if legacy_file or (old_regional and error != ""):
-		var backup := path + (".pre-regions-v1.bak" if legacy_file else ".pre-design-v%d.bak" % int(envelope.v))
+	if legacy_file or previous_ui or (old_regional and error != ""):
+		var backup := path + (".pre-regions-v1.bak" if legacy_file else (".pre-ui191.bak" if previous_ui else ".pre-design-v%d.bak" % int(envelope.v)))
 		if FileAccess.file_exists(backup) and FileAccess.get_file_as_bytes(backup) != original_bytes:
 			var context := HashingContext.new()
 			context.start(HashingContext.HASH_SHA256)

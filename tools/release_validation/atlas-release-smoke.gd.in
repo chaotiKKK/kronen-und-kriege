@@ -6,6 +6,7 @@ var expected: Dictionary = {}
 var failures := 0
 var checks := 0
 var main
+var intro_timing := {}
 
 func _initialize() -> void:
 	expected = JSON.parse_string(EXPECTATIONS_JSON)
@@ -34,6 +35,23 @@ func _run() -> void:
 	var entry: String = ProjectSettings.get_setting("application/run/main_scene")
 	_check(entry == "res://scenes/Loading.tscn", "Unexpected real project entry scene")
 	_check(change_scene_to_file(entry) == OK, "Real Loading/Main entry could not be started")
+	await process_frame
+	await process_frame
+	var intro_view = current_scene
+	_check(intro_view != null and intro_view.get("intro_layer") != null, "Packaged first logo screen missing")
+	if intro_view != null and intro_view.get("intro_layer") != null:
+		intro_timing = {"observed_ms":Time.get_ticks_msec(),"hidden_ms":-1,"phase_seconds":0.0,"hidden_before_main_read":false}
+		intro_view.intro_layer.visibility_changed.connect(func():
+			if not intro_view.intro_layer.visible:
+				intro_timing.hidden_ms = Time.get_ticks_msec()
+				intro_timing.phase_seconds = intro_view.intro_elapsed
+				intro_timing.hidden_before_main_read = not intro_view.load_started
+		)
+		_check(intro_view.intro_layer.visible and not intro_view.load_started, "Main resource loading started before the first logo screen")
+		await _frames()
+		await _shot("studio-logo")
+		await create_timer(2.5).timeout
+		_check(is_instance_valid(intro_view) and intro_view.intro_layer.visible and not intro_view.load_started, "Logo must still be displayed before three seconds")
 	for attempt in 3600:
 		await process_frame
 		if current_scene != null and current_scene.has_method("_start"):
@@ -45,6 +63,16 @@ func _run() -> void:
 		_finish()
 		return
 	await _frames()
+	_check(float(intro_timing.get("phase_seconds",0)) >= 3.0 and float(intro_timing.get("phase_seconds",0)) < 3.2, "Logo phase did not finish at the three-second boundary")
+	_check(bool(intro_timing.get("hidden_before_main_read",false)), "Synchronous resource loading prolonged the logo screen")
+	var title_actions: Array = main.start_layer.find_children("*","Button",true,false)
+	_check(title_actions.size() == 5, "Packaged compact title actions missing")
+	if title_actions.size() == 5:
+		var menu_bounds: Rect2 = title_actions[0].get_global_rect()
+		for action in title_actions: menu_bounds = menu_bounds.merge(action.get_global_rect())
+		_check(absf(menu_bounds.get_center().x-root.get_visible_rect().get_center().x) <= 2 and menu_bounds.position.y >= root.get_visible_rect().size.y*0.65, "Packaged menu is not centered at the bottom")
+	var version_label = main.start_layer.get_node_or_null("TitleVersion")
+	_check(version_label != null and version_label.text == "VERSION "+str(expected.version) and version_label.get_theme_color("font_color").is_equal_approx(Color.WHITE), "Packaged corner version is missing, stale or not white")
 	await _shot("main-menu")
 	main._start(0)
 	main.game.speed = 0
@@ -234,7 +262,7 @@ func _check(ok: bool, message: String) -> void:
 
 func _finish() -> void:
 	var report := {"stage": "packaged-runtime-smoke", "version": expected.get("version", ""), "checks": checks,
-		"failures": failures, "user_data": OS.get_user_data_dir(), "physical_android_test": false}
+		"failures": failures, "user_data": OS.get_user_data_dir(), "physical_android_test": false,"intro_timing":intro_timing}
 	var file := FileAccess.open(str(expected.output) + "/runtime-smoke-receipt.json", FileAccess.WRITE)
 	if file != null:
 		file.store_string(JSON.stringify(report, "\t") + "\n")

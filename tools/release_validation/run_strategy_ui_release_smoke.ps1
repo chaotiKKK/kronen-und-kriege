@@ -2,7 +2,7 @@ param(
     [Parameter(Mandatory = $true)][string]$Exe,
     [Parameter(Mandatory = $true)][string]$Output,
     [ValidateRange(10, 180)][int]$TimeoutSeconds = 180,
-    [string]$ExpectedVersion = '1.9.0'
+    [string]$ExpectedVersion = '1.9.1'
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..')).Path

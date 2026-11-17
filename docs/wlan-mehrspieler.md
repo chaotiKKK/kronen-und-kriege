@@ -1,6 +1,6 @@
 # Gemeinsam im WLAN
 
-Die Fassung 1.9.0 bietet eine gemeinsame Partie für zwei bis vier Menschen.
+Die Fassung 1.9.1 bietet eine gemeinsame Partie für zwei bis vier Menschen.
 Jeder führt ein vorhandenes oder vorab selbst gestaltetes Haus. Ein Gerät berechnet die gemeinsame
 Welt, die anderen erhalten dessen bestätigten Zustand. Windows und Android
 verwenden Netzwerkprotokoll 3; unterschiedliche Spiel- oder Datenstände werden

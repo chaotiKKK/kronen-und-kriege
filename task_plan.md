@@ -101,3 +101,7 @@ Abnahmegrenzen: physisches Poco und echtes Smartphone-WLAN offen; etwa 11,7 FPS 
 - Abschluss: 200%-SpinBox-Schrift rot/grün korrigiert, finale EXE/APK gebaut, 51+371+66 Paketprüfungen und Android-Geräteeingaben mit gespeicherten echten Aktionswerten nachgewiesen. Bericht: docs/releases/1.9.0.md; finale Belege: build/verify/release-190-final2. Downloads und Quellcommit werden abschließend hashgebunden übergeben.
 
 Koordination: drei isolierte Feature-Worker und ein unabhängiger Abschlussprüfer; Root besitzt Integration, Builds und ausschließlich den eigenen Emulator. Poco bleibt unbenutzt. Keine Änderungen am 108-Regionen-Katalog oder der Atlasgeometrie.
+
+## UI-Patch 1.9.1 abgeschlossen
+
+Unteres mittiges Titelmenü, feste weiße Version unten rechts und unverändertes chaotiKKK-Studiologo mit drei Sekunden Intro umgesetzt. Acht gezielte Suiten / 488 Prüfungen; fertige EXE 380 Runtime- und 66 Zwei-Prozess-Netzprüfungen, finale APK/EXE statisch geprüft. APK ohne erneuten Gerätestart; bestehende Hardware-/Performancegrenzen bleiben bestehen. Bericht docs/releases/1.9.1.md und Belege build/verify/release-191. Aktueller Quellstand und Downloadpakete werden abschließend gesichert.

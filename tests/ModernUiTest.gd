@@ -20,9 +20,7 @@ func _ready() -> void:
 		_finish()
 		return
 	var ui = main.get_meta("modern_interface")
-	for child in main.start_layer.get_children():
-		if child is PanelContainer:
-			_check(is_equal_approx(child.get_theme_stylebox("panel").bg_color.a, 1.0), "Hintergrundlogo darf nicht durch den Menübereich scheinen.")
+	_check(main.start_layer.find_children("*", "Button", true, false).size() == 5, "Alle fünf Titelaktionen bleiben im kompakten Menü erreichbar.")
 	if not ui.has_method("set_appearance"):
 		_check(false, "Umschaltbare Lesbarkeitsthemen fehlen.")
 		_finish()

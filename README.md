@@ -2,7 +2,7 @@
 
 Eigenständige Grand Strategy für **Android und Windows**, gebaut mit Godot 4.5.1. Die vorhandene Fassung „Kronen und Kriege“ wird als **Banger Queens** mit **108 spielbaren Regionen**, neun vorhandenen Häusern und zusätzlichen selbst gestaltbaren Häusern weiterentwickelt.
 
-**Quellstand 1.9.0:** fünf unterschiedliche Kartenansichten, sofortige Provinzverwaltung rechts, 16 Innovationen mit tatsächlichen Regelwirkungen, 32 kontextabhängige Ereignisse und stabile Hofaktionen. Derselbe Haus-, Reichs- und Armeedesigner steht vor Einzelspieler- und WLAN-Partien bereit. Der Gastgeber prüft Entwürfe und Heimatkonflikte; alle Teilnehmer benötigen Version 1.9.0 mit Netzwerkprotokoll 3. Details, Paketbelege und Prüfgrenzen stehen im [Prüfbericht 1.9.0](docs/releases/1.9.0.md).
+**Quellstand 1.9.1:** Zuerst erscheint das chaotiKKK-Studio-Logo für drei Sekunden. Das Hauptmenü liegt kompakt unten mittig im freien Titelbild; die Versionsnummer steht weiß unten rechts. Weiter enthalten: fünf unterschiedliche Kartenansichten, sofortige Provinzverwaltung rechts, 16 Innovationen mit tatsächlichen Regelwirkungen, 32 kontextabhängige Ereignisse und stabile Hofaktionen. Derselbe Haus-, Reichs- und Armeedesigner steht vor Einzelspieler- und WLAN-Partien bereit. Der Gastgeber prüft Entwürfe und Heimatkonflikte; alle Teilnehmer benötigen Version 1.9.1 mit Netzwerkprotokoll 3. Details, Paketbelege und Prüfgrenzen stehen im [Prüfbericht 1.9.1](docs/releases/1.9.1.md).
 
 **Unveränderter Atlasdatenstand aus 1.7.0:** geografischer Referenzatlas mit 140.044 echten Kartenobjekten: 70 Länder-/Gebietsobjekte, 997 regionale und 4521 Kreis-/Bezirksflächen, 114.761 kommunale Darstellungsflächen und 19.695 weitere lokale Verwaltungsflächen. Neu sind 662 qualifizierte originale Mahalle-Flächen aus Sakarya, die 189 einzeln nachgewiesene Altobjekte ersetzen; neun ungeklärte Rückfallflächen bleiben erhalten. Netto kommen 473 Flächen hinzu. Deutschland behält 16 Länder, 400 Kreise, 10.751 Gemeinden und 198 gemeindefreie Gebiete. Dazu kommen 23.463 GeoNames-Orte und 175 Flussgruppen. Die durchgehend vergleichbare Gesamtabdeckung bleibt offen: AZ, CNM, IL, KZ, LB, LY, MA und TR erfüllen das Gesamtziel noch nicht. [Neue Quellenrunde AZ/KZ/IL/LY](docs/atlas-remaining8-new-sources-20261110.md), [LB/MA/CNM](docs/atlas-remaining8-lb-ma-cnm-20261110.md) und [Sakarya](docs/atlas-sakarya-sources.md) nennen konkrete Belege und Grenzen.
 
@@ -18,9 +18,13 @@ Die sechs gespeicherten Oberflächenstile aus 1.5.2 bleiben unter „Lesbarkeits
 
 Das neue Hauptmenü, reservierte Kartennavigation und gegliederte Seitenpanel bleiben erhalten. Ereignisaktionen enthalten farbige Werte (grün/rot/gelb) innerhalb desselben Buttons; die Ereignisfläche hat 10 % Deckkraft, Kontur und Schatten. Das alte Logo/Banner des Hintergrundmotivs wird vollständig vom Menübereich abgedeckt. Dazu kommen Kalender ohne Jahr null, Save-Schema 13, vertiefte Forschung und auf der Karte sichtbarer Straßenbau. Der Kalender reicht bis 2200; die vollständigen Epochen, Forschungszweige und langfristigen Nachfolgesysteme sind weitere Ausbaustufen. Sie sind durch die Datumsgrenze allein noch nicht implementiert.
 
-Lokale Exportziele: `build/exports/banger-queens-1.9.0.exe` und `build/exports/banger-queens-1.9.0.apk`. Die vollständigen Laufzeitdaten sind eingebettet; es ist kein separater Import nötig. Die Quellen und reproduzierbaren Paketprüfungen stehen im [Bericht 1.9.0](docs/releases/1.9.0.md). Die bisher veröffentlichten [Testfassung 1.7.0](https://github.com/chaotiKKK/kronen-und-kriege/releases/tag/v1.7.0) und [Testfassung 1.6.1](https://github.com/chaotiKKK/kronen-und-kriege/releases/tag/v1.6.1) bleiben erhalten. Reales Android-WLAN zwischen zwei Geräten ist weiterhin ungeprüft.
+Lokale Exportziele: `build/exports/banger-queens-1.9.1.exe` und `build/exports/banger-queens-1.9.1.apk`. Die vollständigen Laufzeitdaten sind eingebettet; es ist kein separater Import nötig. Die Quellen und reproduzierbaren Paketprüfungen stehen im [Bericht 1.9.1](docs/releases/1.9.1.md). Die bisher veröffentlichten [Testfassung 1.7.0](https://github.com/chaotiKKK/kronen-und-kriege/releases/tag/v1.7.0) und [Testfassung 1.6.1](https://github.com/chaotiKKK/kronen-und-kriege/releases/tag/v1.6.1) bleiben erhalten. Reales Android-WLAN zwischen zwei Geräten ist weiterhin ungeprüft.
 
-Aktuelle Provinzverwaltung und gemeinsamer Hausdesigner aus der tatsächlich exportierten Windowsfassung 1.9.0:
+Aktuelles Titelmenü der exportierten Version 1.9.1:
+
+![Titelmenü 1.9.1](preview/titel-191.png)
+
+Provinzverwaltung und gemeinsamer Hausdesigner aus der zuvor exportierten Windowsfassung 1.9.0:
 
 ![Provinzverwaltung 1.9.0](preview/strategie-190.png)
 
