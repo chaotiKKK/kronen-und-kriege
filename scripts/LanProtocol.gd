@@ -21,6 +21,7 @@ const FIELDS := {
 	"marry":{"target":"house"}, "seduce":{"target":"house"}, "murder":{"target":"house"},
 	"kidnap":{"target":"house"}, "declare_holy_war":{"target":"house"},
 	"apply_event":{"option":"option", "event_instance":"sequence"},
+	"decline_event":{"event_instance":"sequence"},
 	"set_speed":{"value":"speed"}, "council_assign":{"office":"text", "index":"optional_index"},
 	"legacy":{"track":"text"}, "vassal_contract":{"vassal":"index", "level":"level"},
 	"council_resolution":{"resolution":"text"}, "forge_relic":{"relic":"text"},

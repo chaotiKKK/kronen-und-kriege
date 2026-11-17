@@ -76,7 +76,29 @@ func _ready() -> void:
 		main.start_layer.visible = true
 		await RenderingServer.frame_post_draw
 		_check(get_viewport().get_texture().get_image().save_png("res://build/verify/bq-modern-menu.png") == OK, "Modernisiertes Hauptmenü nicht aufnehmbar.")
+	_exercise_retired_map_callback()
 	_finish()
+
+func _exercise_retired_map_callback() -> void:
+	var view = main.map_view
+	var parent: Node = view.get_parent()
+	var index: int = view.get_index()
+	var callback := Callable(view,"_on_mouse_exited")
+	# Den nachlaufenden Callback getrennt von der automatischen Signalzustellung
+	# auslösen; der echte MapView und seine bestehende Darstellung bleiben erhalten.
+	view.mouse_exited.disconnect(callback)
+	view.hovered = str(main.game.provinces[0].id)
+	view.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	parent.remove_child(view)
+	view._on_mouse_exited()
+	_check(view.hovered.is_empty(), "Nachlaufender Mauscallback entfernt die alte Hoverauswahl.")
+	_check(view.mouse_default_cursor_shape == Control.CURSOR_POINTING_HAND, "Abgebaute Karte darf keinen Cursorwechsel mehr anfordern.")
+	parent.add_child(view)
+	parent.move_child(view,index)
+	view.mouse_exited.connect(callback)
+	view.hovered = str(main.game.provinces[0].id)
+	view._on_mouse_exited()
+	_check(view.hovered.is_empty() and view.mouse_default_cursor_shape == Control.CURSOR_ARROW, "Lebende Karte räumt Hover und Cursor weiterhin auf.")
 
 func _check(ok: bool, message: String) -> void:
 	checks += 1

@@ -107,7 +107,7 @@ func _run() -> void:
 	double_click.double_click = true
 	double_click.position = hover_pos
 	main.map_view._gui_input(double_click)
-	if not _check(main.province_layer.visible, "Doppelklick öffnet die Provinzseite nicht."):
+	if not _check(not main.province_layer.visible and main.side_panel.visible and main.get_meta("modern_interface").province_inspector.selected_id == str(p0.id), "Doppelklick muss dieselbe rechte Provinzansicht öffnen."):
 		return
 	main._hide_province()
 	main._toggle_map_legend()

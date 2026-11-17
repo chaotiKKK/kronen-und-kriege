@@ -38,6 +38,8 @@ func _ready() -> void:
 		return
 	if not _previous_economy_release():
 		return
+	if not _previous_gameplay_release():
+		return
 	print("LEGACYLANMIGRATIONTEST OK: %d Prüfungen" % checks)
 	get_tree().quit(0)
 
@@ -223,6 +225,74 @@ func _direct_save_preservation(session) -> bool:
 	session._resume_state = valid_resume
 	if not check(not result.ok and FileAccess.get_file_as_bytes(rejected)==original and not FileAccess.file_exists(rejected+".pre-ui191.bak"),"Ungültiger neuer Zustand wird vor jeder Sicherung abgewiesen"):
 		return false
+	return true
+
+func _previous_gameplay_release() -> bool:
+	var protocol = load("res://scripts/LanProtocol.gd")
+	var raw := FileAccess.get_file_as_bytes("res://tests/fixtures/lan-191-gameplay-schema14-original.json")
+	if not check(FileAccess.get_sha256("res://tests/fixtures/lan-191-gameplay-schema14-original.json") == "6def99ffb42c1ced6a52d03d12afa525105a3ed44bf8555daa6c29358d7b74c4","Unveränderte echte1.9.1-Gameplay-Datei mit Herkunftsreceipt"):
+		return false
+	var envelope: Dictionary = JSON.parse_string(raw.get_string_from_utf8())
+	if not check(envelope.app == "1.9.1" and envelope.v == 3 and envelope.state.schema_version == 14 and envelope.fingerprint == "fcc2237b4e44b454f78a0a0721cc10ca7167289ec3c8d01ae49a455b2c98c9d3","Historischer Gameplay-Fingerabdruck stammt aus tatsächlich ausgeführter EXE"):
+		return false
+	var session = load("res://scripts/LanSession.gd").new()
+	session.discovery_enabled = false
+	add_child(session)
+	if not check(session.host("Gameplay-Fortsetzung","Host",0,49700+OS.get_process_id()%200).ok,"Eigene Lobby für direkte Schema14-Fortsetzung"):
+		return false
+	var stem := "user://previous-gameplay-%d-%d" % [OS.get_process_id(),Time.get_ticks_usec()]
+	var path := stem+"-load.json"
+	_write_bytes(path,raw)
+	check(not protocol.handshake_error(envelope,session._app,session._fingerprint).is_empty(),"Alter Gameplay-Peer bleibt trotz lokaler Fortsetzung am Wire abgewiesen")
+	var loaded: Dictionary = session.load_host_lobby(path)
+	var load_ok := check(loaded.ok,"Echte lokale Schema14-Gameplay-Datei lässt sich mit neuen Ereignisguards fortsetzen: "+str(loaded.message))
+	# Zweiten, unabhängigen Direktpfad auch im roten Vorlauf ausführen.
+	if not loaded.ok:
+		session.game = load("res://scripts/Game.gd").new(load("res://scripts/GameRegionData.gd"),0)
+		session.game.configure_human_houses([0,1])
+		session._resume_state = session.game.snapshot()
+	var live: Dictionary = session.game.snapshot()
+	var direct := stem+"-direct.json"
+	_write_bytes(direct,raw)
+	var saved: Dictionary = session.save_host(direct)
+	var direct_ok := check(saved.ok,"Direktes Überschreiben der noch nie geladenen alten Gameplay-Zieldatei benötigt vorher ihre Sicherung: "+str(saved.message))
+	if not load_ok or not direct_ok:
+		session.close_session()
+		session.queue_free()
+		return false
+	var suffix := ".pre-choice-guards-v14.bak"
+	var expected_humans: Array = []
+	for seat in envelope.state.lan_human_houses: expected_humans.append(int(seat))
+	if protocol.world_hash(session.game.snapshot()) != protocol.world_hash(envelope.state):
+		print("GAMEPLAY_LEGACY_DIFF ",load("res://scripts/SaveGame.gd").diff(envelope.state,session.game.snapshot()))
+	if not check(protocol.world_hash(session.game.snapshot()) == protocol.world_hash(envelope.state) and session.game.human_houses == expected_humans,"Vorherige Schema14-Welt und Menschenplätze bleiben ohne Datenmigration erhalten"):
+		return false
+	if not check(FileAccess.get_file_as_bytes(path) == raw and FileAccess.get_file_as_bytes(path+suffix) == raw and FileAccess.get_file_as_bytes(direct+suffix) == raw,"Lokales Laden und direktes Speichern sichern ursprüngliche Gameplay-Bytes"):
+		return false
+	if not check(session.game.snapshot() == live and JSON.parse_string(FileAccess.get_file_as_string(direct)).fingerprint == session._fingerprint,"Direktspeichern aktualisiert nur die Hülle und erhält die laufende Welt"):
+		return false
+	for variant in ["unknown_hash","wrong_app","wrong_wire","wrong_schema","wrong_catalog"]:
+		var bad := envelope.duplicate(true)
+		match variant:
+			"unknown_hash": bad.fingerprint = "unknown-gameplay"
+			"wrong_app": bad.app = "1.9.0"
+			"wrong_wire": bad.v = 2
+			"wrong_schema": bad.state.schema_version = 13
+			"wrong_catalog": bad.state.region_catalog_hash = "wrong"
+		var bad_raw := JSON.stringify(bad).to_utf8_buffer()
+		var bad_path: String = stem+"-"+str(variant)+".json"
+		_write_bytes(bad_path,bad_raw)
+		if not check(not session.load_host_lobby(bad_path).ok and not session.save_host(bad_path).ok,"Unbekannter/verfälschter Gameplay-Vorgänger wird in beiden Dateipfaden abgewiesen: "+variant):
+			return false
+		if not check(FileAccess.get_file_as_bytes(bad_path) == bad_raw and session.game.snapshot() == live and not FileAccess.file_exists(bad_path+suffix),"Abweisung erhält Datei, laufende Partie und fehlendes Backup: "+variant):
+			return false
+	var blocked := stem+"-blocked.json"
+	_write_bytes(blocked,raw)
+	DirAccess.make_dir_absolute(ProjectSettings.globalize_path(blocked+suffix))
+	if not check(not session.load_host_lobby(blocked).ok and not session.save_host(blocked).ok and FileAccess.get_file_as_bytes(blocked) == raw and session.game.snapshot() == live,"Nicht schreibbares Gameplay-Backup verhindert Laden und Direktüberschreiben ohne Nebenwirkung"):
+		return false
+	session.close_session()
+	session.queue_free()
 	return true
 
 func _without_economy(protocol, state: Dictionary) -> String:

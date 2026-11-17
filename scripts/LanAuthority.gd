@@ -31,7 +31,7 @@ func execute(peer: int, sequence: int, command: Dictionary) -> Dictionary:
 	var result: Dictionary
 	if game.game_over and clean.id not in ["set_speed", "continue_sandbox"]:
 		result = Protocol.failure("Dein Haus ist beendet. Du kannst die Partie weiter beobachten.", "house_over")
-	elif clean.id == "apply_event" and int(clean.event_instance) != game.pending_event_instance():
+	elif clean.id in ["apply_event", "decline_event"] and int(clean.event_instance) != game.pending_event_instance():
 		result = Protocol.failure("Dieses Ereignis ist nicht mehr aktuell.", "event_instance")
 	else:
 		var kernel = Kernel.new()

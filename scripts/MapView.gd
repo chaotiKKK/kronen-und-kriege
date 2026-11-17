@@ -1069,5 +1069,8 @@ func _on_mouse_exited() -> void:
 	if hovered == "":
 		return
 	hovered = ""
+	# Ein nachlaufendes Mouse-Exit kann bereits im Szenenabbau eintreffen.
+	if not is_inside_tree():
+		return
 	mouse_default_cursor_shape = Control.CURSOR_ARROW
 	queue_redraw()

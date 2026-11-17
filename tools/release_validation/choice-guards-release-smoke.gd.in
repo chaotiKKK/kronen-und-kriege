@@ -1,0 +1,373 @@
+extends SceneTree
+## External release probe. Main, event definitions, MapView and MapContent are
+## loaded from the launched EXE's res:// PCK; no tests or source helpers imported.
+## Treasury/event/owner edits below are explicitly controlled UI fixtures.
+var main
+var ui
+var output := ""
+var results: Array = []
+var screenshots: Array = []
+var evidence: Dictionary = {}
+var failures := 0
+var started_ms := 0
+var finished := false
+var time_limit_ms := 179000
+var expected_version := "1.9.1"
+var notice: Label
+var parent_draws := 0
+var content_draws := 0
+
+func _initialize() -> void:
+	started_ms = Time.get_ticks_msec()
+	process_frame.connect(_watchdog)
+	call_deferred("_run")
+
+func _watchdog() -> void:
+	if not finished and Time.get_ticks_msec() - started_ms > time_limit_ms:
+		_check(false, "Probe exceeded its configured execution budget")
+		_finish()
+
+func _run() -> void:
+	var args := OS.get_cmdline_user_args()
+	if args.is_empty() or not str(args[0]).is_absolute_path():
+		push_error("Absolute evidence directory required after --")
+		quit(2)
+		return
+	output = str(args[0]).replace("\\", "/")
+	if DirAccess.make_dir_recursive_absolute(output) != OK:
+		push_error("Cannot create choice-guards evidence directory")
+		quit(2)
+		return
+	if not OS.get_environment("BQ_CHOICE_EXPECTED_VERSION").is_empty():
+		expected_version = OS.get_environment("BQ_CHOICE_EXPECTED_VERSION")
+	if not OS.get_environment("BQ_CHOICE_TIMEOUT_SECONDS").is_empty():
+		time_limit_ms = maxi(1000, int(OS.get_environment("BQ_CHOICE_TIMEOUT_SECONDS")) * 1000 - 1000)
+	if not _check(DisplayServer.get_name() != "headless", "Real renderer is required; headless execution cannot pass this package UI probe"):
+		_finish()
+		return
+	_place_on_rightmost_monitor()
+	seed(191141)
+	var packed = load("res://scenes/Main.tscn")
+	if not _check(packed is PackedScene, "Embedded Main scene loads through the release PCK"):
+		_finish()
+		return
+	main = packed.instantiate()
+	root.add_child(main)
+	current_scene = main
+	await _settle()
+	main._start(0)
+	main.game.speed = 0
+	ui = main.get_meta("modern_interface")
+	ui.set_touch_layout(false)
+	ui.set_text_scale(1.0)
+	main.settings.muted = true
+	main._apply_audio_settings()
+	_add_notice()
+	await _settle()
+	_check(str(ProjectSettings.get_setting("application/config/version")) == expected_version, "Embedded application version matches the requested package")
+	_check(main.game.provinces.size() == 108, "Actual Main starts the complete 108-region game model")
+	_check(main.minimap.host == main.map_view and main.map_view.game == main.game, "Actual Main Minimap and MapView share the live game")
+	evidence.resources = {"main_scene":main.scene_file_path, "main_script":main.get_script().resource_path, "map_script":main.map_view.get_script().resource_path, "minimap_script":main.minimap.get_script().resource_path, "game_script":main.game.get_script().resource_path}
+	_notice("Paketprüfung · regulärer Spielstart vor kontrollierten UI-Testdaten")
+	await _shot("01-normal-main-before-fixtures")
+	await _event_guards()
+	await _minimap_guards()
+	_finish()
+
+func _place_on_rightmost_monitor() -> void:
+	var screen := 0
+	var right_edge := -2147483648
+	for index in DisplayServer.get_screen_count():
+		var position: Vector2i = DisplayServer.screen_get_position(index)
+		var size: Vector2i = DisplayServer.screen_get_size(index)
+		if position.x + size.x > right_edge:
+			right_edge = position.x + size.x
+			screen = index
+	var area: Rect2i = DisplayServer.screen_get_usable_rect(screen)
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	DisplayServer.window_set_current_screen(screen)
+	DisplayServer.window_set_size(Vector2i(mini(1600, area.size.x - 80), mini(900, area.size.y - 100)))
+	DisplayServer.window_set_position(area.position + Vector2i(40, 40))
+	var actual := Rect2i(DisplayServer.window_get_position(), DisplayServer.window_get_size())
+	evidence.monitor = {"screen_index":screen, "usable_position":[area.position.x,area.position.y], "usable_size":[area.size.x,area.size.y], "window_position":[actual.position.x,actual.position.y], "window_size":[actual.size.x,actual.size.y]}
+	_check(area.encloses(actual) and actual.size.x >= 800 and actual.size.y >= 600, "Our rendered window fits entirely on the automatically selected rightmost monitor")
+
+func _add_notice() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 120
+	root.add_child(layer)
+	notice = Label.new()
+	notice.position = Vector2(12, 8)
+	notice.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	notice.add_theme_font_size_override("font_size", 14)
+	notice.add_theme_color_override("font_color", Color.WHITE)
+	notice.add_theme_color_override("font_outline_color", Color.BLACK)
+	notice.add_theme_constant_override("outline_size", 5)
+	layer.add_child(notice)
+
+func _notice(text: String) -> void:
+	notice.text = text
+
+func _catalog_event(id: String) -> Dictionary:
+	for event in main.game.data.events():
+		if str(event.id) == id:
+			return event.duplicate(true)
+	return {}
+
+func _event_rows() -> Array:
+	var buttons: Array = []
+	for row in main.event_buttons.get_children():
+		if row.get_child_count() == 1 and row.get_child(0) is Button:
+			buttons.append(row.get_child(0))
+	return buttons
+
+func _row_evidence() -> Array:
+	var rows: Array = []
+	for button in _event_rows():
+		var rich: Array = []
+		for label in button.find_children("*", "RichTextLabel", true, false):
+			rich.append({"text":label.text,"effect_source":label.get_meta("atlas_effect_source", "")})
+		rows.append({"name":button.accessibility_name,"tooltip":button.tooltip_text,"disabled":button.disabled,"focused":root.gui_get_focus_owner()==button,"visible":button.is_visible_in_tree(),"rich_values":rich})
+	return rows
+
+func _event_guards() -> void:
+	var event := _catalog_event("tempeldach")
+	if not _check(not event.is_empty(), "Original embedded Tempeldach event exists"):
+		return
+	_check(event.options.size() == 2 and int(event.options[0].effects.gold) == -12 and int(event.options[1].effects.gold) == -6, "Original event defines literal 12-gold repair and 6-gold tools costs")
+	evidence.controlled_event_fixture = {"scope":"CONTROLLED UI FIXTURE ONLY: original embedded Tempeldach event installed as pending; treasury explicitly set to 3, 6, 0, then 6 gold. No claim of normal income, campaign affordability or random event occurrence.","event":event,"stages":[]}
+	main.game.house().gold = 3
+	main.game.pending_event = event.duplicate(true)
+	_notice("Kontrollierte UI-Prüfung · Tempeldach · Testkasse: 3 Gold")
+	main.refresh()
+	await _settle()
+	var rows := _event_rows()
+	if not _check(main.event_layer.is_visible_in_tree() and rows.size() == 3, "At 3 gold actual Main displays two original choices and conditional decline"):
+		return
+	_check(rows[0].disabled and rows[1].disabled and not rows[2].disabled, "Both unaffordable paid choices are disabled; reward-free decline remains enabled")
+	_check(rows[0].accessibility_name.contains("−12 Gold") and rows[0].accessibility_name.contains("+10 Prestige") and rows[1].accessibility_name.contains("−6 Gold") and rows[1].accessibility_name.contains("+4 Prestige"), "Actual button accessibility names expose original full costs and benefits")
+	_check(rows[0].tooltip_text.contains("Nicht genug Gold") and rows[1].tooltip_text.contains("Nicht genug Gold"), "Disabled choices visibly explain the insufficient-gold reason")
+	var rich_values: Array = rows[1].find_children("*", "RichTextLabel", true, false)
+	_check(not rich_values.is_empty() and str(rich_values[0].get_meta("atlas_effect_source", "")).contains("−6 Gold") and rich_values[0].text.contains("[color="), "Original paid choice renders its gold cost inside the actual rich button content")
+	_check(rows[2].accessibility_name.contains("ohne Belohnung"), "Conditional decline explicitly promises no reward")
+	var before: Dictionary = main.game.snapshot()
+	main._choose(0)
+	await _settle()
+	_check(main.game.snapshot() == before and main.event_layer.visible, "Real Main/kernel rejects a forced unaffordable choice without mutation or hiding the open event")
+	rows = _event_rows()
+	rows[2].grab_focus()
+	await _settle()
+	_check(root.gui_get_focus_owner() == rows[2], "Conditional decline can hold actual keyboard focus at 3 gold")
+	evidence.controlled_event_fixture.stages.append({"gold":3,"rows":_row_evidence()})
+	await _shot("02-event-gold3-disabled-costs-and-decline")
+
+	main.game.house().gold = 6
+	_notice("Kontrollierte UI-Prüfung · bestehender Dialog per refresh · Testkasse: 6 Gold")
+	main.refresh()
+	await _settle()
+	rows = _event_rows()
+	if not _check(rows.size() == 2, "Refreshing 3 to 6 gold removes the now-unnecessary decline row"):
+		return
+	_check(rows[0].disabled and not rows[1].disabled, "At exactly 6 gold tools become affordable while 12-gold repair remains disabled")
+	_check(root.gui_get_focus_owner() == rows[1], "Focus transfers from the removed decline row to the affordable original choice")
+	_check(main.game.pending_event != null and main.event_layer.visible and int(main.game.house().gold) == 6, "Refresh preserves the pending event and treasury without selecting an outcome")
+	evidence.controlled_event_fixture.stages.append({"gold":6,"rows":_row_evidence()})
+	await _shot("03-event-gold6-refresh-and-focus")
+
+	main.game.house().gold = 0
+	_notice("Kontrollierte UI-Prüfung · bestehender Dialog per refresh · Testkasse: 0 Gold")
+	main.refresh()
+	await _settle()
+	rows = _event_rows()
+	if not _check(rows.size() == 3, "Refreshing 6 to 0 gold restores conditional decline in the open dialog"):
+		return
+	_check(rows[0].disabled and rows[1].disabled and not rows[2].disabled, "At 0 gold both paid benefits are disabled again")
+	_check(root.gui_get_focus_owner() == rows[2], "Focus transfers from the newly disabled paid choice to decline")
+	evidence.controlled_event_fixture.stages.append({"gold":0,"rows":_row_evidence()})
+	await _shot("04-event-gold0-refresh-and-focus")
+	var houses_before: Array = main.game.houses.duplicate(true)
+	rows[2].pressed.emit()
+	await _settle()
+	_check(main.game.pending_event == null and not main.event_layer.visible, "Actual decline button closes the original all-paid event")
+	_check(main.game.houses == houses_before and int(main.game.house().gold) == 0, "Actual decline grants no gold, prestige, ruler or other house benefit")
+	await _shot("05-event-declined-without-reward")
+
+	main.game.house().gold = 6
+	main.game.pending_event = event.duplicate(true)
+	_notice("Kontrollierte UI-Prüfung · echte Originalentscheidung · Werkzeug: 6 Gold")
+	main.refresh()
+	await _settle()
+	rows = _event_rows()
+	if not _check(rows.size() == 2 and not rows[1].disabled, "A fresh exact-price fixture presents the original tools decision without decline"):
+		return
+	await _shot("06-event-exact-price-before-real-button")
+	var prestige_before := int(main.game.house().prestige)
+	rows[1].pressed.emit()
+	await _settle()
+	_check(main.game.pending_event == null and not main.event_layer.visible, "Actual original decision closes its event through Main/kernel")
+	_check(int(main.game.house().gold) == 0 and int(main.game.house().prestige) == prestige_before + 4, "Actual original button pays exactly 6 gold and grants exactly 4 prestige")
+	before = main.game.snapshot()
+	main._choose(1)
+	await _settle()
+	_check(main.game.snapshot() == before, "Already completed paid event cannot be rewarded a second time")
+	evidence.controlled_event_fixture.paid_outcome = {"gold":main.game.house().gold,"prestige_before":prestige_before,"prestige_after":main.game.house().prestige}
+	await _shot("07-event-paid-with-full-cost")
+
+func _parent_drawn() -> void:
+	parent_draws += 1
+
+func _content_drawn() -> void:
+	content_draws += 1
+
+func _camera() -> Dictionary:
+	var fit: Array = main.map_view._fit()
+	return {"zoom":main.map_view.zoom,"pan":[main.map_view.pan.x,main.map_view.pan.y],"scale":fit[0],"offset":[fit[1].x,fit[1].y]}
+
+func _crop(rect: Rect2) -> Image:
+	var image: Image = root.get_texture().get_image()
+	var ratio := Vector2(image.get_size()) / root.get_visible_rect().size
+	var scaled := Rect2i(Vector2i(rect.position * ratio), Vector2i(rect.size * ratio))
+	return image.get_region(scaled.intersection(Rect2i(Vector2i.ZERO, image.get_size())))
+
+func _image_hash(image: Image) -> String:
+	var digest := HashingContext.new()
+	digest.start(HashingContext.HASH_SHA256)
+	digest.update(image.get_data())
+	return digest.finish().hex_encode()
+
+func _map_sample_rect() -> Rect2:
+	# Use actual geometry rather than assuming a percentage crop excludes the
+	# minimap at every supported window size. Keep the strip above its edge.
+	var rect: Rect2 = main.map_view.get_global_rect()
+	var sample := Rect2(rect.position + rect.size * 0.2, rect.size * 0.6)
+	var avoid: Rect2 = main.minimap.get_global_rect().grow(3.0)
+	if sample.intersects(avoid):
+		sample.size.y = maxf(0.0, minf(sample.end.y, avoid.position.y) - sample.position.y)
+	return sample
+
+func _map_hash() -> String:
+	return _image_hash(_crop(_map_sample_rect()))
+
+func _mini_hash() -> String:
+	return _image_hash(_crop(main.minimap.get_global_rect()))
+
+func _minimap_guards() -> void:
+	main._start(0)
+	main.game.speed = 0
+	main._set_map_mode("political")
+	main.map_view.zoom = 4.0
+	main.map_view.center_on(Vector2(600, 380))
+	_notice("Paketprüfung · echte Main-Karte · Kamerabewegung ohne geänderte Weltwerte")
+	await _settle()
+	var mini = main.minimap
+	var content = mini.get_node_or_null("MapContent")
+	if not _check(content is Control and mini.host == main.map_view and mini.is_visible_in_tree(), "Live Main contains visible retained MapContent connected to the actual MapView"):
+		return
+	var sample := _map_sample_rect()
+	if not _check(sample.size.x >= 32 and sample.size.y >= 32 and not sample.intersects(mini.get_global_rect().grow(2.0)), "Rendered main-map pixel sample is nonempty and geometrically excludes the actual minimap"):
+		return
+	mini.draw.connect(_parent_drawn)
+	content.draw.connect(_content_drawn)
+	# One explicit initial draw establishes that both connected signals really
+	# fire. No queue_redraw call is made on either minimap item during the pans.
+	mini.queue_redraw()
+	content.queue_redraw()
+	await _settle()
+	_check(parent_draws > 0 and content_draws > 0, "Both actual minimap CanvasItems emit initial draw signals")
+	var retained_draws := content_draws
+	var rows: Array = []
+	await _shot("08-minimap-before-camera-pans")
+	for step in 6:
+		var camera_before := _camera()
+		var map_before := _map_hash()
+		var mini_before := _mini_hash()
+		var parent_before := parent_draws
+		main.map_view.center_on(Vector2(600 + (step + 1) * 12, 380 + (step + 1) * 7))
+		await _settle()
+		var camera_after := _camera()
+		var map_after := _map_hash()
+		var mini_after := _mini_hash()
+		_check(camera_after != camera_before and map_after != map_before, "Actual camera pan %d changes transform and rendered central map pixels" % (step + 1))
+		_check(parent_draws > parent_before and mini_after != mini_before, "Actual camera pan %d redraws the minimap parent and visible viewport outline" % (step + 1))
+		_check(content_draws == retained_draws, "Actual camera pan %d preserves the retained MapContent draw count" % (step + 1))
+		rows.append({"step":step+1,"camera_before":camera_before,"camera_after":camera_after,"map_before_sha256":map_before,"map_after_sha256":map_after,"minimap_before_sha256":mini_before,"minimap_after_sha256":mini_after,"parent_before":parent_before,"parent_after":parent_draws,"content_draws":content_draws})
+	await _shot("09-minimap-after-six-real-camera-pans")
+	var mini_rect: Rect2 = mini.get_global_rect()
+	evidence.minimap = {"scope":"Actual PCK Main, actual on-tree MapView and live Minimap; CanvasItem.draw signals counted, no MockMap/subclass/copied drawing calculation. Only initial signal sanity check queues minimap redraws explicitly.","main_map_pixel_sample":[sample.position.x,sample.position.y,sample.size.x,sample.size.y],"excluded_minimap_rect":[mini_rect.position.x,mini_rect.position.y,mini_rect.size.x,mini_rect.size.y],"initial_content_draws":retained_draws,"pans":rows}
+	var target: Dictionary = main.game.province(str(main.game.house().capital))
+	var original_owner := int(target.owner)
+	var color_before: Color = main.map_view._fill_color(target)
+	var image_before := _mini_hash()
+	var draws_before := content_draws
+	_notice("Kontrollierte UI-Prüfung · echter Besitzwechsel einer Provinz zur Cache-Invalidierung")
+	target.owner = (original_owner + 1) % main.game.houses.size()
+	main.refresh()
+	await _settle()
+	_check(main.map_view._fill_color(target) != color_before, "Controlled owner change modifies the actual political map color")
+	_check(content_draws > draws_before and _mini_hash() != image_before, "Owner change redraws retained MapContent and changes rendered minimap pixels")
+	evidence.minimap.controlled_owner_change = {"scope":"CONTROLLED INVALIDATION FIXTURE ONLY: actual capital owner changed in disposable game; no normal conquest claim.","province":target.id,"before_owner":original_owner,"after_owner":target.owner,"content_before":draws_before,"content_after":content_draws,"minimap_before_sha256":image_before,"minimap_after_sha256":_mini_hash()}
+	await _shot("10-minimap-owner-invalidation")
+	draws_before = content_draws
+	image_before = _mini_hash()
+	_notice("Paketprüfung · tatsächlicher Kartenmoduswechsel Politik → Gelände")
+	main._set_map_mode("terrain")
+	await _settle()
+	_check(main.map_view.map_mode == "terrain", "Actual Main switches the live map to terrain mode")
+	_check(content_draws > draws_before and _mini_hash() != image_before, "Actual mode change invalidates retained MapContent and changes the minimap image")
+	evidence.minimap.mode_change = {"from":"political","to":main.map_view.map_mode,"content_before":draws_before,"content_after":content_draws,"minimap_before_sha256":image_before,"minimap_after_sha256":_mini_hash()}
+	evidence.minimap.final_parent_draws = parent_draws
+	evidence.minimap.final_content_draws = content_draws
+	await _shot("11-minimap-terrain-mode-invalidation")
+
+func _settle() -> void:
+	for frame in 4:
+		await process_frame
+	await RenderingServer.frame_post_draw
+
+func _shot(name: String) -> void:
+	await RenderingServer.frame_post_draw
+	var path := output.path_join(name + ".png")
+	var error := root.get_texture().get_image().save_png(path)
+	_check(error == OK, "Rendered screenshot saved: " + name)
+	if error == OK:
+		screenshots.append(path)
+
+func _check(ok: bool, label: String) -> bool:
+	results.append({"ok":ok,"label":label})
+	if not ok:
+		failures += 1
+		print("CHOICE_GUARDS_RELEASE FAIL: " + label)
+	return ok
+
+func _finish() -> void:
+	if finished:
+		return
+	finished = true
+	var report := {
+		"format":"banger-queens-choice-guards-release/v1",
+		"passed":failures==0,
+		"version":str(ProjectSettings.get_setting("application/config/version")),
+		"expected_version":expected_version,
+		"checks":results.size(),"failures":failures,"results":results,
+		"screenshots":screenshots,
+		"elapsed_ms":Time.get_ticks_msec()-started_ms,"timeout_ms":time_limit_ms,
+		"resource_scope":"res resources embedded in the launched release executable",
+		"resource_isolation":"Empty external working directory; no test imports or source-checkout resources.",
+		"render_validation":"not_run_headless" if DisplayServer.get_name()=="headless" else "rendered_root_viewport",
+		"executable":OS.get_executable_path(),"process_id":OS.get_process_id(),
+		"user_data_dir":OS.get_user_data_dir(),
+		"engine":Engine.get_version_info().string,
+		"renderer":RenderingServer.get_current_rendering_method(),
+		"viewport":[root.get_visible_rect().size.x,root.get_visible_rect().size.y],
+		"evidence":evidence,
+		"limitations":"CONTROLLED UI FIXTURES: explicit event/treasury changes and one owner change are not normal campaign progression. No physical Android, WLAN, transport or performance benchmark claim."
+	}
+	var file := FileAccess.open(output.path_join("choice-guards-result.json"), FileAccess.WRITE)
+	if file == null:
+		push_error("Cannot write choice-guards-result.json")
+		quit(2)
+		return
+	file.store_string(JSON.stringify(report, "\t") + "\n")
+	file.close()
+	print("CHOICE_GUARDS_RELEASE %s: %d checks, %d failures" % ["OK" if failures==0 else "FAIL",results.size(),failures])
+	quit(0 if failures==0 else 1)

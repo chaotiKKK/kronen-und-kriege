@@ -126,9 +126,11 @@ static func event(game) -> Dictionary:
 	if ev == null:
 		return {"title": "", "text": "", "options": []}
 	var options: Array = []
-	for opt in ev.get("options", []):
-		options.append({"label": str(opt["label"]), "chips": _effect_chips(opt.get("effects", {}))})
-	return {"id": str(ev.get("id", "")), "art":str(ev.get("art", "")), "title": str(ev["title"]), "text": str(ev["text"]), "options": options}
+	for index in ev.get("options", []).size():
+		var opt: Dictionary = ev.options[index]
+		var reason: String = game.event_option_reason(index)
+		options.append({"label": str(opt["label"]), "chips": _effect_chips(opt.get("effects", {})), "enabled":reason.is_empty(), "reason":reason})
+	return {"id": str(ev.get("id", "")), "art":str(ev.get("art", "")), "title": str(ev["title"]), "text": str(ev["text"]), "options": options, "decline_enabled":game.event_decline_reason().is_empty()}
 
 static func province(game, id: String) -> Dictionary:
 	var p: Dictionary = game.province(id)
@@ -197,6 +199,7 @@ static func tree(game) -> Dictionary:
 static func rule(game, selected: String) -> Dictionary:
 	var h: Dictionary = game.house()
 	var target: int = _target_house(game, selected)
+	var peace_reason: String = game.peace_reason(target)
 	var offices: Array = []
 	var vote_preview: Dictionary = game.council_vote_preview("land_frieden")
 	var vote_by_office: Dictionary = {}
@@ -322,7 +325,8 @@ static func rule(game, selected: String) -> Dictionary:
 		"siege_disabled": selected == "" or not game.has_claim(selected) or game.army_for(game.player).is_empty(),
 		"fleet_disabled": selected == "" or not game.can_raise_fleet(selected),
 		"blockade_disabled": selected == "" or not game.can_blockade(selected),
-		"peace_disabled": target < 0,
+		"peace_disabled": not peace_reason.is_empty(),
+		"peace_reason": peace_reason,
 		"discover_disabled": target < 0,
 		"expose_disabled": target < 0,
 		"province_hint": "Wähle auf der Karte eine eigene Provinz.",

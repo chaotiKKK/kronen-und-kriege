@@ -21,6 +21,10 @@ const TIMEOUT_MS := 8000
 # Der damalige Algorithmus band Ereignisse/Forschung, jedoch noch nicht FIELDS.
 # Ausschließlich lokale Dateien dürfen diesen historischen Wert verwenden.
 const LOCAL_UI_190_FINGERPRINT := "ca7c50860f0e76f19153a6f985117ac8de7277a0f3559ecdcba692077aebf500"
+# Tatsächlich gespeicherter Fingerabdruck der ausgeführten Gameplay-EXE.
+# Herkunft: tests/fixtures/lan-191-gameplay-schema14-provenance.json.
+# Ausschließlich lokale Dateien; der Peer-Handshake bleibt unverändert strikt.
+const LOCAL_GAMEPLAY_191_FINGERPRINT := "fcc2237b4e44b454f78a0a0721cc10ca7167289ec3c8d01ae49a455b2c98c9d3"
 static var _cached_fingerprints: Dictionary = {}
 
 var phase := "idle"
@@ -402,6 +406,8 @@ func _protect_save_target(path: String) -> Dictionary:
 		suffix = ".pre-regions-v1.bak"
 	elif _app == "1.9.1" and Save.CURRENT_VERSION == 14 and file_app in ["1.9.0","1.9.1"] and matching_catalog and Protocol.integer(envelope.get("v"),3,3) and Protocol.integer(envelope.state.get("schema_version"),13,13) and envelope.get("fingerprint") == LOCAL_UI_190_FINGERPRINT:
 		suffix = ".pre-ui191.bak" if file_app == "1.9.0" else ".pre-economy-schema13.bak"
+	elif _is_previous_gameplay_file(envelope, matching_catalog):
+		suffix = ".pre-choice-guards-v14.bak"
 	elif matching_catalog and file_app.begins_with("1.8.") and Protocol.integer(envelope.get("v"),2,Protocol.VERSION) and Protocol.integer(envelope.state.get("schema_version"),13,Save.CURRENT_VERSION):
 		suffix = ".pre-design-v%d.bak" % int(envelope.v)
 	if suffix == "":
@@ -425,6 +431,9 @@ func _protect_save_target(path: String) -> Dictionary:
 	if FileAccess.get_file_as_bytes(backup) != original:
 		return _failure("Die Sicherung der WLAN-Zieldatei ist nicht bytegleich.")
 	return _success()
+
+func _is_previous_gameplay_file(envelope: Dictionary, matching_catalog: bool) -> bool:
+	return _app == "1.9.1" and Save.CURRENT_VERSION == 14 and str(envelope.get("app", "")) == "1.9.1" and matching_catalog and Protocol.integer(envelope.get("v"), 3, 3) and Protocol.integer(envelope.state.get("schema_version"), 14, 14) and envelope.get("fingerprint") == LOCAL_GAMEPLAY_191_FINGERPRINT
 
 func load_host_lobby(path: String = "user://lan_partie.json") -> Dictionary:
 	if not is_host or phase != "lobby":
@@ -450,15 +459,22 @@ func load_host_lobby(path: String = "user://lan_partie.json") -> Dictionary:
 	# Both shipped executables wrote this actual schema13 fingerprint. Their
 	# local saves migrate; a same-app peer with the old content still cannot join.
 	var previous_economy: bool = _app == "1.9.1" and Save.CURRENT_VERSION == 14 and file_app in ["1.9.0","1.9.1"] and matching_catalog and Protocol.integer(envelope.get("v"),3,3) and Protocol.integer(envelope.state.get("schema_version"),13,13) and envelope.get("fingerprint") == LOCAL_UI_190_FINGERPRINT
-	if not current_schema and not legacy_file and not old_regional and not previous_economy:
+	var previous_gameplay := _is_previous_gameplay_file(envelope, matching_catalog)
+	if not current_schema and not legacy_file and not old_regional and not previous_economy and not previous_gameplay:
 		return _failure("Das ältere WLAN-Spielstandformat besitzt keinen belegten Migrationspfad.")
-	if error != "" and not legacy_file and not old_regional and not previous_economy:
+	if error != "" and not legacy_file and not old_regional and not previous_economy and not previous_gameplay:
 		return _failure(error)
 	var restored = GameScript.new(_data, 0)
 	if not restored.restore(envelope.state) or restored.human_houses.size() < 2:
 		return _failure("Der WLAN-Spielstand enthält keine gültige gemeinsame Partie.")
-	if legacy_file or previous_economy or (old_regional and error != ""):
-		var suffix := ".pre-regions-v1.bak" if legacy_file else (".pre-ui191.bak" if previous_economy and file_app == "1.9.0" else (".pre-economy-schema13.bak" if previous_economy else ".pre-design-v%d.bak" % int(envelope.v)))
+	if legacy_file or previous_economy or previous_gameplay or (old_regional and error != ""):
+		var suffix := ".pre-regions-v1.bak"
+		if previous_gameplay:
+			suffix = ".pre-choice-guards-v14.bak"
+		elif previous_economy:
+			suffix = ".pre-ui191.bak" if file_app == "1.9.0" else ".pre-economy-schema13.bak"
+		elif old_regional:
+			suffix = ".pre-design-v%d.bak" % int(envelope.get("v", 0))
 		var backup := path + suffix
 		if FileAccess.file_exists(backup) and FileAccess.get_file_as_bytes(backup) != original_bytes:
 			var context := HashingContext.new()

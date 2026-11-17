@@ -13,6 +13,7 @@ var main
 var _bench_redraw := false
 var _bench_pan := false
 var _samples: Array[float] = []
+var _sampling := false
 var _checks: int = 0
 
 func _ready() -> void:
@@ -26,6 +27,9 @@ func _ready() -> void:
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	Engine.max_fps = 0
 	main._start(2)
+	# Keep appearance and text geometry fixed across fresh benchmark profiles.
+	main.get_meta("modern_interface").set_appearance(3)
+	main.get_meta("modern_interface").set_text_scale(1.0)
 	main.game.speed = 0
 	main._set_map_mode("political")
 	main.map_view.select("")
@@ -56,6 +60,7 @@ func _ready() -> void:
 		tex.get_size() if tex != null else Vector2.ZERO,
 		DisplayServer.window_get_vsync_mode(),
 	])
+	print("MAPPERF settings theme=%s text_scale=%s ui_scale=%s" % [main.settings.get("ui_theme"), main.settings.get("text_scale"), main.settings.get("ui_scale")])
 
 	await _run_measurement("overview-idle", false)
 	await _run_measurement("overview-redraw", true)
@@ -104,12 +109,16 @@ func _process(delta: float) -> void:
 
 func _run_measurement(label: String, redraw: bool, pan_camera: bool = false) -> void:
 	_bench_redraw = redraw
-	_bench_pan = pan_camera
+	# Warm up at the same camera position. Moving for a fixed frame count
+	# would give slower builds a longer path before the timed comparison.
+	_bench_pan = false
 	main.map_view.queue_redraw()
 	for i in WARMUP_FRAMES:
 		await get_tree().process_frame
 	_samples.clear()
 	var sampled_pan_start: Vector2 = main.map_view.pan
+	_bench_pan = pan_camera
+	_sampling = true
 	var started: int = Time.get_ticks_usec()
 	var last: int = started
 	while Time.get_ticks_usec() - started < int(SAMPLE_SECONDS * 1_000_000.0):
@@ -117,6 +126,7 @@ func _run_measurement(label: String, redraw: bool, pan_camera: bool = false) -> 
 		var now: int = Time.get_ticks_usec()
 		_samples.append(float(now - last) / 1000.0)
 		last = now
+	_sampling = false
 	var elapsed: float = float(last - started) / 1_000_000.0
 	var fps: float = float(_samples.size()) / maxf(elapsed, 0.0001)
 	if not _expect(_samples.size() > 0, "Keine Messframes für %s." % label):

@@ -89,10 +89,11 @@ func exercise_army(inspector, home: String) -> void:
 		if int(p.owner) != g.player and g.is_border_province(g.player,p.id):
 			foreign = p.id
 			break
+	g._remove_claim(foreign,g.player)
 	main._on_province_selected(foreign)
 	await settle()
 	check(not inspector.section_buttons.buildings.visible and not inspector.section_buttons.research.visible, "Fremde Region hat keine eigene Verwaltung")
-	check(inspector.action_buttons.siege.visible and inspector.action_buttons.siege.disabled, "Fremde Region bietet verständlich gesperrte Belagerung statt Bauoptionen")
+	check(not inspector.action_buttons.siege.visible, "Ohne Anspruch erscheint keine nachgelagerte Belagerungsaktion")
 	if DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png("res://build/verify/war-foreign.png")

@@ -79,6 +79,53 @@ func _ready() -> void:
 	var before: int = int(main.game.house().gold)
 	first.pressed.emit()
 	_check(int(main.game.house().gold) == before + 45 and main.game.pending_event == null, "Kompakter Button führt die Entscheidung nicht korrekt aus.")
+	# A paid benefit must not remain clickable when the treasury cannot pay.
+	# The two all-paid catalogue events need a visible, reward-free escape.
+	main.game.house().gold = 3
+	for event in DataScript.events():
+		if str(event.id) == "tempeldach":
+			main.game.pending_event = event
+	main._show_event()
+	await get_tree().process_frame
+	rows = main.event_buttons.get_children()
+	_check(rows.size() == 3, "Nur unbezahlbare Originaloptionen benötigen eine zusätzliche Ablehnung.")
+	_check(rows[0].get_child(0).disabled and rows[1].get_child(0).disabled, "Unbezahlbare Vorteile müssen im Ereignisdialog gesperrt sein.")
+	_check(rows[0].get_child(0).tooltip_text.to_lower().contains("nicht genug gold"), "Die gesperrte Entscheidung erklärt das fehlende Gold.")
+	main._choose(0)
+	_check(main.game.pending_event != null and main.event_layer.visible, "Eine vom Modell abgewiesene Entscheidung darf das noch offene Ereignis nicht verstecken.")
+	if rows.size() == 3: rows[2].get_child(0).grab_focus()
+	main.game.house().gold = 6
+	main.refresh()
+	await get_tree().process_frame
+	rows = main.event_buttons.get_children()
+	_check(rows.size() == 2 and not rows[1].get_child(0).disabled, "Laufendes Einkommen aktualisiert bezahlbare Optionen im schon offenen Ereignis ohne erneutes Öffnen.")
+	_check(rows.size() == 2 and get_viewport().gui_get_focus_owner() == rows[1].get_child(0), "Entfallende Ablehnung übergibt Tastaturfokus an die bezahlbare Originalentscheidung.")
+	main.game.house().gold = 0
+	main.refresh()
+	await get_tree().process_frame
+	rows = main.event_buttons.get_children()
+	_check(rows.size() == 3 and rows[0].get_child(0).disabled and rows[1].get_child(0).disabled, "Sinkendes Gold ergänzt den nötigen Ablehnungsweg im offenen Ereignis.")
+	_check(rows.size() == 3 and get_viewport().gui_get_focus_owner() == rows[2].get_child(0), "Gesperrte Originalentscheidung übergibt Fokus an den bedingten Ablehnungsweg.")
+	main.game.house().gold = 3
+	main.refresh()
+	await get_tree().process_frame
+	rows = main.event_buttons.get_children()
+	if rows.size() == 3:
+		var declined_before: Dictionary = main.game.house().duplicate(true)
+		rows[2].get_child(0).pressed.emit()
+		_check(main.game.pending_event == null and main.game.house().gold == 3, "Ablehnung beendet die Geldsackgasse ohne Abbuchung.")
+		_check(main.game.house().ruler == declined_before.ruler and main.game.house().prestige == declined_before.prestige, "Ablehnung darf keinen bezahlten Vorteil gewähren.")
+	main.game.house().gold = 6
+	for event in DataScript.events():
+		if str(event.id) == "tempeldach":
+			main.game.pending_event = event
+	main._show_event()
+	await get_tree().process_frame
+	rows = main.event_buttons.get_children()
+	_check(rows.size() == 2 and rows[0].get_child(0).disabled and not rows[1].get_child(0).disabled, "Exakt sechs Gold erlauben Werkzeug, aber keine zwölf Gold teure Reparatur und keinen unnötigen Zusatzbutton.")
+	var prestige_before: int = main.game.house().prestige
+	rows[1].get_child(0).pressed.emit()
+	_check(main.game.pending_event == null and main.game.house().gold == 0 and main.game.house().prestige == prestige_before + 4, "Der freigegebene Originalbutton zahlt den vollen Preis und gewährt genau seine Wirkung.")
 	print("EVENTCHOICETEST %s; %d Prüfungen." % ["OK" if failures == 0 else "FAIL", checks])
 	get_tree().quit(0 if failures == 0 else 1)
 

@@ -2612,8 +2612,8 @@ func _focus_field_army() -> void:
 	get_meta("modern_interface").province_inspector.show_section("army")
 
 func _on_province_activated(id: String) -> void:
-	if id != "" and selected == id:
-		_show_province()
+	if id != "":
+		_on_province_selected(id)
 
 func _on_atlas_location_selected(_record: Dictionary) -> void:
 	_refresh_map_header()
@@ -2683,7 +2683,7 @@ func _dispatch(command: Dictionary) -> Dictionary:
 		else:
 			var intent := command.duplicate(true)
 			intent["selection"] = selected
-			if intent.get("id") == "apply_event" and game != null:
+			if intent.get("id") in ["apply_event", "decline_event"] and game != null:
 				intent["event_instance"] = game.pending_event_instance()
 			network_result = lan_session.submit(intent)
 		if not str(network_result.get("message", "")).is_empty():
@@ -2839,8 +2839,14 @@ func _load() -> bool:
 	return true
 
 func _choose(index: int) -> void:
-	_dispatch({"id": "apply_event", "option": index})
-	if not _lan_active():
+	_resolve_event_command({"id": "apply_event", "option": index})
+
+func _decline_event() -> void:
+	_resolve_event_command({"id": "decline_event"})
+
+func _resolve_event_command(command: Dictionary) -> void:
+	var result: Dictionary = _dispatch(command)
+	if not _lan_active() and bool(result.get("ok", false)):
 		_hide_event()
 
 func _hide_event() -> void:
@@ -2912,6 +2918,8 @@ func refresh() -> void:
 		_hide_event()
 	if bool(vm["has_event"]) and not event_layer.visible and not (_lan_active() and lan_menu.visible):
 		_show_event()
+	elif bool(vm["has_event"]) and event_layer.visible and event_layer.get_meta("event_view", {}) != ViewModelBuilder.event(game):
+		_show_event(false)
 	if tree_layer.visible:
 		_refresh_tree()
 	if rule_layer != null and rule_layer.visible:
@@ -3848,8 +3856,13 @@ func _apply_event_art(art_key: String) -> void:
 	if event_art_fallback != null:
 		event_art_fallback.visible = tex == null
 
-func _show_event() -> void:
+func _show_event(play_sound: bool = true) -> void:
+	var focus_index := -1
+	var focused := get_viewport().gui_get_focus_owner()
+	if focused is Button and focused.get_parent() != null and focused.get_parent().get_parent() == event_buttons:
+		focus_index = focused.get_parent().get_index()
 	var vm: Dictionary = ViewModelBuilder.event(game)
+	event_layer.set_meta("event_view", vm)
 	event_title.text = str(vm["title"])
 	event_text.text = str(vm["text"])
 	var outline := Color(1, 1, 1, 0.95) if ModernInterfaceScript.is_light() else Color(0.015, 0.035, 0.05, 0.95)
@@ -3876,6 +3889,10 @@ func _show_event() -> void:
 		var effects: String = tags.sub(str(opt["chips"]), "", true)
 		var choose := _button("", Callable(self, "_choose").bind(i), "")
 		choose.accessibility_name = label + (" — " + effects if effects != "" else "")
+		var reason: String = str(opt.get("reason", ""))
+		choose.disabled = not bool(opt.get("enabled", true))
+		if not reason.is_empty():
+			choose.accessibility_name += " — " + reason
 		choose.tooltip_text = choose.accessibility_name
 		choose.custom_minimum_size = Vector2(0, 64 * ModernInterfaceScript.text_scale)
 		choose.set_meta("rich_choice", true)
@@ -3909,13 +3926,32 @@ func _show_event() -> void:
 		content.add_child(effect_values)
 		row.add_child(choose)
 		event_buttons.add_child(row)
+	if bool(vm.get("decline_enabled", false)):
+		var row := VBoxContainer.new()
+		var decline := _button("Derzeit ablehnen · ohne Unterstützung", Callable(self, "_decline_event"), "")
+		decline.custom_minimum_size = Vector2(0, 48 * ModernInterfaceScript.text_scale)
+		decline.accessibility_name = "Derzeit ablehnen · ohne Unterstützung und ohne Belohnung"
+		decline.tooltip_text = decline.accessibility_name
+		row.add_child(decline)
+		event_buttons.add_child(row)
 	kernel.push_modal("event")
 	event_layer.visible = true
 	if has_meta("modern_interface"):
 		get_meta("modern_interface")._scale_text(event_layer)
 		get_meta("modern_interface")._fit_dialogs()
 		get_meta("modern_interface").call_deferred("_fit_dialogs")
-	_play_open()
+	if focus_index >= 0:
+		var rows := event_buttons.get_children()
+		var next_focus: Button = rows[focus_index].get_child(0) if focus_index < rows.size() else null
+		if next_focus == null or next_focus.disabled:
+			for row in rows:
+				if not row.get_child(0).disabled:
+					next_focus = row.get_child(0)
+					break
+		if next_focus != null and not next_focus.disabled:
+			next_focus.grab_focus()
+	if play_sound:
+		_play_open()
 
 # --- Zeitlauf ------------------------------------------------------------
 

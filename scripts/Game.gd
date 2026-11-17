@@ -1379,6 +1379,14 @@ func can_attack(id: String) -> bool:
 		return false
 	if not bool(disabled_edges.get("K7", false)) and truce_until(target_house) > _now():
 		return false
+	return attack_in_range(id)
+
+func attack_in_range(id: String) -> bool:
+	# Dieselbe Reichweite für Aktion und Kontextanzeige, unabhängig von Gold,
+	# Anspruch und vorübergehenden diplomatischen Sperren.
+	var p := province(id)
+	if p.is_empty() or int(p.owner) == player:
+		return false
 	var target_kingdom: String = str(p["kingdom"])
 	for q in owned():
 		if neighbours(str(q["id"])).has(id):
@@ -3947,10 +3955,21 @@ func _capture_province(province_id: String, new_owner: int) -> void:
 			break
 	_note_for_house(new_owner, "Die Belagerung nimmt %s ein." % p["name"])
 
-func make_peace(target_house: int, house_index: int = -1) -> Dictionary:
+func peace_reason(target_house: int, house_index: int = -1) -> String:
 	var hi: int = player if house_index < 0 else house_index
+	if hi < 0 or hi >= houses.size():
+		return "Ungültiges Haus."
 	if target_house < 0 or target_house >= houses.size() or target_house == hi:
-		return _res(false, "Ungültiger Friedenspartner.")
+		return "Ungültiger Friedenspartner."
+	if truce_until(target_house, hi) > _now():
+		return "Es gilt bereits ein Waffenstillstand; noch %d Monate." % (truce_until(target_house, hi) - _now())
+	return ""
+
+func make_peace(target_house: int, house_index: int = -1) -> Dictionary:
+	var reason := peace_reason(target_house, house_index)
+	if reason != "":
+		return _res(false, reason)
+	var hi: int = player if house_index < 0 else house_index
 	var h: Dictionary = houses[hi]
 	_resolve([
 		{"edge": "K6", "source": "Krieg", "target": "Diplomatie",
@@ -4283,17 +4302,48 @@ func force_marry_captive() -> Dictionary:
 
 # --- Ereignisse ----------------------------------------------------------
 
-func apply_event(option_index: int) -> void:
+func event_option_reason(option_index: int) -> String:
 	if pending_event == null:
-		return
+		return "Kein offenes Ereignis."
 	var options: Array = pending_event["options"]
 	if option_index < 0 or option_index >= options.size():
-		return
+		return "Ungültige Ereignisoption."
+	var cost := maxi(0, -int(options[option_index].get("effects", {}).get("gold", 0)))
+	if cost > maxi(0, int(house()["gold"])):
+		return "Nicht genug Gold: Diese Entscheidung kostet %d Gold." % cost
+	return ""
+
+func event_decline_reason() -> String:
+	if pending_event == null:
+		return "Kein offenes Ereignis."
+	var options: Array = pending_event["options"]
+	if options.is_empty():
+		return "Keine Ereignisoptionen vorhanden."
+	for index in options.size():
+		if event_option_reason(index) == "":
+			return "Mindestens eine ursprüngliche Entscheidung ist bezahlbar."
+	return ""
+
+func decline_event() -> Dictionary:
+	var reason := event_decline_reason()
+	if reason != "":
+		return _res(false, reason)
+	note("%s: Die Unterstützung wird derzeit ohne Belohnung abgelehnt." % pending_event["title"])
+	pending_event = null
+	event_timer = randi_range(7, 14)
+	return _res(true, "Unterstützung derzeit abgelehnt.")
+
+func apply_event(option_index: int) -> Dictionary:
+	var reason := event_option_reason(option_index)
+	if reason != "":
+		return _res(false, reason)
+	var options: Array = pending_event["options"]
 	var opt: Dictionary = options[option_index]
 	_apply_effects(opt["effects"])
 	note("%s: %s" % [pending_event["title"], opt["label"]])
 	pending_event = null
 	event_timer = randi_range(7, 14)
+	return _res(true, "Entscheidung umgesetzt.")
 
 func _apply_effects(e: Dictionary) -> void:
 	var h := house()

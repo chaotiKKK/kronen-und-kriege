@@ -128,6 +128,10 @@ func refresh(game, province_id: String = "") -> void:
 	if game == null or not is_instance_valid(_root):
 		return
 	_game = game
+	var province: Dictionary = game.province(province_id)
+	if not province.is_empty() and int(province.owner) != int(game.player):
+		province = {}
+		province_id = ""
 	_province_id = province_id
 	var house: Dictionary = game.house()
 	var research: Dictionary = house.research
@@ -142,11 +146,8 @@ func refresh(game, province_id: String = "") -> void:
 		_pending_id = ""
 	status_label.text = "Gastgeber bestätigt das Forschungsprojekt …" if pending else _message
 	scope_label.text = "Forschung gilt für das gesamte Haus %s. Geländeabhängige Wirkungen greifen nur in passenden eigenen Regionen." % house.name
-	var province: Dictionary = game.province(province_id)
 	if not province.is_empty():
 		scope_label.text += " Ausgewähltes Gebiet: %s." % province.name
-		if int(province.owner) != int(game.player):
-			scope_label.text += " Dieses Gebiet gehört einem anderen Haus; örtliche Vorteile gelten erst bei eigenem Besitz."
 	progress_bar.visible = not active.is_empty()
 	if active.is_empty():
 		_main.research_label.text = "%d von %d Innovationen erforscht · kein Projekt aktiv · Straßenhandel: +%d Gold/Jahr" % [known.size(), Definitions.INNOVATIONS.size(), game.road_income()]

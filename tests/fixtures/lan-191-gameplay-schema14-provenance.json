@@ -1,0 +1,14 @@
+{
+  "fixture_sha256": "6def99ffb42c1ced6a52d03d12afa525105a3ed44bf8555daa6c29358d7b74c4",
+  "source_file": "build/verify/lan-release-1.9.1-20261117-164116-638-0bac5768/host/profile/appdata/Godot/app_userdata/Kronen und Kriege/lan_partie.json",
+  "receipt": "build/verify/lan-release-1.9.1-20261117-164116-638-0bac5768/host-result.json",
+  "producer_exe": "build/exports/banger-queens-1.9.1-gameplay.exe",
+  "producer_exe_sha256": "f24506e2b152d554641c95f893ab1bf78cb297c0447ae1cf27d26631b31843b7",
+  "observed_host_pid": 34144,
+  "run_id": "0bac5768f3654b8985e5c9e086704658",
+  "app": "1.9.1",
+  "wire": 3,
+  "schema": 14,
+  "fingerprint": "fcc2237b4e44b454f78a0a0721cc10ca7167289ec3c8d01ae49a455b2c98c9d3",
+  "scope": "Exact unmodified bytes saved by the actually executed historical EXE during its two-process package acceptance; not a regenerated candidate."
+}

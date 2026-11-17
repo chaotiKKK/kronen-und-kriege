@@ -169,11 +169,19 @@ func _economic_fixture() -> void:
 	ui.set_touch_layout(false)
 	inspector.show_section("research")
 	await _present()
+	_check(inspector.section_tabs.columns == 3 and not inspector.section_buttons.achievements.visible,"Own province has three compact administration sections")
+	var duplicate_research_actions := 0
+	for button in inspector.sections.research.find_children("*","Button",true,false):
+		if button.is_visible_in_tree() and button.text.contains("Gold"): duplicate_research_actions += 1
+	_check(duplicate_research_actions == 0,"Province knowledge contains no duplicate research-purchase catalog")
 	if not _funds(20): return
-	var survey: Button = inspector.action_buttons["research:surveying"]
+	inspector.action_buttons.research_plan.pressed.emit()
+	_check(main.infrastructure_layer.visible,"Province knowledge opens the single shared research plan")
+	var survey: Button = main.research_buttons.surveying
 	before = int(game.house().gold)
 	survey.pressed.emit()
 	_check(game.house().research.active == "surveying" and int(game.house().gold) == before-20,"Real research button starts Vermessung for20gold")
+	main._hide_infrastructure()
 	_advance(5)
 	_check(not game.house().research.known.has("surveying"),"Vermessung is not completed before six real months")
 	_advance(1)
@@ -223,6 +231,9 @@ func _economic_fixture() -> void:
 	main._on_province_selected(foreign)
 	await _present()
 	_check(not inspector.focus_picker.is_visible_in_tree(),"Foreign province offers no own focus administration")
+	_check(not inspector.section_buttons.buildings.visible and not inspector.section_buttons.research.visible,"Foreign province offers no own building or research section")
+	main._on_province_activated(foreign)
+	_check(main.side_panel.visible and not main.province_layer.visible,"Province activation keeps the one right-side inspector")
 	await _shot("foreign-province")
 	_save_roundtrip(game)
 	_controlled_interruptions(game,from_id,to_id)

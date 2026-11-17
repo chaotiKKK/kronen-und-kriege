@@ -41,6 +41,29 @@ func _ready() -> void:
 	for extra in other_guests:
 		check(await until(func(): return extra.phase == "playing"), "Dritter/vierter Gast erhält Spiel")
 		check(Protocol.world_hash(extra.game.snapshot()) == Protocol.world_hash(host.game.snapshot()), "Vier Sitzwelten identisch")
+	# Real guest UI must send the nonce for the reward-free event escape too.
+	var host_event_before = h.game.pending_event
+	h.game.select_player_context(1)
+	h.game.house().gold = 0
+	for event in load("res://scripts/Data.gd").events():
+		if str(event.id) == "tempeldach": h.game.pending_event = event.duplicate(true)
+	h.game._event_instance += 1
+	h.game.select_player_context(0)
+	# The controlled host fixture is a new authoritative state, not a replay
+	# of the start-match snapshot (clients correctly ignore equal revisions).
+	h.revision += 1
+	h._broadcast_snapshot()
+	check(await until(func(): return g.game.pending_event != null and str(g.game.pending_event.id) == "tempeldach"), "Gast erhält sein unbezahlbares Ereignis")
+	guest.refresh()
+	var decline_button: Button
+	for row in guest.event_buttons.get_children():
+		if row.get_child_count() > 0 and row.get_child(0) is Button and row.get_child(0).text.contains("Derzeit ablehnen"):
+			decline_button = row.get_child(0)
+	check(decline_button != null and not decline_button.disabled, "Gast kann die bedingte Ablehnung im echten Ereignisdialog bedienen")
+	if decline_button != null:
+		decline_button.pressed.emit()
+		check(await until(func(): return not g.pending_command and g.game.pending_event == null), "Gast-UI sendet gültige Ereignisinstanz; Host bestätigt Ablehnung")
+		check(int(g.game.house().gold) == 0 and h.game.pending_event == host_event_before, "Ablehnung gibt kein Gold und beantwortet kein fremdes Hostereignis")
 	guest._on_province_selected(str(host.game.houses[0].capital))
 	guest.map_view.zoom_by(1.2)
 	var local_pan: Vector2 = guest.map_view.pan

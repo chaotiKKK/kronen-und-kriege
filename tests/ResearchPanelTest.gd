@@ -75,6 +75,26 @@ func _ready() -> void:
 	main.game.province(selected).terrain = "mountains"
 	panel.refresh(main.game, selected)
 	check(panel.applicability_labels["crop_rotation"].text.contains("nicht") and panel.scope_label.text.contains(str(main.game.province(selected).name)), "Unpassendes Gelände in ausgewählter Region wird erklärt")
+	var foreign: Dictionary = {}
+	for province in main.game.provinces:
+		if int(province.owner) != main.game.player:
+			foreign = province
+			break
+	check(not foreign.is_empty(), "Echte fremde Provinz für den Forschungs-Kontextwechsel vorhanden")
+	if not foreign.is_empty():
+		foreign.terrain = "mountains"
+		var snapshot: Dictionary = main.game.snapshot()
+		panel.refresh(main.game, str(foreign.id))
+		check(panel.scope_label.text.contains(str(main.game.house().name)) and not panel.scope_label.text.contains(str(foreign.name)), "Fremde Auswahl zeigt ausschließlich den hausweiten Forschungs-Geltungsbereich des eigenen Hauses")
+		var foreign_local_context := false
+		for label in panel.applicability_labels.values():
+			if label.text.contains("Hier anwendbar") or label.text.contains("In dieser Region"):
+				foreign_local_context = true
+		check(not foreign_local_context, "Fremde Provinz erzeugt keine örtlichen Anwendbarkeitsangaben im hausweiten Forschungsplan")
+		check(not main.research_buttons["crop_rotation"].disabled and main.research_buttons["surveying"].text.contains("Erforscht"), "Fremde Auswahl lässt legale eigene Forschung und bekannte Innovationen unverändert verfügbar")
+		panel.refresh(main.game, selected)
+		check(panel.scope_label.text.contains(str(main.game.province(selected).name)) and panel.applicability_labels["crop_rotation"].text.contains("In dieser Region nicht anwendbar"), "Rückwechsel zu eigenem Bergland stellt dessen örtliche Forschungswirkung wieder her")
+		check(main.game.snapshot() == snapshot, "Forschungs-Kontextwechsel verändert weder Provinzen noch Forschungsstand oder Geld")
 	main.game.house().gold = 0
 	panel.refresh(main.game, selected)
 	check(main.research_buttons["crop_rotation"].disabled and panel.reason_labels["crop_rotation"].text.contains("Gold"), "Goldmangel bleibt sichtbar statt nur als Tooltip")

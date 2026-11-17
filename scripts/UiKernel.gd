@@ -125,8 +125,10 @@ func _route(id: String, command: Dictionary) -> Dictionary:
 			var options: Array = game.pending_event.get("options", [])
 			if option < 0 or option >= options.size():
 				return _blocked("invalid", "Ungültige Ereignisoption.")
-			game.apply_event(option)
-			raw = {"ok": true, "msg": ""}
+			raw = game.apply_event(option)
+			log_result = false
+		"decline_event":
+			raw = game.decline_event()
 			log_result = false
 		"set_speed":
 			var speed := clampi(int(command.get("value", 0)), 0, 3)
@@ -216,6 +218,8 @@ func _route(id: String, command: Dictionary) -> Dictionary:
 			if peace_target < 0:
 				return _blocked("no_target", "Kein fremdes Ziel gewählt.")
 			raw = game.make_peace(peace_target)
+			if not bool(raw.get("ok", false)):
+				log_result = false
 		"secret_discover":
 			var discover_target := target_house()
 			if discover_target < 0:
