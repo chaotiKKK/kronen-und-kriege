@@ -36,6 +36,8 @@ mkdir -p "$LOGDIR"
 
 # Logik- und UI-Tests ohne Renderpfad.
 HEADLESS=(
+	GameRegionDataTest
+	GameRegionCatalogTest
 	LanProtocolTest
 	LanAuthorityTest
 	LanGameStateTest

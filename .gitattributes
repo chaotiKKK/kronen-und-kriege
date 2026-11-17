@@ -5,3 +5,11 @@
 /data/atlas.json text eol=lf
 /data/atlas_geometry.bin binary
 /assets/map/atlas_terrain.webp binary
+# Region fingerprints hash exact JSON and generator bytes across platforms.
+/data/europe_geometry.json text eol=lf
+/data/game_regions.json text eol=lf
+/data/game_region_sources.json text eol=lf
+/data/game_region_geometry.bin binary
+/tools/game_regions.py text eol=lf
+/tools/build_game_regions.py text eol=lf
+/tools/test_game_regions.py text eol=lf

@@ -1,5 +1,22 @@
 # Vergleichbare echte Verwaltungsebenen – verbleibende 15 Gebiete
 
+## Aktive Fortsetzung am 17. November 2026
+
+Der Quellstand wurde aus GitHub 7e127e4 unter F:\Crusader Kings III v1.18.3\banger-queens-recovery-20261117 wiederhergestellt. Der frühere C:-Checkout und sein nicht gepushter Branch sind nicht mehr vorhanden. Nutzer nennt F: als Projektort und die EXE 1.6.1 als vorhandenes Paket. Das Paket bleibt erhalten. Die nachfolgenden historischen Atlasabschnitte bleiben als Belege stehen.
+
+Aktueller freigegebener Auftrag: Option 2 vollständig, inline ohne Subagenten. Rund 108 ausgewogene Spielregionen, vollständiger passiver Detailatlas, deutsche Touchoberfläche, keine zusätzlichen Inhaltsimporte. Startwirtschaft 762 und Aufgebot 24.240 erhalten. Schema 13 und WLAN-Protokoll 2 folgen erst mit geprüfter Migration. Version 1.7.0 bleibt Rückfallstand.
+
+1. Quellstand, Plan und Testumgebung wiederherstellen: **Status:** complete.
+2. Deterministischen Regionsgenerator und strikte Verträge rekonstruieren, reale Daten doppelt bauen: **Status:** complete (14 Pythonprüfungen; tatsächliche Atlasgrenzen; vier belegte harte Flächenausnahmen; Eingabefreeze der veröffentlichten Datensnapshots, originale Rohcaches nicht vorhanden).
+3. Runtimekatalog mit Hashprüfung und Raumindex einbinden: **Status:** complete (441 Godotprüfungen).
+4. Wertefluss und Data/Game auf Regionen umstellen: **Status:** in_progress (Adapter, Startwerte, jährliche Basiswirtschaft und neuer Save-Roundtrip geprüft; Rekrutierungs-/KI-/Gebäudewirkungsgewichtung und reguläre Menüaktivierung fehlen).
+5. Spielstandmigration Schema 12→13, Backup und WLAN-Protokoll 2: **Status:** pending.
+6. Kartenmodi, Suche, Vorschauen, Lesbarkeit und Touch: **Status:** pending.
+7. Befehle, sichtbare Infrastruktur, WLAN-Komfort und Spielablauf: **Status:** pending.
+8. Regressionen, reproduzierbare Windows-/Android-Pakete und reale Geräteabnahme: **Status:** pending.
+
+Nächste Aktion: Rekrutierungs-/Gebäudegewichtung abschließen und gemischte Schema-12-Besitzer in einer separaten Regionsmigration erhalten; erst nach Atomaritäts-, Integritäts- und Verlustfreiheitsnachweis den regulären Menüstarter umstellen. Kein Telefon ohne erneuten exklusiven Slot.
+
 Stand: 10. November 2026. Fortsetzung des genehmigten Atlasentwurfs; die veröffentlichte Version 1.6.0 bleibt als Rückfallstand erhalten.
 
 ## Ziel und Abnahme

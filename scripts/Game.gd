@@ -3030,13 +3030,27 @@ func faction_power(house_index: int = -1) -> int:
 		power = maxi(power, int(faction.get("power", 0)))
 	return power
 
+func region_income(region: Dictionary) -> int:
+	if not region.has("base_income"):
+		return int(region["dev"]) * 4
+	var development_delta := int(region["dev"]) - int(region.get("initial_dev", region["dev"]))
+	return maxi(0, int(region["base_income"]) + roundi(development_delta * 4.0 * float(region.get("economic_share", 1.0))))
+
+func region_income_total() -> int:
+	var total := 0
+	for region in provinces:
+		total += region_income(region)
+	for h in houses:
+		total += int(int(h["ruler"]["stewardship"]) / 4)
+	return total
+
 func _apply_house_economy(i: int) -> void:
 	var h: Dictionary = houses[i]
 	var r: Dictionary = h["ruler"]
 	var base: int = int(int(r["stewardship"]) / 4)
 	for p in provinces:
 		if int(p["owner"]) == i:
-			base += int(p["dev"]) * 4
+			base += region_income(p)
 	h["gold"] = int(h["gold"]) + base
 	_apply_tax_income(i, base)
 	_apply_market_income(i)
