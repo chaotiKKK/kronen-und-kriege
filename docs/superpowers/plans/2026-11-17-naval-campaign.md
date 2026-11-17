@@ -77,6 +77,6 @@ Files: `tools/run_all_tests.sh`, release helpers, export preset Androidcode17, n
 - [x] Freeze actual source/data; run necessary full regression and focused corrections with honest separate receipts. Review rules and migration independently.
 - [x] Build separate `1.9.1-naval` EXE/APK only after source checks. Verify embedded data/logic, native branding/version, Android sign/alignment and previous signing identity.
 - [x] Run exported ordinary Wessex flow, save/restore, two real peers, and project-only Android emulator when resources permit. No physical phone claim.
-- [ ] Deliver actual packages/report and push only scoped source/docs. Keep overall gameplay objective active until broader balance/fun/performance requirements are verified.
+- [x] Deliver actual packages/report and push only scoped source/docs. Keep overall gameplay objective active until broader balance/fun/performance requirements are verified.
 
 Self-review: Every spec unit has a task above. Runtime routes and raw data ownership are isolated. Unknown route IDs cannot create land edges, schema changes are coordinated with both fixed-field fleet rebuilders, and current tests must not rewrite genuine old file metadata. Specifying one admitted first crossing is a data gate and meaningful first integration, not a narrowed definition of the overall game objective.
