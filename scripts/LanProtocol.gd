@@ -14,8 +14,10 @@ const FIELDS := {
 	"continue_sandbox":{}, "develop":{}, "recruit":{}, "attack":{}, "court":{}, "bed":{},
 	"ransom":{}, "force_marry":{}, "law_succession":{}, "set_tax":{}, "upgrade_court_hall":{},
 	"pilgrimage":{}, "suppress_heresy":{}, "reform_faith":{}, "claim":{}, "army":{},
-	"siege":{}, "fleet":{}, "blockade":{}, "peace":{}, "secret_discover":{}, "secret_expose":{},
+	"siege":{}, "march":{}, "fleet":{}, "blockade":{}, "peace":{}, "secret_discover":{}, "secret_expose":{},
+	"select_army":{"army":"army_id"},
 	"research":{"innovation":"text"}, "road":{"to":"text"}, "build":{"key":"text"},
+	"province_focus":{"focus":"text"},
 	"marry":{"target":"house"}, "seduce":{"target":"house"}, "murder":{"target":"house"},
 	"kidnap":{"target":"house"}, "declare_holy_war":{"target":"house"},
 	"apply_event":{"option":"option", "event_instance":"sequence"},
@@ -57,7 +59,7 @@ static func validate_command(command: Dictionary) -> Dictionary:
 				return failure("Ungültiger Bezeichner: %s." % key)
 			clean[key] = value
 		else:
-			var bounds: Array = {"house":[0,255], "index":[0,127], "optional_index":[-1,127],
+			var bounds: Array = {"house":[0,255], "index":[0,127], "optional_index":[-1,127], "army_id":[1,2147483647],
 				"option":[0,31], "sequence":[0,2147483647], "speed":[0,3], "level":[0,2]}[kind]
 			if not integer(value, bounds[0], bounds[1]):
 				return failure("Ungültiger Zahlenwert: %s." % key)

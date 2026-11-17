@@ -1,5 +1,7 @@
 # Vergleichbare echte Verwaltungsebenen – verbleibende 15 Gebiete
 
+Aktueller maßgeblicher Stand: der Gameplay-Meilenstein 1.9.1 ist umgesetzt, als neue Pakete gebaut und unter Windows geprüft; Android-Abnahme wird ergänzt. Das Gesamtziel Spielspaß sowie alte Quellen- und Leistungsgrenzen bleiben offen. Die älteren Statusblöcke bis zum Abschnitt „Aktives Ziel“ dokumentieren frühere Zwischenstände.
+
 ## Aktive Fortsetzung am 17. November 2026
 
 Aktueller Auftrag: Restbalance und Migration selbstständig bis zu regulär spielbaren108 Regionen fertigstellen; anschließend EXE/APK bauen und prüfen. Abnahmepfad: alte vollständige Partie→Migration mit unverändertem Eingabestand/Backup→108-Regionen-Partie→Charakter erstellen→Monate spielen→Speichern/Laden; zusätzlich Katalog-/Protokollkonflikte abweisen. Neue Version1.8.0/Androidcode12. Neue Features außerhalb dieses Abnahmepfades werden nicht eingeschoben.
@@ -105,3 +107,20 @@ Koordination: drei isolierte Feature-Worker und ein unabhängiger Abschlussprüf
 ## UI-Patch 1.9.1 abgeschlossen
 
 Unteres mittiges Titelmenü, feste weiße Version unten rechts und unverändertes chaotiKKK-Studiologo mit drei Sekunden Intro umgesetzt. Acht gezielte Suiten / 488 Prüfungen; fertige EXE 380 Runtime- und 66 Zwei-Prozess-Netzprüfungen, finale APK/EXE statisch geprüft. APK ohne erneuten Gerätestart; bestehende Hardware-/Performancegrenzen bleiben bestehen. Bericht docs/releases/1.9.1.md und Belege build/verify/release-191. Aktueller Quellstand und Downloadpakete werden abschließend gesichert.
+
+## Aktives Ziel – Spielspaß bleibt offen
+
+Nutzerziel: weniger Leerlauf, bedeutsame Entscheidungen und erkennbare Weltreaktionen, ergänzt um passende Civilization-/Stronghold-Inspiration. Der aktuelle funktionale Meilenstein ist abgeschlossen; eine Gesamtfertigstellung oder AAA-/Flüssigkeitsbewertung wird nicht behauptet.
+
+1. Kontextabhängige Provinzverwaltung und zentrale örtliche Befehle: abgeschlossen; eigene und fremde Verwaltung getrennt, Kriegskarte öffnet passende Befehle.
+2. Nutzbare Feldarmeen: abgeschlossen; Auswahl, Anspruch, angrenzender Marsch, Belagerung/Angriffsbeitrag, Monatswache, Erhalt mehrerer Alt-Armeen und Korrektur der 0-Mann-Sackgasse geprüft. Militärische KI monatlich, Käufe/Hof jährlich.
+3. Provinzschwerpunkte und endliche Straßenversorgung: abgeschlossen gemäß [Spezifikation](docs/superpowers/specs/2026-11-17-province-economy-and-supply-design.md). Gemeinsame örtliche Deckung und ganzzahlige anteilige Verlustreste, keine Versorgungsverdopplung.
+4. Schema 14 und Originalschutz: abgeschlossen; Schwerpunkt/Bindung, bytegleiche lokale und WLAN-Altsicherungen auch vor direktem Überschreiben, strikte aktuelle Netzwerkfingerabdrücke.
+5. Quellen-/Windows-Abnahme: abgeschlossen als nachvollziehbare Zusammenführung von 76 Suiten/36.902 Prüfungen; 8.307 unabhängige Regel-/Speicherprüfungen ohne offenen Fund. Fertige EXE: 380 allgemeine, 49 gerenderte Gameplay- und 130 Zwei-Prozess-ENet-Prüfungen erfolgreich.
+6. Neue EXE/APK und Downloadkopien: gebaut und statisch geprüft, alte Dateien erhalten. Aktuelle Namen `banger-queens-1.9.1-gameplay.{exe,apk}`. Hashes und Einzelbelege: [Gameplay-Bericht](docs/releases/1.9.1-gameplay.md).
+7. Android-Abnahme wird ergänzt. Physisches Poco und echtes Android-WLAN nicht getestet.
+8. Weiter offen: längere Spielspaß-/Balancebewertung, Kartenleistung (PC-4×-Pan 10,5 FPS, p95 100,51 ms) und frühere Atlasquellen-/Geometrielücken sowie private Rohcachebelege.
+
+Nächste Aktion: laufende Android-Abnahme mit ihren tatsächlichen Grenzen dokumentieren. Danach am offenen Gesamtziel anhand längerer Partieerfahrung und messbarer Kartenleistung weiterarbeiten; alte Quellenlücken separat verfolgen. Kein physisches Telefon ohne abgestimmten Slot.
+
+- Android-Meilenstein 17.11.: aktuelle APK im eigenen API-36-Emulator tatsächlich aktualisiert, sichtbar gerendert und per Touch bedient. Ari190-Altstand, 108 Regionen, Schwerpunktwechsel 90→45 Gold, Schema14-Speichern und bytegleiches Schema13-Backup geprüft; fremdes Wien nur Krieg/Diplomatie. Zwölf Kontrollen im `build/verify/gameplay-191-final/android-runtime-receipt.json`. Erster SwiftShader-Grafiklauf fehlgeschlagen und erhalten, unveränderte APK mit Host-GPU erfolgreich. Eigener Emulator beendet, kein Poco/echtAndroidWLAN-Nachweis.

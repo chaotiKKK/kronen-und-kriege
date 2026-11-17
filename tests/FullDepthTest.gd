@@ -270,8 +270,10 @@ func _test_k4_k5() -> void:
 	_need(g, "K4", "siege", 0, "K4: Armee erzeugt keinen Belagerungsfortschritt.")
 	_check(int(p["siege"]) > 0 or int(p["owner"]) == 0, "K4: Belagerung blieb 0.")
 	if int(p["owner"]) != 0:
+		g.advance_month()
 		g.advance_siege(target, 0)
 	if int(p["owner"]) != 0:
+		g.advance_month()
 		g.advance_siege(target, 0)
 	_check(int(p["owner"]) == 0, "K5: Belagerung nimmt die Provinz nicht ein.")
 	_need(g, "K5", "dev", 0, "K5: Einnahme beschädigt die Entwicklung nicht.")
@@ -443,8 +445,12 @@ func _test_army_supply() -> void:
 	_check(capacity > 0, "T2: Versorgungskapazität ist nicht positiv.")
 	_check(loss > 0, "T2: Armee über Kapazität verliert keine Stärke.")
 	_check(loss <= maxi(1, over / 20), "T2: Versorgungsverlust ist nicht moderat.")
-	_check(after_under == under, "T2: Armee innerhalb der Kapazität verliert Stärke.")
-	print("SUPPLY OK: Kapazität %d; Armee %d -> %d (%d Verlust), Armee %d unverändert." % [capacity, over, after_over, loss, under])
+	var under_loss := under-after_under
+	var total_loss := loss+under_loss
+	_check(under_loss > 0, "T2: Zwei Heere am selben Ort müssen dieselbe Versorgung teilen.")
+	_check(total_loss == roundi((over+under-capacity)*0.02), "T2: Gemeinsames Verlustbudget muss den Fehlbedarf genau einmal berücksichtigen.")
+	_check(absi(loss*under-under_loss*over) <= over+under, "T2: Jahresverluste werden bis auf Ganzzahlreste proportional verteilt.")
+	print("SUPPLY OK: gemeinsame Kapazität %d; Heere %d -> %d und %d -> %d, Gesamtverlust %d." % [capacity,over,after_over,under,after_under,total_loss])
 
 # --- Helfer --------------------------------------------------------------
 

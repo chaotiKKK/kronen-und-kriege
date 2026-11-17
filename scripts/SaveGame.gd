@@ -18,10 +18,11 @@ extends RefCounted
 ## erhält alle vorhandenen Felder und ergänzt nur neue Pflichtfelder mit
 ## deterministischen Defaults. Sie überschreibt keine unbekannten Felder.
 
-const CURRENT_VERSION := 13
+const CURRENT_VERSION := 14
 const RegionMigrationScript = preload("res://scripts/RegionMigration.gd")
 const CalendarScript = preload("res://scripts/CampaignCalendar.gd")
 const InfrastructureScript = preload("res://scripts/Infrastructure.gd")
+const ProvinceEconomyScript = preload("res://scripts/ProvinceEconomy.gd")
 const RELIC_IDS := ["crown", "blade", "seal"]
 const COURT_MAX_HALL := 3
 const COURT_BASE_GRANDEUR := 20
@@ -56,7 +57,7 @@ const REQUIRED_TOP_LEVEL := [
 	"calendar_version", "month_index", "campaign_sandbox",
 	"roads",
 ]
-const REQUIRED_PROVINCE := ["id", "name", "owner", "dev", "levy", "buildings", "defense", "siege", "siege_owner", "blockade", "blockade_owner"]
+const REQUIRED_PROVINCE := ["id", "name", "owner", "dev", "levy", "buildings", "defense", "siege", "siege_owner", "blockade", "blockade_owner", "economic_focus", "focus_changed_month"]
 const REQUIRED_HOUSE := [
 	"name", "color", "gold", "prestige", "legitimacy", "capital", "realm", "ruler",
 	"spouse", "children", "heir", "heir_age", "pregnant", "lover_house",
@@ -70,6 +71,10 @@ static func migrate(data: Dictionary) -> Dictionary:
 	var errors: Array = []
 	var out: Dictionary = data.duplicate(true)
 	var from_version: int = int(out.get("schema_version", 1))
+	errors.append_array(_siege_dates(out))
+	errors.append_array(_focus_fields(out,from_version >= 14))
+	if not errors.is_empty():
+		return {"ok":false,"data":out,"from_version":from_version,"to_version":CURRENT_VERSION,"errors":errors}
 	if from_version < 1:
 		errors.append("Ungültige Schema-Version %d." % from_version)
 	if from_version > CURRENT_VERSION:
@@ -137,6 +142,7 @@ static func make_current(data: Dictionary) -> Dictionary:
 ## Validiert die Pflichtstruktur eines aktuellen Schemas.
 static func validate(data: Dictionary) -> Array:
 	var errors: Array = []
+	errors.append_array(_siege_dates(data))
 	# Pflichtfelder am Rohstand prüfen, bevor migrate() Defaults ergänzt.
 	# Sonst würde validate() einen Feldverlust nie bemerken.
 	if int(data.get("schema_version", 0)) != CURRENT_VERSION:
@@ -585,18 +591,84 @@ static func _migrate_claims(raw) -> Array:
 				})
 	return out
 
+static func _focus_fields(data: Dictionary, required: bool) -> Array:
+	var errors: Array = []
+	var raw = data.get("provinces",[])
+	if not raw is Array:
+		return errors
+	var year := int(data.get("year",-2000))
+	if int(data.get("calendar_version",0)) == 0 and year >= 0:
+		year += 1
+	var now := CalendarScript.to_index(year,int(data.get("month",1)))
+	for p in raw:
+		if not p is Dictionary:
+			continue
+		if required or p.has("economic_focus"):
+			var focus = p.get("economic_focus")
+			if not focus is String or not ProvinceEconomyScript.FOCI.has(focus):
+				errors.append("Ungültiger oder fehlender Provinzschwerpunkt.")
+		if required or p.has("focus_changed_month"):
+			var changed = p.get("focus_changed_month")
+			if not (changed is int or changed is float) or not is_finite(float(changed)) or floor(changed) != changed or changed < -1 or changed > now:
+				errors.append("Ungültiger oder fehlender Schwerpunktzeitpunkt.")
+	return errors
+
+static func _siege_dates(data: Dictionary) -> Array:
+	var errors := []
+	var year := int(data.get("year", -2000))
+	# Dieselbe Legacy-Zeitachse wie migrate(): vorchristliche Daten bleiben
+	# gleich, Jahr null entspricht 1 n. Chr. Absolute Monatsfristen bleiben.
+	if int(data.get("calendar_version", 0)) == 0 and year >= 0:
+		year += 1
+	var now := CalendarScript.to_index(year, int(data.get("month", 1))) + 1
+	var raw_houses = data.get("houses", [])
+	if not raw_houses is Array:
+		return ["Häuser müssen als Liste gespeichert sein."]
+	for h in raw_houses:
+		if not h is Dictionary:
+			continue
+		var raw_armies = h.get("armies", [])
+		if not raw_armies is Array:
+			errors.append("Armeen müssen als Liste gespeichert sein.")
+			continue
+		for army in raw_armies:
+			if not army is Dictionary:
+				continue
+			if army.has("last_siege_month"):
+				var v = army.last_siege_month
+				if not (v is int or v is float) or not floor(v)==v or v<0 or v>now:
+					errors.append("Ungültiger Belagerungszeitpunkt.")
+	return errors
+
 static func _migrate_armies(raw) -> Array:
 	var out: Array = []
+	var used_ids: Dictionary = {}
+	var reserved_ids: Dictionary = {}
 	if raw is Array:
+		# Fehlende Alt-IDs dürfen eine später vorhandene stabile ID nicht belegen.
+		for item in raw:
+			if item is Dictionary and int(item.get("id", 0)) > 0:
+				reserved_ids[int(item.id)] = true
 		for item in raw:
 			if item is Dictionary:
-				out.append({
-					"id": int(item.get("id", out.size())),
+				if int(item.get("strength", 0)) <= 0:
+					continue
+				var army_id := int(item.get("id", 0))
+				if army_id <= 0 or used_ids.has(army_id):
+					army_id = 1
+					while used_ids.has(army_id) or reserved_ids.has(army_id):
+						army_id += 1
+				used_ids[army_id] = true
+				var army := {
+					"id": army_id,
 					"province": str(item.get("province", "")),
 					"strength": clampi(int(item.get("strength", 0)), 0, 5000),
 					"upkeep": clampi(int(item.get("upkeep", 2)), 0, 50),
 					"morale": clampi(int(item.get("morale", 100)), 0, 100),
-				})
+				}
+				if item.has("last_siege_month"):
+					army["last_siege_month"] = item.last_siege_month
+				out.append(army)
 	return out
 
 static func _migrate_fleets(raw) -> Array:
@@ -730,6 +802,10 @@ static func _migrate_provinces(raw, errors: Array) -> Array:
 		p["siege_owner"] = int(p.get("siege_owner", -1))
 		p["blockade"] = clampi(int(p.get("blockade", 0)), 0, 24)
 		p["blockade_owner"] = int(p.get("blockade_owner", -1))
+		if not p.has("economic_focus"):
+			p["economic_focus"] = "balanced"
+		if not p.has("focus_changed_month"):
+			p["focus_changed_month"] = -1
 		if int(p["blockade"]) <= 0:
 			p["blockade_owner"] = -1
 		var raw_buildings = p.get("buildings", {})

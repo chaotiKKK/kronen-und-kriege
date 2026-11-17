@@ -151,6 +151,10 @@ func _route(id: String, command: Dictionary) -> Dictionary:
 			if selection == "":
 				return _blocked("invalid", "Keine Provinz gewählt.")
 			raw = game.build(selection, str(command.get("key", "")))
+		"province_focus":
+			if selection == "":
+				return _blocked("invalid", "Keine Provinz gewählt.")
+			raw = game.set_province_focus(selection, str(command.get("focus", "")))
 		"set_tax":
 			var current_tax := int(game.house()["laws"]["tax"])
 			raw = game.set_law("tax", str((current_tax + 1) % 3))
@@ -186,6 +190,15 @@ func _route(id: String, command: Dictionary) -> Dictionary:
 			if selection == "":
 				return _blocked("invalid", "Keine Provinz gewählt.")
 			raw = game.raise_army(selection)
+		"select_army":
+			var army_id = command.get("army")
+			if not (army_id is int or army_id is float) or not is_finite(float(army_id)) or float(army_id) != floor(float(army_id)) or float(army_id) < 1 or float(army_id) > 2147483647:
+				return _blocked("invalid", "Ungültige Armee-ID.")
+			raw = game.select_army(int(army_id))
+		"march":
+			if selection == "":
+				return _blocked("invalid", "Keine Provinz als Marschziel gewählt.")
+			raw = game.march_army(selection)
 		"siege":
 			if selection == "":
 				return _blocked("invalid", "Keine Provinz gewählt.")

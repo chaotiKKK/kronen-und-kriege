@@ -12,7 +12,7 @@ if ([IO.Path]::GetExtension($exePath) -ne '.exe') { throw 'An exported Windows E
 $outputPath = [IO.Path]::GetFullPath($Output)
 if (-not $outputPath.StartsWith($verifyRoot + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'Output must remain below this project''s build/verify directory.' }
 if (Test-Path -LiteralPath $outputPath) { throw 'Use a fresh output directory; existing evidence must remain unchanged.' }
-$helperSource = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot 'strategy-ui-release-smoke.gd')).Path
+$helperSource = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot 'strategy-ui-release-smoke.gd.in')).Path
 $helperHash = (Get-FileHash -LiteralPath $helperSource -Algorithm SHA256).Hash.ToLowerInvariant()
 $exeHash = (Get-FileHash -LiteralPath $exePath -Algorithm SHA256).Hash.ToLowerInvariant()
 New-Item -ItemType Directory -Path $outputPath | Out-Null

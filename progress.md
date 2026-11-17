@@ -102,3 +102,31 @@
 - Projekt/Android 1.9.1, Androidcode 14, Windowsversion 1.9.1.0. Lokale 1.9.0-WLAN-Dateien werden eng validiert und bytegleich .pre-ui191.bak gesichert; Wireprüfung bleibt strikt.
 - Neue/angepasste Rot-Grün-Prüfungen plus acht gezielte Suiten mit 488 Assertions erfolgreich. Tatsächliche EXE 380 Laufzeitprüfungen und 66 Zwei-Prozess-ENet-Fälle erfolgreich; statisch 631 PCK- und 746 APK-Einträge geprüft. Keine neue Geräte- oder Emulatorinstallation in diesem Patch.
 - Finale Dateien build/exports/banger-queens-1.9.1.{exe,apk}; Bericht docs/releases/1.9.1.md; Belege build/verify/release-191. Source- und Paketlogo jeweils SHA256 980c3f40982e4872ed77d5dee3e068f2abae677d31020a901fddb04691db352c. Übergabe erfolgt mit Hashvergleich der Downloadkopien.
+
+## Abschluss des ersten Iterationsstands
+
+- Das Ziel bleibt aktiv.
+- Änderungen nicht veröffentlicht; CLI kann nicht helfen.
+
+## Fortsetzung – Kontext, Feldarmeen und Logistikentwurf
+
+- WarInteractionTest zunächst mit sechs echten UI-Lücken rot; integrierter Stand28grün, anschließend Desktop-/Touch-/200%-Aufnahmen. ArmyMarkerTest6Kollisionen rot→50Prüfungen grün. Gemeinsame Zeichnungs-/Treffergeometrie verhindert Auswahlfehler am Viewportrand.
+- Pure Kernel-/LAN-Marsch- und Auswahlstrecke sowie echte alte1.9.0-Dateimigration231Prüfungen grün. Gefälschte Altdateihashes werden abgewiesen. Originale bleiben bytegleich gesichert.
+- Unabhängige Hauptszene im festen1280×720-SubViewport18Prüfungen grün: Besitzwechsel, kein fremdes Wissen/Ausbau, aktueller Rückwechsel, echte Alt-Armeeauswahl, kein horizontaler200%-Überlauf und erreichbare44erTouchflächen.
+- Gesamtregression-Zwischenlauf gestartet. Erster Discovery-Vorlauf wies eine echte externe Paketprüfhilfe als verirrtes Unit-Testskript ab; wie die anderen Pakethelfer in eine .gd.in-Vorlage verschoben und Launcher angepasst. Erneuter Lauf hält alle68ursprünglich entdeckten Suiten fest. Aktueller Stand ist ein Zwischenlauf, kein abschließender Quellenfreeze.
+- Neue aufgedeckte Fehler: Jahr-null-Migration nach echter KI-Armeeerzeugung; alte Erwartung eines nutzlosen Flottenbuttons im Binnenland;0-Mann-Heer-Sackgasse; jährliche statt monatlicher KI-Feldzüge. Korrekturen und eigene Rot-/Grün-Belege werden nach dem Freeze integriert.
+- Nutzerziel um Stronghold-/Civ-Features erweitert. Spezifikation und detaillierter Implementierungsplan für örtliche Spezialisierung und endliche Straßenversorgung geschrieben. Reiner Rechner separat beauftragt; Quellen- und Geräteprüfung bleiben klar getrennt.
+
+## 17.11.2026 – Gameplay-Meilenstein 1.9.1, Windows-Abnahme
+
+- Kontextabhängige Provinzverwaltung, ausdrückliche Armeeauswahl und gemeinsame Marsch-/Belagerungs-/Angriffswache umgesetzt. Die 0-Mann-Aufstellungssperre sowie die Jahr-null-Migration sind behoben; bestehende KI-Heere handeln monatlich ohne monatliche Wiederholung jährlicher Käufe.
+- Kornkammer/Handelsort/Ausgewogen mit realen Ertrags-/Versorgungskosten und zwölf Monaten Bindung integriert. Fertige eigene Straßen übertragen nur freien Landwirtschaftszusatz; gemeinsamer Bedarf und ein jährliches Verlustbudget verhindern doppelte Kapazität. Der unabhängige 400/100/100-Restfund wurde mit ganzzahligem Produkt/Modulo korrigiert und erneut bestätigt.
+- Quellenabnahme: 76-Suiten-Vorlauf mit 36.884 Prüfungen, anschließend zwei eng begutachtete Korrekturen und 14 betroffene Nachläufe. Zusammengeführt 36.902 erfolgreiche Prüfungen; keine Behauptung eines weiteren vollständigen Laufs nach den letzten Patches. `build/verify/gameplay-191-final/regression-reconciled.json` enthält Dateihashes und Einzelbasis.
+- Unabhängiges Review: 8.307 Regel-/Speicherprüfungen, null Abweichungen und kein offener Fund (`build/verify/independent-economy-review.json`). Eigene Prüfhelfer des Reviews sind getrennt von den Produktdateien.
+- Finale Windows-EXE: 380 allgemeine Paketprüfungen, 49 echte Gameplay-/Renderprüfungen mit fünf Aufnahmen sowie 130 Prüfungen zwischen zwei ENet-Prozessen erfolgreich. Budgetierter Weg ohne Zusatzgeld: 140 Startgold, Fokus, Vermessung sechs Monate, Straßenbauforschung zwölf Monate, Straße drei Monate, Heer und Marsch; 58 Gold nach 21 Monaten. NPC-KI blieb aktiv; kontrollierte Unterbrechungsfälle verwenden einen getrennt gekennzeichneten Klon.
+- Neue Dateien `build/exports/banger-queens-1.9.1-gameplay.{exe,apk}` und bytegleiche Downloadkopien vorhanden. EXE 321.363.232 Bytes/SHA256 `f24506e2b152d554641c95f893ab1bf78cb297c0447ae1cf27d26631b31843b7`; APK 270.332.045 Bytes/SHA256 `97fe52761a499e9f101ebfefe314f278ea7b616cf7cb51cef39be0620c05ab6c`. Statisch 635 PCK- und 750 APK-Einträge, Integrität, V2-Signatur und Zipalignment geprüft. Frühere Pakete bleiben erhalten.
+- Android-Abnahme wird ergänzt. Physisches Poco und echtes Android-WLAN nicht getestet. Aktueller PC-4×-Kartenschwenk: 10,5 FPS, p95 100,51 ms; keine Behauptung flüssiger oder AAA-Darstellung. Frühere Atlasquellen-/Geometrielücken und fehlende private Rohcachebelege bleiben offen.
+- Der Versuch in ProvinceEconomyTest, alle neun Häuser als Menschen zu konfigurieren, wurde vom gültigen Zwei-bis-vier-Häuser-Vertrag abgewiesen. Die zwölf geprüften Monate liefen mit normaler NPC-KI; keine Neun-Menschen-Isolation behauptet. Produktdateien wurden deswegen nicht geändert.
+- Bericht: `docs/releases/1.9.1-gameplay.md`. Der funktionale Meilenstein ist belegt; das übergeordnete Ziel „Spielspaß“ bleibt aktiv.
+
+- Android-Meilenstein 17.11.: aktuelle APK im eigenen API-36-Emulator tatsächlich aktualisiert, sichtbar gerendert und per Touch bedient. Ari190-Altstand, 108 Regionen, Schwerpunktwechsel 90→45 Gold, Schema14-Speichern und bytegleiches Schema13-Backup geprüft; fremdes Wien nur Krieg/Diplomatie. Zwölf Kontrollen im `build/verify/gameplay-191-final/android-runtime-receipt.json`. Erster SwiftShader-Grafiklauf fehlgeschlagen und erhalten, unveränderte APK mit Host-GPU erfolgreich. Eigener Emulator beendet, kein Poco/echtAndroidWLAN-Nachweis.

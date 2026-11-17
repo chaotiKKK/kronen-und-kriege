@@ -36,29 +36,19 @@ func _ready() -> void:
 	session.queue_free()
 	if not _previous_ui_release():
 		return
+	if not _previous_economy_release():
+		return
 	print("LEGACYLANMIGRATIONTEST OK: %d Prüfungen" % checks)
 	get_tree().quit(0)
 
 func _previous_ui_release() -> bool:
-	var data = load("res://scripts/GameRegionData.gd")
 	var protocol = load("res://scripts/LanProtocol.gd")
-	var design = load("res://scripts/HouseDesign.gd")
-	var game = load("res://scripts/Game.gd").new(data, 0)
-	var profile: Dictionary = design.defaults(data)
-	profile.house = "Haus Vorher"
-	profile.doctrine = "infantry"
-	game._custom_start(profile)
-	profile = design.defaults(data, str(data.provinces()[1].id))
-	profile.house = "Haus Fortsetzung"
-	profile.doctrine = "cavalry"
-	game._custom_start(profile)
-	game.configure_human_houses([9,10])
-	game.select_player_context(9)
-	game.house().gold = 321
-	game.house().prestige = 77
-	game.house().research.known = ["surveying"]
-	game.speed = 0
-	var state: Dictionary = game.snapshot()
+	var fixture := "res://tests/fixtures/lan-190-original.json"
+	if not check(FileAccess.get_sha256(fixture) == "ff009fbd3bbbd94ea2c239b3fc4a06478dbf06eb6dee33ec74322cd5ea4822ba", "Unveränderte Datei aus der tatsächlichen alten 1.9.0-EXE"):
+		return false
+	var original := FileAccess.get_file_as_bytes(fixture)
+	var envelope: Dictionary = JSON.parse_string(original.get_string_from_utf8())
+	var state: Dictionary = envelope.state
 	var session = load("res://scripts/LanSession.gd").new()
 	session.discovery_enabled = false
 	add_child(session)
@@ -67,8 +57,6 @@ func _previous_ui_release() -> bool:
 	if not check(session.host("UI-Fortsetzung", "Host", 0, 48900 + OS.get_process_id() % 300).ok, "Eigene Gastgeberlobby für 1.9.0-Datei"):
 		return false
 	var path := "user://previous-ui-lan-%d-%d.json" % [OS.get_process_id(), Time.get_ticks_usec()]
-	var envelope := {"kind":"BQ-LAN-SAVE","v":3,"app":"1.9.0","fingerprint":session._fingerprint,"state":state}
-	var original := JSON.stringify(envelope).to_utf8_buffer()
 	_write_bytes(path, original)
 	if not check(not protocol.handshake_error(envelope, session._app, session._fingerprint).is_empty(), "1.9.0-Netzteilnehmer bleibt am Versionshandshake abgewiesen"):
 		return false
@@ -78,16 +66,18 @@ func _previous_ui_release() -> bool:
 		return false
 	if not check(session.game.houses.size() == 11 and session.game.human_houses == [9,10] and session.local_house() == 9, "Eigene Häuser und Menschenplätze bleiben erhalten"):
 		return false
-	if not check(protocol.world_hash(session.game.snapshot()) == protocol.world_hash(state) and session.game.house().gold == 321 and session.game.house().prestige == 77, "Gespeicherte Welt, Ressourcen und aktives Menschenhaus bleiben unverändert"):
+	if not check(_without_economy(protocol,session.game.snapshot()) == _without_economy(protocol,state) and session.game.house().gold == 321 and session.game.house().prestige == 77, "Gespeicherte Welt, Ressourcen und aktives Menschenhaus bleiben unverändert"):
 		return false
+	var loaded_hash: String = protocol.world_hash(session.game.snapshot())
 	if not check(session.game.houses[9].doctrine == "infantry" and session.game.houses[10].doctrine == "cavalry" and session.game.house().research.known == ["surveying"], "Doktrinen und Forschungsstand bleiben erhalten"):
 		return false
 	if not check(FileAccess.get_file_as_bytes(path) == original and FileAccess.get_file_as_bytes(path + ".pre-ui191.bak") == original, "1.9.0-Datei und Sicherung bleiben bytegleich"):
 		return false
-	for variant in ["fingerprint", "catalog", "protocol", "future_app", "corrupt_state"]:
+	for variant in ["fingerprint", "current_hash", "catalog", "protocol", "future_app", "corrupt_state"]:
 		var rejected := envelope.duplicate(true)
 		match variant:
 			"fingerprint": rejected.fingerprint = "andere-spieldaten"
+			"current_hash": rejected.fingerprint = session._fingerprint
 			"catalog": rejected.state.region_catalog_hash = "anderer-katalog"
 			"protocol": rejected.v = 2
 			"future_app": rejected.app = "1.9.2"
@@ -96,7 +86,7 @@ func _previous_ui_release() -> bool:
 		_write_bytes(bad_path, JSON.stringify(rejected).to_utf8_buffer())
 		if not check(not session.load_host_lobby(bad_path).ok, "Ungültige Vorversionsdatei bleibt abgewiesen: " + variant):
 			return false
-		if not check(protocol.world_hash(session.game.snapshot()) == protocol.world_hash(state), "Abgewiesene Datei verändert die bestehende Welt nicht: " + variant):
+		if not check(protocol.world_hash(session.game.snapshot()) == loaded_hash, "Abgewiesene Datei verändert die bestehende Welt nicht: " + variant):
 			return false
 	if not check(session.save_host(path).ok, "Geladene Vorversionspartie wird aktuell gespeichert"):
 		return false
@@ -108,6 +98,140 @@ func _previous_ui_release() -> bool:
 	session.close_session()
 	session.queue_free()
 	return true
+
+func _previous_economy_release() -> bool:
+	var protocol = load("res://scripts/LanProtocol.gd")
+	var fixture := "res://tests/fixtures/lan-191-schema13-original.json"
+	if not check(FileAccess.get_sha256(fixture) == "a88ef779bf4eaa2c545ae8bfa18b638117350e7647354632478598ae1402e959", "Echte unveränderte Schema13-Datei aus der exportierten 1.9.1-EXE"):
+		return false
+	var original := FileAccess.get_file_as_bytes(fixture)
+	var envelope: Dictionary = JSON.parse_string(original.get_string_from_utf8())
+	var session = load("res://scripts/LanSession.gd").new()
+	session.discovery_enabled = false
+	add_child(session)
+	if not check(load("res://scripts/SaveGame.gd").CURRENT_VERSION == 14 and envelope.state.schema_version == 13,"Wirtschaftsmigration wechselt tatsächlich von Schema13 nach14"):
+		return false
+	if not check(session.host("Schemafortsetzung","Host",0,49300+OS.get_process_id()%300).ok,"Eigene Gastgeberlobby für Wirtschaftsmigration"):
+		return false
+	var path := "user://economy-legacy-%d-%d.json" % [OS.get_process_id(),Time.get_ticks_usec()]
+	_write_bytes(path,original)
+	if not check(not protocol.handshake_error(envelope,session._app,session._fingerprint).is_empty(),"Alte1.9.1-Teilnehmer bleiben trotz gleicher Appnummer am Inhaltsfingerprint abgewiesen"):
+		return false
+	var result: Dictionary = session.load_host_lobby(path)
+	if not check(result.ok,"Echte lokale1.9.1-Schema13-Partie migriert: "+str(result.message)):
+		return false
+	if not check(session.game.snapshot().schema_version == 14 and _without_economy(protocol,session.game.snapshot()) == _without_economy(protocol,envelope.state),"Migration ergänzt ausschließlich neue Wirtschaftsfelder"):
+		return false
+	var defaults_valid := true
+	for province in session.game.provinces:
+		defaults_valid = defaults_valid and province.get("economic_focus") == "balanced" and province.get("focus_changed_month") == -1
+	if not check(defaults_valid and session.game.house().gold == 237 and session.game.human_houses == [0,1],"Alle alten Provinzen bleiben ausgewogen ohne Sperre und behalten Kassen/Sitze"):
+		return false
+	if not check(FileAccess.get_file_as_bytes(path) == original and FileAccess.get_file_as_bytes(path+".pre-economy-schema13.bak") == original,"Alte1.9.1-Datei und neue Sicherung sind bytegleich"):
+		return false
+	var loaded_hash: String = protocol.world_hash(session.game.snapshot())
+	for variant in ["fingerprint","current_hash","old_app_current_hash","catalog","protocol","future_app","new_schema","future_schema","corrupt_state"]:
+		var rejected := envelope.duplicate(true)
+		match variant:
+			"fingerprint": rejected.fingerprint = "unbekannt"
+			"current_hash": rejected.fingerprint = session._fingerprint
+			"old_app_current_hash":
+				rejected.app = "1.8.0"
+				rejected.v = 2
+				rejected.fingerprint = session._fingerprint
+			"catalog": rejected.state.region_catalog_hash = "falsch"
+			"protocol": rejected.v = 2
+			"future_app": rejected.app = "1.9.2"
+			"new_schema": rejected.state.schema_version = 14
+			"future_schema": rejected.state.schema_version = 15
+			"corrupt_state": rejected.state.lan_human_houses = [0,0]
+		var bad_path: String = path+"."+str(variant)
+		_write_bytes(bad_path,JSON.stringify(rejected).to_utf8_buffer())
+		if not check(not session.load_host_lobby(bad_path).ok,"Manipulierte Altdatei bleibt abgewiesen: "+variant):
+			return false
+		if not check(protocol.world_hash(session.game.snapshot()) == loaded_hash and not FileAccess.file_exists(bad_path+".pre-economy-schema13.bak"),"Abweisung ändert weder Welt noch Backup: "+variant):
+			return false
+	if not check(session.save_host(path).ok,"Migrierte1.9.1-Datei wird aktuell gespeichert"):
+		return false
+	var current: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not check(current.app == "1.9.1" and current.state.schema_version == 14 and current.fingerprint == session._fingerprint and FileAccess.get_file_as_bytes(path+".pre-economy-schema13.bak") == original,"Aktuelles Speichern erneuert Schema/Hash und erhält ursprüngliche Bytes"):
+		return false
+	if not _direct_save_preservation(session):
+		return false
+	session.close_session()
+	session.queue_free()
+	return true
+
+func _direct_save_preservation(session) -> bool:
+	var stem := "user://direct-lan-backup-%d-%d" % [OS.get_process_id(),Time.get_ticks_usec()]
+	var fixtures := [
+		["res://tests/fixtures/lan-190-original.json",".pre-ui191.bak"],
+		["res://tests/fixtures/lan-191-schema13-original.json",".pre-economy-schema13.bak"],
+	]
+	var live: Dictionary = session.game.snapshot()
+	for index in fixtures.size():
+		var raw := FileAccess.get_file_as_bytes(fixtures[index][0])
+		var suffix: String = fixtures[index][1]
+		var path := stem+"-"+str(index)+".json"
+		_write_bytes(path,raw)
+		if not check(session.save_host(path).ok,"Direktes Speichern über nie geladene historische Zieldatei gelingt erst nach Sicherung"):
+			return false
+		if not check(FileAccess.get_file_as_bytes(path+suffix)==raw,"Nie geladene Altdatei wird vor Überschreiben bytegleich gesichert: "+str(index)):
+			return false
+		var current = JSON.parse_string(FileAccess.get_file_as_string(path))
+		if not check(current.state.schema_version==14 and current.fingerprint==session._fingerprint and session.game.snapshot()==live,"Direktes Speichern schreibt aktuelle Datei ohne Änderung der laufenden Welt"):
+			return false
+	var original := FileAccess.get_file_as_bytes(fixtures[0][0])
+	var collision := stem+"-collision.json"
+	var unrelated := "andere ursprüngliche Sicherung".to_utf8_buffer()
+	var context := HashingContext.new()
+	context.start(HashingContext.HASH_SHA256)
+	context.update(original)
+	var fallback: String = ".pre-regions-"+context.finish().hex_encode().substr(0,16)+".bak"
+	_write_bytes(collision,original)
+	_write_bytes(collision+".pre-ui191.bak",unrelated)
+	if not check(session.save_host(collision).ok and FileAccess.get_file_as_bytes(collision+".pre-ui191.bak")==unrelated and FileAccess.get_file_as_bytes(collision+fallback)==original,"Kollidierende Sicherung bleibt erhalten; direkte Altdatei erhält eigenen Hash-Namen"):
+		return false
+	var blocked := stem+"-blocked.json"
+	_write_bytes(blocked,original)
+	DirAccess.make_dir_absolute(ProjectSettings.globalize_path(blocked+".pre-ui191.bak"))
+	if not check(not session.save_host(blocked).ok and FileAccess.get_file_as_bytes(blocked)==original and not FileAccess.file_exists(blocked+".tmp"),"Nicht schreibbare Sicherung verhindert direktes Überschreiben und temporäre Buchung"):
+		return false
+	var both := stem+"-both-collide.json"
+	_write_bytes(both,original)
+	_write_bytes(both+".pre-ui191.bak",unrelated)
+	_write_bytes(both+fallback,unrelated)
+	if not check(not session.save_host(both).ok and FileAccess.get_file_as_bytes(both)==original and FileAccess.get_file_as_bytes(both+fallback)==unrelated,"Auch belegter Hash-Sicherungsname wird niemals überschrieben"):
+		return false
+	for variant in ["text","unknown_envelope","future","invalid_current"]:
+		var raw := "beschädigter alter Spielstand".to_utf8_buffer()
+		if variant != "text":
+			var existing := {"kind":"BQ-LAN-SAVE","v":3,"app":session._app,"fingerprint":session._fingerprint,"state":live.duplicate(true)}
+			if variant=="unknown_envelope": existing.kind = "anderes Format"
+			if variant=="future": existing.app = "1.9.2"
+			if variant=="invalid_current": existing.state.provinces[0].economic_focus = "ungültig"
+			raw = JSON.stringify(existing).to_utf8_buffer()
+		var path: String = stem+"-"+variant+".json"
+		_write_bytes(path,raw)
+		if not check(not session.save_host(path).ok and FileAccess.get_file_as_bytes(path)==raw,"Ungültiges oder unbekanntes bestehendes Ziel bleibt unverändert: "+variant):
+			return false
+	var rejected := stem+"-rejected-candidate.json"
+	_write_bytes(rejected,original)
+	var valid_resume: Dictionary = session._resume_state.duplicate(true)
+	session._resume_state.provinces[0].economic_focus = "ungültig"
+	var result: Dictionary = session.save_host(rejected)
+	session._resume_state = valid_resume
+	if not check(not result.ok and FileAccess.get_file_as_bytes(rejected)==original and not FileAccess.file_exists(rejected+".pre-ui191.bak"),"Ungültiger neuer Zustand wird vor jeder Sicherung abgewiesen"):
+		return false
+	return true
+
+func _without_economy(protocol, state: Dictionary) -> String:
+	var old := state.duplicate(true)
+	old.schema_version = 13
+	for province in old.provinces:
+		province.erase("economic_focus")
+		province.erase("focus_changed_month")
+	return protocol.world_hash(old)
 
 func _write_bytes(path: String, bytes: PackedByteArray) -> void:
 	var file := FileAccess.open(path, FileAccess.WRITE)

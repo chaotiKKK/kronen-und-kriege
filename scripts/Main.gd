@@ -720,6 +720,7 @@ func _build() -> void:
 	map_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	map_view.province_selected.connect(_on_province_selected)
 	map_view.province_activated.connect(_on_province_activated)
+	map_view.army_selected.connect(_on_army_selected)
 	map_view.map_mode_changed.connect(_on_map_mode_changed)
 	map_view.atlas_location_selected.connect(_on_atlas_location_selected)
 	map_wrap.add_child(map_view)
@@ -1416,6 +1417,9 @@ func _build_province_layer() -> void:
 		b.add_theme_font_size_override("font_size", 13)
 		actions.add_child(b)
 		province_action_buttons[key] = b
+		# Detailseite ist ein Nachschlageblatt; nur die Provinzseite führt Aktionen aus.
+		b.visible = key == "rule"
+	province_action_buttons.rule.text = "Provinzverwaltung öffnen"
 	box.add_child(actions)
 
 func _refresh_province_side() -> void:
@@ -1533,7 +1537,7 @@ func _refresh_province_page() -> void:
 func _province_action(key: String) -> void:
 	if key == "rule":
 		_hide_province()
-		_show_rule()
+		_open_province_management("army" if int(game.province(selected).get("owner",-1)) != game.player else "buildings")
 		return
 	_dispatch({"id": key})
 
@@ -2579,6 +2583,33 @@ func _on_province_selected(id: String) -> void:
 		side_toggle_btn.set_pressed_no_signal(true)
 		ui.show_section("overview")
 	refresh()
+	if id != "" and map_view.map_mode == "war" and has_meta("modern_interface"):
+		get_meta("modern_interface").province_inspector.show_section("army")
+
+func _on_army_selected(_house_index: int, id: String) -> void:
+	_on_province_selected(id)
+	if has_meta("modern_interface"):
+		get_meta("modern_interface").province_inspector.show_section("army")
+
+func _open_province_management(section: String = "buildings") -> void:
+	_hide_rule()
+	_hide_chronicle()
+	if game == null: return
+	var id := selected
+	if id.is_empty(): id = str(game.house().capital)
+	_on_province_selected(id)
+	if has_meta("modern_interface"):
+		get_meta("modern_interface").province_inspector.show_section("army" if int(game.province(id).get("owner",-1)) != game.player else section)
+
+func _focus_field_army() -> void:
+	if game == null: return
+	var army: Dictionary = game.army_for()
+	if army.is_empty(): return
+	var id := str(army.province)
+	_set_map_mode("war")
+	_on_province_selected(id)
+	map_view.center_on(map_view._label_point(game.province(id)))
+	get_meta("modern_interface").province_inspector.show_section("army")
 
 func _on_province_activated(id: String) -> void:
 	if id != "" and selected == id:
@@ -3491,72 +3522,9 @@ func _refresh_rule() -> void:
 		legacy_row.add_child(legacy_button)
 		rule_body.add_child(legacy_row)
 	rule_body.add_child(HSeparator.new())
-	rule_body.add_child(_label("Krieg und Diplomatie", 18, INK))
-	rule_body.add_child(_label(str(vm["target"]), 12, INK_SOFT))
-	var claim_button := _button("Anspruch schmieden (40 Gold)", _fabricate_claim, "")
-	claim_button.disabled = bool(vm["claim_disabled"])
-	rule_body.add_child(claim_button)
-	var army_button := _button("Armee aufstellen (50 Gold)", _raise_army, "")
-	army_button.disabled = bool(vm["army_disabled"])
-	rule_body.add_child(army_button)
-	var siege_button := _button("Belagerung vorantreiben", _advance_siege, "")
-	siege_button.disabled = bool(vm["siege_disabled"])
-	rule_body.add_child(siege_button)
-	var fleet_row := HBoxContainer.new()
-	fleet_row.add_theme_constant_override("separation", 8)
-	var fleet_icon := TextureRect.new()
-	fleet_icon.custom_minimum_size = Vector2(44, 44)
-	fleet_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	fleet_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	fleet_icon.texture = TOKENS.get("unit_fleet")
-	fleet_icon.tooltip_text = "Flotten-Token aus der Blender-Pipeline"
-	fleet_row.add_child(fleet_icon)
-	var fleet_label := _label(str(vm["fleet"]), 12, INK_SOFT)
-	fleet_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	fleet_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	fleet_row.add_child(fleet_label)
-	rule_body.add_child(fleet_row)
-	var fleet_button := _button("Flotte aufstellen (60 Gold)", _raise_fleet, "")
-	fleet_button.disabled = bool(vm["fleet_disabled"])
-	rule_body.add_child(fleet_button)
-	var blockade_button := _button("Küste blockieren (6 Monate)", _blockade_coast, "")
-	blockade_button.disabled = bool(vm["blockade_disabled"])
-	rule_body.add_child(blockade_button)
-	var peace_button := _button("Frieden schließen (24 Monate)", _make_peace, "")
-	peace_button.disabled = bool(vm["peace_disabled"])
-	rule_body.add_child(peace_button)
-	var discover_button := _button("Geheimnis aufdecken", _discover_secret, "")
-	discover_button.disabled = bool(vm["discover_disabled"])
-	rule_body.add_child(discover_button)
-	var expose_button := _button("Geheimnis ausnutzen", _expose_secret, "")
-	expose_button.disabled = bool(vm["expose_disabled"])
-	rule_body.add_child(expose_button)
-	rule_body.add_child(HSeparator.new())
-	rule_body.add_child(_label("Bauen", 18, INK))
-	if str(vm["province_text"]) == "":
-		rule_body.add_child(_label(str(vm["province_hint"]), 12, INK_SOFT))
-	else:
-		rule_body.add_child(_label(str(vm["province_text"]), 12, INK_SOFT))
-		var building_icons := HBoxContainer.new()
-		building_icons.add_theme_constant_override("separation", 14)
-		for building in vm["buildings"]:
-			var cell := VBoxContainer.new()
-			cell.add_theme_constant_override("separation", 2)
-			var icon := TextureRect.new()
-			icon.custom_minimum_size = Vector2(48, 48)
-			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			icon.texture = load("res://assets/ui/tokens/building_%s.png" % str(building["key"]))
-			icon.tooltip_text = "Gebäude-Token aus der Blender-Pipeline"
-			cell.add_child(icon)
-			cell.add_child(_label("%s %d/3" % [str(building["name"]), int(building["level"])], 10, INK_SOFT))
-			building_icons.add_child(cell)
-		rule_body.add_child(building_icons)
-		for building in vm["buildings"]:
-			var button := _button(str(building["text"]), Callable(self, "_build_system").bind(str(building["key"])), "")
-			button.disabled = bool(building["disabled"])
-			rule_body.add_child(button)
-		rule_body.add_child(_label(str(vm["defense"]), 12, INK_SOFT))
+	rule_body.add_child(_label("Provinzen verwalten", 18, INK))
+	rule_body.add_child(_label("Ausbau, Wissen, Heere und Diplomatie findest du direkt nach einem Kartenklick in der Provinzseite.", 12, INK_SOFT))
+	rule_body.add_child(_button("Provinzverwaltung öffnen", _open_province_management, ""))
 
 func _cycle_council(office: String) -> void:
 	_dispatch({"id": "council_assign", "office": office})
@@ -3869,28 +3837,9 @@ func _fill_chronicle() -> void:
 	chronicle_body.add_child(HSeparator.new())
 	chronicle_body.add_child(_label("Reich & Wirtschaft", 17, INK))
 	chronicle_body.add_child(_label("Gold %d · Steuersatz %d/2 · Legitimität %d/100" % [int(h["gold"]), int(h["laws"]["tax"]), int(h["legitimacy"])], 12, INK_SOFT))
-	var econ := HBoxContainer.new()
-	econ.add_theme_constant_override("separation", 6)
-	econ.add_child(_button("Steuersatz", _toggle_tax, ""))
-	econ.add_child(_button("Erbfolge", _toggle_succession, ""))
-	econ.add_child(_button("Ausbauen", func(): _dispatch({"id": "develop"}), ""))
-	chronicle_body.add_child(econ)
-	chronicle_body.add_child(HSeparator.new())
-	chronicle_body.add_child(_label("Armee & Krieg", 17, INK))
-	var armies: Array = h["armies"]
-	if armies.is_empty():
-		chronicle_body.add_child(_label("Keine stehende Armee.", 12, INK_SOFT))
-	else:
-		for a in armies:
-			var strength: int = int(a.get("strength", 0))
-			chronicle_body.add_child(_label("Armee: %d Truppen · Moral %d" % [strength, int(a.get("morale", 0))], 12, INK_SOFT))
-			chronicle_body.add_child(_army_tokens(strength))
-	var war := HBoxContainer.new()
-	war.add_theme_constant_override("separation", 6)
-	war.add_child(_button("Truppen werben", func(): _dispatch({"id": "recruit"}), ""))
-	war.add_child(_button("Armee aufstellen (50)", _raise_army, ""))
-	war.add_child(_button("Hof halten (40)", func(): _dispatch({"id": "court"}), ""))
-	chronicle_body.add_child(war)
+	chronicle_body.add_child(_button("Herrschaft verwalten", func(): _hide_chronicle(); _show_rule(), ""))
+	chronicle_body.add_child(_button("Provinzverwaltung öffnen", _open_province_management, ""))
+	chronicle_body.add_child(_button("Feldarmee auf der Karte", func(): _hide_chronicle(); _focus_field_army(), ""))
 
 func _apply_event_art(art_key: String) -> void:
 	var tex = EVENT_ARTS.get(art_key) if art_key != "" else null

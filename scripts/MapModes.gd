@@ -6,7 +6,7 @@ const HINTS := {
 	"political":"Tatsächlicher Hausbesitz und veränderliche Herrschaftsgrenzen",
 	"terrain":"Topografie, Flüsse und feste angestammte Königreichs-/Reichsgrenzen",
 	"titles":"Angestammte Herzogtümer, Königreiche oder Reiche unabhängig vom Besitzer",
-	"economy":"Entwicklung und tatsächlicher Landsertrag; gebaute Straßen bleiben sichtbar",
+	"economy":"Landsertrag, Provinzschwerpunkte und kontrollierte Straßenversorgung",
 	"war":"Eigenes Aufgebot, erreichbare Angriffsziele, Armeen und Belagerungen",
 }
 const PALETTE := [Color("b85e52"),Color("557ea6"),Color("698d62"),Color("bb9a50"),Color("8e6da3"),Color("4f9994"),Color("a87859"),Color("7d8b52")]

@@ -150,6 +150,8 @@ static func migrate_state(source: Dictionary) -> Dictionary:
 	var by_id := {}
 	for region in regions:
 		region.owner = owner_for(region, parents, capitals)
+		region.economic_focus = "balanced"
+		region.focus_changed_month = -1
 		region.levy = 0
 		region.base_income = 0
 		region.defense = 0
@@ -260,7 +262,7 @@ static func migrate_state(source: Dictionary) -> Dictionary:
 		road["legacy_connection"] = true
 		road["migration_origin"] = index
 		report.roads.append({"from":a,"to":b,"new_from":road.from,"new_to":road.to})
-	out["schema_version"] = 13
+	out["schema_version"] = 14
 	out["world_layout"] = "regions108"
 	out["region_catalog_hash"] = Regions.catalog_hash()
 	out["migration_report"] = report

@@ -28,13 +28,15 @@ func _ready() -> void:
 	if not check(JSON.stringify(original) == before, "Eingabestand bleibt byteinhaltlich unverändert"):
 		return
 	var state: Dictionary = result.data
-	if not check(state.provinces.size() == 108 and int(state.schema_version) == 13, "108 Regionen im neuen Schema"):
+	if not check(state.provinces.size() == 108 and int(state.schema_version) == Save.CURRENT_VERSION, "108 Regionen im neuen Schema"):
 		return
 	var total_levy := 0
 	var total_income := 0
 	var market_units := 0.0
 	var ids := {}
 	for p in state.provinces:
+		if not check(p.economic_focus == "balanced" and int(p.focus_changed_month) == -1,"Historische Region erhält ausgewogenen ungebundenen Schwerpunkt"):
+			return
 		total_levy += int(p.levy)
 		total_income += int(p.base_income)
 		market_units += float(p.building_effects.market)

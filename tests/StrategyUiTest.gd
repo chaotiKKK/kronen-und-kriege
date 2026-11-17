@@ -60,6 +60,7 @@ func _ready() -> void:
 		if DisplayServer.get_name() != "headless":
 			await RenderingServer.frame_post_draw
 			get_viewport().get_texture().get_image().save_png("res://build/verify/strategy-province-research.png")
+		await _foreign_province_cases(inspector,str(p.id))
 	main._show_house_designer()
 	var designer = main.get_meta("singleplayer_designer")
 	check(is_instance_valid(designer) and main.kernel.top_modal() == "house_designer", "Einzelspieler öffnet denselben gemeinsamen Hausdesigner")
@@ -69,6 +70,43 @@ func _ready() -> void:
 		check(not child.text.contains("speichern") and not child.text.contains("laden") and not child.text.contains("WLAN"), "Welt enthält keine Datei-/Lobbyverwaltung")
 	await _network_designers()
 	finish()
+
+func _foreign_province_cases(inspector, own_id: String) -> void:
+	var foreign_id := ""
+	for province in main.game.provinces:
+		if int(province.owner) != main.game.player and main.game.is_border_province(main.game.player,str(province.id)) and not main.game.has_claim(str(province.id)):
+			foreign_id = str(province.id)
+			break
+	check(foreign_id != "", "Grenzregion für fremden Provinzkontext vorhanden")
+	if foreign_id == "": return
+	var before: String = main.LanSessionScript.Protocol.world_hash(main.game.snapshot())
+	inspector.show_section("research")
+	main._on_province_selected(foreign_id)
+	await settle()
+	check(not inspector.section_buttons.buildings.visible and not inspector.sections.buildings.visible, "Fremdes Land zeigt weder Ausbau-Reiter noch Gebäudeaktionen")
+	check(not inspector.section_buttons.research.visible and not inspector.sections.research.visible, "Fremdes Land zeigt weder Wissens-Reiter noch eigene Forschungsaktionen")
+	check(inspector.current_section == "army" and inspector.sections.army.visible, "Fremde Provinz öffnet unmittelbar ihren sinnvollen Kriegskontext")
+	inspector.show_section("research")
+	check(inspector.current_section == "army" and not inspector.sections.research.visible, "Verborgene Verwaltung lässt sich in fremdem Land nicht wieder öffnen")
+	check(not main.recruit_btn.is_visible_in_tree() and not inspector.action_buttons.army.is_visible_in_tree() and not inspector.action_buttons.fleet.is_visible_in_tree(), "Fremde Provinz zeigt keine eigene Werbung, Armee- oder Flottenaufstellung")
+	check(main.LanSessionScript.Protocol.world_hash(main.game.snapshot()) == before, "Kontextwechsel und fremde Inspektion verändern keine Spielwelt")
+	var claim = inspector.action_buttons.get("claim")
+	check(claim != null, "Fremde Grenzregion bietet die bestehende Anspruchsaktion direkt an")
+	if claim != null:
+		check(claim.is_visible_in_tree() and not claim.disabled, "Anspruch ist bei Grenze und ausreichendem Gold tatsächlich nutzbar")
+		var gold: int = main.game.house().gold
+		claim.pressed.emit()
+		await settle()
+		check(main.game.has_claim(foreign_id) and int(main.game.house().gold) == gold-40, "Direkter Anspruch führt die echte bestehende Aktion mit40GoldKosten aus")
+		check(not claim.is_visible_in_tree() or claim.disabled, "Vorhandener Anspruch verhindert unnötiges erneutes Bezahlen")
+	check(main.attack_btn.is_visible_in_tree() and main.attack_btn.disabled == not main.game.can_attack(foreign_id), "Angriff zeigt dieselbe Verfügbarkeit wie die bestehenden Spielregeln")
+	main._on_province_selected(own_id)
+	await settle()
+	check(inspector.section_buttons.buildings.visible and inspector.section_buttons.research.visible, "Eigener Besitz erhält Ausbau und Wissen zurück")
+	inspector.show_section("army")
+	check(main.recruit_btn.is_visible_in_tree() and inspector.action_buttons.army.is_visible_in_tree(), "Eigene Heeresverwaltung bleibt nach fremder Auswahl erreichbar")
+	check(inspector.action_buttons.fleet.is_visible_in_tree() == main.game.is_coastal(own_id), "Flottenaufstellung erscheint ausschließlich in einer eigenen Küstenprovinz")
+	check(not main.attack_btn.is_visible_in_tree() and (claim == null or not claim.is_visible_in_tree()), "Eigene Provinz verbirgt unpassende Angriff- und Anspruchsaktionen")
 
 func _network_designers() -> void:
 	var guest = load("res://scenes/Main.tscn").instantiate()

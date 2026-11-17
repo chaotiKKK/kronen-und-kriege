@@ -36,6 +36,18 @@ mkdir -p "$LOGDIR"
 
 # Logik- und UI-Tests ohne Renderpfad.
 HEADLESS=(
+	ArmyLifecycleTest
+	SupplyNetworkTest
+	ProvinceEconomyTest
+	ProvinceEconomyStoreTest
+	ProvinceSupplyTest
+	ProvinceEconomyCommandTest
+	EconomyMapTest
+	ArmyLoopTest
+	ArmyCampaignTest
+	ArmyMarkerTest
+	SiegeSafetyTest
+	MarchCommandTest
 	CourtManagementTest
 	ResearchPanelTest
 	ResearchDepthTest
@@ -87,6 +99,8 @@ HEADLESS=(
 # Suiten, die einen echten Viewport brauchen.
 # CourtShotTest gehört ebenfalls hierher; es war zuvor nicht registriert.
 WINDOWED=(
+	ProvinceEconomyUiTest
+	WarInteractionTest
 	TitleMenuTest
 	StrategyUiTest
 	CompactHudTest

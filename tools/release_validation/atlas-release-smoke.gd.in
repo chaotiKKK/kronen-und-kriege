@@ -191,7 +191,7 @@ func _run() -> void:
 	_check(main._load(), "Load action failed in isolated profile")
 	main.game.speed = 0
 	_check(main.game.year == saved_year and main.game.month == saved_month, "Save/load did not restore deliberately mutated date")
-	_check(main.game.house().ruler.name == "Ari Paketprüfung" and int(save_state.schema_version) == 13 and str(save_state.region_catalog_hash).length() == 64, "Packaged save/load lost character or catalog binding")
+	_check(main.game.house().ruler.name == "Ari Paketprüfung" and int(save_state.schema_version) == int(load("res://scripts/SaveGame.gd").CURRENT_VERSION) and str(save_state.region_catalog_hash).length() == 64, "Packaged save/load lost character or catalog binding")
 	await _frames()
 	var ui = main.get_meta("modern_interface")
 	ui.set_text_scale(2.0)

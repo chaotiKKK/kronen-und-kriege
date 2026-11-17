@@ -669,6 +669,8 @@ func fit_layout() -> void:
 	var width: float = main.get_viewport_rect().size.x
 	_fit_title_menu()
 	_fit_dialogs()
+	if province_inspector != null:
+		province_inspector.section_tabs.columns = 1 if text_scale > 1.3 else 2
 	if is_equal_approx(width, last_width):
 		return
 	last_width = width

@@ -1,0 +1,311 @@
+extends SceneTree
+## External probe: launch the final EXE with --script <copied-helper.gd> -- <absolute-output>.
+## No preload refers to a source checkout. All game resources resolve through res://.
+var main
+var ui
+var inspector
+var output := ""
+var results: Array = []
+var screenshots: Array = []
+var omitted_screenshots: Array = []
+var failures := 0
+var started_ms := 0
+var evidence: Dictionary = {}
+var budget: Array = []
+var source_probe := false
+
+func _initialize() -> void:
+	started_ms = Time.get_ticks_msec()
+	process_frame.connect(_watchdog)
+	call_deferred("_run")
+
+func _watchdog() -> void:
+	if Time.get_ticks_msec() - started_ms > 180000:
+		_check(false,"Probe exceeded its three-minute execution budget")
+		_finish()
+
+func _run() -> void:
+	var args := OS.get_cmdline_user_args()
+	if args.is_empty() or not str(args[0]).is_absolute_path():
+		push_error("Absolute output directory required after --")
+		quit(2)
+		return
+	output = str(args[0]).replace("\\","/")
+	source_probe = args.has("--source-probe")
+	if DirAccess.make_dir_recursive_absolute(output) != OK:
+		push_error("Cannot create gameplay output directory")
+		quit(2)
+		return
+	seed(191140)
+	var scene = load("res://scenes/Main.tscn")
+	if not _check(scene is PackedScene,"Embedded main scene loads"):
+		_finish()
+		return
+	main = scene.instantiate()
+	root.add_child(main)
+	current_scene = main
+	await _frames()
+	main._start(0)
+	main.game.speed = 0
+	ui = main.get_meta("modern_interface")
+	inspector = ui.province_inspector
+	ui.set_touch_layout(false)
+	ui.set_text_scale(1.0)
+	await _present()
+	_check(str(ProjectSettings.get_setting("application/config/version")) == "1.9.1","Embedded version is1.9.1")
+	_check(main.game.provinces.size() == 108,"Regular menu start contains108 game regions")
+	_check(int(main.game.house().gold) == 140,"Normal menu start has genuine140gold without fixture funding")
+	await _shot("compact-desktop-normal-start")
+	_normal_eighteen_months()
+	await _economic_fixture()
+	_finish()
+
+func _npc_state(game) -> Dictionary:
+	var armies: Array = []
+	var claims := 0
+	var sieges := 0
+	for hi in game.houses.size():
+		if hi == game.player: continue
+		claims += game.houses[hi].claims.size()
+		for army in game.houses[hi].armies:
+			armies.append({"house":hi,"id":army.id,"province":army.province,"strength":army.strength})
+	for p in game.provinces:
+		if int(p.get("siege",0)) > 0: sieges += 1
+	return {"armies":armies,"claims":claims,"sieges":sieges}
+
+func _normal_eighteen_months() -> void:
+	var game = main.game
+	var before := _npc_state(game)
+	var initial_gold := int(game.house().gold)
+	var initial_age := int(game.house().ruler.age)
+	for month in 18: game.advance_month()
+	var after := _npc_state(game)
+	evidence.normal_run = {"scope":"Unmodified regular single-player start; NPC AI enabled;18 actual advance_month calls; no chosen event rewards or player commands", "initial_gold":initial_gold,"month_index":game.calendar_index(),"before":before,"after":after,"final_gold":game.house().gold,"player_provinces":game.owned().size()}
+	_check(game.calendar_index() == 18,"Normal simulation advances18 real months")
+	_check(int(game.house().ruler.age) == initial_age + 1,"Normal run applies exactly one annual aging step")
+	_check(game.human_houses.is_empty() and not after.armies.is_empty(),"Normal18month run records genuine NPC army formation with AI enabled")
+
+func _pair(game) -> Dictionary:
+	var best: Dictionary = {}
+	var best_score := -1
+	for p in game.owned():
+		var cost := int(game.province_economy_preview(str(p.id),"agriculture").cost)
+		if cost > int(game.house().gold) - 20: continue
+		var army_strength := maxi(100,roundi(float(int(p.levy) / 2) * game.legacy_war_multiplier(game.player))) + int(game.vassal_levy_bonus())
+		for id in game.neighbours(str(p.id)):
+			var target: Dictionary = game.province(str(id))
+			if int(target.owner) != game.player: continue
+			var bonus := int(game.province_economy_preview(str(p.id),"agriculture").projected_supply) - int(game.army_supply_capacity(str(p.id)))
+			var score := mini(bonus,maxi(0,army_strength - int(game.army_supply_capacity(str(id)))))
+			if best.is_empty() or score > best_score or (score == best_score and cost < int(best.cost)):
+				best = {"from":str(p.id),"to":str(id),"cost":cost,"expected_import":score}
+				best_score = score
+	return best
+
+func _record_budget(label: String) -> void:
+	budget.append({"label":label,"month_index":main.game.calendar_index(),"gold":int(main.game.house().gold)})
+
+func _advance(months: int) -> void:
+	for month in months: main.game.advance_month()
+
+func _funds(amount: int) -> bool:
+	# Wait only for the real annual economy; never set or add fixture gold.
+	var waited := 0
+	while int(main.game.house().gold) < amount and waited < 36:
+		main.game.advance_month()
+		waited += 1
+	if waited > 0: _record_budget("Waited%dmonths for real annual income" % waited)
+	return _check(int(main.game.house().gold) >= amount,"Required%dgold financed by start funds and actual annual economy" % amount)
+
+func _economic_fixture() -> void:
+	main._start(0)
+	main.game.speed = 0
+	var game = main.game
+	_check(game.human_houses.is_empty() and int(game.house().gold) == 140,"Separate budgeted campaign retains normal NPC AI and actual140gold start")
+	evidence.economic_fixture = {"scope":"Separate ordinary140gold start with normal NPC AI; no gold/levy/building/terrain edits; no all-human override (public game contract allows only2–4 human houses). Pending events are never rewarded and their UI overlay is hidden only for captures."}
+	_record_budget("Regular fixture start")
+	var pair := _pair(game)
+	if not _check(not pair.is_empty(),"Real starting realm offers an affordable own adjacent road pair"):
+		return
+	evidence.real_pair = pair
+	var from_id := str(pair.from)
+	var to_id := str(pair.to)
+	main._on_province_selected(from_id)
+	inspector.show_section("buildings")
+	await _present()
+	var picker: OptionButton = inspector.focus_picker
+	var focus_index := -1
+	for i in picker.item_count:
+		if str(picker.get_item_metadata(i)) == "agriculture": focus_index = i
+	if not _check(focus_index >= 0,"Actual inspector exposes agriculture option"):
+		return
+	var before := int(game.house().gold)
+	picker.select(focus_index)
+	picker.item_selected.emit(focus_index)
+	await _frames()
+	_check(int(game.house().gold) == before and game.province(from_id).economic_focus == "balanced","Actual focus picker previews without booking resources")
+	_check(not inspector.action_buttons.province_focus.disabled,"Real focus confirmation button is enabled")
+	inspector.action_buttons.province_focus.pressed.emit()
+	await _present()
+	_check(game.province(from_id).economic_focus == "agriculture" and int(game.house().gold) == before-int(pair.cost),"Inspector confirmation routes one exact focus payment through the real kernel")
+	_record_budget("Focus paid through inspector")
+	for i in picker.item_count:
+		if str(picker.get_item_metadata(i)) == "trade":
+			picker.select(i)
+			picker.item_selected.emit(i)
+	await _frames()
+	_check(inspector.action_buttons.province_focus.disabled and inspector.fields.focus_preview.text.contains("12"),"Alternative focus preview explains the actual twelve-month lock without a second payment")
+	main._set_map_mode("economy")
+	main.map_view.center_on(main.map_view._label_point(game.province(from_id)))
+	ui.set_touch_layout(true)
+	for scale in [1.0,2.0]:
+		ui.set_text_scale(scale)
+		await _present()
+		_scroll_to(inspector.action_buttons.province_focus)
+		await _frames()
+		_check(inspector.action_buttons.province_focus.custom_minimum_size.y >= 44,"Focus remains a44pixel touch target at%dpercent" % int(scale*100))
+		await _shot("focus-%d" % int(scale*100))
+	ui.set_text_scale(1.0)
+	ui.set_touch_layout(false)
+	inspector.show_section("research")
+	await _present()
+	if not _funds(20): return
+	var survey: Button = inspector.action_buttons["research:surveying"]
+	before = int(game.house().gold)
+	survey.pressed.emit()
+	_check(game.house().research.active == "surveying" and int(game.house().gold) == before-20,"Real research button starts Vermessung for20gold")
+	_advance(5)
+	_check(not game.house().research.known.has("surveying"),"Vermessung is not completed before six real months")
+	_advance(1)
+	_check(game.house().research.known.has("surveying"),"Vermessung completes after exactly six months")
+	_record_budget("Surveying complete")
+	if not _funds(40): return
+	_check(main._dispatch({"id":"research","innovation":"road_building"}).ok,"Kernel starts Straßenbau using actual prerequisite and40gold")
+	_advance(11)
+	_check(not game.house().research.known.has("road_building"),"Straßenbau remains active before twelve months")
+	_advance(1)
+	_check(game.house().research.known.has("road_building"),"Straßenbau completes after exactly twelve months")
+	_record_budget("Road research complete")
+	if not _funds(30): return
+	main._on_province_selected(from_id)
+	before = int(game.house().gold)
+	_check(main._dispatch({"id":"road","to":to_id}).ok and int(game.house().gold) == before-30,"Real kernel builds own adjacent road for30gold")
+	_advance(2)
+	_check(game.roads.size() == 1 and game.roads[0].state == "building" and int(game.roads[0].months) == 1,"Road is still under construction after two months")
+	_advance(1)
+	_check(game.roads[0].state == "complete","Road completes on the third real month")
+	_record_budget("Road complete")
+	if not _funds(50): return
+	main._on_province_selected(from_id)
+	inspector.show_section("army")
+	await _present()
+	before = int(game.house().gold)
+	inspector.action_buttons.army.pressed.emit()
+	_check(not game.army_for().is_empty() and int(game.house().gold) == before-50,"Real army button raises troops for50gold without fixture strength")
+	main._on_province_selected(to_id)
+	inspector.show_section("army")
+	await _present()
+	_check(not inspector.action_buttons.march.disabled,"Real adjacent destination enables march")
+	inspector.action_buttons.march.pressed.emit()
+	_check(str(game.army_for().province) == to_id,"Real inspector march moves the army into the road-connected province")
+	var report: Dictionary = game.supply_report()
+	_check(int(report.regions[to_id].demand) == int(game.army_for().strength),"Actual army strength is represented in shared supply demand")
+	_check(int(report.regions[from_id]["export"]) == int(report.regions[to_id]["import"]),"Actual finite road export equals actual import")
+	evidence.actual_supply = report
+	_record_budget("Army raised and marched")
+	await _present()
+	_scroll_to(inspector.fields.supply)
+	await _frames()
+	await _shot("war-shared-supply")
+	var foreign := ""
+	for p in game.provinces:
+		if int(p.owner) != game.player: foreign = str(p.id); break
+	main._on_province_selected(foreign)
+	await _present()
+	_check(not inspector.focus_picker.is_visible_in_tree(),"Foreign province offers no own focus administration")
+	await _shot("foreign-province")
+	_save_roundtrip(game)
+	_controlled_interruptions(game,from_id,to_id)
+	evidence.budget = budget
+
+func _save_roundtrip(game) -> void:
+	var store = load("res://scripts/SaveStore.gd")
+	var game_script = load("res://scripts/Game.gd")
+	var regions = load("res://scripts/GameRegionData.gd")
+	var save = load("res://scripts/SaveGame.gd")
+	var path := output.path_join("gameplay-schema14-save.json")
+	var state: Dictionary = game.snapshot()
+	_check(int(state.schema_version) == 14,"Budgeted gameplay snapshot uses schema14")
+	_check(store.write_snapshot(path,state),"Embedded SaveStore writes actual schema14JSON")
+	var loaded: Dictionary = store.load_snapshot(path)
+	if not _check(loaded.ok,"Embedded SaveStore reloads written schema14JSON"): return
+	var restored = game_script.new(regions,0)
+	_check(restored.restore(loaded.data),"Embedded game restores actual saved economy and army state")
+	_check(save.diff(state,restored.snapshot()).is_empty(),"JSON roundtrip preserves focus dates, funds, research, road, army and contexts exactly")
+	evidence.saved_game = path
+
+func _controlled_interruptions(game,from_id: String,to_id: String) -> void:
+	var script = load("res://scripts/Game.gd")
+	var data = load("res://scripts/GameRegionData.gd")
+	var fixture = script.new(data,0)
+	if not _check(fixture.restore(game.snapshot()),"Separate negative-case fixture clones the completed budgeted campaign"): return
+	# Only this isolated clone receives controlled terrain/army values. These
+	# values are excluded from the start-funds and legal progression evidence.
+	fixture.province(from_id).terrain_supply = 6
+	fixture.province(to_id).terrain_supply = 2
+	fixture.army_for().strength = 500
+	var supplied: Dictionary = fixture.supply_report()
+	_check(int(supplied.regions[to_id]["import"]) == 300 and int(supplied.regions[to_id].shortfall) == 0,"Controlled capacity fixture supplies500troops from200local plus300finite imports")
+	fixture.province(from_id).owner = 1
+	var occupied: Dictionary = fixture.supply_report()
+	_check(int(occupied.regions[to_id]["import"]) == 0 and int(occupied.regions[to_id].shortfall) == 300,"Controlled enemy ownership immediately breaks the actual road transport")
+	fixture.province(from_id).owner = 0
+	fixture.province(from_id).siege = 10
+	fixture.province(from_id).siege_owner = 1
+	var besieged: Dictionary = fixture.supply_report()
+	_check(int(besieged.regions[to_id]["import"]) == 0 and int(besieged.regions[to_id].shortfall) == 300,"Controlled hostile siege immediately breaks road transport")
+	evidence.controlled_negative_fixture = {"scope":"Independent clone ONLY: source terrain capacity600, destination200, stationed army500; then source owner1 or hostile siege10/owner1. No fixture values contribute to the140gold legal progression proof.","supplied":supplied,"foreign_owner":occupied,"besieged":besieged}
+
+func _scroll_to(control: Control) -> void:
+	var parent: Node = control.get_parent()
+	while parent != null and not parent is ScrollContainer: parent = parent.get_parent()
+	if parent is ScrollContainer: parent.ensure_control_visible(control)
+
+func _frames() -> void:
+	for frame in 5: await process_frame
+
+func _present() -> void:
+	main.game.speed = 0
+	main.refresh()
+	# Pending events are preserved in game state, never chosen for free funds.
+	main._hide_event()
+	await _frames()
+
+func _shot(name: String) -> void:
+	if DisplayServer.get_name() == "headless":
+		omitted_screenshots.append({"name":name,"reason":"Headless functional probe; rendering and screenshot validation not performed"})
+		return
+	await RenderingServer.frame_post_draw
+	var path := output.path_join(name + ".png")
+	var error := root.get_texture().get_image().save_png(path)
+	_check(error == OK,"Rendered screenshot saved: " + name)
+	if error == OK: screenshots.append(path)
+
+func _check(ok: bool,label: String) -> bool:
+	results.append({"ok":ok,"label":label})
+	if not ok:
+		failures += 1
+		print("GAMEPLAY_RELEASE FAIL: " + label)
+	return ok
+
+func _finish() -> void:
+	var report := {"passed":failures == 0,"version":str(ProjectSettings.get_setting("application/config/version")),"schema":14,"checks":results.size(),"failures":failures,"results":results,"screenshots":screenshots,"elapsed_ms":Time.get_ticks_msec()-started_ms,"omitted_screenshots":omitted_screenshots,"render_validation":"not_run_headless" if DisplayServer.get_name() == "headless" else "rendered_root_viewport","resource_scope":"source CLI only" if source_probe else "res resources embedded in the launched release executable","executable":OS.get_executable_path(),"engine":Engine.get_version_info().string,"viewport":[root.get_visible_rect().size.x,root.get_visible_rect().size.y],"evidence":evidence,"limitations":"Local deterministic package/CLI probe; no physical Android or WLAN claim. Controlled interruption fixture is separate from normal and budgeted progression."}
+	var f := FileAccess.open(output.path_join("gameplay-result.json"),FileAccess.WRITE)
+	if f == null:
+		push_error("Cannot write gameplay-result.json")
+		quit(2)
+		return
+	f.store_string(JSON.stringify(report,"\t") + "\n")
+	f.close()
+	print("GAMEPLAY_RELEASE %s: %d checks, %d failures" % ["OK" if failures == 0 else "FAIL",results.size(),failures])
+	quit(0 if failures == 0 else 1)

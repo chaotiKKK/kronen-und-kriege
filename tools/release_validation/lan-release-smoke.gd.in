@@ -35,6 +35,10 @@ func _run() -> void:
 		_finish()
 		return
 	protocol = load("res://scripts/LanProtocol.gd")
+	var save_format = load("res://scripts/SaveGame.gd")
+	if not _check(save_format != null and int(save_format.CURRENT_VERSION) == int(expected.schema_version), "Das Paket besitzt nicht das erwartete Save-Schema14."):
+		_finish()
+		return
 	var scene = load("res://scenes/Main.tscn")
 	if not _check(protocol != null and scene is PackedScene, "Produktiver Main- oder Protokollcode fehlt im Paket."):
 		_finish()
@@ -81,7 +85,8 @@ func _host_case() -> void:
 	_check_references(0)
 	_check(main.game.speed == 0, "Paketpartie startet nicht pausiert.")
 	var host_capital := str(main.game.houses[0].capital)
-	var guest_capital := str(main.game.houses[1].capital)
+	# Ein günstiger echter Ausbau lässt die reguläre Startkasse für Armee/Fokus frei.
+	var guest_capital := _development_province(1)
 	var host_gold := int(main.game.houses[0].gold)
 	var guest_gold := int(main.game.houses[1].gold)
 	var host_dev := int(main.game.province(host_capital).dev)
@@ -94,12 +99,20 @@ func _host_case() -> void:
 	_check(int(main.game.houses[0].gold) == host_gold - host_cost and int(main.game.province(host_capital).dev) == host_dev + 1, "Hostausbau wurde nicht genau einmal berechnet.")
 	_check(int(main.game.houses[1].gold) == guest_gold, "Hostausbau belastete das Gasthaus.")
 	_write_marker("built")
-	if not await _until(func(): return int(main.game.houses[1].gold) == guest_gold - guest_cost and int(main.game.province(guest_capital).dev) == guest_dev + 1, "Echter Gastausbau beim Host"):
+	if not await _until(func(): return int(main.game.houses[1].gold) <= guest_gold - guest_cost and int(main.game.province(guest_capital).dev) == guest_dev + 1, "Echter Gastausbau beim Host"):
 		return
 	if not await _until(func(): return _marker_exists("guest", "actions-complete"), "Gast hat echte Bestätigungen und Ablehnung beobachtet"):
 		return
 	_check_references(0)
 	_check(int(main.game.houses[0].gold) == host_gold - host_cost and int(main.game.province(host_capital).dev) == host_dev + 1, "Abgewiesener Gastbefehl veränderte das Hosthaus.")
+	var actions := _marker("guest", "actions-complete").get("actions",{}) as Dictionary
+	if not _check(not actions.is_empty() and str(actions.get("world_hash","")) == protocol.world_hash(main.game.snapshot()), "Host bestätigt nicht denselben Fokus-/Armee-Endstand wie der echte Gast."):
+		return
+	for key in ["focus_province","focus_cost","focus_changed_month","army_id","march_from","march_to"]:
+		observed[key] = actions.get(key)
+	_check(int(main.game.houses[1].gold) == guest_gold-guest_cost-int(actions.focus_cost)-50, "Gastbefehle buchen Fokus und Armee genau einmal beim Host.")
+	if not await _host_save_resume(actions):
+		return
 	_capture_world()
 	_write_marker("world-ready")
 	if not await _until(func(): return _marker_exists("guest", "observed"), "Gast hat denselben endgültigen Paketstand beobachtet"):
@@ -127,7 +140,7 @@ func _guest_case() -> void:
 	if not await _until(func(): return _marker_exists("host", "built"), "Host hat eigene Main-Aktion abgeschlossen"):
 		return
 	var host_capital := str(main.game.houses[0].capital)
-	var guest_capital := str(main.game.houses[1].capital)
+	var guest_capital := _development_province(1)
 	var base_houses: Array = main.DataScript.houses()
 	var base_provinces: Array = main.DataScript.provinces()
 	var base_host_dev := -1
@@ -170,13 +183,153 @@ func _guest_case() -> void:
 	_check(int(main.game.houses[1].gold) == guest_gold - guest_cost, "Abgewiesener Befehl kostete den Gast weiteres Gold.")
 	observed["rejected_message"] = rejection_text
 	observed["rejected_hint"] = str(main.hint_label.text)
-	_write_marker("actions-complete")
+	var actions := await _guest_extended_actions(host_capital)
+	if actions.is_empty():
+		return
+	_write_marker("actions-complete",{"actions":actions})
+	if not await _guest_save_resume(actions):
+		return
 	if not await _until(func(): return _marker_exists("host", "world-ready"), "Host hat endgültigen tatsächlichen Paketstand eingefroren"):
 		return
 	_check_references(1)
 	_capture_world()
 	_write_marker("observed")
 	session.close_session("Gast der Paketprüfung ist fertig.")
+
+func _guest_command(command: Dictionary, stage: String) -> Dictionary:
+	var previous := acknowledgements.size()
+	var sent: Dictionary = main._dispatch(command)
+	if not _check(bool(sent.get("ok",false)) and main.lan_session.pending_command, stage+": Befehl wurde nicht als echte Gastanfrage versendet."):
+		return {}
+	if not await _until(func(): return acknowledgements.size()>previous and not main.lan_session.pending_command, stage+": Hostantwort und Snapshot"):
+		return {}
+	_check_references(1)
+	return acknowledgements[-1]
+
+func _development_province(house: int) -> String:
+	var candidates: Array = []
+	for province in main.game.provinces:
+		if int(province.owner)==house and int(province.dev)<10:
+			candidates.append({"id":str(province.id),"cost":int(main.game.region_capacity(province).develop_cost)})
+	candidates.sort_custom(func(a: Dictionary,b: Dictionary) -> bool:
+		return a.cost<b.cost if a.cost!=b.cost else a.id<b.id)
+	return str(candidates[0].id) if not candidates.is_empty() else ""
+
+func _guest_extended_actions(host_capital: String) -> Dictionary:
+	var own: Array = []
+	for province in main.game.provinces:
+		if int(province.owner) == 1:
+			own.append(str(province.id))
+	own.sort()
+	var focus_province := ""
+	var focus_cost := 2147483647
+	var march_from := ""
+	var march_to := ""
+	for id in own:
+		var cost := maxi(1,roundi(20.0*float(main.game.province(id).economic_share)))
+		if cost < focus_cost:
+			focus_cost = cost
+			focus_province = id
+		var neighbours: Array = main.game.neighbours(id).duplicate()
+		neighbours.sort()
+		for target in neighbours:
+			if march_from == "" and int(main.game.province(str(target)).get("owner",-1)) == 1:
+				march_from = id
+				march_to = str(target)
+	if not _check(focus_province != "" and march_from != "" and int(main.game.houses[1].gold)>=focus_cost+50, "Reguläre Gastkasse oder eigene benachbarte Marschroute reicht für Fokus/Armee nicht."):
+		return {}
+	var gold := int(main.game.houses[1].gold)
+	var month := int(main.game.calendar_index())
+	main._on_province_selected(focus_province)
+	var result := await _guest_command({"id":"province_focus","focus":"agriculture"},"Eigene Kornkammer")
+	if not _check(bool(result.get("ok",false)),"Echte Gast-Kornkammer wurde abgewiesen."):
+		return {}
+	_check(int(main.game.houses[1].gold)==gold-focus_cost and str(main.game.province(focus_province).economic_focus)=="agriculture" and int(main.game.province(focus_province).focus_changed_month)==month,"Fokus bucht Kosten und Bindungsbeginn nicht genau einmal.")
+	var hash_before := str(protocol.world_hash(main.game.snapshot()))
+	result = await _guest_command({"id":"province_focus","focus":"trade"},"Fokusbindung")
+	_check(not bool(result.get("ok",true)) and protocol.world_hash(main.game.snapshot())==hash_before,"Gast umgeht die zwölfmonatige Schwerpunktbindung.")
+	main._on_province_selected(host_capital)
+	result = await _guest_command({"id":"province_focus","focus":"agriculture"},"Fremder Schwerpunkt")
+	_check(not bool(result.get("ok",true)) and protocol.world_hash(main.game.snapshot())==hash_before,"Gast verändert einen fremden Schwerpunkt oder dessen Kasse.")
+	main._on_province_selected(march_from)
+	result = await _guest_command({"id":"army"},"Eigene Feldarmee")
+	if not _check(bool(result.get("ok",false)) and main.game.houses[1].armies.size()==1,"Gast stellt über Main keine echte eigene Feldarmee auf."):
+		return {}
+	var army: Dictionary = main.game.houses[1].armies[0]
+	var army_id := int(army.id)
+	var strength := int(army.strength)
+	result = await _guest_command({"id":"select_army","army":army_id},"Eigene Armeewahl")
+	_check(bool(result.get("ok",false)) and int(main.game.houses[1].armies[0].id)==army_id and int(main.game.houses[1].armies[0].strength)==strength,"Echte Armeewahl verlor ID oder Truppen.")
+	main._on_province_selected(march_to)
+	result = await _guest_command({"id":"march"},"Angrenzender eigener Marsch")
+	if not _check(bool(result.get("ok",false)) and str(main.game.houses[1].armies[0].province)==march_to,"Echter Gastmarsch erreicht seine benachbarte Provinz nicht."):
+		return {}
+	_check(int(main.game.houses[1].gold)==gold-focus_cost-50 and int(main.game.houses[1].armies[0].strength)==strength and main.game.calendar_index()==month,"Auswahl/Marsch erzeugten zusätzliche Kosten, Truppen oder Zeit.")
+	var actions := {"focus_province":focus_province,"focus_cost":focus_cost,"focus_changed_month":month,"army_id":army_id,"march_from":march_from,"march_to":march_to,"world_hash":protocol.world_hash(main.game.snapshot())}
+	for key in actions:
+		if key != "world_hash": observed[key] = actions[key]
+	observed["focus_verified"] = true
+	observed["army_commands_verified"] = true
+	return actions
+
+func _host_save_resume(actions: Dictionary) -> bool:
+	var session = main.lan_session
+	var before_hash := str(protocol.world_hash(main.game.snapshot()))
+	main.lan_menu.save_button.pressed.emit()
+	var saved = JSON.parse_string(FileAccess.get_file_as_string("user://lan_partie.json"))
+	if not _check(saved is Dictionary and int(saved.get("state",{}).get("schema_version",0))==14 and saved.get("fingerprint")==session._fingerprint,"Produktiver Speichernbutton schreibt keinen aktuellen Schema14-WLAN-Stand."):
+		return false
+	_check(protocol.world_hash(saved.state)==before_hash,"Gespeicherte Paketwelt unterscheidet sich vom bestätigten Hoststand.")
+	main.lan_menu.lobby_button.pressed.emit()
+	if not await _until(func(): return session.phase=="lobby", "Produktive Rückkehr zur Fortsetzungslobby"):
+		return false
+	var loaded: Dictionary = session.load_host_lobby()
+	if not _check(bool(loaded.get("ok",false)) and session.is_resuming(),"Der echte gespeicherte Schema14-Stand kann nicht geladen werden."):
+		return false
+	_check(protocol.world_hash(session.game.snapshot())==before_hash,"Laden verändert den Fokus-/Armee-Spielstand.")
+	_write_marker("loaded")
+	if not await _until(func():
+		if session.players.size()!=2: return false
+		for peer in session.players:
+			if not bool(session.players[peer].ready): return false
+		return true, "Beide Prozesse zur gespeicherten Fortsetzung bereit"):
+		return false
+	main.lan_menu.start_button.pressed.emit()
+	if not await _until(func(): return session.phase=="playing" and main.game==session.game,"Produktive Schema14-Fortsetzung"):
+		return false
+	_check_references(0)
+	_check(protocol.world_hash(main.game.snapshot())==before_hash,"Wiederaufgenommene Paketwelt änderte ihren Inhalt.")
+	_check(str(main.game.province(str(actions.focus_province)).economic_focus)=="agriculture" and int(main.game.houses[1].armies[0].id)==int(actions.army_id) and str(main.game.houses[1].armies[0].province)==str(actions.march_to),"Fokus, Armeewahl oder Marschziel gehen beim Fortsetzen verloren.")
+	observed["focus_verified"] = true
+	observed["army_commands_verified"] = true
+	observed["schema14_resume_verified"] = true
+	_write_marker("resumed")
+	return await _until(func(): return _marker_exists("guest","resume-verified"),"Gast prüft gespeicherte Fokus-/Marschbindung")
+
+func _guest_save_resume(actions: Dictionary) -> bool:
+	var session = main.lan_session
+	if not await _until(func(): return session.phase=="lobby" and session.is_resuming(),"Gast erhält Schema14-Fortsetzungslobby"):
+		return false
+	if not await _until(func(): return _marker_exists("host","loaded"),"Host hat den tatsächlichen Paketspielstand geladen"):
+		return false
+	main.lan_menu.ready_button.pressed.emit()
+	if not await _until(func(): return session.phase=="playing" and main.game==session.game,"Gast erhält gespeicherten Startsnapshot"):
+		return false
+	if not await _until(func(): return _marker_exists("host","resumed"),"Host bestätigt gespeicherte Fortsetzung"):
+		return false
+	_check_references(1)
+	_check(main.game.snapshot().schema_version==14 and str(main.game.province(str(actions.focus_province)).economic_focus)=="agriculture" and int(main.game.province(str(actions.focus_province)).focus_changed_month)==int(actions.focus_changed_month),"Gast verlor Schema14 oder Schwerpunktbindung nach Laden.")
+	_check(int(main.game.houses[1].armies[0].id)==int(actions.army_id) and str(main.game.houses[1].armies[0].province)==str(actions.march_to),"Gast verlor gespeicherte Armeewahl oder Marschposition.")
+	var before_hash := str(protocol.world_hash(main.game.snapshot()))
+	main._on_province_selected(str(actions.focus_province))
+	var result := await _guest_command({"id":"province_focus","focus":"trade"},"Gespeicherte Schwerpunktbindung")
+	_check(not bool(result.get("ok",true)),"Save/Resume umgeht die Schwerpunktbindung.")
+	main._on_province_selected(str(actions.march_from))
+	result = await _guest_command({"id":"march"},"Gespeicherte monatliche Marschsperre")
+	_check(not bool(result.get("ok",true)) and protocol.world_hash(main.game.snapshot())==before_hash,"Save/Resume umgeht die Monatsgrenze oder verändert abgewiesene Befehle.")
+	observed["schema14_resume_verified"] = true
+	_write_marker("resume-verified")
+	return true
 
 func _check_references(house: int) -> void:
 	_check(main.game == main.lan_session.game and main.kernel.game == main.game and main.map_view.game == main.game, "Main, Session, Kernel oder Karte verwendet einen alten Snapshot.")
@@ -191,7 +344,9 @@ func _capture_world() -> void:
 	observed["month_index"] = int(main.game.calendar_index())
 	observed["house_gold"] = [int(main.game.houses[0].gold), int(main.game.houses[1].gold)]
 	observed["capital_development"] = [int(main.game.province(str(main.game.houses[0].capital)).dev), int(main.game.province(str(main.game.houses[1].capital)).dev)]
+	observed["developed_guest_province"] = _development_province(1)
 	observed["references_current"] = main.game == main.lan_session.game and main.kernel.game == main.game and main.map_view.game == main.game
+	observed["schema_version"] = int(main.game.snapshot().schema_version)
 
 func _until(condition: Callable, stage: String) -> bool:
 	var deadline := Time.get_ticks_msec() + int(expected.phase_timeout_ms)
@@ -206,24 +361,29 @@ func _until(condition: Callable, stage: String) -> bool:
 	return false
 
 func _marker_exists(role: String, stage: String) -> bool:
+	return not _marker(role,stage).is_empty()
+
+func _marker(role: String, stage: String) -> Dictionary:
 	var path := str(expected.output) + "/" + role + "-" + stage + ".json"
 	if not FileAccess.file_exists(path):
-		return false
+		return {}
 	# A concurrently published Windows marker may still be temporarily unreadable.
 	# Poll again without making a transient probe emit an engine error.
 	var raw := FileAccess.get_file_as_string(path)
 	if raw.is_empty():
-		return false
+		return {}
 	var parser := JSON.new()
 	if parser.parse(raw) != OK:
-		return false
+		return {}
 	var marker = parser.data
-	return marker is Dictionary and marker.get("run_id") == expected.run_id and marker.get("role") == role and marker.get("stage") == stage
+	return marker if marker is Dictionary and marker.get("run_id") == expected.run_id and marker.get("role") == role and marker.get("stage") == stage else {}
 
-func _write_marker(stage: String) -> void:
-	_write_json(str(expected.output) + "/" + str(expected.role) + "-" + stage + ".json", {
+func _write_marker(stage: String, payload: Dictionary = {}) -> void:
+	var marker := {
 		"run_id":expected.run_id, "role":expected.role, "stage":stage,
-		"pid":OS.get_process_id(), "elapsed_ms":Time.get_ticks_msec() - started_ms})
+		"pid":OS.get_process_id(), "elapsed_ms":Time.get_ticks_msec() - started_ms}
+	marker.merge(payload)
+	_write_json(str(expected.output) + "/" + str(expected.role) + "-" + stage + ".json",marker)
 
 func _write_json(path: String, value: Dictionary) -> void:
 	var temporary := path + ".tmp-" + str(OS.get_process_id())

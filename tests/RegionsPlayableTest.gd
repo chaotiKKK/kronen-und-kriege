@@ -1,6 +1,7 @@
 extends Node
 const Legacy = preload("res://scripts/Data.gd")
 const Game = preload("res://scripts/Game.gd")
+const Save = preload("res://scripts/SaveGame.gd")
 var checks := 0
 var main
 
@@ -51,7 +52,7 @@ func _ready() -> void:
 	if not check(bool(main._save().ok), "Migrierter Stand regulär gespeichert"):
 		return
 	var saved = JSON.parse_string(FileAccess.get_file_as_string(path))
-	if not check(int(saved.schema_version) == 13 and saved.region_catalog_hash.length() == 64, "Aktueller Stand trägt Schema und Kataloghash"):
+	if not check(int(saved.schema_version) == Save.CURRENT_VERSION and saved.region_catalog_hash.length() == 64, "Aktueller Stand trägt Schema und Kataloghash"):
 		return
 	main._show_create()
 	main.edit_ruler.text = "Ari Test"

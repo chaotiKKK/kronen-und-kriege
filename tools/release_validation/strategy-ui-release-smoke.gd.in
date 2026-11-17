@@ -1,5 +1,5 @@
 extends SceneTree
-## External release probe: launch the exported EXE with --script <this file> -- <absolute output directory>.
+## External release probe template: copied to .gd for the exported EXE by its launcher.
 ## Every game resource is loaded from the EXE's PCK. Mutations use an isolated test game only.
 var main
 var ui

@@ -6,6 +6,7 @@ extends Control
 signal province_selected(province_id: String)
 signal map_mode_changed(mode: String)
 signal province_activated(province_id: String)
+signal army_selected(house_index: int, province_id: String)
 signal atlas_location_selected(record: Dictionary)
 
 const MapModesScript = preload("res://scripts/MapModes.gd")
@@ -78,6 +79,8 @@ var empire_banners_drawn: Array = []
 ## Audit der tatsächlich gezeichneten Flottenmarker. Wird in jedem Draw neu
 ## gefüllt und dient dem Fenstertest als Nachweis des realen Draw-Pfads.
 var fleet_markers_drawn: Array = []
+var economic_markers_drawn: Array = []
+var army_markers_drawn: Array = []
 var _terrain_tex: Dictionary = {}
 var _building_tex: Dictionary = {}
 var _unit_tex: Dictionary = {}
@@ -393,6 +396,19 @@ func _province_at(pos: Vector2) -> String:
 func _pick_at(pos: Vector2) -> void:
 	if game == null:
 		return
+	# Armeeplaketten sind selbst bedienbare Ziele, auch wenn ihr Schild neben
+	# der eigentlichen Provinzfläche liegt. Auswahl erteilt niemals Befehle.
+	if map_mode == "war":
+		var markers := army_markers()
+		markers.reverse()
+		for marker in markers:
+			if (marker.rect as Rect2).has_point(pos):
+				selected = str(marker.province)
+				atlas_location = ""
+				province_selected.emit(selected)
+				army_selected.emit(int(marker.house),selected)
+				queue_redraw()
+				return
 	atlas_location = ""
 	var record: Dictionary = {}
 	var anchor_target := false
@@ -438,6 +454,7 @@ func _draw() -> void:
 	var s: float = fit[0]
 	var off: Vector2 = fit[1]
 	fleet_markers_drawn.clear()
+	army_markers_drawn.clear()
 	capital_markers_drawn.clear()
 	kingdom_banners_drawn.clear()
 	empire_banners_drawn.clear()
@@ -465,13 +482,21 @@ func infrastructure_segments() -> Array:
 	var segments: Array = []
 	if game == null:
 		return segments
+	var transport := {}
+	if map_mode in ["economy","war"]:
+		for edge in game.supply_report().get("roads",[]):
+			transport[_road_key(str(edge.from),str(edge.to))] = edge
 	for road in game.road_segments():
 		var a: Dictionary = game.province(str(road.from))
 		var b: Dictionary = game.province(str(road.to))
 		if a.is_empty() or b.is_empty():
 			continue
-		segments.append({"a": _label_point(a), "b": _label_point(b), "state": road.state, "months": road.months})
+		var edge: Dictionary = transport.get(_road_key(str(road.from),str(road.to)),{})
+		segments.append({"from":str(road.from),"to":str(road.to),"a": _label_point(a), "b": _label_point(b), "state": road.state, "months": road.months,"transport_active":bool(edge.get("active",false)),"transport_reason":str(edge.get("reason","")),"own_route":int(a.owner)==game.player or int(b.owner)==game.player})
 	return segments
+
+func _road_key(a: String, b: String) -> String:
+	return a+"|"+b if a<b else b+"|"+a
 
 func _draw_infrastructure(s: float, off: Vector2) -> void:
 	for segment in infrastructure_segments():
@@ -479,8 +504,11 @@ func _draw_infrastructure(s: float, off: Vector2) -> void:
 		var b: Vector2 = off + segment.b * s
 		var width: float = clampf(2.0 * s, 2.5, 6.0)
 		if segment.state == "complete":
+			var road_color := Color(0.95,0.81,0.48)
+			if map_mode in ["economy","war"] and bool(segment.own_route):
+				road_color = Color("77c9a4") if bool(segment.transport_active) else Color("d58b72")
 			draw_line(a, b, Color(0.12, 0.08, 0.035, 0.92), width + 3.0, true)
-			draw_line(a, b, Color(0.95, 0.81, 0.48), width, true)
+			draw_line(a, b, road_color, width, true)
 			draw_line(a, b, Color(1.0, 0.94, 0.74), 1.0, true)
 		else:
 			var length: float = a.distance_to(b)
@@ -501,6 +529,7 @@ func _draw_labels(s: float, off: Vector2) -> void:
 	var map_rect := Rect2(off, MAP_SIZE * s)
 	var inner := map_rect.intersection(Rect2(Vector2.ZERO, size)).grow(-3)
 	atlas_obstacles.clear()
+	economic_markers_drawn.clear()
 	# Die Minimap ist ein Geschwister-Control; ihr Raum gehört nicht den Labels.
 	if get_parent() != null:
 		for sibling in get_parent().get_children():
@@ -518,12 +547,17 @@ func _draw_labels(s: float, off: Vector2) -> void:
 		labels_drawn = 0
 		if map_mode == "war":
 			_draw_war_markers(s, off, font)
+		elif map_mode == "economy":
+			_draw_economic_markers(font)
 		_draw_hover_tooltip(font)
 		return
 
 	# Die Blender-Marker sitzen an den Halte- und Königreichssitzen. Sie werden
 	# vor den Titeln eingeplant, damit die Beschriftung nicht auf ihnen landet.
 	_draw_3d_markers(s, off, occupied, inner)
+	if map_mode == "economy":
+		_draw_economic_markers(font)
+		for marker in economic_markers_drawn: occupied.append(marker.rect)
 
 	# Neun Königreichstitel; sie bekommen zuerst Platz.
 	var groups: Array = []
@@ -804,6 +838,88 @@ func _terrain_info(key: String) -> Dictionary:
 		return game.data.terrain_info(key)
 	return {"name": key, "color": Color(0.47, 0.54, 0.30)}
 
+func focus_markers() -> Array:
+	var markers: Array = []
+	if game == null or map_mode != "economy": return markers
+	var fit := _fit()
+	var scale: float = preload("res://scripts/ModernInterface.gd").text_scale
+	var font := ThemeDB.fallback_font
+	for p in game.provinces:
+		var focus := str(p.get("economic_focus","balanced"))
+		if not focus in ["agriculture","trade"]: continue
+		if zoom < 1.6 and int(p.owner) != game.player and str(p.id) != selected: continue
+		var anchor: Vector2 = _label_point(p)*float(fit[0])+Vector2(fit[1])
+		if not Rect2(Vector2.ZERO,size).has_point(anchor): continue
+		var label := "Kornkammer" if focus == "agriculture" else "Handelsort"
+		var width := font.get_string_size(label,HORIZONTAL_ALIGNMENT_LEFT,-1,int(11*scale)).x+12
+		var rect := Rect2(anchor+Vector2(12,14),Vector2(width,20*scale))
+		rect.position.x = clampf(rect.position.x,0,maxf(0,size.x-rect.size.x))
+		rect.position.y = clampf(rect.position.y,0,maxf(0,size.y-rect.size.y))
+		markers.append({"id":str(p.id),"focus":focus,"label":label,"rect":rect,"color":Color("97d4a2") if focus=="agriculture" else Color("edd18c")})
+	return markers
+
+func _draw_economic_markers(font: Font) -> void:
+	var scale: float = preload("res://scripts/ModernInterface.gd").text_scale
+	for marker in focus_markers():
+		var rect: Rect2 = marker.rect
+		draw_rect(rect,Color(.035,.06,.07,.92))
+		draw_rect(rect,marker.color,false,1)
+		draw_string(font,rect.position+Vector2(6,14*scale),marker.label,HORIZONTAL_ALIGNMENT_LEFT,rect.size.x-12,int(11*scale),marker.color)
+		economic_markers_drawn.append(marker)
+		atlas_obstacles.append(rect)
+
+func army_markers() -> Array:
+	var markers: Array = []
+	if game == null or map_mode != "war" or size.x < 100 or size.y < 44:
+		return markers
+	var fit := _fit()
+	var counts := {}
+	# Eigene Verbände zuletzt zeichnen: sie bleiben an umkämpften Orten wählbar.
+	var order: Array = range(game.houses.size())
+	order.erase(game.player)
+	order.append(game.player)
+	for house_index in order:
+		for army in game.houses[house_index].get("armies",[]):
+			if int(army.get("strength",0)) <= 0: continue
+			var id := str(army.get("province",""))
+			var station: Dictionary = game.province(id)
+			if station.is_empty(): continue
+			var pos: Vector2 = _label_point(station)*float(fit[0])+Vector2(fit[1])
+			if not Rect2(Vector2.ZERO,size).has_point(pos): continue
+			var row := int(counts.get(id,0))
+			counts[id] = row+1
+			var origin := pos+Vector2(-48,-52-row*46)
+			origin.x = clampf(origin.x,0,size.x-100)
+			origin.y = clampf(origin.y,0,size.y-44)
+			var rect := _free_army_rect(origin,markers)
+			markers.append({"house":house_index,"province":id,"army":int(army.id),"strength":int(army.strength),"morale":int(army.get("morale",0)),"anchor":pos,"rect":rect})
+	return markers
+
+func _free_army_rect(origin: Vector2, placed: Array) -> Rect2:
+	# Nach dem Begrenzen an den Viewportrand dürfen Marker nicht zusammenfallen.
+	# Nächsten freien Rasterplatz suchen; Darstellung und Touch nutzen denselben Ort.
+	var best := Rect2(origin,Vector2(100,44))
+	var clear := true
+	for marker in placed:
+		if best.intersects(marker.rect): clear = false; break
+	if clear: return best
+	var distance := INF
+	var columns := maxi(1,int(size.x/104))
+	var rows := maxi(1,int(size.y/46))
+	for y in range(-rows,rows+1):
+		for x in range(-columns,columns+1):
+			var offset := Vector2(x*104,y*46)
+			if offset.length_squared() >= distance: continue
+			var candidate := Rect2(origin+offset,Vector2(100,44))
+			if not Rect2(Vector2.ZERO,size).encloses(candidate): continue
+			var collision := false
+			for marker in placed:
+				if candidate.intersects(marker.rect): collision = true; break
+			if not collision:
+				best = candidate
+				distance = offset.length_squared()
+	return best
+
 func _draw_war_markers(s: float, off: Vector2, font: Font) -> void:
 	for p in game.provinces:
 		var siege: int = int(p.get("siege", 0))
@@ -819,20 +935,23 @@ func _draw_war_markers(s: float, off: Vector2, font: Font) -> void:
 			draw_circle(pos, 12.0, Color(0.55, 0.10, 0.06, 0.92))
 			draw_arc(pos, 12.0, 0.0, TAU, 20, Color(1.0, 0.83, 0.44, 0.95), 1.5, true)
 			draw_string(font, pos + Vector2(-10, 4), "%d%%" % siege, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1.0, 0.96, 0.86))
+	for marker in army_markers():
+		var hit: Rect2 = marker.rect
+		var panel := Rect2(hit.position+Vector2(0,6),Vector2(hit.size.x,32))
+		var own: bool = int(marker.house) == game.player
+		var color: Color = game.houses[int(marker.house)].get("color",GOLD)
+		if panel.get_center().distance_to(marker.anchor) > 62:
+			draw_line(panel.get_center(),marker.anchor,Color(color,0.7),1,true)
+		draw_rect(panel,Color(.035,.06,.07,.94))
+		draw_rect(panel,CREAM if own else color,false,2 if own else 1)
+		draw_string(font,panel.position+Vector2(6,14),"%d Mann" % int(marker.strength),HORIZONTAL_ALIGNMENT_LEFT,88,12,CREAM)
+		draw_string(font,panel.position+Vector2(6,27),"Moral %d · %s" % [int(marker.morale),"dein Heer" if own else "fremd"],HORIZONTAL_ALIGNMENT_LEFT,90,9,CREAM)
+		army_markers_drawn.append(marker)
+		atlas_obstacles.append(panel)
 	# Flotten stehen im Kriegsmodus an ihrem Heimathafen oder vor der blockierten
 	# Küste. Der Ring trägt die Hausfarbe, die Zahl die Schiffszahl.
 	for house_index in game.houses.size():
 		var house_color: Color = game.houses[house_index].get("color", Color(0.7, 0.5, 0.2))
-		for army in game.houses[house_index].get("armies", []):
-			var station: Dictionary = game.province(str(army.get("province", "")))
-			if station.is_empty(): continue
-			var pos: Vector2 = _label_point(station)*s+off+Vector2(0,-22)
-			if not Rect2(Vector2.ZERO,size).has_point(pos): continue
-			var marker := Rect2(pos-Vector2(18,15),Vector2(100,30))
-			draw_rect(marker,Color(.035,.06,.07,.92))
-			draw_rect(marker,house_color,false,1.5)
-			draw_string(font,pos+Vector2(-10,5),"%d Mann" % int(army.get("strength",0)),HORIZONTAL_ALIGNMENT_LEFT,90,12,CREAM)
-			atlas_obstacles.append(marker)
 		for fleet in game.houses[house_index].get("fleets", []):
 			var station: Dictionary = game.province(str(fleet.get("station", "")))
 			if station.is_empty():
@@ -877,7 +996,7 @@ func _draw_legend(map_rect: Rect2, font: Font) -> void:
 		"political":["Flächen: aktueller Hausbesitz","Eroberungen verschieben diese Grenzen"],
 		"terrain":["Relief, Flüsse und Geländesymbole","Titelgrenzen bleiben bei Eroberung fest"],
 		"titles":["Rechtsebene oben umschalten","Titelgebiet und Besitz können abweichen"],
-		"economy":["Rot → Gelb → Grün: weniger → mehr","Farbe: Landsertrag und Entwicklung","Straßen: gebaut oder im Bau"],
+		"economy":["Rot → Gelb → Grün: weniger → mehr","Schilder: Kornkammer oder Handelsort","Straßen grün: eigenes Transportnetz","Straßen rot: Versorgung unterbrochen","Gestrichelt: Straße noch im Bau"],
 		"war":["Grün: eigene Spielregionen","Orange: aktuell angreifbare Gebiete","Grau: weitere Gebiete · Ringe: Belagerung"],
 	}[map_mode]
 	var w := minf(320.0*ui_scale,size.x-24)

@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)][string]$Exe,
-    [string]$ExpectedVersion = '1.7.0',
+    [string]$ExpectedVersion = '1.9.1',
     [ValidateRange(0, 65535)][int]$Port = 0,
     [ValidateRange(10, 180)][int]$PhaseTimeoutSeconds = 120,
     [ValidateRange(30, 600)][int]$OverallTimeoutSeconds = 300,
@@ -14,7 +14,8 @@ if ([IO.Path]::GetExtension($exePath) -ne '.exe') { throw 'Eine tatsächliche ex
 if ($OverallTimeoutSeconds -lt $PhaseTimeoutSeconds) { throw 'Die Gesamtfrist muss mindestens so lang wie eine Phasenfrist sein.' }
 $verifyRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot 'build\verify'))
 $runId = [Guid]::NewGuid().ToString('N')
-$outputPath = [IO.Path]::GetFullPath((Join-Path $verifyRoot ('lan-release-170-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '-' + $runId.Substring(0, 8))))
+$versionTag = $ExpectedVersion -replace '[^0-9A-Za-z._-]', '_'
+$outputPath = [IO.Path]::GetFullPath((Join-Path $verifyRoot ('lan-release-' + $versionTag + '-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '-' + $runId.Substring(0, 8))))
 if (-not $outputPath.StartsWith($verifyRoot + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'Pakettestausgabe muss unter build/verify bleiben.' }
 if (Test-Path -LiteralPath $outputPath) { throw 'Die Paketprüfung erfordert einen neuen exklusiven Ausgabeordner.' }
 New-Item -ItemType Directory -Path $outputPath | Out-Null
@@ -40,7 +41,7 @@ foreach ($role in @('host', 'guest')) {
     foreach ($path in @($work, $appdata, $localdata, $temporary)) { New-Item -ItemType Directory -Path $path | Out-Null }
     $expectations = [ordered]@{
         run_id = $runId; role = $role; output = $outputPath.Replace('\', '/');
-        profile = $profile.Replace('\', '/'); version = $ExpectedVersion; exe_sha256 = $exeHash;
+        profile = $profile.Replace('\', '/'); version = $ExpectedVersion; exe_sha256 = $exeHash; schema_version = 14;
         port = $Port; phase_timeout_ms = $PhaseTimeoutSeconds * 1000; overall_timeout_ms = $OverallTimeoutSeconds * 1000
     }
     $expectedJson = ConvertTo-Json -InputObject $expectations -Compress -Depth 8
@@ -172,6 +173,7 @@ try {
             throw "Ergebnisidentität stimmt nicht: $($role.Role)"
         }
         if ($report.checks -lt 20 -or $report.failures.Count -ne 0 -or -not $report.observed.references_current) { throw "Unvollständiger oder fehlgeschlagener Main-Paketnachweis: $($role.Role)" }
+        if ($report.observed.schema_version -ne 14 -or -not $report.observed.focus_verified -or -not $report.observed.army_commands_verified -or -not $report.observed.schema14_resume_verified) { throw "Fokus, Armee oder Schema14-Fortsetzung wurden nicht vollständig nachgewiesen: $($role.Role)" }
         $runtimeLog = Get-Content -LiteralPath $role.Log -Raw -Encoding utf8
         $stdout = $role.StdoutTask.Result
         $stderr = $role.StderrTask.Result
@@ -186,6 +188,9 @@ try {
     if ($hostReport.observed.world_hash -notmatch '^[0-9a-f]{64}$' -or $hostReport.observed.world_hash -ne $guestReport.observed.world_hash) { throw 'Host und Gast bestätigten keine identische tatsächliche Paketwelt.' }
     if ($hostReport.observed.personal_house -ne 0 -or $guestReport.observed.personal_house -ne 1) { throw 'Die persönlichen Paketperspektiven wurden verwechselt.' }
     if (($hostReport.observed.house_gold | ConvertTo-Json -Compress) -ne ($guestReport.observed.house_gold | ConvertTo-Json -Compress)) { throw 'Kosten unterscheiden sich zwischen den Paketprozessen.' }
+    foreach ($field in @('focus_province', 'focus_cost', 'focus_changed_month', 'army_id', 'march_from', 'march_to')) {
+        if ([string]$hostReport.observed.$field -ne [string]$guestReport.observed.$field) { throw "Gespeicherter Fokus-/Armeezustand unterscheidet sich zwischen Paketprozessen: $field" }
+    }
     if ([string]::IsNullOrWhiteSpace($guestReport.observed.accepted_message) -or [string]::IsNullOrWhiteSpace($guestReport.observed.rejected_message) -or -not $guestReport.observed.rejected_hint.Contains($guestReport.observed.rejected_message)) {
         throw 'Echte erfolgreiche und abgewiesene Gast-ACKs wurden nicht sichtbar bestätigt.'
     }
@@ -194,6 +199,7 @@ try {
         exe = $exePath; exe_sha256 = $exeHash; host_pid = $roles.host.Process.Id; guest_pid = $roles.guest.Process.Id;
         checks = $hostReport.checks + $guestReport.checks; world_hash = $hostReport.observed.world_hash;
         isolated_profiles = $true; real_enet_between_processes = $true; real_main_dispatch = $true;
+        province_focus_verified = $true; select_army_and_march_verified = $true; schema14_save_resume_verified = $true;
         physical_android_wlan_test = $false; output = $outputPath }
     $summary | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $outputPath 'summary.json') -Encoding utf8
     $succeeded = $true
