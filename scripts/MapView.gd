@@ -920,21 +920,34 @@ func _free_army_rect(origin: Vector2, placed: Array) -> Rect2:
 				distance = offset.length_squared()
 	return best
 
+func siege_markers() -> Array:
+	var markers: Array=[]
+	if game==null or map_mode!="war": return markers
+	for p in game.provinces:
+		var progress:=clampi(int(p.get("siege",0)),0,100)
+		if progress<=0: continue
+		var hi:=int(p.get("siege_owner",-1))
+		var color: Color=game.houses[hi].get("color",GOLD) if hi>=0 and hi<game.houses.size() else GOLD
+		markers.append({"province":str(p.id),"house":hi,"progress":progress,"anchor":_label_point(p),
+			"start_angle":-PI/2,"end_angle":-PI/2+TAU*progress/100.0,"color":color})
+	return markers
+
 func _draw_war_markers(s: float, off: Vector2, font: Font) -> void:
 	_draw_naval_route()
-	for p in game.provinces:
-		var siege: int = int(p.get("siege", 0))
-		if siege <= 0:
-			continue
-		var pos: Vector2 = _label_point(p) * s + off
+	for marker in siege_markers():
+		var pos: Vector2=marker.anchor*s+off
+		var color: Color=marker.color
+		var siege: int=marker.progress
 		var token: Texture2D = _unit_tex.get("siege")
 		if token != null:
 			draw_texture_rect(token, Rect2(pos - Vector2(14, 14), Vector2(28, 28)), false)
-			draw_arc(pos, 15.0, 0.0, TAU, 20, Color(1.0, 0.83, 0.44, 0.72), 1.0, true)
+			draw_arc(pos,15.0,0.0,TAU,32,Color(.03,.03,.025,.85),4.0,true)
+			draw_arc(pos,15.0,marker.start_angle,marker.end_angle,32,color,2.5,true)
 			draw_string(font, pos + Vector2(16, 4), "%d%%" % siege, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1.0, 0.96, 0.86))
 		else:
 			draw_circle(pos, 12.0, Color(0.55, 0.10, 0.06, 0.92))
-			draw_arc(pos, 12.0, 0.0, TAU, 20, Color(1.0, 0.83, 0.44, 0.95), 1.5, true)
+			draw_arc(pos,12.0,0.0,TAU,32,Color(.03,.03,.025,.85),4.0,true)
+			draw_arc(pos,12.0,marker.start_angle,marker.end_angle,32,color,2.5,true)
 			draw_string(font, pos + Vector2(-10, 4), "%d%%" % siege, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1.0, 0.96, 0.86))
 	for marker in army_markers():
 		var hit: Rect2 = marker.rect

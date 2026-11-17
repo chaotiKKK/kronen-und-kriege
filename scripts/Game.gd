@@ -138,6 +138,10 @@ const SupplyNetworkScript = preload("res://scripts/SupplyNetwork.gd")
 const EventDirectorScript = preload("res://scripts/EventDirector.gd")
 const NavalTransportScript = preload("res://scripts/NavalTransport.gd")
 const NavalCampaignScript = preload("res://scripts/NavalCampaign.gd")
+const SiegeRulesScript = preload("res://scripts/SiegeRules.gd")
+const FieldBattleRulesScript = preload("res://scripts/FieldBattleRules.gd")
+const ArmyRecoveryScript = preload("res://scripts/ArmyRecovery.gd")
+const CampaignLimitsScript = preload("res://scripts/CampaignLimits.gd")
 const ARMY_DOCTRINES := {
 	"balanced":{"id":"balanced","name":"Ausgewogen","effect_text":"Keine Zu- oder Abschläge; gemischtes Aufgebot.","attack_multiplier":1.0,"defense_multiplier":1.0,"upkeep_multiplier":1.0,"siege_bonus":0,"levy_share":0.55,"archer_share":0.25,"siege_share":0.01},
 	"infantry":{"id":"infantry","name":"Infanterie","effect_text":"+10 % Verteidigung, −5 % Angriff; normaler Unterhalt.","attack_multiplier":0.95,"defense_multiplier":1.10,"upkeep_multiplier":1.0,"siege_bonus":0,"levy_share":0.72,"archer_share":0.20,"siege_share":0.01},
@@ -1367,106 +1371,167 @@ func recruit(id: String) -> Dictionary:
 	note("In %s werden %d Mann angeworben." % [p["name"], maxi(0, int(p["levy"]) - before)])
 	return _res(true, "Truppen verstärkt.")
 
-func can_attack(id: String) -> bool:
-	if id == "":
-		return false
+func attack_preview(id: String, house_index: int = -1) -> Dictionary:
+	return FieldBattleRulesScript.assault_preview(self,id,player if house_index==-1 else house_index)
+
+func relief_preview(id: String, house_index: int = -1) -> Dictionary:
+	return FieldBattleRulesScript.relief_preview(self,id,player if house_index==-1 else house_index)
+
+func can_attack(id: String, house_index: int = -1) -> bool:
+	return bool(attack_preview(id,house_index).ok)
+
+func attack_in_range(id: String, house_index: int = -1) -> bool:
+	var hi := player if house_index==-1 else house_index
+	if hi<0 or hi>=houses.size(): return false
 	var p := province(id)
-	if p.is_empty() or int(p["owner"]) == player:
-		return false
-	if int(house()["gold"]) < 25:
-		return false
-	if not bool(disabled_edges.get("K2", false)) and not has_claim(id):
-		return false
-	var target_house: int = int(p["owner"])
-	if not bool(disabled_edges.get("D6", false)) and opinion[target_house] >= 60:
-		return false
-	if not bool(disabled_edges.get("K7", false)) and truce_until(target_house) > _now():
-		return false
-	return attack_in_range(id)
+	var army := army_for(hi)
+	if p.is_empty() or int(p.owner)==hi or army.is_empty(): return false
+	if int(army.get("strength",0))<=0 or int(army.get("morale",0))<=0: return false
+	var origin := str(army.get("province",""))
+	return origin==id or neighbours(origin).has(id)
 
-func attack_in_range(id: String) -> bool:
-	# Dieselbe Reichweite für Aktion und Kontextanzeige, unabhängig von Gold,
-	# Anspruch und vorübergehenden diplomatischen Sperren.
-	var p := province(id)
-	if p.is_empty() or int(p.owner) == player:
-		return false
-	var target_kingdom: String = str(p["kingdom"])
-	for q in owned():
-		if neighbours(str(q["id"])).has(id):
-			return true
-		if (data.kingdom_neighbours().get(str(q["kingdom"]), []) as Array).has(target_kingdom):
-			return true
-	return false
+func attack(id: String, house_index: int = -1) -> Dictionary:
+	var preview := attack_preview(id,house_index)
+	if not bool(preview.ok): return _res(false,str(preview.reason))
+	return _resolve_field_battle(preview)
 
-func attack_preview(id: String) -> Dictionary:
-	var target := province(id)
-	if target.is_empty() or int(target.owner) == player:
-		return {}
-	var target_kingdom: String = str(target["kingdom"])
-	var border_power: int = 0
-	var total_power: int = 0
-	for q in owned():
-		total_power += int(q["levy"])
-		if neighbours(str(q["id"])).has(id) or (data.kingdom_neighbours().get(str(q["kingdom"]), []) as Array).has(target_kingdom):
-			border_power += int(q["levy"])
-	var base_power: int = border_power if border_power > 0 else int(total_power * 0.5)
-	var attack_power: int = int(base_power * (1.0 + int(house()["ruler"]["martial"]) / 20.0) * legacy_war_multiplier(player) * float(doctrine_info(player).attack_multiplier) * (1.0 + research_bonus("attack_percent", player) / 100.0))
-	var field_strength := 0
-	var army := army_for()
-	if not army.is_empty() and int(army.get("last_siege_month", -1)) != _now():
-		if str(army.province) == id or neighbours(str(army.province)).has(id):
-			field_strength = int(army.strength) * int(army.morale) / 100
-	attack_power += field_strength
-	var naval_bonus := 1.0
-	if int(target.get("blockade_owner", -1)) == player and int(target.get("blockade", 0)) > 0:
-		naval_bonus = 1.25
-	var defender: Dictionary = houses[int(target["owner"])]
-	var terrain_defense: int = int(target.get("terrain_defense", 0)) + int(research_bonus("defense", int(target.owner), target))
-	var defense: int = int(target["levy"] * (1.0 + int(target["dev"]) / 12.0) * (1.0 + int(defender["ruler"]["martial"]) / 25.0) * (1.0 + (int(target.get("defense", 0)) + terrain_defense) / 100.0) * float(doctrine_info(int(target.owner)).defense_multiplier))
-	var chance := 0.0
-	if attack_power > 0:
-		chance = clampf((1.15 - float(defense) / (attack_power * naval_bonus)) / 0.3, 0, 1)
-	return {"attack_power": attack_power, "defense": defense, "chance": chance,
-		"field_army_strength": field_strength, "naval_bonus": naval_bonus}
+func relieve(id: String, house_index: int = -1) -> Dictionary:
+	var preview := relief_preview(id,house_index)
+	if not bool(preview.ok): return _res(false,str(preview.reason))
+	return _resolve_field_battle(preview)
 
-func attack(id: String) -> Dictionary:
-	if not can_attack(id):
-		return _res(false, "Angriff nicht möglich.")
-	var preview := attack_preview(id)
-	if int(preview.field_army_strength) > 0:
-		army_for().last_siege_month = _now()
-	house().gold -= 25
-	var target := province(id)
-	if float(preview.naval_bonus) > 1.0:
-		note("Die eigene Blockade unterstützt den Angriff auf %s." % target.name)
-	var attack_roll: float = randf_range(0.85, 1.15)
-	if attack_roll_override >= 0.0:
-		attack_roll = attack_roll_override
-	if preview.attack_power * attack_roll * preview.naval_bonus > preview.defense:
-		var old_owner: int = int(target["owner"])
-		if int(target.get("blockade", 0)) > 0:
-			_release_blockade(target)
-		target["owner"] = player
-		target["levy"] = int(int(target["levy"]) * 0.6)
-		target["dev"] = maxi(1, int(target["dev"]) - 1)
-		target["siege"] = 0
-		target["siege_owner"] = -1
-		_remove_claim(id, player)
-		house()["prestige"] = int(house()["prestige"]) + 15
-		_capture_reaction(old_owner, player)
-		note("Sieg! %s gehört nun zu %s." % [target["name"], house()["name"]])
-		return _res(true, "Sieg bei %s." % target["name"])
-	target["levy"] = int(int(target["levy"]) * 0.85)
-	for n in neighbours(id):
-		var q := province(n)
-		if not q.is_empty() and int(q["owner"]) == player:
-			q["levy"] = int(int(q["levy"]) * 0.8)
-	house()["prestige"] = maxi(0, int(house()["prestige"]) - 5)
-	if preview.field_army_strength > 0:
-		army_for().strength = int(int(army_for().strength) * 0.8)
-		_remove_empty_armies(player)
-	note("Niederlage bei %s." % target["name"])
-	return _res(false, "Die Schlacht ist verloren.")
+func _battle_units(hi: int, ids: Array) -> Array:
+	var units: Array = []
+	for army in houses[hi].get("armies",[]):
+		if ids.has(int(army.get("id",-1))): units.append(army)
+	return units
+
+func _apply_battle_losses(units: Array, fraction: float, winner: bool) -> int:
+	var losses := 0
+	for row in FieldBattleRulesScript.loss_plan(units,fraction,winner):
+		for army in units:
+			if int(army.id)!=int(row.id): continue
+			army.strength = int(row.remaining)
+			losses += int(row.loss)
+			if int(army.strength)>0:
+				army.morale = mini(100,int(army.get("morale",0))+int(FieldBattleRulesScript.RULES.winner_morale_gain)) if winner else maxi(int(FieldBattleRulesScript.RULES.loser_minimum_morale),int(army.get("morale",0))-int(FieldBattleRulesScript.RULES.loser_morale_loss))
+	return losses
+
+func _retreat_battle_group(hi: int, origin: String, units: Array) -> Dictionary:
+	var survivors: Array = []
+	for army in units:
+		if int(army.get("strength",0))>0: survivors.append(army)
+	if survivors.is_empty(): return {}
+	var plan: Dictionary = FieldBattleRulesScript.retreat_plan(self,hi,origin,survivors)
+	plan["house"] = hi
+	plan["strength"] = 0
+	for army in survivors: plan.strength += int(army.strength)
+	if str(plan.kind)=="surrender":
+		for army in survivors: army.strength=0
+	else:
+		if str(plan.kind)=="sea":
+			# Pin the actual escort before ending its blockade changes station.
+			var escort: Dictionary = {}
+			escort = houses[hi].fleets[int(plan.fleet_index)]
+			if bool(plan.cancel_blockade): _release_blockade(province(origin))
+			escort.province = str(plan.to)
+			escort.station = str(plan.to)
+			escort.last_naval_month = _now()
+		for army in survivors:
+			army.province = str(plan.to)
+			army.last_siege_month = _now()
+	_end_unsupported_siege(origin,hi)
+	return plan
+
+func _resolve_field_battle(preview: Dictionary) -> Dictionary:
+	var hi := int(preview.attacker_house)
+	var enemy := int(preview.defender_house)
+	var target := province(str(preview.target))
+	var attacker := army_for(hi)
+	var origin := str(attacker.province)
+	var defenders := _battle_units(enemy,preview.defender_army_ids)
+	houses[hi].gold = int(houses[hi].gold)-int(preview.cost)
+	attacker.last_siege_month = _now()
+	var roll := randf_range(float(FieldBattleRulesScript.RULES.attack_roll_min),float(FieldBattleRulesScript.RULES.attack_roll_max))
+	if attack_roll_override>=0.0: roll=attack_roll_override
+	var won := float(preview.attack_power)*roll*float(preview.naval_bonus)>float(preview.defense)
+	var attacker_loss := float(FieldBattleRulesScript.RULES.attack_win_attacker_loss if won else FieldBattleRulesScript.RULES.attack_loss_attacker_loss)
+	var defender_loss := float(FieldBattleRulesScript.RULES.attack_win_defender_loss if won else FieldBattleRulesScript.RULES.attack_loss_defender_loss)
+	var own_lost := _apply_battle_losses([attacker],attacker_loss,won)
+	var enemy_lost := _apply_battle_losses(defenders,defender_loss,not won)
+	var retreats: Array = []
+	var actor_retreat: Dictionary = {}
+	if won:
+		var enemy_retreat := _retreat_battle_group(enemy,str(target.id),defenders)
+		if not enemy_retreat.is_empty(): retreats.append(enemy_retreat)
+		attacker.province = str(target.id)
+		_end_unsupported_siege(origin,hi)
+		if str(preview.kind)=="assault":
+			# Assault retains its existing 60% garrison/development effects;
+			# siege-specific building damage belongs to the siege capture path.
+			_capture_province(str(target.id),hi,false,false)
+			houses[hi].prestige = int(houses[hi].prestige)+15
+	else:
+		if str(preview.kind)=="assault":
+			var fraction := minf(float(FieldBattleRulesScript.RULES.max_garrison_loss_fraction),float(FieldBattleRulesScript.RULES.max_garrison_loss_fraction)*float(preview.attack_power)*float(preview.naval_bonus)/maxf(1.0,float(preview.defense)))
+			target.levy = maxi(0,int(target.levy)-floori(int(target.levy)*fraction))
+		# A sortie from home remains at its real origin; a defeated landing
+		# must use an actual retreat, never a teleport to the capital.
+		if int(province(origin).get("owner",-1))!=hi:
+			actor_retreat = _retreat_battle_group(hi,origin,[attacker])
+			if not actor_retreat.is_empty(): retreats.append(actor_retreat)
+	_remove_empty_armies(hi)
+	_remove_empty_armies(enemy)
+	var besieger := int(target.get("siege_owner",-1))
+	if besieger>=0: _end_unsupported_siege(str(target.id),besieger)
+	var kind := "Sturm" if str(preview.kind)=="assault" else "Entsatz"
+	var msg := "%s bei %s: %s. Eigene Verluste %d, gegnerische Feldverluste %d." % [kind,str(target.name),"Sieg" if won else "Niederlage",own_lost,enemy_lost]
+	for retreat in retreats:
+		if str(retreat.kind)=="surrender":
+			msg += " %s: %d Überlebende ohne Ausweg aufgegeben." % [str(houses[int(retreat.house)].name),int(retreat.strength)]
+		else:
+			msg += " %s zieht nach %s zurück." % [str(houses[int(retreat.house)].name),str(province(str(retreat.to)).name)]
+	_note_for_houses([hi,enemy],msg)
+	var result := _res(true,msg)
+	result["won"] = won
+	result["retreat"] = actor_retreat.duplicate(true)
+	result["retreats"] = retreats.duplicate(true)
+	return result
+
+func army_recovery_preview(location: String, house_index: int = -1) -> Dictionary:
+	return ArmyRecoveryScript.preview(self,location,house_index)
+
+func recover_army(location: String, house_index: int = -1) -> Dictionary:
+	var preview := army_recovery_preview(location,house_index)
+	if not bool(preview.ok): return _res(false,str(preview.reason))
+	var hi := player if house_index==-1 else house_index
+	var army := army_for(hi)
+	houses[hi].gold = int(houses[hi].gold)-int(preview.cost)
+	province(location).levy = int(preview.levy_after)
+	army.strength = int(preview.new_strength)
+	army.morale = int(preview.new_morale)
+	army.upkeep = int(preview.upkeep_after)
+	army.last_siege_month = _now()
+	var msg := "Feldlager %s: +%d Soldaten, Moral %d%%, %d Gold. Jahresunterhalt des Hauses: %d." % [str(province(location).name),int(preview.added),int(preview.new_morale),int(preview.cost),int(preview.house_upkeep_after)]
+	_note_for_house(hi,msg)
+	return _res(true,msg)
+
+func disband_preview(location: String, house_index: int = -1) -> Dictionary:
+	return ArmyRecoveryScript.disband_preview(self,location,house_index)
+
+func disband_army(location: String, army_id: int, house_index: int = -1) -> Dictionary:
+	var preview := disband_preview(location,house_index)
+	if not bool(preview.ok): return _res(false,str(preview.reason))
+	if army_id!=int(preview.army_id): return _res(false,"Die bestätigte Armee ist nicht mehr ausgewählt.")
+	var hi := player if house_index==-1 else house_index
+	var kept: Array = []
+	for army in houses[hi].armies:
+		if int(army.get("id",-1))!=army_id: kept.append(army)
+	houses[hi].armies = kept
+	_end_unsupported_siege(location,hi)
+	var msg := "Feldarmee %d in %s aufgelöst; keine Erstattung." % [army_id,str(province(location).name)]
+	_note_for_house(hi,msg)
+	return _res(true,msg)
 
 func can_court() -> bool:
 	return int(house()["gold"]) >= 40
@@ -2413,11 +2478,11 @@ func _apply_faith_church(i: int) -> void:
 			"state": "houses[%d].vassals[%d].opinion" % [i, vi], "kind": "vassal_opinion",
 			"house": i, "index": vi, "amount": amount, "reason": "Kirchenmacht"}])
 
-func _ai_faith(house_index: int) -> void:
+func _ai_faith(house_index: int, military_reserve: int = 0) -> void:
 	# Eine Glaubenshandlung pro Jahr: Ketzerei bekämpfen, Reform, heiliger Krieg,
 	# dann Bekehrung, Weihe und Wallfahrt.
 	var h: Dictionary = houses[house_index]
-	if faith_heresy(house_index) >= 50 and can_suppress_heresy(house_index):
+	if faith_heresy(house_index) >= 50 and can_suppress_heresy(house_index) and int(h.gold)>=FAITH_SUPPRESS_COST_GOLD+military_reserve:
 		suppress_heresy(house_index)
 		return
 	if int(h.get("gold", 0)) > 500 and can_reform_faith(house_index):
@@ -2871,11 +2936,14 @@ func run_ai_turn(include_military: bool = true) -> void:
 				if bool(preparation.needs_army): raise_army(str(preparation.port),i)
 				if bool(preparation.needs_claim): fabricate_claim(str(preparation.target),i)
 			continue
+		# Keep the actual next recovery/assault affordable while optional
+		# annual purchases use only the remaining treasury.
+		var military_reserve: int = NavalCampaignScript.military_reserve(self,i)
 		_ai_court(i)
-		_ai_faith(i)
+		_ai_faith(i,military_reserve)
 		if int(h.get("gold", 0)) >= 220:
 			var capital := province(str(h.get("capital", "")))
-			if not capital.is_empty() and int((capital.get("buildings", {}) as Dictionary).get("barracks", 0)) < 2:
+			if not capital.is_empty() and int((capital.get("buildings", {}) as Dictionary).get("barracks", 0)) < 2 and int(h.gold)>=building_cost("barracks",str(capital.id))+military_reserve:
 				build(str(capital["id"]), "barracks", i)
 		var desired_tax: int = 2 if int(h.get("gold", 0)) < 120 else 1
 		if int(h["laws"].get("tax", 1)) != desired_tax:
@@ -2884,7 +2952,7 @@ func run_ai_turn(include_military: bool = true) -> void:
 				"state": "houses[%d].laws.tax" % i, "kind": "law", "house": i,
 				"law_key": "tax", "law_value": desired_tax, "reason": "KI-Steuerpolitik",
 			}])
-		if h["spouse"].is_empty() and int(h.get("gold", 0)) >= 30:
+		if h["spouse"].is_empty() and int(h.get("gold", 0)) >= 30+military_reserve:
 			for target in houses.size():
 				if target == i:
 					continue
@@ -2893,14 +2961,14 @@ func run_ai_turn(include_military: bool = true) -> void:
 				if _settle_marriage_for(i, target, "AI3")["ok"]:
 					h["gold"] = int(h["gold"]) - 30
 					break
-		if int(h.get("gold", 0)) >= 40:
+		if int(h.get("gold", 0)) >= 40+military_reserve:
 			var claim_target: String = _ai_claim_target(i)
 			if claim_target != "":
 				fabricate_claim(claim_target, i)
 		var capital2 := province(str(h.get("capital", "")))
-		if h["armies"].is_empty() and not capital2.is_empty() and int(h.get("gold", 0)) >= 50:
+		if h["armies"].is_empty() and not capital2.is_empty() and int(h.get("gold", 0)) >= 50+military_reserve:
 			raise_army(str(capital2["id"]), i)
-		if h["fleets"].is_empty() and int(h.get("gold", 0)) >= FLEET_COST:
+		if h["fleets"].is_empty() and int(h.get("gold", 0)) >= FLEET_COST+military_reserve:
 			var port_id := _ai_port(i)
 			if port_id != "":
 				raise_fleet(port_id, i)
@@ -2945,6 +3013,9 @@ func _run_ai_military() -> void:
 			"siege": advance_siege(destination,hi)
 			"march": march_army(destination,hi)
 			"transport": transport_army(destination,hi)
+			"relieve": relieve(destination,hi)
+			"recover": recover_army(destination,hi)
+			"attack": attack(destination,hi)
 
 func _ai_march(target: String, hi: int) -> bool:
 	var army := army_for(hi)
@@ -3581,7 +3652,7 @@ func army_raise_strength(province_id: String, house_index: int = -1) -> int:
 	if hi<0 or hi>=houses.size(): return 0
 	var p := province(province_id)
 	if p.is_empty() or int(p.owner)!=hi: return 0
-	return maxi(100,int(round(float(int(p.levy)/2)*legacy_war_multiplier(hi))))+vassal_levy_bonus(hi)
+	return mini(CampaignLimitsScript.MAX_ARMY_STRENGTH,maxi(100,int(round(float(int(p.levy)/2)*legacy_war_multiplier(hi))))+vassal_levy_bonus(hi))
 
 func raise_army(province_id: String, house_index: int = -1) -> Dictionary:
 	var hi: int = player if house_index < 0 else house_index
@@ -3616,6 +3687,9 @@ func _remove_empty_armies(house_index: int) -> void:
 		if int(army.get("strength", 0)) > 0:
 			kept.append(army)
 	houses[house_index]["armies"] = kept
+	for p in provinces:
+		if int(p.get("siege_owner",-1)) == house_index:
+			_end_unsupported_siege(str(p.id),house_index)
 
 func army_for(house_index: int = -1) -> Dictionary:
 	var hi: int = player if house_index < 0 else house_index
@@ -3648,13 +3722,14 @@ func march_reason(province_id: String, house_index: int = -1) -> String:
 	if hi < 0 or hi >= houses.size(): return "Ungültiges Haus."
 	var army := army_for(hi)
 	if army.is_empty(): return "Keine Feldarmee aufgestellt."
-	if int(army.strength) <= 0 or int(army.morale) <= 0: return "Die Armee ist nicht kampffähig."
+	if int(army.strength) <= 0: return "Die Armee ist nicht kampffähig."
 	var p := province(province_id)
 	if p.is_empty(): return "Ungültiges Ziel."
 	if str(army.province) == province_id: return "Die Armee steht bereits hier."
 	if not neighbours(str(army.province)).has(province_id): return "Nur unmittelbar benachbarte Regionen sind erreichbar."
 	if int(army.get("last_siege_month",-1)) == _now(): return "Die Armee hat diesen Monat bereits gehandelt."
 	if int(p.owner) != hi:
+		if int(army.morale)<=0: return "Ein demoralisiertes Heer kann nur ins eigene Land zurückkehren."
 		if not has_claim(province_id,hi): return "Fremdes Land braucht einen Anspruch."
 		if opinion_value(hi,int(p.owner)) >= 60: return "Die gute Beziehung verhindert feindlichen Einmarsch."
 		if truce_until(int(p.owner),hi)>_now(): return "Ein Waffenstillstand gilt."
@@ -3669,8 +3744,10 @@ func march_army(province_id: String, house_index: int = -1) -> Dictionary:
 	if reason != "":
 		return _res(false, reason)
 	var army := army_for(hi)
+	var origin := str(army.province)
 	army.province = province_id
 	army.last_siege_month = _now()
+	_end_unsupported_siege(origin,hi)
 	_note_for_house(hi, "Feldarmee marschiert nach %s." % province(province_id).name)
 	return _res(true, "Feldarmee ist in %s eingetroffen." % province(province_id).name)
 
@@ -3720,11 +3797,19 @@ func _transport_resolved(hi: int, landed: bool, text: String) -> Dictionary:
 	result.landed = landed
 	return result
 
+func _supported_siege_owner(province_id: String) -> int:
+	var p := province(province_id)
+	if p.is_empty() or int(p.get("siege",0))<=0: return -1
+	var hi := int(p.get("siege_owner",-1))
+	if hi<0 or hi>=houses.size() or int(p.owner)==hi: return -1
+	for army in houses[hi].get("armies",[]):
+		if str(army.get("province",""))==province_id and int(army.get("strength",0))>0 and int(army.get("morale",0))>0: return hi
+	return -1
+
 func _end_unsupported_siege(origin: String, hi: int) -> void:
 	var p := province(origin)
 	if p.is_empty() or int(p.get("siege_owner",-1))!=hi or int(p.get("siege",0))<=0: return
-	for remaining in houses[hi].get("armies",[]):
-		if str(remaining.get("province",""))==origin and int(remaining.get("strength",0))>0 and int(remaining.get("morale",0))>0: return
+	if _supported_siege_owner(origin)==hi: return
 	p.siege = 0
 	p.siege_owner = -1
 
@@ -3957,51 +4042,38 @@ func _apply_fleet_upkeep(i: int) -> void:
 	if kept.is_empty():
 		_clear_blockades(i)
 
+func siege_preview(province_id: String, house_index: int = -1) -> Dictionary:
+	return SiegeRulesScript.preview(self,province_id,player if house_index==-1 else house_index)
+
 func can_siege(province_id: String, house_index: int = -1) -> bool:
-	return siege_reason(province_id,house_index)==""
+	return bool(siege_preview(province_id,house_index).ok)
 
 func siege_reason(province_id: String, house_index: int = -1) -> String:
-	var hi: int = player if house_index < 0 else house_index
-	if hi < 0 or hi >= houses.size(): return "Ungültiges Haus."
-	var p := province(province_id)
-	if p.is_empty() or int(p.owner) == hi or not has_claim(province_id, hi): return "Belagerung braucht ein fremdes Ziel mit Anspruch."
-	var owner := int(p.owner)
-	if owner < 0 or owner >= houses.size() or opinion_value(hi,owner) >= 60: return "Die gute Beziehung verhindert diese Belagerung."
-	if truce_until(owner, hi) > _now(): return "Ein Waffenstillstand gilt."
-	var army := army_for(hi)
-	if army.is_empty() or int(army.strength) <= 0 or int(army.morale) <= 0: return "Keine kampffähige Feldarmee verfügbar."
-	if int(army.get("last_siege_month", -1)) == _now(): return "Die Armee hat diesen Monat bereits gehandelt."
-	if str(army.province) != province_id and not neighbours(str(army.province)).has(province_id): return "Die Armee muss zunächst in Reichweite marschieren."
-	return ""
+	return str(siege_preview(province_id,house_index).reason)
 
 func advance_siege(province_id: String, house_index: int = -1) -> Dictionary:
-	var hi: int = player if house_index < 0 else house_index
-	var reason := siege_reason(province_id, hi)
-	if reason != "":
-		return _res(false, reason)
+	var preview := siege_preview(province_id,house_index)
+	if not bool(preview.ok): return _res(false,str(preview.reason))
+	var hi := player if house_index==-1 else house_index
 	var p := province(province_id)
-	if p.is_empty() or int(p["owner"]) == hi:
-		return _res(false, "Kein fremdes Belagerungsziel.")
-	if not has_claim(province_id, hi):
-		return _res(false, "Belagerung braucht einen Anspruch.")
 	var army := army_for(hi)
-	if army.is_empty():
-		return _res(false, "Keine Armee verfügbar.")
-	if str(army.get("province", "")) != province_id:
-		army["province"] = province_id
-	army["last_siege_month"] = _now()
-	var edge: String = "K4" if hi == player else "AI4"
-	var amount: int = 20 + int(int(army["strength"]) / 60) + int(int(houses[hi]["ruler"]["martial"]) / 4) + int(doctrine_info(hi).siege_bonus) + int(research_bonus("siege", hi))
+	var origin := str(army.province)
+	p.siege = int(preview.current)
+	army.province = province_id
+	army.last_siege_month = _now()
+	if origin!=province_id: _end_unsupported_siege(origin,hi)
 	_resolve([{
-		"edge": edge, "source": "Krieg", "target": "Krieg",
-		"state": "provinces[%s].siege" % province_id, "kind": "siege",
-		"house": hi, "province": province_id, "amount": amount,
-		"reason": "Armeestärke %d" % int(army["strength"]),
+		"edge":"K4" if hi==player else "AI4","source":"Krieg","target":"Krieg",
+		"state":"provinces[%s].siege" % province_id,"kind":"siege","house":hi,
+		"province":province_id,"amount":int(preview.progress),
+		"reason":"Feldheer %d, Festungsbonus %d, Versorgung %d%%" % [int(preview.effective_strength),int(preview.fort_bonus),roundi(float(preview.coverage)*100.0)]
 	}])
-	if int(p.get("siege", 0)) >= 100:
-		_capture_province(province_id, hi)
-		return _res(true, "%s fällt." % p["name"])
-	return _res(true, "Belagerung von %s: %d%%." % [p["name"], int(p.get("siege", 0))])
+	if int(p.siege)>=100:
+		_capture_province(province_id,hi)
+		return _res(true,"%s fällt." % str(p.name))
+	var msg := "Belagerung von %s: %d%% (+%d)." % [str(p.name),int(p.siege),int(preview.progress)]
+	_note_for_house(hi,msg)
+	return _res(true,msg)
 
 func _capture_reaction(owner: int, attacker: int) -> void:
 	if owner == attacker:
@@ -4017,7 +4089,7 @@ func _capture_reaction(owner: int, attacker: int) -> void:
 		set_opinion_value(attacker, owner, maxi(-100, opinion_value(attacker, owner) - 30))
 	_note_for_houses([owner, attacker], "Eroberung: Die Beziehung zwischen %s und %s verschlechtert sich um 30." % [houses[owner].name, houses[attacker].name])
 
-func _capture_province(province_id: String, new_owner: int) -> void:
+func _capture_province(province_id: String, new_owner: int, announce: bool = true, building_damage: bool = true) -> void:
 	var p := province(province_id)
 	if p.is_empty():
 		return
@@ -4036,15 +4108,21 @@ func _capture_province(province_id: String, new_owner: int) -> void:
 		"reason": "Belagerungsschaden",
 	}])
 	for key in BUILDING_KEYS:
-		if int((p.get("buildings", {}) as Dictionary).get(key, 0)) > 0:
+		if building_damage and int((p.get("buildings", {}) as Dictionary).get(key, 0)) > 0:
+			var old_level := int(p.buildings[key])
 			_resolve([{
 				"edge": "K5", "source": "Krieg", "target": "Welt",
 				"state": "provinces[%s].buildings.%s" % [province_id, key], "kind": "building",
 				"house": new_owner, "province": province_id, "building": key, "amount": -1,
 				"reason": "Belagerungsschaden",
 			}])
+			if key=="walls" and int(p.buildings.walls)<old_level:
+				_resolve([{"edge":"K5","source":"Krieg","target":"Welt",
+					"state":"provinces[%s].defense" % province_id,"kind":"defense",
+					"house":new_owner,"province":province_id,"amount":-(5+old_level*5),
+					"reason":"Zerstörte Mauerstufe"}])
 			break
-	_note_for_house(new_owner, "Die Belagerung nimmt %s ein." % p["name"])
+	if announce: _note_for_house(new_owner, "Die Belagerung nimmt %s ein." % p["name"])
 
 func peace_reason(target_house: int, house_index: int = -1) -> String:
 	var hi: int = player if house_index < 0 else house_index
@@ -4071,6 +4149,10 @@ func make_peace(target_house: int, house_index: int = -1) -> Dictionary:
 			"index": target_house, "amount": 10, "reason": "Frieden"},
 	])
 	for p in provinces:
+		var besieger := int(p.get("siege_owner",-1))
+		if (besieger==hi and int(p.owner)==target_house) or (besieger==target_house and int(p.owner)==hi):
+			p.siege = 0
+			p.siege_owner = -1
 		var blockader: int = int(p.get("blockade_owner", -1))
 		if int(p.get("blockade", 0)) <= 0:
 			continue

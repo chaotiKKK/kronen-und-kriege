@@ -4,6 +4,7 @@ extends Node
 const Game = preload("res://scripts/Game.gd")
 const Data = preload("res://scripts/GameRegionData.gd")
 const Save = preload("res://scripts/SaveGame.gd")
+const Transport = preload("res://scripts/NavalTransport.gd")
 const SEED := 20261117
 const MAX_MONTHS := 240
 const HOME := "britannien__03"
@@ -19,6 +20,12 @@ var first_siege_month := -1
 var conquered_month := -1
 var positive_event_gold := 0
 var initial_npcs: Array = []
+var recovery_actions := 0
+var recovery_gold := 0
+var repeated_landings := 0
+var assault_actions := 0
+var observed_withdrawals := 0
+var was_at_target := false
 
 func _ready() -> void:
 	for argument in OS.get_cmdline_user_args():
@@ -48,10 +55,18 @@ func _ready() -> void:
 		if int(game.province(TARGET).owner)==2:
 			conquered_month = game._now()
 			break
+		var at_target := str(game.army_for().get("province",""))==TARGET
+		if was_at_target and not at_target:
+			observed_withdrawals+=1
+			_record("observed_actual_withdrawal",_state(),{"notes":game.log_lines.duplicate(),"npc_state":_npcs(),"reason":"Army is actually outside the landing province; resume paid preparation instead of waiting at an abandoned siege."})
+		was_at_target=at_target
 		if landed_month<0:
 			_prepare_and_cross()
+		elif not at_target:
+			_regroup_and_cross()
 		else:
 			_besiege()
+		was_at_target=str(game.army_for().get("province",""))==TARGET
 		if int(game.province(TARGET).owner)==2:
 			conquered_month = game._now()
 			break
@@ -63,6 +78,9 @@ func _ready() -> void:
 	check(landed_month>0,"The fixed-seed regular campaign actually lands before the240month observation limit")
 	check(first_siege_month>landed_month and landed_month>0,"Real siege progress begins in a later month than the real landing")
 	check(conquered_month>first_siege_month and first_siege_month>0,"This declared campaign completes the ordinary conquest after actual siege turns")
+	if observed_withdrawals>0:
+		check(recovery_actions>0 and recovery_gold>0,"Observed real withdrawal is followed by actual paid local recovery")
+		check(repeated_landings>0,"Observed real withdrawal is followed by another genuine public crossing")
 	var final_npcs := _npcs()
 	var changed_npcs := 0
 	for i in final_npcs.size():
@@ -73,7 +91,7 @@ func _ready() -> void:
 	check(booked_gold==int(game.house().gold),"Complete action/month/event ledger reconciles initial120gold to the real final treasury")
 	check(game.human_houses.is_empty() and game.disabled_edges.is_empty() and game.attack_roll_override<0,"NPCs and random combat are still unmodified at the final checkpoint")
 	_write_json("final-world.json",game.snapshot())
-	var report := {"scenario":"regular-wessex-expedition","seed":SEED,"max_observation_months":MAX_MONTHS,"advanced_months":advanced,"checks_before_report_write":checks,"failures_before_report_write":failures,"landed_month":landed_month,"first_siege_month":first_siege_month,"conquered_month":conquered_month,"positive_event_gold":positive_event_gold,"npc_count":game.houses.size()-1,"changed_npc_count":changed_npcs,"ledger_final_gold":booked_gold,"final":_state(),"npc_state":final_npcs,"journal":journal,"scope":"One legal headless Game campaign; no Main, GPU, device, resource injection, RNG override, NPC disable or ownership edits. Not an overall gameplay/balance acceptance."}
+	var report := {"scenario":"regular-wessex-expedition","seed":SEED,"max_observation_months":MAX_MONTHS,"advanced_months":advanced,"checks_before_report_write":checks,"failures_before_report_write":failures,"landed_month":landed_month,"first_siege_month":first_siege_month,"conquered_month":conquered_month,"positive_event_gold":positive_event_gold,"recovery_actions":recovery_actions,"recovery_gold":recovery_gold,"repeated_landings":repeated_landings,"assault_actions":assault_actions,"observed_withdrawals":observed_withdrawals,"npc_count":game.houses.size()-1,"changed_npc_count":changed_npcs,"ledger_final_gold":booked_gold,"final":_state(),"npc_state":final_npcs,"journal":journal,"scope":"One legal headless Game campaign; no Main, GPU, device, resource injection, RNG override, NPC disable or ownership edits. Not an overall gameplay/balance acceptance."}
 	_write_json("campaign.json",report)
 	print("NAVALEXPEDITIONTEST SUMMARY ",JSON.stringify({"seed":SEED,"advanced_months":advanced,"landed_month":landed_month,"first_siege_month":first_siege_month,"conquered_month":conquered_month,"positive_event_gold":positive_event_gold,"final":_state()}))
 	print("NAVALEXPEDITIONTEST %s: %d Prüfungen" % ["OK" if failures==0 else "FAIL",checks])
@@ -106,11 +124,13 @@ func _prepare_and_cross() -> void:
 	_record("transport_army",before,{"result":result,"preview":preview})
 	check(result.ok,"An available ordinary crossing resolves through the public command")
 	if not bool(result.get("landed",false)): return
-	landed_month = game._now()
+	var landing_now: int = game._now()
+	if landed_month<0: landed_month=landing_now
+	else: repeated_landings+=1
 	check(int(game.province(TARGET).owner)==int(before.target_owner) and int(game.province(TARGET).siege)==0,"First landing changes neither the actual foreign owner nor zero siege progress")
 	check(str(game.army_for().province)==TARGET and str(game.fleet_for().province)==TARGET and str(game.fleet_for().station)==TARGET,"The paid army and original escort actually arrive together")
 	check(int(game.house().gold)==int(before.gold),"Ordinary transport charges no hidden extra gold")
-	check(int(game.army_for().get("last_siege_month",-1))==landed_month and int(game.fleet_for().get("last_naval_month",-1))==landed_month,"Real landing consumes both offensive monthly actions")
+	check(int(game.army_for().get("last_siege_month",-1))==landing_now and int(game.fleet_for().get("last_naval_month",-1))==landing_now,"Real landing consumes both offensive monthly actions")
 	var landed: Dictionary = game.snapshot()
 	var siege: Dictionary = game.advance_siege(TARGET)
 	var blockade: Dictionary = game.blockade(TARGET)
@@ -123,10 +143,47 @@ func _prepare_and_cross() -> void:
 	if check(decoded is Dictionary and restored.restore(decoded),"Actual landing file is read through JSON and restored into a new Game"):
 		check(Save.state_equal(restored.snapshot(),landed),"The whole real landing world survives file/JSON/runtime restore")
 		game = restored
-		check(int(game.army_for().get("last_siege_month",-1))==landed_month and int(game.fleet_for().get("last_naval_month",-1))==landed_month,"Both actual used monthly guards survive the restore path")
+		check(int(game.army_for().get("last_siege_month",-1))==landing_now and int(game.fleet_for().get("last_naval_month",-1))==landing_now,"Both actual used monthly guards survive the restore path")
 		var loaded_state: Dictionary = game.snapshot()
 		check(not game.advance_siege(TARGET).ok and not game.blockade(TARGET).ok and not game.transport_army(HOME).ok and game.snapshot()==loaded_state,"Restored runtime really blocks the same-month siege, blockade and return without mutation")
 		_record("resume_landing_json",_state(),{})
+
+func _regroup_and_cross() -> void:
+	var army: Dictionary = game.army_for()
+	if army.is_empty():
+		_prepare_and_cross()
+		return
+	var origin := str(army.province)
+	var station: Dictionary = game.province(origin)
+	if station.is_empty() or int(station.owner)!=2:
+		_record("regroup_wait",_state(),{"reason":"No actual own recovery station reached."})
+		return
+	var quote: Dictionary = game.army_recovery_preview(origin)
+	var target: Dictionary = game.siege_preview(TARGET)
+	var fleet: Dictionary = game.fleet_for()
+	var capacity := int(fleet.get("ships",0))*int(Transport.RULES.soldiers_per_ship)
+	# Declared generic player policy: before another crossing prepare twice
+	# the actual known garrison+field force, bounded by local/real escort limits.
+	# This is a planning heuristic, not a duplicate combat/chance formula.
+	var goal := mini(int(quote.capacity),maxi(100,2*(int(target.garrison)+int(target.defender_strength))))
+	if capacity>0: goal=mini(goal,capacity)
+	var needs_recovery := int(army.strength)<goal or int(army.morale)<100
+	var fits := capacity<=0 or int(quote.new_strength)<=capacity
+	if needs_recovery and fits:
+		if not bool(quote.ok):
+			_record("recovery_wait",_state(),{"reason":quote.reason,"quote":quote,"goal":goal,"policy":"Paid local recovery; no injected money or levies."})
+			return
+		var before := _state()
+		var result: Dictionary = game.recover_army(origin)
+		_record("recover_army",before,{"result":result,"quote":quote,"goal":goal})
+		check(bool(result.ok) and int(game.house().gold)==int(before.gold)-int(quote.cost),"Regrouping pays exact quoted recovery cost from ordinary treasury")
+		check(int(game.army_for().strength)==int(quote.new_strength) and int(game.province(origin).levy)==int(quote.levy_after),"Actual recovery conserves local levy and produces the quoted real formation")
+		check(int(game.army_for().get("last_siege_month",-1))==game._now(),"Paid regrouping consumes the real monthly army action")
+		if result.ok:
+			recovery_actions+=1
+			recovery_gold+=int(quote.cost)
+		return
+	_prepare_and_cross()
 
 func _besiege() -> void:
 	if str(game.army_for().get("province",""))!=TARGET:
@@ -134,6 +191,22 @@ func _besiege() -> void:
 		return
 	var reason: String = game.siege_reason(TARGET)
 	if not reason.is_empty():
+		var battle: Dictionary = game.attack_preview(TARGET)
+		if bool(battle.ok) and float(battle.chance)>=0.55:
+			var before := _state()
+			var result: Dictionary = game.attack(TARGET)
+			_record("assault",before,{"result":result,"preview":battle,"policy":"Actual public assault only at current chance>=0.55."})
+			check(bool(result.ok) and int(game.house().gold)==int(before.gold)-25,"Available favorable field assault pays ordinary twenty-five Gold even if it loses")
+			check(game.army_for().is_empty() or int(game.army_for().get("last_siege_month",-1))==game._now(),"Resolved assault consumes the real surviving army action")
+			if result.ok: assault_actions+=1
+			return
+		var back: Dictionary = game.naval_transport_preview(HOME)
+		if bool(back.ok):
+			var before := _state()
+			var result: Dictionary = game.transport_army(HOME)
+			_record("withdraw_to_recover",before,{"result":result,"siege_reason":reason,"battle":battle,"preview":back})
+			check(bool(result.ok) and bool(result.get("landed",false)) and int(game.house().gold)==int(before.gold),"Unfavorable actual front allows a free genuine return with existing escort")
+			return
 		_record("siege_wait",_state(),{"reason":reason})
 		return
 	var before := _state()

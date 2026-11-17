@@ -99,12 +99,24 @@ func _foreign_province_cases(inspector, own_id: String) -> void:
 		await settle()
 		check(main.game.has_claim(foreign_id) and int(main.game.house().gold) == gold-40, "Direkter Anspruch führt die echte bestehende Aktion mit40GoldKosten aus")
 		check(not claim.is_visible_in_tree() or claim.disabled, "Vorhandener Anspruch verhindert unnötiges erneutes Bezahlen")
-	check(main.attack_btn.is_visible_in_tree() and main.attack_btn.disabled == not main.game.can_attack(foreign_id), "Angriff zeigt dieselbe Verfügbarkeit wie die bestehenden Spielregeln")
+	check(main.game.army_for().is_empty() and not main.attack_btn.is_visible_in_tree() and not main.game.can_attack(foreign_id), "Ohne Feldheer wird nach dem Anspruch kein unpassender Sturmknopf angeboten")
+	var station := ""
+	for neighbour in main.game.neighbours(foreign_id):
+		if int(main.game.province(str(neighbour)).owner)==main.game.player:
+			station=str(neighbour)
+			break
+	check(not station.is_empty(),"Sturm-UI-Fixture besitzt einen wirklichen eigenen direkten Nachbarn")
+	var army_gold: int=main.game.house().gold
+	var raised: Dictionary=main.game.raise_army(station)
+	check(raised.ok and not main.game.army_for().is_empty() and int(main.game.house().gold)==army_gold-50,"Tatsächliches Nachbarheer wird für50Gold regulär aufgestellt")
+	main.refresh()
+	await settle()
+	check(main.attack_btn.is_visible_in_tree() and main.attack_btn.disabled == not main.game.can_attack(foreign_id), "Mit tatsächlichem Nachbarheer stimmt der Sturmknopf mit der echten Feldarmee-Regel überein")
 	main._on_province_selected(own_id)
 	await settle()
 	check(inspector.section_buttons.buildings.visible and inspector.section_buttons.research.visible, "Eigener Besitz erhält Ausbau und Wissen zurück")
 	inspector.show_section("army")
-	check(main.recruit_btn.is_visible_in_tree() and inspector.action_buttons.army.is_visible_in_tree(), "Eigene Heeresverwaltung bleibt nach fremder Auswahl erreichbar")
+	check(main.recruit_btn.is_visible_in_tree() and inspector.fields.field_army.is_visible_in_tree() and not inspector.action_buttons.army.is_visible_in_tree(), "Eigene Heeresverwaltung zeigt vorhandenes Feldheer ohne doppelte Aufstellung nach fremder Auswahl")
 	check(inspector.action_buttons.fleet.is_visible_in_tree() == main.game.is_coastal(own_id), "Flottenaufstellung erscheint ausschließlich in einer eigenen Küstenprovinz")
 	check(not main.attack_btn.is_visible_in_tree() and (claim == null or not claim.is_visible_in_tree()), "Eigene Provinz verbirgt unpassende Angriff- und Anspruchsaktionen")
 

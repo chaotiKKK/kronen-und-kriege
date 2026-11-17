@@ -27,7 +27,8 @@ func _test_zero_army() -> void:
 	g.house().gold = 1000
 	g.house().armies = [_army(home,1)]
 	g.attack_roll_override = 1.0
-	check(not g.attack(target).ok,"Echter Niederlagepfad eines Ein-Mann-Heers")
+	var defeat: Dictionary = g.attack(target)
+	check(defeat.ok and defeat.get("won")==false,"Echter aufgelöster Niederlagepfad eines Ein-Mann-Heers")
 	check(g.house().armies.is_empty() and g.army_for().is_empty(),"Aufgeriebene Armee hinterlässt weder Marker noch unsichtbare Aufstellungssperre")
 	check(g.army_upkeep() == 0,"Aufgeriebenes Heer verlangt keinen Unterhalt")
 	var restored = Game.new(Data)
@@ -64,6 +65,18 @@ func _route_fixture():
 		h.fleets = []
 	g.houses[1].armies = [_army(home,500)]
 	g.houses[1].gold = 1000
+	# Isolierter Kalender-/Monatstakt mit tatsächlich bereitem Feldheer und
+	# gedeckter Versorgung; keine vorausgesetzte alte Festungsformel.
+	g.houses[1].ruler.martial=8
+	g.houses[1].doctrine="balanced"
+	g.houses[1].research.known=[]
+	for id in [home,step]:
+		g.province(id).levy=200
+		g.province(id).terrain_supply=6
+	g.province(target).levy=100
+	g.province(target).defense=0
+	g.province(target).terrain_defense=0
+	g.province(target).terrain_supply=6
 	g._add_claim(1,target)
 	g.opinion[0] = 0
 	g.month = 2
@@ -93,14 +106,16 @@ func _test_ai_year_boundary() -> void:
 	# Eine erfolgreiche Jahresheirat würde rechtmäßig den Gegner befreunden;
 	# dieser isolierte Takt-Test schaltet allein die Heiratskante ab.
 	g.set_edge_enabled("AI3",false)
+	var before: Dictionary = g.siege_preview(f.target,1)
+	check(before.ok and before.coverage==1.0 and before.fort_bonus==0 and before.required_strength==35,"Jahresfixture hat echten vollen Nachschub, keine Festungsboni und35Mann Mindestdruck")
+	check(before.progress==30,"Kontrollierter Festungsschritt ist literal30:20+floor(500/60)+floor(8/4)")
 	g.advance_month()
-	var amount := 20 + int(int(g.army_for(1).strength) / 60) + int(int(g.houses[1].ruler.martial) / 4) + int(g.doctrine_info(1).siege_bonus) + int(g.research_bonus("siege",1))
-	if int(g.province(f.target).siege) != amount:
-		print("YEAR_BOUNDARY_DIAGNOSTIC ", {"army":g.army_for(1),"claims":g.houses[1].claims,"blocker":g.siege_reason(f.target,1),"target":f.target,"siege":g.province(f.target).siege,"expected":amount,"opinion":g.opinion})
-	check(g.month == 1 and int(g.province(f.target).siege) == amount,"Jahreswechsel führt genau einen militärischen KI-Schritt aus")
+	var after: Dictionary = g.siege_preview(f.target,1)
+	check(after.progress==30 and after.coverage==1.0 and after.fort_bonus==0,"Jahresversorgung bewahrt dieselbe kontrollierte aktuelle Festungsquote")
+	check(g.month == 1 and int(g.province(f.target).siege) == int(before.next) and int(g.province(f.target).siege)==30,"Jahreswechsel führt genau einen militärischen KI-Schritt gemäß tatsächlicher Vorschau aus")
 	check(int(g.army_for(1).get("last_siege_month",-1)) == g._now(),"Jahreswechsel setzt dieselbe monatliche Armeewache")
 	g.advance_month()
-	check(int(g.province(f.target).siege) > amount,"Militärische KI wartet nach Januar nicht bis zum nächsten Jahr")
+	check(int(g.province(f.target).siege) == int(after.next) and int(g.province(f.target).siege)==60,"Militärische KI führt im Februar genau den nächsten tatsächlichen Festungsschritt aus")
 
 func _test_human_army() -> void:
 	var f = _route_fixture()

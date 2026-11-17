@@ -29,6 +29,10 @@ const LOCAL_GAMEPLAY_191_FINGERPRINT := "fcc2237b4e44b454f78a0a0721cc10ca7167289
 # Genuine context schema14 file and immutable packaged-run provenance.
 # Local migration only; network handshakes never recognize old identities.
 const LOCAL_CONTEXT_191_FINGERPRINT := "49efe0af83dff5e58b98eff1d9e2978a8200f835562ac0202da13b036ac884a6"
+# Exact published naval15 bytes and packaged-run provenance live in
+# tests/fixtures/lan-191-naval-schema15-{original,provenance}.json.
+# This identity authorizes local backup/migration only, never a network peer.
+const LOCAL_NAVAL_191_FINGERPRINT := "d1d986d4adf5714ae629f351b377f3f159d58b126f72ba3b62ca3fccbdd84582"
 static var _cached_fingerprints: Dictionary = {}
 
 var phase := "idle"
@@ -78,14 +82,18 @@ func _content_fingerprint() -> String:
 	var route_fingerprint: String = Naval.shared_routes().fingerprint()
 	if route_fingerprint.is_empty():
 		return ""
-	var cache_key := str(_data.resource_path)+"|"+route_fingerprint+"|"+JSON.stringify(Save.canonical(Naval.RULES))
+	var campaign_rules := _field_campaign_rules()
+	var identity := {"schema":Save.CURRENT_VERSION,"protocol":Protocol.VERSION,
+		"commands":Protocol.FIELDS,"naval":Naval.RULES,"campaign":campaign_rules}
+	var cache_key := str(_data.resource_path)+"|"+route_fingerprint+"|"+JSON.stringify(Save.canonical(identity))
 	if _cached_fingerprints.has(cache_key):
 		return str(_cached_fingerprints[cache_key])
 	var content := {"schema":Save.CURRENT_VERSION, "protocol":Protocol.VERSION,
 		"houses":_data.houses(), "provinces":_data.provinces(), "adjacency":_data.adjacency(),
 		"events":_data.events(), "innovations":Infrastructure.INNOVATIONS, "commands":Protocol.FIELDS,
 		"province_economy":{"foci":Economy.FOCI,"lock_months":Economy.LOCK_MONTHS},
-		"naval_transport":{"rules":Naval.RULES,"route_fingerprint":route_fingerprint}}
+		"naval_transport":{"rules":Naval.RULES,"route_fingerprint":route_fingerprint},
+		"field_campaign":campaign_rules}
 	for path in ["res://data/atlas.json", "res://data/atlas_geometry.bin", "res://data/europe_geometry.json"]:
 		var digest := FileAccess.get_sha256(path)
 		if digest == "":
@@ -95,6 +103,15 @@ func _content_fingerprint() -> String:
 		content["regions"] = _data.catalog_hash()
 	_cached_fingerprints[cache_key] = JSON.stringify(Save.canonical(content)).sha256_text()
 	return str(_cached_fingerprints[cache_key])
+
+func _field_campaign_rules() -> Dictionary:
+	# Resolve at call time: previews depend on Game at runtime, not through a
+	# Save/LAN preload cycle. Every returned rule set participates in the cache.
+	return {"siege":load("res://scripts/SiegeRules.gd").RULES,
+		"battle":load("res://scripts/FieldBattleRules.gd").RULES,
+		"recovery":load("res://scripts/ArmyRecovery.gd").RULES,
+		"planner":load("res://scripts/NavalCampaign.gd").RULES,
+		"army_limits":{"strength":Save.MAX_ARMY_STRENGTH,"upkeep":Save.MAX_ARMY_UPKEEP}}
 
 func _new_transport() -> void:
 	_transport = SceneMultiplayer.new()
@@ -426,6 +443,8 @@ func _local_legacy_backup_suffix(envelope: Dictionary, matching_catalog: bool) -
 		return ".pre-choice-guards-v14.bak"
 	if _app == "1.9.1" and Save.CURRENT_VERSION >= 15 and file_app == "1.9.1" and matching_catalog and Protocol.integer(envelope.get("v"),3,3) and Protocol.integer(envelope.state.get("schema_version"),14,14) and envelope.get("fingerprint") == LOCAL_CONTEXT_191_FINGERPRINT:
 		return ".pre-naval-schema14.bak"
+	if _app == "1.9.1" and Save.CURRENT_VERSION >= 16 and file_app == "1.9.1" and matching_catalog and Protocol.integer(envelope.get("v"),3,3) and Protocol.integer(envelope.state.get("schema_version"),15,15) and envelope.get("fingerprint") == LOCAL_NAVAL_191_FINGERPRINT:
+		return ".pre-campaign-schema15.bak"
 	# 13/14 are source versions actually supported by the earlier regional
 	# family; increasing our target schema must not extend this source range.
 	if matching_catalog and file_app.begins_with("1.8.") and Protocol.integer(envelope.get("v"),2,Protocol.VERSION) and Protocol.integer(envelope.state.get("schema_version"),13,14):

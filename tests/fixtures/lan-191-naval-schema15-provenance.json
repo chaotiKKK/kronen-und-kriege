@@ -1,0 +1,349 @@
+{
+  "stage": "genuine-published-naval-schema15-preservation",
+  "created_utc": "2026-11-17T21:57:30.669622+00:00",
+  "source": {
+    "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/host/profile/appdata/Godot/app_userdata/Kronen und Kriege/lan_partie.json",
+    "bytes": 71198,
+    "sha256": "afa14969367ce1d06333e3e89f2e724674779a0dc022bc65b532b1e2fc91277d"
+  },
+  "fixture": {
+    "path": "tests/fixtures/lan-191-naval-schema15-original.json",
+    "bytes": 71198,
+    "sha256": "afa14969367ce1d06333e3e89f2e724674779a0dc022bc65b532b1e2fc91277d"
+  },
+  "preserved_copy": {
+    "path": "build/verify/fortress-campaign/legacy/lan-191-naval-schema15-original.json",
+    "bytes": 71198,
+    "sha256": "afa14969367ce1d06333e3e89f2e724674779a0dc022bc65b532b1e2fc91277d"
+  },
+  "executable": {
+    "path": "build/exports/banger-queens-1.9.1-naval.exe",
+    "bytes": 321400328,
+    "sha256": "32db7f346414784671a3392f1ebf3a5b600497f8c7d63155b986ed4021658016"
+  },
+  "original_bytes_unchanged": true,
+  "metadata": {
+    "app": "1.9.1",
+    "wire": 3,
+    "schema": 15,
+    "fingerprint": "d1d986d4adf5714ae629f351b377f3f159d58b126f72ba3b62ca3fccbdd84582",
+    "catalog": "6112a370a9c26d1186059519e26742db7b63a10b4082c41e2fb2623b30f5f629",
+    "houses": 9,
+    "humans": [
+      0,
+      1
+    ]
+  },
+  "actual_packaged_run_summary": {
+    "stage": "packaged-lan-main-smoke",
+    "result": "PASS",
+    "run_id": "503b0218d787419eaddabf222409525c",
+    "version": "1.9.1",
+    "exe": "F:\\Crusader Kings III v1.18.3\\banger-queens-recovery-20261117\\build\\exports\\banger-queens-1.9.1-naval.exe",
+    "exe_sha256": "32db7f346414784671a3392f1ebf3a5b600497f8c7d63155b986ed4021658016",
+    "host_pid": 48796,
+    "guest_pid": 47436,
+    "checks": 130,
+    "world_hash": "0215991e70c45405e9fd710c1b768d0506ee45d4b105d3c8de8fc38b98ff376e",
+    "isolated_profiles": true,
+    "real_enet_between_processes": true,
+    "real_main_dispatch": true,
+    "province_focus_verified": true,
+    "select_army_and_march_verified": true,
+    "current_schema_save_resume_verified": true,
+    "schema_version": 15,
+    "physical_android_wlan_test": false,
+    "output": "F:\\Crusader Kings III v1.18.3\\banger-queens-recovery-20261117\\build\\verify\\lan-release-1.9.1-20261117-213050-435-503b0218"
+  },
+  "original_evidence": [
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/guest/expectations.json",
+        "bytes": 580,
+        "sha256": "6448e53f087746d3b9f7e707eee786c0c45daae5042a1641b214f94435a19505"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/guest/expectations.json",
+        "bytes": 580,
+        "sha256": "6448e53f087746d3b9f7e707eee786c0c45daae5042a1641b214f94435a19505"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/guest/launch.json",
+        "bytes": 2040,
+        "sha256": "2c7e11f30b141b200184e9c1ade8591c3eb2806b81c1b7dfbe41c9658fd13c1c"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/guest/launch.json",
+        "bytes": 2040,
+        "sha256": "2c7e11f30b141b200184e9c1ade8591c3eb2806b81c1b7dfbe41c9658fd13c1c"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/guest/packaged-lan-smoke.gd",
+        "bytes": 26430,
+        "sha256": "d07911b9244d750eaa3aaf7cc6270f3436ecc49b8420d131a3d5530d916ecaf6"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/guest/packaged-lan-smoke.gd",
+        "bytes": 26430,
+        "sha256": "d07911b9244d750eaa3aaf7cc6270f3436ecc49b8420d131a3d5530d916ecaf6"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/guest/runtime.godot.log",
+        "bytes": 159,
+        "sha256": "c2a8aa7ff7908b92f009854afdf7cbac52666ebdffdfd88099ff097e27c36681"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/guest/runtime.godot.log",
+        "bytes": 159,
+        "sha256": "c2a8aa7ff7908b92f009854afdf7cbac52666ebdffdfd88099ff097e27c36681"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/guest/runtime.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/guest/runtime.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/guest/runtime.stdout.log",
+        "bytes": 163,
+        "sha256": "fcc205d7e6ad5227414bcf8f0203c2c1b2fc9e1dc529dfb3728389350610660b"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/guest/runtime.stdout.log",
+        "bytes": 163,
+        "sha256": "fcc205d7e6ad5227414bcf8f0203c2c1b2fc9e1dc529dfb3728389350610660b"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/guest-actions-complete.json",
+        "bytes": 395,
+        "sha256": "2dc29d143dd9b55b449ea80136bcc707969ba8561edbd4b81592de70386892a3"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/guest-actions-complete.json",
+        "bytes": 395,
+        "sha256": "2dc29d143dd9b55b449ea80136bcc707969ba8561edbd4b81592de70386892a3"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/guest-observed.json",
+        "bytes": 127,
+        "sha256": "24977d8cf8c6fa4648056c1b2603786c082c2b92caa8c025ede19bed057e8792"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/guest-observed.json",
+        "bytes": 127,
+        "sha256": "24977d8cf8c6fa4648056c1b2603786c082c2b92caa8c025ede19bed057e8792"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/guest-result.json",
+        "bytes": 1547,
+        "sha256": "29215b204272713f0be10cf6bf1861cc3523007b3cc6067c7d0da7b1d5fd1167"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/guest-result.json",
+        "bytes": 1547,
+        "sha256": "29215b204272713f0be10cf6bf1861cc3523007b3cc6067c7d0da7b1d5fd1167"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/guest-resume-verified.json",
+        "bytes": 134,
+        "sha256": "408dea727939c30d2f1c00bb295f486b62b7986e180b2e0174c1cf648113976f"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/guest-resume-verified.json",
+        "bytes": 134,
+        "sha256": "408dea727939c30d2f1c00bb295f486b62b7986e180b2e0174c1cf648113976f"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/host/expectations.json",
+        "bytes": 578,
+        "sha256": "d00650aff86ea685b48d5c5180384b644078d6d3e678d04d4ccfa1ff4f1d1d2d"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/host/expectations.json",
+        "bytes": 578,
+        "sha256": "d00650aff86ea685b48d5c5180384b644078d6d3e678d04d4ccfa1ff4f1d1d2d"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/host/launch.json",
+        "bytes": 2029,
+        "sha256": "5c71620791be0c2aa3ade62e7bb5c5359e75fb0eb3181f1df1225247dcc799e6"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/host/launch.json",
+        "bytes": 2029,
+        "sha256": "5c71620791be0c2aa3ade62e7bb5c5359e75fb0eb3181f1df1225247dcc799e6"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/host/packaged-lan-smoke.gd",
+        "bytes": 26428,
+        "sha256": "4158651204d5227abf2a3fff35d5bcca4ce935a9076eb8bf12c86e39246e3b8e"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/host/packaged-lan-smoke.gd",
+        "bytes": 26428,
+        "sha256": "4158651204d5227abf2a3fff35d5bcca4ce935a9076eb8bf12c86e39246e3b8e"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/host/runtime.godot.log",
+        "bytes": 158,
+        "sha256": "c3d7757267e59ae5eeecfe6382756f3d59191896a6e839c467d3090800dedf5a"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/host/runtime.godot.log",
+        "bytes": 158,
+        "sha256": "c3d7757267e59ae5eeecfe6382756f3d59191896a6e839c467d3090800dedf5a"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/host/runtime.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/host/runtime.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/host/runtime.stdout.log",
+        "bytes": 162,
+        "sha256": "d0ec42b9476a69b77b37073bf044f4c2150c35be62fc7be628e2f41bb1b67bd0"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/host/runtime.stdout.log",
+        "bytes": 162,
+        "sha256": "d0ec42b9476a69b77b37073bf044f4c2150c35be62fc7be628e2f41bb1b67bd0"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/host-built.json",
+        "bytes": 123,
+        "sha256": "40b969950c16d763267031b2633a3a30679a2f8ca48fffe2304f086f839d299a"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/host-built.json",
+        "bytes": 123,
+        "sha256": "40b969950c16d763267031b2633a3a30679a2f8ca48fffe2304f086f839d299a"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/host-listening.json",
+        "bytes": 127,
+        "sha256": "bbe09f4c4757fb32aabcfde4d2b8b35dd212820cb7a496bf390edca3124d0642"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/host-listening.json",
+        "bytes": 127,
+        "sha256": "bbe09f4c4757fb32aabcfde4d2b8b35dd212820cb7a496bf390edca3124d0642"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/host-loaded.json",
+        "bytes": 124,
+        "sha256": "29f3c7bf86eef6a0acf148449fa681577215608309b5f82e5c58007f128be74e"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/host-loaded.json",
+        "bytes": 124,
+        "sha256": "29f3c7bf86eef6a0acf148449fa681577215608309b5f82e5c58007f128be74e"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/host-result.json",
+        "bytes": 1260,
+        "sha256": "6d070ee437171ca938013ed6244fb96ab8e3d4c2e1b8b45ea7ef4340e5cd5a9f"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/host-result.json",
+        "bytes": 1260,
+        "sha256": "6d070ee437171ca938013ed6244fb96ab8e3d4c2e1b8b45ea7ef4340e5cd5a9f"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/host-resumed.json",
+        "bytes": 125,
+        "sha256": "7cdf8ae69b1fdbaa36343e017d5588e06c50ad32b5c5b746d67ff910846b0b9a"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/host-resumed.json",
+        "bytes": 125,
+        "sha256": "7cdf8ae69b1fdbaa36343e017d5588e06c50ad32b5c5b746d67ff910846b0b9a"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/host-world-ready.json",
+        "bytes": 129,
+        "sha256": "d8b919583244f54ad4f5462863e33ecb0f54534c195d540d819cdd00a001885f"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/host-world-ready.json",
+        "bytes": 129,
+        "sha256": "d8b919583244f54ad4f5462863e33ecb0f54534c195d540d819cdd00a001885f"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/preparation.json",
+        "bytes": 579,
+        "sha256": "699c0b11f89cbee5234a7cdbe67f55f0052aefcc25b78699fb51624cb4074f11"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/preparation.json",
+        "bytes": 579,
+        "sha256": "699c0b11f89cbee5234a7cdbe67f55f0052aefcc25b78699fb51624cb4074f11"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-213050-435-503b0218/summary.json",
+        "bytes": 930,
+        "sha256": "68824d92718ac05c31a52200ba060ecb67cab3dca7dd745f85906d915e08c44e"
+      },
+      "copy": {
+        "path": "build/verify/fortress-campaign/legacy/run-evidence/summary.json",
+        "bytes": 930,
+        "sha256": "68824d92718ac05c31a52200ba060ecb67cab3dca7dd745f85906d915e08c44e"
+      }
+    }
+  ],
+  "scope": "Byte-for-byte original package-created LAN file. No reconstructed source fixture, no relabelled version/hash, no new EXE execution."
+}

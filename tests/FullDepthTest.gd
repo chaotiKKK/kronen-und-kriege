@@ -180,6 +180,10 @@ func _test_d3_d4() -> void:
 func _test_d6() -> void:
 	var g = _new_game(0)
 	var target: String = _border_target(g, 0)
+	for at in g.neighbours(target):
+		if int(g.province(str(at)).owner)==0:
+			g.house().armies=[{"id":1,"province":str(at),"strength":1000,"upkeep":4,"morale":100}]
+			break
 	_check(target != "", "D6: Kein Grenzziel gefunden.")
 	g._add_claim(0, target)
 	g.opinion[int(g.province(target)["owner"])] = 80
@@ -233,6 +237,10 @@ func _test_k1() -> void:
 func _test_k2() -> void:
 	var g = _new_game(0)
 	var target: String = _border_target(g, 0)
+	for at in g.neighbours(target):
+		if int(g.province(str(at)).owner)==0:
+			g.house().armies=[{"id":1,"province":str(at),"strength":1000,"upkeep":4,"morale":100}]
+			break
 	_check(target != "", "K2: Kein Grenzziel gefunden.")
 	_check(not g.can_attack(target), "K2: Angriff ohne Anspruch erlaubt.")
 	g.set_edge_enabled("D6", false)
@@ -269,12 +277,15 @@ func _test_k4_k5() -> void:
 	g.advance_siege(target, 0)
 	_need(g, "K4", "siege", 0, "K4: Armee erzeugt keinen Belagerungsfortschritt.")
 	_check(int(p["siege"]) > 0 or int(p["owner"]) == 0, "K4: Belagerung blieb 0.")
-	if int(p["owner"]) != 0:
-		g.advance_month()
-		g.advance_siege(target, 0)
-	if int(p["owner"]) != 0:
-		g.advance_month()
-		g.advance_siege(target, 0)
+	# Controlled causal K4/K5 case: use actual monthly guards and supply,
+	# but do not introduce unrelated NPC battles into this local rule proof.
+	for step in 100:
+		if int(p.owner)==0: break
+		g.month += 1
+		if g.month>12:
+			g.month=1
+			g.year+=1
+		g.advance_siege(target,0)
 	_check(int(p["owner"]) == 0, "K5: Belagerung nimmt die Provinz nicht ein.")
 	_need(g, "K5", "dev", 0, "K5: Einnahme beschädigt die Entwicklung nicht.")
 	var n = _new_game(0)
@@ -301,6 +312,10 @@ func _test_k6() -> void:
 func _test_k7() -> void:
 	var g = _new_game(0)
 	var target: String = _border_target(g, 0)
+	for at in g.neighbours(target):
+		if int(g.province(str(at)).owner)==0:
+			g.house().armies=[{"id":1,"province":str(at),"strength":1000,"upkeep":4,"morale":100}]
+			break
 	g._add_claim(0, target)
 	g.make_peace(int(g.province(target)["owner"]), 0)
 	g.set_edge_enabled("D6", false)
@@ -409,12 +424,14 @@ func _test_terrain_defense() -> void:
 		p["terrain_name"] = str(DataScript.terrain_info(str(c["key"]))["name"])
 		p["terrain_defense"] = int(c["defense"])
 		home["levy"] = 100
+		g.house().armies=[{"id":1,"province":str(home.id),"strength":100,"upkeep":1,"morale":100}]
 		g.house()["gold"] = 1000
 		g.house()["ruler"]["martial"] = 0
 		g.houses[1]["ruler"]["martial"] = 0
 		_check(g.can_attack(target), "T1: Kontrollangriff auf %s nicht möglich." % str(c["key"]))
 		var result: Dictionary = g.attack(target)
-		outcomes.append(bool(result["ok"]))
+		_check(result.ok,"T1: Tatsächlicher Geländekampf wird aufgelöst")
+		outcomes.append(bool(result.get("won",false)))
 	_check(outcomes.size() == 4, "T1: Geländefälle unvollständig.")
 	_check(outcomes.size() == 4 and bool(outcomes[0]), "T1: Angriff auf Ebenen verliert.")
 	for i in range(1, outcomes.size()):

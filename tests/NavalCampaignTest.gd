@@ -37,7 +37,23 @@ func funded():
 	var game = Game.new(Data,2)
 	game.house().gold = 1000
 	check(game.raise_army(HOME).ok and game.raise_fleet(HOME).ok,"Kontrollierte Aufstellung über reale Käufe")
+	make_ready(game,2)
 	return game
+
+func make_ready(game, hi: int) -> void:
+	# Diese Fälle isolieren Route/Ansprüche. Bereitschaft wird ebenfalls mit
+	# echten Kosten hergestellt; neue Erholungsentscheidungen prüft die AI-Suite.
+	for step in 8:
+		if not bool(Planner.readiness(game,hi).get("needed",false)): return
+		var at := str(game.army_for(hi).province)
+		if not check_recovery(game,at,hi): return
+		game.month+=1
+	check(false,"Kontrollierte Routefixture erreicht bezahlte Bereitschaft")
+
+func check_recovery(game, at: String, hi: int) -> bool:
+	var result: Dictionary = game.recover_army(at,hi)
+	check(bool(result.ok),"Routefixture bezahlt tatsächliche Erholung vor der Transportprüfung")
+	return bool(result.ok)
 
 func claim(game, id: String) -> void:
 	game._add_claim(2,id)
@@ -63,6 +79,7 @@ func _test_staging_and_shared_month() -> void:
 	var game = funded()
 	claim(game,TARGET)
 	game.army_for().province = "britannien__04"
+	make_ready(game,2)
 	var order: Dictionary = Planner.next_order(game,2)
 	check(order.get("action")=="march" and order.get("destination")==HOME and order.get("target")==TARGET,"Heer marschiert zunächst über eigene Landnachbarn zum tatsächlichen Geleitort")
 	check(game.march_army(HOME).ok,"Echter Landmarsch zum Abfahrtshafen")
@@ -138,6 +155,12 @@ func _test_near_siege() -> void:
 	if home.is_empty(): return
 	game.house().gold = 1000
 	check(game.raise_army(home).ok and game.fabricate_claim(target).ok,"Kontrollierte Grenzarmee und bezahlter Anspruch")
+	make_ready(game,0)
+	# Isoliert die tatsächliche direkte Reichweite von der separaten Festungs-
+	# und Feldheerstärkeprüfung; Katalogkanten bleiben unverändert.
+	game.province(target).levy=50
+	game.province(target).defense=0
+	game.province(target).terrain_defense=0
 	var order: Dictionary = Planner.next_order(game,0)
 	check(order.get("action")=="siege" and order.get("destination")==target,"Bereits nahe Armee belagert statt eines unnötigen zusätzlichen Marsches")
 	game.army_for().last_siege_month = game._now()
@@ -194,6 +217,7 @@ func _test_other_house_and_retreat() -> void:
 	var plan: Dictionary = Planner.preparation(game,5)
 	check(plan.get("port")==HOME and plan.get("required_gold")==150,"Inselvorbereitung hängt von Besitz und Routen ab, nicht von Haus-ID2")
 	check(game.raise_army(HOME,5).ok and game.raise_fleet(HOME,5).ok,"Andere Haus-ID bezahlt dieselben realen Einheiten")
+	make_ready(game,5)
 	game._add_claim(5,TARGET)
 	check(Planner.next_order(game,5).get("action")=="transport","Dasselbe Transportmodell plant auch für eine andere Haus-ID")
 	game = funded()

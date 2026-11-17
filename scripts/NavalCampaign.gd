@@ -1,6 +1,11 @@
 extends RefCounted
 ## Reine Feldzugsplanung. Game führt die zurückgegebenen Aktionen aus.
 const Transport = preload("res://scripts/NavalTransport.gd")
+const Recovery = preload("res://scripts/ArmyRecovery.gd")
+const Battle = preload("res://scripts/FieldBattleRules.gd")
+const RULES := {"version":2,"relief_chance":0.35,"assault_chance":0.55,
+	"ready_local_capacity":0.6,"ready_raise_forecast":1.25,"ready_morale":60,
+	"actual_escort_limits_recovery":true,"own_land_relief_route":true}
 const ARMY_GOLD := 50
 const CLAIM_GOLD := 40
 
@@ -35,16 +40,37 @@ static func claim_target(game, hi: int) -> String:
 static func next_order(game, hi: int) -> Dictionary:
 	if hi<0 or hi>=game.houses.size(): return {}
 	var army: Dictionary = game.army_for(hi)
-	if not _living_army(army) or int(army.get("last_siege_month",-1))==game._now(): return {}
+	if army.is_empty() or int(army.get("strength",0))<=0 or int(army.get("last_siege_month",-1))==game._now(): return {}
+	var relief := _relief_order(game,hi,army)
+	if not relief.is_empty(): return relief
+	var ready := readiness(game,hi)
+	if bool(ready.get("needed",false)):
+		var recovery := _recovery_order(game,hi,army,ready)
+		if not recovery.is_empty(): return recovery
+	if not _living_army(army): return _wait(str(army.province),"Das lebende Heer muss sich im eigenen Land erholen.")
 	var targets: Array[String] = []
 	for claim in game.houses[hi].get("claims",[]):
 		var id := str(claim.get("province",""))
 		if not targets.has(id) and _hostile_claim(game,id,hi): targets.append(id)
 	targets.sort()
 	var candidates: Array[Dictionary] = []
+	var blocked := ""
 	for target in targets:
-		if game.can_siege(target,hi):
+		var siege: Dictionary = game.siege_preview(target,hi)
+		if bool(siege.ok):
 			candidates.append(_order(target,"siege",target,1,false))
+			continue
+		if str(army.province)==target or game.neighbours(str(army.province)).has(target):
+			var assault: Dictionary = game.attack_preview(target,hi)
+			if bool(assault.ok) and float(assault.chance)>=float(RULES.assault_chance):
+				candidates.append(_order(target,"attack",target,1,false))
+			elif float(assault.chance)>=float(RULES.assault_chance) and int(game.houses[hi].gold)<int(assault.cost):
+				var waiting := _wait(str(army.province),str(assault.reason))
+				waiting.target=target
+				waiting.required_gold=int(assault.cost)
+				waiting.steps=1
+				candidates.append(waiting)
+			else: blocked=str(siege.reason)
 			continue
 		var path := _path_to_siege(game,hi,str(army.province),target,army)
 		if path.is_empty(): continue
@@ -57,7 +83,131 @@ static func next_order(game, hi: int) -> Dictionary:
 	if not candidates.is_empty():
 		candidates.sort_custom(func(a,b): return int(a.steps)<int(b.steps) if int(a.steps)!=int(b.steps) else str(a.target)<str(b.target))
 		return candidates[0]
-	return _retreat(game,hi,army)
+	var retreat := _retreat(game,hi,army)
+	if not retreat.is_empty(): return retreat
+	if not blocked.is_empty():
+		var quote: Dictionary = game.army_recovery_preview(str(army.province),hi)
+		if bool(quote.ok) and _recovery_fits_escort(game,hi,army,quote): return _order(str(army.province),"recover",str(army.province),1,_needs_escort(game,hi,army))
+		return _wait(str(army.province),blocked)
+	return {}
+
+## Kein gespeichertes Soll: aktuelle lokale Reserve und echte Aufstellung
+## begrenzen das Feldzugsziel. Die ausführbare Quote bleibt beim Regelmodul.
+static func readiness(game, hi: int) -> Dictionary:
+	if hi<0 or hi>=game.houses.size(): return {}
+	var army: Dictionary = game.army_for(hi)
+	if army.is_empty() or int(army.get("strength",0))<=0: return {}
+	var origin := str(army.get("province",""))
+	var local: Dictionary = game.province(origin)
+	var quote: Dictionary = game.army_recovery_preview(origin,hi)
+	var capacity := int(quote.get("capacity",0))
+	var forecast: int = game.army_raise_strength(origin,hi)
+	var minimum := ceili(minf(capacity*float(RULES.ready_local_capacity),forecast*float(RULES.ready_raise_forecast)))
+	if not local.is_empty():
+		minimum=mini(minimum,int(army.strength)+maxi(0,int(local.get("levy",0))-int(Recovery.RULES.local_levy_reserve)))
+	var escort_capacity := 0
+	if _needs_escort(game,hi,army):
+		escort_capacity=int(game.fleet_for(hi).get("ships",0))*int(Transport.RULES.soldiers_per_ship)
+		minimum=mini(minimum,escort_capacity)
+	var morale_needed := int(army.get("morale",0))<int(RULES.ready_morale)
+	var own := not local.is_empty() and int(local.owner)==hi
+	return {"needed":morale_needed or (own and int(army.strength)<minimum),"minimum_strength":minimum,
+		"morale_needed":morale_needed,"capacity":capacity,"escort_capacity":escort_capacity,
+		"can_recover":bool(quote.ok) and _recovery_fits_escort(game,hi,army,quote),
+		"recovery_cost":_recovery_reserve(game,hi,quote),"quote":quote}
+
+static func military_reserve(game, hi: int) -> int:
+	var ready := readiness(game,hi)
+	if ready.is_empty(): return 0
+	if bool(ready.needed): return int(ready.recovery_cost)
+	var order := next_order(game,hi)
+	if int(order.get("required_gold",0))>0: return int(order.required_gold)
+	if str(order.get("action",""))=="recover": return int(ready.recovery_cost)
+	if str(order.get("action",""))=="attack": return int(Battle.RULES.assault_gold)
+	return 0
+
+static func _recovery_reserve(game, hi: int, quote: Dictionary) -> int:
+	if bool(quote.get("ok",false)): return int(quote.cost)
+	# Bei knapper Kasse nennt die Quote bereits Standort und echte Reserven;
+	# geplant wird die nächste normale Charge, ohne einen Kauf vorzutäuschen.
+	if int(quote.get("capacity",0))<=0: return 0
+	var added := mini(int(Recovery.RULES.max_recruits),mini(maxi(0,int(quote.capacity)-int(quote.current_strength)),maxi(0,int(quote.levy_before)-int(Recovery.RULES.local_levy_reserve))))
+	if added<=0 and int(quote.current_morale)>=int(Recovery.RULES.maximum_morale): return 0
+	return int(Recovery.RULES.base_gold)+ceili(float(added)/float(Recovery.RULES.soldiers_per_gold))
+
+static func _recovery_order(game, hi: int, army: Dictionary, ready: Dictionary) -> Dictionary:
+	var origin := str(army.province)
+	var local: Dictionary = game.province(origin)
+	if local.is_empty(): return {}
+	if int(local.owner)!=hi:
+		var retreat := _retreat(game,hi,army)
+		return retreat if not retreat.is_empty() else _wait(origin,"Kein tatsächlicher eigener Rückweg zum Feldlager verfügbar.")
+	var quote: Dictionary = ready.quote
+	if bool(quote.ok):
+		if not _recovery_fits_escort(game,hi,army,quote): return _wait(origin,"Die echte Erholungscharge übersteigt die Geleitkapazität.",true)
+		return _order(origin,"recover",origin,1,_needs_escort(game,hi,army))
+	var retreat := _retreat(game,hi,army)
+	if not retreat.is_empty(): return retreat
+	return _wait(origin,str(quote.reason),_needs_escort(game,hi,army))
+
+static func _recovery_fits_escort(game, hi: int, army: Dictionary, quote: Dictionary) -> bool:
+	return not _needs_escort(game,hi,army) or int(quote.get("new_strength",0))<=int(game.fleet_for(hi).get("ships",0))*int(Transport.RULES.soldiers_per_ship)
+
+static func _needs_escort(game, hi: int, army: Dictionary) -> bool:
+	var fleet: Dictionary = game.fleet_for(hi)
+	if fleet.is_empty(): return false
+	var origin := str(army.province)
+	if not _foreign_land_border(game,hi) and _own_land_path(game,hi,origin,str(fleet.get("province",""))): return true
+	for claim in game.houses[hi].get("claims",[]):
+		var target := str(claim.get("province",""))
+		if not _hostile_claim(game,target,hi): continue
+		for step in _path_to_siege(game,hi,origin,target,army):
+			if str(step.action)=="transport": return true
+	return false
+
+static func _wait(origin: String, reason: String, uses_sea: bool = false) -> Dictionary:
+	var order := _order(origin,"wait",origin,0,uses_sea)
+	order.blocked_reason=reason
+	return order
+
+static func _relief_order(game, hi: int, army: Dictionary) -> Dictionary:
+	if not _living_army(army): return {}
+	var candidates: Array[Dictionary] = []
+	for region in game.provinces:
+		if int(region.owner)!=hi: continue
+		var target := str(region.id)
+		var threatened := false
+		for other in game.houses.size():
+			if other==hi or not _hostility_allowed(game,hi,other): continue
+			for enemy in game.houses[other].get("armies",[]):
+				if str(enemy.get("province",""))==target and _living_army(enemy): threatened=true
+		if not threatened: continue
+		var preview: Dictionary = game.relief_preview(target,hi)
+		if bool(preview.ok) and float(preview.chance)>=float(RULES.relief_chance):
+			candidates.append(_order(target,"relieve",target,0,false))
+			continue
+		if str(army.province)==target or game.neighbours(str(army.province)).has(target): continue
+		var path := _land_front_path(game,hi,str(army.province),target)
+		if not path.is_empty() and game.can_march(str(path[0]),hi): candidates.append(_order(target,"march",str(path[0]),path.size(),false))
+	if candidates.is_empty(): return {}
+	candidates.sort_custom(func(a,b):return int(a.steps)<int(b.steps) if int(a.steps)!=int(b.steps) else str(a.target)<str(b.target))
+	return candidates[0]
+
+static func _land_front_path(game, hi: int, origin: String, target: String) -> Array:
+	var queue: Array[Dictionary] = [{"at":origin,"path":[]}]
+	var seen := {origin:true}
+	while not queue.is_empty():
+		var current: Dictionary = queue.pop_front()
+		if game.neighbours(str(current.at)).has(target): return current.path
+		var neighbours: Array = game.neighbours(str(current.at)).duplicate()
+		neighbours.sort()
+		for id in neighbours:
+			if seen.has(str(id)) or str(id)==target or not Battle._free_own_location(game,hi,str(id)): continue
+			seen[str(id)]=true
+			var path: Array = current.path.duplicate()
+			path.append(str(id))
+			queue.append({"at":str(id),"path":path})
+	return []
 
 static func preparation(game, hi: int) -> Dictionary:
 	if hi<0 or hi>=game.houses.size() or _foreign_land_border(game,hi): return {}
@@ -184,7 +334,14 @@ static func _foreign_land_border(game, hi: int) -> bool:
 static func _retreat(game, hi: int, army: Dictionary) -> Dictionary:
 	var origin := str(army.province)
 	var region: Dictionary = game.province(origin)
-	if region.is_empty() or int(region.owner)==hi: return {}
+	if region.is_empty() or (int(region.owner)==hi and Battle._free_own_location(game,hi,origin)): return {}
+	var neighbours: Array = game.neighbours(origin).duplicate()
+	neighbours.sort()
+	for id in neighbours:
+		if Battle._free_own_location(game,hi,str(id)) and game.can_march(str(id),hi):
+			var order := _order(str(id),"march",str(id),1,false)
+			order.retreat=true
+			return order
 	for id in game.naval_routes().destinations(origin):
 		var destination: Dictionary = game.province(str(id))
 		if destination.is_empty() or int(destination.owner)!=hi: continue

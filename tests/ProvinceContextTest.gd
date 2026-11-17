@@ -57,7 +57,7 @@ func _ready() -> void:
 	check(not border.is_empty() and not remote.is_empty(), "Echte Grenz- und Fernregionen für Kontextwechsel vorhanden")
 	check(game.has_method("attack_in_range"), "Angriffsreichweite besitzt dieselbe reine Abfrage für Regeln und Oberfläche")
 	if game.has_method("attack_in_range"):
-		check(game.attack_in_range(border) and not game.attack_in_range(remote), "Echte Grenze ist erreichbar, anatolisches Fernziel für dieses Haus nicht")
+		check(not game.attack_in_range(border) and not game.attack_in_range(remote), "Ohne tatsächlich vorhandenes Feldheer ersetzt auch die eigene Grenze keine militärische Reichweite")
 	var world_before: String = main.LanSessionScript.Protocol.world_hash(game.snapshot())
 	main._on_province_selected(remote)
 	await settle()
@@ -84,10 +84,29 @@ func _ready() -> void:
 	await settle()
 	check(game.has_claim(border) and int(game.house().gold) == gold-40, "Sichtbarer Anspruch führt echten bestehenden40GoldBefehl aus")
 	check(inspector.status.is_visible_in_tree() and not inspector.status.text.is_empty(), "Ausgeführte Kontextaktion bestätigt ihr Ergebnis sichtbar")
-	check(main.attack_btn.is_visible_in_tree() and not main.attack_btn.disabled, "Nach Anspruch bleibt der echte Aufgebotsangriff verfügbar")
+	check(not main.attack_btn.visible and not game.attack_in_range(border), "Ein Anspruch allein erzeugt keinen nationalen Ersatzangriff ohne Feldheer")
+	# Ab hier kontrollierte militärische UI-Lage, kein regulärer Budgetbeleg.
+	game.house().gold = 1000
+	var staging := ""
+	for neighbor in game.neighbours(border):
+		if int(game.province(neighbor).owner) == game.player:
+			staging = neighbor
+			break
+	check(not staging.is_empty(), "Eigene tatsächliche Aufstellungsregion grenzt unmittelbar ans gewählte Ziel")
+	main._on_province_selected(staging)
+	var formation_gold: int = game.house().gold
+	check(main._dispatch({"id":"army"}).ok and int(game.house().gold)==formation_gold-50, "Tatsächliches Feldheer wird über echten UI-Aufstellungsbefehl für50Gold aufgestellt")
+	# Der Kontexttest prüft Verfügbarkeit, nicht Festungsbalance: kontrollierte
+	# geringe Garnison lässt das wirklich aufgestellte Heer ausreichend drücken.
+	game.province(border).levy = 100
+	game.province(border).defense = 0
+	game.province(border).terrain_defense = 0
+	main._on_province_selected(border)
+	await settle()
+	check(main.attack_btn.is_visible_in_tree() and not main.attack_btn.disabled, "Anspruch plus bereites echtes Nachbarheer bieten den tatsächlichen Sturm an")
 	game.house().gold = 0
 	main.refresh()
-	check(main.attack_btn.visible and main.attack_btn.disabled and inspector.fields.war.text.contains("25"), "Kurzzeitiger Goldmangel erklärt den weiterhin passenden Angriff")
+	check(main.attack_btn.visible and main.attack_btn.disabled and inspector.fields.orders.text.contains("25"), "Kurzzeitiger Goldmangel erklärt im gemeinsamen Aktionsstatus den weiterhin passenden Sturm")
 	check(game.attack_in_range(border) and not game.can_attack(border), "Reine Reichweite bleibt bei Goldmangel erhalten, tatsächlicher Angriff bleibt gesperrt")
 	var original_owner: int = game.province(border).owner
 	game.province(border).owner = game.player
@@ -98,17 +117,10 @@ func _ready() -> void:
 	main.refresh()
 	await settle()
 	check(not inspector.section_buttons.buildings.visible and not inspector.section_buttons.research.visible, "Besitzverlust derselben Auswahl blendet Verwaltung sofort aus")
-	# Ab hier eigene kontrollierte Kriegssituation, kein regulärer Budgetnachweis.
 	game.house().gold = 1000
-	var staging := ""
-	for neighbor in game.neighbours(border):
-		if int(game.province(neighbor).owner) == game.player:
-			staging = neighbor
-			break
-	check(not staging.is_empty(), "Eigene unmittelbare Aufstellungsregion an echter Grenze vorhanden")
 	if not staging.is_empty():
 		main._on_province_selected(staging)
-		check(main._dispatch({"id":"army"}).ok, "Kontrolliertes Feldheer wird über echten Aufstellungsbefehl bezahlt")
+		check(str(game.army_for().get("province",""))==staging, "Das tatsächlich bezahlte Feldheer bleibt am überprüften Ausgangsstandort")
 		main._on_province_selected(border)
 		await settle()
 		check(inspector.action_buttons.siege.is_visible_in_tree() and not inspector.action_buttons.siege.disabled, "Anspruch plus nahes Heer bieten die tatsächliche Belagerung an")

@@ -162,7 +162,27 @@ static func province(game, id: String) -> Dictionary:
 	return {"id":id,"name":str(p.name),"owner":str(game.houses[owner].name),"owner_index":owner,"own":own,
 		"terrain":p.get("terrain_name","Ebenen"),"defense":p.get("defense",0),"terrain_defense":p.get("terrain_defense",0),"supply":game.army_supply_capacity(id,owner),
 		"income":game.region_income(p),"development":p.dev,"levy":p.levy,"capacity":capacity,"buildings":buildings,"armies":armies,"fleets":fleets,"army_upkeep_total":game.army_upkeep(owner),"coastal":game.is_coastal(id),
-		"research":game.research_choices(owner,id),"legacies":legacies,"siege":p.get("siege",0),"blockade":p.get("blockade",0),"kingdom":p.get("kingdom_name",""),"empire":p.get("empire_name","")}
+		"research":game.research_choices(owner,id),"legacies":legacies,"siege":p.get("siege",0),"blockade":p.get("blockade",0),"kingdom":p.get("kingdom_name",""),"empire":p.get("empire_name",""),
+		"military":_province_military(game,p,own)}
+
+static func _province_military(game, province: Dictionary, own: bool) -> Dictionary:
+	var id:=str(province.id)
+	var army: Dictionary=game.army_for()
+	var own_station: bool=own and not army.is_empty() and str(army.get("province",""))==id
+	var foreign_strength:=0
+	if own:
+		for hi in game.houses.size():
+			if hi==game.player: continue
+			for other in game.houses[hi].get("armies",[]):
+				if str(other.get("province",""))==id and int(other.get("strength",0))>0 and int(other.get("morale",0))>0:
+					foreign_strength+=int(other.strength)
+	var threatened: bool=own and (foreign_strength>0 or (int(province.get("siege",0))>0 and int(province.get("siege_owner",-1))>=0 and int(province.siege_owner)!=game.player))
+	return {"own_station":own_station,"threatened":threatened,"foreign_strength":foreign_strength,
+		"siege":game.siege_preview(id) if not own else {},
+		"assault":game.attack_preview(id) if not own else {},
+		"relief":game.relief_preview(id) if threatened else {},
+		"recovery":game.army_recovery_preview(id) if own_station else {},
+		"disband":game.disband_preview(id) if own_station else {}}
 
 const EFFECT_NAMES := {
 	"gold": ["Gold", 1], "prestige": ["Prestige", 1], "legitimacy": ["Legitimität", 1],

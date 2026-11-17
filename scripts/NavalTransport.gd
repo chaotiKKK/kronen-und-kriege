@@ -3,7 +3,8 @@ extends RefCounted
 const Routes = preload("res://scripts/NavalRoutes.gd")
 const RULES := {"soldiers_per_ship":100,"minimum_fleet_morale":20,
 	"shared_monthly_army_action":true,"shared_monthly_fleet_action":true,
-	"crossing_gold":0,"active_claims_only":true,"resolved_combat_result_version":1}
+	"crossing_gold":0,"active_claims_only":true,"resolved_combat_result_version":1,
+	"demoralized_own_shore_return":true}
 static var _routes: RefCounted
 
 static func shared_routes() -> RefCounted:
@@ -55,7 +56,10 @@ static func preview(game, target_id: String, hi: int) -> Dictionary:
 	if route.is_empty(): return _blocked(out,"Für diese beiden Küsten ist kein Seeweg zugelassen.")
 	out.route_id = str(route.id)
 	out.route_points = route.points
-	if out.strength <= 0 or int(army.get("morale",0)) <= 0: return _blocked(out,"Die ausgewählte Armee ist nicht kampffähig.")
+	# A living demoralized army may withdraw to its actual own shore, but no
+	# offensive landing gains a morale bypass. Escort and month guards still apply.
+	if out.strength <= 0 or (int(army.get("morale",0)) <= 0 and int(target.owner)!=hi):
+		return _blocked(out,"Die ausgewählte Armee ist nicht kampffähig.")
 	var fleet: Dictionary = game.fleet_for(hi)
 	if not fleet.is_empty():
 		out.fleet_id = int(fleet.get("id",-1))

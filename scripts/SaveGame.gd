@@ -18,7 +18,10 @@ extends RefCounted
 ## erhält alle vorhandenen Felder und ergänzt nur neue Pflichtfelder mit
 ## deterministischen Defaults. Sie überschreibt keine unbekannten Felder.
 
-const CURRENT_VERSION := 15
+const CURRENT_VERSION := 16
+const CampaignLimits = preload("res://scripts/CampaignLimits.gd")
+const MAX_ARMY_STRENGTH := CampaignLimits.MAX_ARMY_STRENGTH
+const MAX_ARMY_UPKEEP := CampaignLimits.MAX_ARMY_UPKEEP
 const RegionMigrationScript = preload("res://scripts/RegionMigration.gd")
 const CalendarScript = preload("res://scripts/CampaignCalendar.gd")
 const InfrastructureScript = preload("res://scripts/Infrastructure.gd")
@@ -74,6 +77,7 @@ static func migrate(data: Dictionary) -> Dictionary:
 	errors.append_array(_siege_dates(out))
 	errors.append_array(_focus_fields(out,from_version >= 14))
 	errors.append_array(_naval_dates(out,from_version >= 15))
+	errors.append_array(_army_bounds(out,from_version >= 16))
 	if not errors.is_empty():
 		return {"ok":false,"data":out,"from_version":from_version,"to_version":CURRENT_VERSION,"errors":errors}
 	if from_version < 1:
@@ -145,6 +149,7 @@ static func validate(data: Dictionary) -> Array:
 	var errors: Array = []
 	errors.append_array(_siege_dates(data))
 	errors.append_array(_naval_dates(data,true))
+	errors.append_array(_army_bounds(data,true))
 	# Pflichtfelder am Rohstand prüfen, bevor migrate() Defaults ergänzt.
 	# Sonst würde validate() einen Feldverlust nie bemerken.
 	if int(data.get("schema_version", 0)) != CURRENT_VERSION:
@@ -668,6 +673,30 @@ static func _naval_dates(data: Dictionary, required: bool) -> Array:
 					errors.append("Ungültiger oder fehlender Flottenaktionsmonat.")
 	return errors
 
+static func _army_bounds(data: Dictionary, required: bool) -> Array:
+	var errors: Array = []
+	# Historical formats retain their previous default/coercion semantics, with
+	# widened bounds. Current raw values must never be silently clipped or filled.
+	if not required: return errors
+	var houses = data.get("houses",[])
+	if not houses is Array: return errors
+	for house in houses:
+		if not house is Dictionary: continue
+		var armies = house.get("armies",[])
+		if not armies is Array:
+			errors.append("Armeen müssen als Liste gespeichert sein.")
+			continue
+		for army in armies:
+			if not army is Dictionary:
+				errors.append("Ungültiger Armeeeintrag.")
+				continue
+			for field in ["strength","upkeep"]:
+				var value = army.get(field)
+				var maximum: int = MAX_ARMY_STRENGTH if field=="strength" else MAX_ARMY_UPKEEP
+				if not (value is int or value is float) or not is_finite(float(value)) or floor(value)!=value or value<0 or value>maximum:
+					errors.append("Ungültiger oder fehlender Armeewert: "+field)
+	return errors
+
 static func _migrate_armies(raw) -> Array:
 	var out: Array = []
 	var used_ids: Dictionary = {}
@@ -690,8 +719,8 @@ static func _migrate_armies(raw) -> Array:
 				var army := {
 					"id": army_id,
 					"province": str(item.get("province", "")),
-					"strength": clampi(int(item.get("strength", 0)), 0, 5000),
-					"upkeep": clampi(int(item.get("upkeep", 2)), 0, 50),
+					"strength": clampi(int(item.get("strength", 0)), 0, MAX_ARMY_STRENGTH),
+					"upkeep": clampi(int(item.get("upkeep", 2)), 0, MAX_ARMY_UPKEEP),
 					"morale": clampi(int(item.get("morale", 100)), 0, 100),
 				}
 				if item.has("last_siege_month"):

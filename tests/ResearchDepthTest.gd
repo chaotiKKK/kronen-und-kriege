@@ -126,9 +126,13 @@ func _battle(target_levy: int, attacker: String, defender: String = "balanced", 
 	g.houses[1].doctrine = defender
 	g.houses[0].research.known = attack_tech
 	g.houses[1].research.known = defense_tech
+	g.houses[0].gold=1000
+	g.houses[0].armies=[{"id":1,"province":source.id,"strength":1000,"upkeep":4,"morale":100}]
 	g._add_claim(0, str(target.id))
 	g.attack_roll_override = 1.0
-	return bool(g.attack(str(target.id)).ok)
+	var result: Dictionary = g.attack(str(target.id))
+	check(bool(result.ok),"Forschungsvergleich löst tatsächliche bezahlte Schlacht mit realem1000-Mann-Heer auf")
+	return bool(result.get("won",false))
 
 func _siege(doctrine: String, tech: Array = []) -> int:
 	var g = Game.new(load("res://scripts/Data.gd"), 0)

@@ -19,6 +19,8 @@ var section_tabs: GridContainer
 var focus_picker: OptionButton
 var focus_box: VBoxContainer
 var _focus_province := ""
+var disband_box: VBoxContainer
+var _pending_disband: Dictionary = {}
 
 func configure(host) -> void:
 	main = host
@@ -94,6 +96,26 @@ func configure(host) -> void:
 	_action("siege", "Belagerung vorantreiben", {"id":"siege"}, sections.army)
 	fields.orders = _text("",11,sections.army)
 	fields.battle = _text("",11,sections.army)
+	_action("relieve","Festung entsetzen",{"id":"relieve"},sections.army)
+	_action("recover_army","Auffüllen und ordnen",{"id":"recover_army"},sections.army)
+	var disband: Button = main._button("Heer auflösen …",_request_disband)
+	main.get_meta("modern_interface")._style_tool(disband)
+	disband.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sections.army.add_child(disband)
+	action_buttons.disband_army = disband
+	disband_box = VBoxContainer.new()
+	disband_box.add_theme_constant_override("separation",4)
+	sections.army.add_child(disband_box)
+	fields.disband_confirmation = _text("",11,disband_box)
+	var confirm: Button = main._button("Heer endgültig auflösen",_confirm_disband)
+	var cancel: Button = main._button("Abbrechen",_clear_disband.bind(true))
+	for button in [confirm,cancel]:
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		main.get_meta("modern_interface")._style_tool(button)
+		disband_box.add_child(button)
+	action_buttons.disband_confirm = confirm
+	action_buttons.disband_cancel = cancel
+	disband_box.hide()
 	_action("fleet", "Flotte aufstellen", {"id":"fleet"}, sections.army)
 	fields.research = _text("",12,sections.research)
 	var research_plan: Button = main._button("Forschungsplan öffnen",_open_research_plan)
@@ -107,7 +129,7 @@ func configure(host) -> void:
 	_action("secret_discover","Geheimnis aufdecken",{"id":"secret_discover"},sections.achievements)
 	_action("secret_expose","Geheimnis ausnutzen",{"id":"secret_expose"},sections.achievements)
 	# Erst die nächste Entscheidung, darunter die ausführlichen Bestandszahlen.
-	var war_order: Array = [fields.war,action_buttons.claim,army_picker,fields.field_army,fields.transport,action_buttons.transport_army,action_buttons.march,action_buttons.siege,main.attack_btn,fields.orders,fields.battle,action_buttons.army,action_buttons.focus_army,fields.supply,action_buttons.fleet,action_buttons.blockade,main.recruit_btn,fields.army]
+	var war_order: Array = [fields.war,action_buttons.claim,army_picker,fields.field_army,fields.transport,action_buttons.transport_army,fields.battle,action_buttons.march,action_buttons.siege,main.attack_btn,action_buttons.relieve,action_buttons.recover_army,fields.orders,action_buttons.army,action_buttons.focus_army,fields.supply,action_buttons.fleet,action_buttons.blockade,main.recruit_btn,fields.army,action_buttons.disband_army,disband_box]
 	for index in war_order.size(): sections.army.move_child(war_order[index],index)
 	status = _text("",11)
 	show_section(current_section)
@@ -130,7 +152,7 @@ func _action(key: String, label: String, command: Dictionary, parent: Node) -> B
 
 func _command(command: Dictionary) -> void:
 	if main.game==null or main.game.province(selected_id).is_empty(): return
-	if str(command.get("id","")) in ["build","province_focus","army","fleet"] and not _owns_selection(): return
+	if str(command.get("id","")) in ["build","province_focus","army","fleet","relieve","recover_army","disband_army"] and not _owns_selection(): return
 	var result: Dictionary = main._dispatch(command)
 	status.text = str(result.get("message", ""))
 	status.visible = not status.text.is_empty()
@@ -145,7 +167,42 @@ func _open_research_plan() -> void:
 
 func _select_army(index: int) -> void:
 	if index < 0 or index >= army_picker.item_count: return
+	_clear_disband()
 	_command({"id":"select_army","army":army_picker.get_item_id(index)})
+
+func _request_disband() -> void:
+	_clear_disband()
+	if not _owns_selection(): return
+	var preview: Dictionary=main.game.disband_preview(selected_id)
+	if not bool(preview.ok): return
+	_pending_disband={"province":selected_id,"army":int(preview.army_id),"strength":int(preview.strength),"morale":int(preview.morale),"month":main.game._now()}
+	fields.disband_confirmation.text="Heer %d in %s mit %d Mann wirklich auflösen?\nSoldaten und Gold werden nicht erstattet." % [int(preview.army_id),str(main.game.province(selected_id).name),int(preview.strength)]
+	for key in ["disband_confirm","disband_cancel"]:
+		action_buttons[key].show()
+		action_buttons[key].disabled=false
+	disband_box.show()
+	action_buttons.disband_cancel.grab_focus()
+
+func _clear_disband(focus_back: bool = false) -> void:
+	_pending_disband.clear()
+	if disband_box!=null: disband_box.hide()
+	if focus_back and action_buttons.has("disband_army") and action_buttons.disband_army.is_visible_in_tree():
+		action_buttons.disband_army.grab_focus()
+
+func _confirm_disband() -> void:
+	if _pending_disband.is_empty() or not _owns_selection():
+		_clear_disband()
+		return
+	var preview: Dictionary=main.game.disband_preview(selected_id)
+	if not _confirmation_matches(preview):
+		_clear_disband()
+		return
+	var army_id:=int(_pending_disband.army)
+	_clear_disband()
+	_command({"id":"disband_army","army":army_id})
+
+func _confirmation_matches(preview: Dictionary) -> bool:
+	return not _pending_disband.is_empty() and bool(preview.get("ok",false)) and selected_id==str(_pending_disband.province) and int(preview.army_id)==int(_pending_disband.army) and int(preview.strength)==int(_pending_disband.strength) and int(preview.morale)==int(_pending_disband.morale) and main.game._now()==int(_pending_disband.month)
 
 func _apply_focus() -> void:
 	if not _owns_selection() or focus_picker.selected < 0: return
@@ -229,6 +286,7 @@ func refresh(game, id: String) -> void:
 	var selection_changed := selected_id != id
 	if selection_changed:
 		status.text = ""
+		_clear_disband()
 	selected_id = id
 	var vm: Dictionary = ViewModel.province(game,id)
 	_refresh_administration(not vm.is_empty() and bool(vm.own))
@@ -237,6 +295,7 @@ func refresh(game, id: String) -> void:
 		section_buttons[key].disabled = vm.is_empty()
 		section_buttons[key].visible = not vm.is_empty() and (key != "achievements" if vm.own else key in ["army","achievements"])
 	if vm.is_empty():
+		_clear_disband()
 		_context_known = false
 		title.text = "Provinz auswählen"
 		summary.text = "Eigenes Land: Ausbau, Heer und Wissen.\nFremdes Land: Diplomatie und passende Kriegsaktionen."
@@ -252,6 +311,7 @@ func refresh(game, id: String) -> void:
 		for section in sections.values(): section.visible = false
 		return
 	var army: Dictionary = game.army_for()
+	var military: Dictionary = vm.military
 	var claimed: bool = game.has_claim(id)
 	var border: bool = game.is_border_province(game.player,id)
 	var transport: Dictionary = game.naval_transport_preview(id)
@@ -278,7 +338,8 @@ func refresh(game, id: String) -> void:
 	section_buttons.army.text = "Militär" if vm.own else "Krieg"
 	section_buttons.achievements.text = "Diplomatie"
 	title.text = str(vm.name)
-	summary.text = "%s · %s\n%d Gold/Jahr · Aufgebot %d · Verteidigung %+d%%" % [vm.terrain,vm.owner,vm.income,vm.levy,int(vm.defense)+int(vm.terrain_defense)]
+	summary.text = "%s · %s\n%d Gold/Jahr" % [vm.terrain,vm.owner,vm.income]
+	if vm.own: summary.text += " · Aufgebot %d · Verteidigung %+d%%" % [vm.levy,int(vm.defense)+int(vm.terrain_defense)]
 	summary.tooltip_text = "%s · %s\nEntwicklung %d/10 · Versorgung %d" % [vm.kingdom,vm.empire,vm.development,vm.supply]
 	var pending: bool = main._lan_active() and main.lan_session.pending_command
 	_refresh_focus(game,vm)
@@ -314,21 +375,11 @@ func refresh(game, id: String) -> void:
 	action_buttons.march.visible = army_near and str(army.province) != id and (vm.own or claimed)
 	action_buttons.march.disabled = pending or game.game_over or not game.can_march(id)
 	action_buttons.siege.visible = not vm.own and claimed and army_near
-	action_buttons.siege.disabled = pending or game.game_over or not game.can_siege(id)
-	action_buttons.siege.tooltip_text = game.siege_reason(id)
+	action_buttons.siege.disabled = pending or game.game_over or not bool(military.siege.get("ok",false))
+	action_buttons.siege.tooltip_text = str(military.siege.get("reason",""))
 	if not army.is_empty():
 		var station: Dictionary = game.province(str(army.province))
 		fields.field_army.text = "Deine Feldarmee · %d Mann · Moral %d\nStation: %s · Grundunterhalt %d Gold/Jahr" % [int(army.strength),int(army.morale),str(station.get("name","?")),int(army.get("upkeep",0))]
-	fields.battle.visible = not vm.own and claimed and game.attack_in_range(id)
-	if not vm.own:
-		var preview: Dictionary = game.attack_preview(id)
-		var army_contribution := int(preview.get("field_army_strength",0))
-		main.attack_btn.text = "Sturmangriff · 25 Gold" if army_contribution > 0 else "Aufgebotsangriff · 25 Gold"
-		fields.battle.text = "%d%% Siegchance · Angriff %d / Abwehr %d" % [int(round(float(preview.get("chance",0))*100)),int(preview.get("attack_power",0)),int(preview.get("defense",0))]
-		if army_contribution>0: fields.battle.text += "\nFeldarmee: +%d Kampfkraft" % army_contribution
-		fields.battle.tooltip_text = "Berechnung aus Gelände, Doktrin, Forschung und örtlichem Aufgebot. Eine bereite benachbarte Feldarmee verstärkt einen Angriff pro Monat. Niederlage: −20 % Stärke der beteiligten Feldarmee."
-		if not army.is_empty() and int(army.get("last_siege_month",-1)) == game._now():
-			fields.battle.text += "\nFeldheer diesen Monat bereits eingesetzt. Dieser Angriff nutzt nur das Aufgebot."
 	action_buttons.fleet.disabled = not game.can_raise_fleet(id) or pending
 	action_buttons.fleet.text = "Flotte aufstellen · 60 Gold"
 	main.recruit_btn.visible = vm.own
@@ -348,23 +399,17 @@ func refresh(game, id: String) -> void:
 		var peace_reason: String = game.peace_reason(int(vm.owner_index))
 		action_buttons.peace.visible = peace_reason.is_empty()
 		action_buttons.peace.tooltip_text = peace_reason
-	main.attack_btn.visible = not vm.own and game.attack_in_range(id) and (claimed or game.can_attack(id))
-	main.attack_btn.disabled = pending or game.game_over or not game.can_attack(id)
+	main.attack_btn.visible = not vm.own and claimed and army_near
+	main.attack_btn.disabled = pending or game.game_over or not bool(military.assault.get("ok",false))
+	main.attack_btn.tooltip_text = str(military.assault.get("reason",""))
+	main.attack_btn.text = "Stürmen · %d Gold" % int(military.assault.get("cost",25))
 	action_buttons.claim.visible = not vm.own and not claimed and claim_relevant
 	action_buttons.claim.disabled = pending or game.game_over or not claim_reason.is_empty()
 	action_buttons.claim.tooltip_text = claim_reason
 	fields.war.visible = not vm.own and military_context
 	fields.war.text = "Anspruch vorhanden." if claimed else ("Anspruch als Kriegsgrund vorbereiten." if claim_reason.is_empty() else claim_reason)
-	if claimed:
-		var owner: int = int(vm.owner_index)
-		if game.truce_until(owner) > game._now():
-			fields.war.text += " Waffenstillstand: noch %d Monate." % (game.truce_until(owner)-game._now())
-		elif int(game.opinion[owner]) >= 60:
-			fields.war.text += " Die gute Beziehung verhindert einen Angriff."
-		elif int(game.house().gold) < 25:
-			fields.war.text += " Für einen Sturmangriff fehlen 25 Gold."
 	_refresh_transport(game,transport,pending)
-	_refresh_orders(game,id,army,naval_context,military_context)
+	_refresh_campaign(game,vm,army,pending,naval_context,military_context,army_near)
 	if vm.own: _refresh_knowledge(game,vm)
 	fields.achievements.text = ""
 	if not vm.own:
@@ -376,8 +421,8 @@ func refresh(game, id: String) -> void:
 	show_section(current_section)
 
 func _refresh_local_forces(game, vm: Dictionary, selected_army: Dictionary) -> void:
-	var rows: Array[String] = ["Aufgebotsgrenze %d Mann" % int(vm.capacity.maximum)]
-	if int(vm.siege)>0: rows.append("Belagerung %d%%" % int(vm.siege))
+	var rows: Array[String] = []
+	if vm.own: rows.append("Aufgebotsgrenze %d Mann" % int(vm.capacity.maximum))
 	if int(vm.blockade)>0: rows.append("Blockade noch %d Monate" % int(vm.blockade))
 	if vm.own and game.house().get("armies",[]).size()>1:
 		rows.append("Heeresunterhalt des Hauses: %d Gold/Jahr" % int(vm.army_upkeep_total))
@@ -390,23 +435,75 @@ func _refresh_local_forces(game, vm: Dictionary, selected_army: Dictionary) -> v
 	for fleet in vm.fleets:
 		rows.append("%s: %d Schiffe vor Ort" % [fleet.house,fleet.ships])
 	fields.army.text = "\n".join(rows)
+	fields.army.visible = not rows.is_empty()
 
-func _refresh_orders(game, id: String, army: Dictionary, naval_context: bool, military_context: bool) -> void:
-	var hints: Array[String] = []
-	if not naval_context:
-		if action_buttons.march.visible:
-			var reason: String = game.march_reason(id)
-			hints.append(reason if not reason.is_empty() else "Marsch ins Nachbargebiet · eine Aktion je Monat.")
-		if action_buttons.siege.visible:
-			var reason: String = game.siege_reason(id)
-			var hint := reason if not reason.is_empty() else "Belagerung bereit · ein Schritt je Monat ohne zusätzliche Goldkosten."
-			if not hints.has(hint): hints.append(hint)
-		if hints.is_empty() and military_context:
-			if army.is_empty(): hints.append("Stelle zuerst in einer eigenen Provinz eine Feldarmee auf.")
-			elif str(army.province)==id: hints.append("Feldarmee am Ziel.")
-			elif game.has_claim(id): hints.append(game.siege_reason(id))
-	fields.orders.text = "\n".join(hints)
-	fields.orders.visible = not hints.is_empty()
+func _refresh_campaign(game, vm: Dictionary, army: Dictionary, pending: bool, naval_context: bool, military_context: bool, army_near: bool) -> void:
+	var military: Dictionary=vm.military
+	var recovery: Dictionary=military.recovery
+	var relief: Dictionary=military.relief
+	var disband: Dictionary=military.disband
+	var locked: bool=pending or game.game_over
+	action_buttons.relieve.visible = vm.own and bool(military.threatened)
+	action_buttons.relieve.disabled = locked or not bool(relief.get("ok",false))
+	action_buttons.relieve.tooltip_text = str(relief.get("reason",""))
+	action_buttons.recover_army.visible = vm.own and bool(military.own_station) and not bool(military.threatened) and bool(recovery.get("needed",false))
+	action_buttons.recover_army.disabled = locked or not bool(recovery.get("ok",false))
+	action_buttons.recover_army.tooltip_text = str(recovery.get("reason",""))
+	action_buttons.recover_army.text = "Auffüllen und ordnen"+(" · %d Gold" % int(recovery.cost) if bool(recovery.get("ok",false)) else "")
+	action_buttons.disband_army.visible = vm.own and bool(military.own_station) and not bool(military.threatened)
+	action_buttons.disband_army.disabled = locked or not bool(disband.get("ok",false))
+	action_buttons.disband_army.tooltip_text = str(disband.get("reason","")) if not bool(disband.get("ok",false)) else "Diesen Verband ohne Gold- oder Soldatenerstattung auflösen. Bestätigung folgt."
+	if not _pending_disband.is_empty() and (locked or not _confirmation_matches(disband)): _clear_disband()
+	var lines: Array[String]=[]
+	var reasons: Array[String]=[]
+	if not vm.own and military_context:
+		var siege: Dictionary=military.siege
+		var assault: Dictionary=military.assault
+		lines.append("Festung · Mauern %d · Garnison %d" % [int(siege.get("wall_level",0)),int(siege.get("garrison",vm.levy))])
+		lines.append("Verteidigung %+d%%" % int(siege.get("fort_bonus",0)))
+		if int(siege.get("defender_strength",0))>0:
+			lines.append("Verteidigende Feldheere: %d Mann" % int(siege.defender_strength))
+		if army_near and int(siege.get("progress",0))>0:
+			lines.append("Belagerung %d → %d%% · etwa %d Aktionen" % [int(siege.current),int(siege.next),int(siege.remaining_actions)])
+		elif int(siege.get("current",0))>0: lines.append("Belagerung %d%%" % int(siege.current))
+		if bool(assault.get("ok",false)):
+			lines.append("Sturmchance %d%% · Angriff %d / Abwehr %d" % [roundi(float(assault.chance)*100),roundi(float(assault.attack_power)),roundi(float(assault.defense))])
+		if army_near and siege.get("supply",{}) is Dictionary and not siege.get("supply",{}).is_empty():
+			var supply: Dictionary=siege.supply
+			var shortfall:=int(supply.get("shortfall",0))
+			lines.append(("Versorgung gedeckt" if shortfall==0 else "Versorgung: %d Mann ungedeckt" % shortfall)+" · Bilanz in %d Monaten" % int(supply.get("annual_in_months",0)))
+		if not naval_context and game.has_claim(selected_id):
+			_add_reason(reasons,str(siege.get("reason","")))
+			if not army.is_empty() and int(army.get("morale",0))>0:
+				_add_reason(reasons,str(assault.get("reason","")))
+		fields.battle.tooltip_text="Der Belagerungsschritt nutzt tatsächlichen Festungswiderstand, effektive Stärke und gemeinsame Versorgung. Die geschätzte Dauer gilt bei unveränderter Lage. Sturm und Belagerung verbrauchen dieselbe Heeresaktion."
+	elif action_buttons.relieve.visible:
+		lines.append("Eigene Festung · Garnison %d" % int(vm.levy))
+		lines.append("Fremde Feldheere vor Ort: %d Mann" % int(military.foreign_strength))
+		if bool(relief.get("ok",false)):
+			lines.append("Entsatzchance %d%% · Angriff %d / Abwehr %d" % [roundi(float(relief.chance)*100),roundi(float(relief.attack_power)),roundi(float(relief.defense))])
+		_add_reason(reasons,str(relief.get("reason","")))
+		fields.battle.tooltip_text="Entsatz greift tatsächliche fremde Verbände an. Er verändert keinen Besitz und kostet kein Gold."
+	elif action_buttons.recover_army.visible:
+		if bool(recovery.get("ok",false)):
+			lines.append("Feldlager · %d → %d Mann" % [int(recovery.current_strength),int(recovery.new_strength)])
+			lines.append("Moral %d → %d · Aufgebot %d → %d" % [int(recovery.current_morale),int(recovery.new_morale),int(recovery.levy_before),int(recovery.levy_after)])
+			lines.append("Heeresunterhalt danach: %d Gold/Jahr" % int(recovery.house_upkeep_after))
+		else:
+			lines.append("Feldlager · %d Mann · Moral %d" % [int(recovery.get("current_strength",0)),int(recovery.get("current_morale",0))])
+		fields.field_army.hide()
+		_add_reason(reasons,str(recovery.get("reason","")))
+		fields.battle.tooltip_text="Die neuen Soldaten werden dem örtlichen Aufgebot entnommen. Mindestens %d Mann bleiben Reserve. Auffüllen verbraucht eine Heeresaktion; Unterhalt bleibt jährlich." % int(recovery.get("reserve",50))
+	if action_buttons.march.visible:
+		_add_reason(reasons,game.march_reason(selected_id))
+	fields.battle.text="\n".join(lines)
+	fields.battle.visible=not lines.is_empty()
+	if fields.battle.visible: fields.supply.hide()
+	fields.orders.text="\n".join(reasons)
+	fields.orders.visible=not reasons.is_empty()
+
+func _add_reason(reasons: Array[String], reason: String) -> void:
+	if not reason.is_empty() and not reasons.has(reason): reasons.append(reason)
 
 func _refresh_transport(game, preview: Dictionary, pending: bool) -> void:
 	var relevant := not str(preview.get("route_id","")).is_empty()

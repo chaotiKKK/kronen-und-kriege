@@ -3,6 +3,7 @@ extends Node
 ## Besitzumlegung sind KEIN regulärer 120-Gold-Kampagnennachweis.
 const Game = preload("res://scripts/Game.gd")
 const Data = preload("res://scripts/GameRegionData.gd")
+const Planner = preload("res://scripts/NavalCampaign.gd")
 const HOME := "britannien__03"
 const TARGET := "gallien__04"
 const REMOTE := "anatolien__01"
@@ -30,7 +31,17 @@ func _funded_npc(hi: int = 2):
 	game.houses[hi].gold = 1000
 	game.houses[hi].claims.clear()
 	check(game.raise_army(HOME,hi).ok and game.raise_fleet(HOME,hi).ok,"Kontrollierte NPC-Kasse bezahlt Heer und Geleit über echte Befehle")
+	_make_ready(game,hi)
 	return game
+
+func _make_ready(game, hi: int) -> void:
+	for step in 8:
+		if not bool(Planner.readiness(game,hi).get("needed",false)): break
+		var result: Dictionary = game.recover_army(str(game.army_for(hi).province),hi)
+		check(bool(result.ok),"Kontrollierte NPC-Routefixture bezahlt echte Erholung vor Transport")
+		if not result.ok: break
+		game.month+=1
+	check(not bool(Planner.readiness(game,hi).get("needed",false)),"NPC-Routefixture ist vor den isolierten Monatsrouten tatsächlich bereit")
 
 func _test_actual_alternative_and_siege() -> void:
 	var game = _funded_npc()
@@ -53,6 +64,7 @@ func _test_staging_and_fleet_guard() -> void:
 	var game = _funded_npc()
 	game._add_claim(2,TARGET)
 	game.army_for(2).province = "britannien__04"
+	_make_ready(game,2)
 	game._run_ai_military()
 	check(str(game.army_for(2).province)==HOME and str(game.fleet_for(2).station)==HOME,"KI marschiert zunächst zum vorhandenen Geleit statt Flotte oder Heer zu teleportieren")
 	var staged: Dictionary = game.snapshot()
@@ -87,7 +99,15 @@ func _test_annual_reserve_and_purchases() -> void:
 	check(game.houses[2].armies.size()==1 and game.houses[2].fleets.size()==1 and game.claim_active(TARGET,2),"Bezahlbare Vorbereitung stellt genau ein Heer/ein Geleit und den echten Küstenanspruch bereit")
 	check(str(game.army_for(2).get("province",""))==HOME and str(game.fleet_for(2).get("station",""))==HOME and int(game.fleet_for(2).get("last_naval_month",-1))!=game._now(),"Jährliche Vorbereitung verbraucht benötigtes Geleit nicht nebenher für eine Blockade")
 	game._run_ai_military()
-	check(str(game.army_for(2).get("province",""))==TARGET,"Reguläre KI-Militärphase führt die bezahlte vorbereitete Expedition tatsächlich aus")
+	check(str(game.army_for(2).get("province",""))==HOME and int(game.army_for(2).strength)==438 and int(game.houses[2].gold)==0,"Gekaufte150-Gold-Expedition wartet ohne Restgold auf notwendige echte Erholung statt kostenlos zu verstärken")
+	check(Planner.next_order(game,2).get("action")=="wait","Leere vorbereitete Kasse liefert ausdrücklichen Erholungs-Wartezustand")
+	# Ausdrückliche weitere Testkasse; kein reguläres Jahreseinkommen behauptet.
+	game.houses[2].gold=15
+	game._run_ai_military()
+	check(str(game.army_for(2).province)==HOME and int(game.army_for(2).strength)==538 and int(game.houses[2].gold)==0,"Kontrollierte fünfzehn Gold bezahlen tatsächliche Bereitschaftsverstärkung")
+	game.month+=1
+	game._run_ai_military()
+	check(str(game.army_for(2).province)==TARGET,"Erst die bereite bezahlte Expedition übersetzt im folgenden Monat tatsächlich")
 
 func _test_existing_fleet_costs() -> void:
 	var game = Game.new(Data,0)

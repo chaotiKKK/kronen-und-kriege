@@ -40,7 +40,7 @@ func _ready() -> void:
 func _test_old_fleet(old: Dictionary) -> void:
 	var before := old.duplicate(true)
 	var result: Dictionary = Save.migrate(old)
-	check(result.ok and int(result.data.schema_version) == 15,"Actual old fleet save migrates to schema15")
+	check(result.ok and int(result.data.schema_version) == Save.CURRENT_VERSION,"Actual old fleet save migrates to the current schema")
 	check(old == before,"Pure save migration does not alter its input")
 	if not result.ok: return
 	check(int(result.data.houses[2].fleets[0].get("last_naval_month",-99)) == -1,"An old fleet with no offensive action gets explicit−1")
@@ -51,7 +51,7 @@ func _test_old_fleet(old: Dictionary) -> void:
 
 func _current(old: Dictionary, value = -1) -> Dictionary:
 	var state := old.duplicate(true)
-	state.schema_version = 15
+	state.schema_version = Save.CURRENT_VERSION
 	for house in state.houses:
 		for fleet in house.fleets: fleet["last_naval_month"] = value
 	return state
@@ -87,7 +87,7 @@ func _test_used_runtime_date(old: Dictionary) -> void:
 	var game = Game.new(Regions,2)
 	if not check(game.restore(current),"Current used fleet date can restore from JSON-shaped state"): return
 	check(int(game.fleet_for().get("last_naval_month",-99)) == 1,"Runtime fleet itself retains its used action, not just later migrated snapshots")
-	check(int(game.snapshot().schema_version) == 15 and int(game.snapshot().houses[2].fleets[0].get("last_naval_month",-99)) == 1,"Actual current snapshot preserves schema and used fleet date")
+	check(int(game.snapshot().schema_version) == Save.CURRENT_VERSION and int(game.snapshot().houses[2].fleets[0].get("last_naval_month",-99)) == 1,"Actual current snapshot preserves schema and used fleet date")
 	var decoded: Dictionary = JSON.parse_string(JSON.stringify(game.snapshot()))
 	var again = Game.new(Regions,2)
 	check(again.restore(decoded) and int(again.fleet_for().get("last_naval_month",-99)) == 1,"JSON and second runtime normalization cannot reset the monthly fleet guard")
@@ -121,7 +121,7 @@ func _test_old_layout() -> void:
 	var normalized: Dictionary = Save.migrate(old)
 	if not check(normalized.ok,"Controlled49region source with old fleet can normalize"): return
 	var regional: Dictionary = Migration.migrate_state(normalized.data)
-	check(regional.ok and int(regional.data.schema_version) == 15,"49→108 layout conversion cannot roll schema15 back to14")
+	check(regional.ok and int(regional.data.schema_version) == Save.CURRENT_VERSION,"49→108 layout conversion cannot roll the current schema back")
 	if not regional.ok: return
 	check(Save.validate(regional.data).is_empty(),"Composed schema and layout migration produces a valid current save")
 	check(regional.data.houses[0].fleets[0].ships == 7 and regional.data.houses[0].fleets[0].get("last_naval_month",-99) == -1,"Legacy fleet position conversion retains ships and new unused action marker")
@@ -131,7 +131,7 @@ func _test_local_store(old: Dictionary) -> void:
 	var path := stem+"-single.json"
 	_write(path,raw)
 	var loaded: Dictionary = Store.load_snapshot(path)
-	check(loaded.ok and loaded.data.schema_version == 15,"Local Store loads genuine fleet source to15")
+	check(loaded.ok and loaded.data.schema_version == Save.CURRENT_VERSION,"Local Store loads genuine old fleet source to the current schema")
 	check(FileAccess.get_file_as_bytes(path) == raw and FileAccess.get_file_as_bytes(path+".pre-schema-v14.bak") == raw,"Local load leaves original and byte-identical schema14 backup")
 	var direct := stem+"-single-direct.json"
 	_write(direct,raw)
@@ -162,7 +162,7 @@ func _test_context_lan() -> void:
 	var loaded: Dictionary = session.load_host_lobby(path)
 	check(loaded.ok,"Genuine Context LAN14 loads locally under the new rules: "+str(loaded.message))
 	if loaded.ok:
-		check(session.game.snapshot().schema_version == 15 and Save.state_equal(_as_schema14(session.game.snapshot()),original.state),"Context migration preserves the complete old world and all human contexts")
+		check(session.game.snapshot().schema_version == Save.CURRENT_VERSION and Save.state_equal(_as_schema14(session.game.snapshot()),original.state),"Context migration preserves the complete old world and all human contexts")
 	else:
 		# Independent direct-target path still exercises the same old bytes in red.
 		session.game = Game.new(Regions,0)
@@ -183,7 +183,7 @@ func _test_context_lan() -> void:
 			"wire": bad.v = 2
 			"schema": bad.state.schema_version = 13
 			"catalog": bad.state.region_catalog_hash = "wrong"
-			"future_schema": bad.state.schema_version = 16
+			"future_schema": bad.state.schema_version = Save.CURRENT_VERSION+1
 			"forged_regional15":
 				bad.app = "1.8.0"
 				bad.state.schema_version = 15

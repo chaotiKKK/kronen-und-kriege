@@ -84,6 +84,14 @@ func _test_ai_route() -> void:
 	g.houses[hi].claims = []
 	g._add_claim(hi,target)
 	g.houses[hi].gold = 0
+	# Die Route ist Gegenstand dieses Falls. Lokale Aufgebote sind kontrolliert
+	# klein, sodass das echte500er-Heer schon bereit ist und keine Erholung braucht.
+	g.province(home).levy=200
+	g.province(step).levy=200
+	g.province(step).terrain_supply=6
+	g.province(target).levy=100
+	g.province(target).defense=0
+	g.province(target).terrain_defense=0
 	g.opinion[0] = 0
 	g.run_ai_turn()
 	check(g.army_for(hi).province == step,"KI marschiert zur entfernten eigenen Front")
@@ -104,15 +112,17 @@ func _test_preview() -> void:
 	check(g.snapshot() == before,"Vorschau verändert keinen Spielzustand")
 	g.house().armies = [_army(home)]
 	var with_army: Dictionary = g.attack_preview(target)
-	check(with_army.attack_power == base.attack_power + 500,"Anwesende Feldarmee trägt reale Stärke bei")
+	check(not base.ok and base.attack_power==0 and with_army.ok and with_army.attack_power==500*(1.0+int(g.house().ruler.martial)/20.0),"Nur tatsächliches Feldheer liefert moral- und herrscherabhängige Angriffskraft")
 	check(with_army.field_army_strength == 500 and with_army.chance >= 0 and with_army.chance <= 1,"Vorschau liefert konsistente Prozentgrundlage")
 	g.house().armies[0].morale = 50
 	check(g.attack_preview(target).field_army_strength == 250,"Moral beeinflusst tatsächlichen Armeebeitrag")
 	g.province(target).levy = 100000
 	g.attack_roll_override = 1.0
-	check(not g.attack(target).ok,"Überlegener Verteidiger gewinnt nach Vorschau")
+	var defeat: Dictionary = g.attack(target)
+	check(defeat.ok and defeat.get("won")==false,"Überlegener Verteidiger gewinnt eine tatsächlich aufgelöste Schlacht")
 	check(int(g.army_for().strength) == 400,"Beteiligte Feldarmee erleidet reale Niederlageverluste")
 	g.province(target).levy = 0
+	g.month += 1
 	var old_opinion := int(g.opinion[1])
 	check(g.attack(target).ok and int(g.province(target).owner) == 0,"Angriff nimmt reales Ziel ein")
 	check(int(g.opinion[1]) == maxi(-100,old_opinion - 30),"Angriff teilt die Beziehungsfolge der Belagerung")
@@ -128,10 +138,10 @@ func _test_attack_monthly_action() -> void:
 	g.house().armies = [_army(home)]
 	g.attack_roll_override = 1.0
 	check(g.march_army(target).ok,"Feldheer marschiert zum Schlachtziel")
-	check(not g.can_siege(target) and g.can_attack(target),"Verbrauchtes Feldheer sperrt Belagerung, Aufgebotsangriff bleibt möglich")
+	check(not g.can_siege(target) and not g.can_attack(target),"Verbrauchtes Feldheer sperrt Belagerung und Sturm ohne nationale Ersatzaktion")
 	check(g.attack_preview(target).field_army_strength == 0,"Bereits marschierte Armee trägt im selben Monat nicht zum Angriff bei")
 	g.attack(target)
-	check(int(g.army_for().strength) == 500,"Aufgebotsniederlage schädigt die unbeteiligte Feldarmee nicht")
+	check(int(g.army_for().strength) == 500,"Abgewiesener Sturm verändert das bereits marschierte Feldheer nicht")
 	var restored = Game.new(Data)
 	check(restored.restore(g.snapshot()) and restored.attack_preview(target).field_army_strength == 0,"Laden erneuert keinen verbrauchten Armeebeitrag")
 	g.month += 1
@@ -141,7 +151,7 @@ func _test_attack_monthly_action() -> void:
 	check(int(g.army_for().get("last_siege_month", -1)) == g._now(),"Tatsächliche Schlacht verbraucht die Monatsaktion der Armee")
 	check(g.attack_preview(target).field_army_strength == 0 and not g.can_siege(target),"Schlacht verhindert erneuten Armeebeitrag und Belagerung im selben Monat")
 	g.attack(target)
-	check(int(g.army_for().strength) == 400,"Wiederholter Aufgebotsangriff schädigt verbrauchtes Feldheer nicht erneut")
+	check(int(g.army_for().strength) == 400,"Abgewiesener Wiederholungssturm schädigt verbrauchtes Feldheer nicht erneut")
 	g.house().armies.append(_army(home,2))
 	check(g.select_army(2).ok and g.attack_preview(target).field_army_strength == 500,"Unverbrauchte zweite Bestandsarmee besitzt eigene Monatsaktion")
 	g.attack(target)

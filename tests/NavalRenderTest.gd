@@ -134,12 +134,9 @@ func _advance_blockade_month(target: Dictionary, phase: String) -> bool:
 		return false
 	var rejected: Dictionary = _dispatch_on(target, "blockade")
 	var message := str(rejected.get("message",rejected.get("msg","")))
-	# UiKernel._finish documents the rejected command in the existing log.
-	# Admit exactly that one note and compare every other snapshot field.
-	var expected: Dictionary = before.duplicate(true)
-	expected.log.append(message)
-	while expected.log.size()>10: expected.log.pop_front()
-	if not _expect(not bool(rejected.get("ok",false)) and game.snapshot()==expected,"UI-Abweisung %s ergänzt ausschließlich die tatsächliche Fehlermeldung in der Chronik." % phase):
+	# Militärische Vorbedingungsfehler bleiben auch durch den echten Router
+	# vollständig rein; der Ergebnistext ist flüchtige UI-Rückmeldung.
+	if not _expect(not bool(rejected.get("ok",false)) and game.snapshot()==before,"UI-Abweisung %s erhält Welt und Chronik unverändert." % phase):
 		return false
 	if not _expect(message.contains("Monat") and used_month==current_month,"Die echte Flotten-Monatswache sperrt die Folgeblockade %s." % phase):
 		return false

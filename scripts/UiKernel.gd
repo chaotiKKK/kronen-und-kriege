@@ -90,7 +90,9 @@ func _route(id: String, command: Dictionary) -> Dictionary:
 	var before: Dictionary = _digest()
 	var raw: Dictionary = {}
 	var refresh: Array = FULL_REFRESH.duplicate()
-	var log_result := true
+	# Modellaktionen melden aufgelöste Militärbefehle selbst. Navigation und
+	# reine Vorbedingungsfehler dürfen keine zweite dauerhafte Notiz erzeugen.
+	var log_result := id not in ["attack","siege","march","claim","army","fleet","blockade","select_army","transport_army","relieve","recover_army","disband_army"]
 	match id:
 		"continue_sandbox":
 			raw = game.continue_sandbox()
@@ -192,11 +194,14 @@ func _route(id: String, command: Dictionary) -> Dictionary:
 			if selection == "":
 				return _blocked("invalid", "Keine Provinz gewählt.")
 			raw = game.raise_army(selection)
-		"select_army":
+		"select_army", "disband_army":
 			var army_id = command.get("army")
 			if not (army_id is int or army_id is float) or not is_finite(float(army_id)) or float(army_id) != floor(float(army_id)) or float(army_id) < 1 or float(army_id) > 2147483647:
 				return _blocked("invalid", "Ungültige Armee-ID.")
-			raw = game.select_army(int(army_id))
+			if id=="select_army": raw = game.select_army(int(army_id))
+			else:
+				if selection.is_empty(): return _blocked("invalid","Kein eigener Standort zur Auflösung gewählt.")
+				raw = game.disband_army(selection,int(army_id))
 		"march":
 			if selection == "":
 				return _blocked("invalid", "Keine Provinz als Marschziel gewählt.")
@@ -208,6 +213,12 @@ func _route(id: String, command: Dictionary) -> Dictionary:
 			# Aufgelöste Versuche protokolliert Game selbst. Reine Abweisungen
 			# dürfen auch über Kernel/Netzwerk keine Historymutation erzeugen.
 			log_result = false
+		"relieve":
+			if selection.is_empty(): return _blocked("invalid","Keine eigene Provinz zum Entsatz gewählt.")
+			raw = game.relieve(selection)
+		"recover_army":
+			if selection.is_empty(): return _blocked("invalid","Kein eigener Feldlagerstandort gewählt.")
+			raw = game.recover_army(selection)
 		"siege":
 			if selection == "":
 				return _blocked("invalid", "Keine Provinz gewählt.")
@@ -253,8 +264,11 @@ func _finish(raw: Dictionary, before: Dictionary, refresh: Array, log_result: bo
 		"delta": _delta(before, _digest()),
 		"refresh": refresh.duplicate(),
 	}
-	for key in ["landed","blockaded"]:
+	for key in ["landed","blockaded","won"]:
 		if raw.has(key): result[key] = bool(raw[key])
+	for key in ["retreat","retreats"]:
+		if raw.has(key):
+			result[key] = raw[key].duplicate(true) if raw[key] is Dictionary or raw[key] is Array else raw[key]
 	return result
 
 func _blocked(code: String, message: String) -> Dictionary:

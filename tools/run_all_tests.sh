@@ -37,6 +37,16 @@ mkdir -p "$LOGDIR"
 
 # Logik- und UI-Tests ohne Renderpfad.
 HEADLESS=(
+	ArmyDisbandTest
+	ArmyRecoveryTest
+	FieldBattleRulesTest
+	FortressCampaignCommandTest
+	FortressCampaignTest
+	FortressCampaignAiTest
+	FortressEdgeTest
+	FortressSaveTest
+	FortressSiegeRulesTest
+	SiegeLifecycleTest
 	EventCostGuardTest
 	PeaceGuardTest
 	ArmyLifecycleTest
@@ -109,6 +119,7 @@ HEADLESS=(
 # Suiten, die einen echten Viewport brauchen.
 # CourtShotTest gehört ebenfalls hierher; es war zuvor nicht registriert.
 WINDOWED=(
+	FortressCampaignUiTest
 	ProvinceContextTest
 	ProvinceActionContextTest
 	MiniMapCacheTest

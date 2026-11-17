@@ -12,7 +12,7 @@ func _ready() -> void:
 			if g.province(n).owner != 0: home=p.id;target=n
 	assert(target != "")
 	g._add_claim(0,target)
-	g.house().armies=[{"id":1,"province":home,"strength":100,"upkeep":1,"morale":100}]
+	g.house().armies=[{"id":1,"province":home,"strength":1000,"upkeep":1,"morale":100}]
 	var r=g.advance_siege(target)
 	check(r.ok,"Valid neighboring siege")
 	var progress=g.province(target).siege
@@ -46,7 +46,7 @@ func _ready() -> void:
 	g.house().armies[0].morale=100
 	g.house().armies[0].strength=0
 	check(not g.can_siege(target),"Empty army")
-	g.house().armies[0].strength=100
+	g.house().armies[0].strength=1000
 	var remote := ""
 	for p in g.provinces:
 		if p.owner != 0 and not g.neighbours(home).has(p.id): remote=p.id
