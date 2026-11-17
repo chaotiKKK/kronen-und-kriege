@@ -133,6 +133,13 @@ const MONTHS := ["Hartung", "Hornung", "Lenzmond", "Ostermond", "Wonnemond", "Br
 const SaveGameScript = preload("res://scripts/SaveGame.gd")
 const CalendarScript = preload("res://scripts/CampaignCalendar.gd")
 const InfrastructureScript = preload("res://scripts/Infrastructure.gd")
+const EventDirectorScript = preload("res://scripts/EventDirector.gd")
+const ARMY_DOCTRINES := {
+	"balanced":{"id":"balanced","name":"Ausgewogen","effect_text":"Keine Zu- oder Abschläge; gemischtes Aufgebot.","attack_multiplier":1.0,"defense_multiplier":1.0,"upkeep_multiplier":1.0,"siege_bonus":0,"levy_share":0.55,"archer_share":0.25,"siege_share":0.01},
+	"infantry":{"id":"infantry","name":"Infanterie","effect_text":"+10 % Verteidigung, −5 % Angriff; normaler Unterhalt.","attack_multiplier":0.95,"defense_multiplier":1.10,"upkeep_multiplier":1.0,"siege_bonus":0,"levy_share":0.72,"archer_share":0.20,"siege_share":0.01},
+	"cavalry":{"id":"cavalry","name":"Kavallerie","effect_text":"+10 % Angriff, +25 % Armeeunterhalt.","attack_multiplier":1.10,"defense_multiplier":1.0,"upkeep_multiplier":1.25,"siege_bonus":0,"levy_share":0.38,"archer_share":0.20,"siege_share":0.01},
+	"siege":{"id":"siege","name":"Belagerung","effect_text":"+8 Belagerungsfortschritt, −10 % Angriff, −5 % Verteidigung, +10 % Unterhalt.","attack_multiplier":0.90,"defense_multiplier":0.95,"upkeep_multiplier":1.10,"siege_bonus":8,"levy_share":0.58,"archer_share":0.28,"siege_share":0.05},
+}
 const ResolverScript = preload("res://scripts/SystemicResolver.gd")
 
 var data
@@ -434,6 +441,9 @@ func _make_courtiers(i: int) -> Array:
 
 func _normalize_house(i: int) -> void:
 	var h: Dictionary = houses[i]
+	h["doctrine"] = str(h.get("doctrine", "balanced"))
+	if not h.has("event_history"):
+		h["event_history"] = []
 	if not h.has("research"):
 		h["research"] = InfrastructureScript.initial_research()
 	h["gold"] = int(h.get("gold", 100))
@@ -686,6 +696,7 @@ func _custom_start(cfg: Dictionary) -> void:
 	var gender: String = str(cfg.get("gender", "m"))
 	var h := {
 		"name": str(cfg.get("house", "Haus Neu")),
+		"doctrine": str(cfg.get("doctrine", "balanced")),
 		"color": palette[int(cfg.get("color", 0)) % palette.size()],
 		"crest": posmod(int(cfg.get("crest", houses.size())), 9),
 		"gold": 150,
@@ -702,7 +713,7 @@ func _custom_start(cfg: Dictionary) -> void:
 			"stewardship": clampi(int(cfg.get("stewardship", 8)), 3, 20),
 			"intrigue": clampi(int(cfg.get("intrigue", 8)), 3, 20),
 			"health": 92,
-			"portrait": 0 if gender == "m" else 8,
+			"portrait": clampi(int(cfg.get("portrait", 0 if gender == "m" else 8)), 0, 47),
 		},
 		"spouse": {},
 		"children": [],
@@ -787,7 +798,7 @@ func continue_sandbox() -> Dictionary:
 	campaign_sandbox = true
 	return _res(true, "Das Vermächtnis wird als Sandbox fortgesetzt.")
 
-func research_choices(house_index: int = -1) -> Array:
+func research_choices(house_index: int = -1, province_id: String = "") -> Array:
 	var hi := player if house_index < 0 else house_index
 	if hi < 0 or hi >= houses.size():
 		return []
@@ -796,6 +807,20 @@ func research_choices(house_index: int = -1) -> Array:
 		var info: Dictionary = InfrastructureScript.INNOVATIONS[innovation].duplicate()
 		info["id"] = innovation
 		info["reason"] = _research_blocker(str(innovation), hi)
+		info["blocked_reason"] = info.reason
+		info["known"] = houses[hi].research.known.has(innovation)
+		info["active"] = str(houses[hi].research.active) == innovation
+		info["remaining"] = int(houses[hi].research.months) if bool(info.active) else 0
+		info["enabled"] = str(info.reason).is_empty()
+		info["status"] = "known" if bool(info.known) else ("active" if bool(info.active) else ("available" if bool(info.enabled) else "blocked"))
+		info["scope"] = "house"
+		var p := province(province_id)
+		var terrains: Array = info.get("terrains", [])
+		info["province_applicable"] = p.is_empty() or terrains.is_empty() or terrains.has(str(p.get("terrain", "plains")))
+		var terrain_names: Array[String] = []
+		for terrain in terrains:
+			terrain_names.append(str(data.terrain_info(str(terrain)).name))
+		info["applicability"] = "Alle eigenen Regionen" if terrains.is_empty() else "Gelände: " + ", ".join(terrain_names)
 		choices.append(info)
 	return choices
 
@@ -811,7 +836,7 @@ func _research_blocker(innovation: String, hi: int) -> String:
 		return "Zuerst laufende Forschung abschließen."
 	var info: Dictionary = InfrastructureScript.INNOVATIONS[innovation]
 	if str(info.requires) != "" and not research.known.has(info.requires):
-		return "Voraussetzung: Vermessung."
+		return "Voraussetzung: %s." % str(InfrastructureScript.INNOVATIONS[str(info.requires)].name)
 	if int(houses[hi].gold) < int(info.gold):
 		return "Nicht genug Gold."
 	return ""
@@ -826,6 +851,25 @@ func start_research(innovation: String, house_index: int = -1) -> Dictionary:
 	houses[hi].research.active = innovation
 	houses[hi].research.months = int(info.months)
 	return _res(true, "%s wird erforscht: %d Monate." % [info.name, info.months])
+
+func research_bonus(key: String, house_index: int = -1, region: Dictionary = {}) -> float:
+	var hi := player if house_index < 0 else house_index
+	if hi < 0 or hi >= houses.size():
+		return 0.0
+	var amount := 0.0
+	for id in houses[hi].get("research", {}).get("known", []):
+		if not InfrastructureScript.INNOVATIONS.has(str(id)):
+			continue
+		var definition: Dictionary = InfrastructureScript.INNOVATIONS[str(id)]
+		var terrains: Array = definition.get("terrains", [])
+		if not terrains.is_empty() and (region.is_empty() or not terrains.has(str(region.get("terrain", "plains")))):
+			continue
+		amount += float(definition.get("effects", {}).get(key, 0.0))
+	return amount
+
+func _apply_research_health(hi: int) -> void:
+	var r: Dictionary = houses[hi].ruler
+	r.health = clampi(int(r.health) + int(research_bonus("health", hi)), 15, 100)
 
 func road_blocker(from_id: String, to_id: String, house_index: int = -1) -> String:
 	var hi := player if house_index < 0 else house_index
@@ -964,12 +1008,18 @@ func _ensure_history() -> void:
 
 ## Teilt eine Armeestärke auf die vier Truppengattungen auf. Die Belagerung
 ## bekommt ein Gerät je angefangener 100 Mann, der Rest verteilt sich 55/25/15.
-func army_composition(strength: int) -> Dictionary:
+func doctrine_info(house_index: int = -1) -> Dictionary:
+	var hi := player if house_index < 0 else house_index
+	var id := str(houses[hi].get("doctrine", "balanced")) if hi >= 0 and hi < houses.size() else "balanced"
+	return ARMY_DOCTRINES.get(id, ARMY_DOCTRINES.balanced).duplicate(true)
+
+func army_composition(strength: int, house_index: int = -1) -> Dictionary:
 	var total: int = maxi(0, strength)
-	var siege: int = maxi(1, int(ceil(float(total) / 100.0))) if total > 0 else 0
+	var doctrine := doctrine_info(house_index)
+	var siege: int = mini(total, maxi(1, int(ceil(float(total) * float(doctrine.siege_share))))) if total > 0 else 0
 	var field: int = maxi(0, total - siege)
-	var levy: int = int(round(float(field) * 0.55))
-	var archer: int = int(round(float(field) * 0.25))
+	var levy: int = mini(field, int(round(float(field) * float(doctrine.levy_share))))
+	var archer: int = mini(field - levy, int(round(float(field) * float(doctrine.archer_share))))
 	var knight: int = maxi(0, field - levy - archer)
 	return {"levy": levy, "archer": archer, "knight": knight, "siege": siege}
 
@@ -980,6 +1030,7 @@ func _yearly() -> void:
 		var r: Dictionary = h["ruler"]
 		r["age"] = int(r["age"]) + 1
 		r["health"] = clampi(int(r["health"]) + randi_range(-3, 1), 15, 100)
+		_apply_research_health(i)
 		if not h["spouse"].is_empty():
 			h["spouse"]["age"] = int(h["spouse"]["age"]) + 1
 		if not h["children"].is_empty():
@@ -1180,8 +1231,33 @@ func _random_name() -> String:
 
 func _trigger_event() -> void:
 	var pool: Array = data.events()
-	pending_event = pool[randi_range(0, pool.size() - 1)]
+	var context := event_context()
+	pending_event = EventDirectorScript.choose(pool, context, house().get("event_history", []), randf())
+	if pending_event.is_empty():
+		pending_event = null
+		event_timer = 1
+		return
+	house().event_history.append(str(pending_event.id))
+	while house().event_history.size() > 6:
+		house().event_history.pop_front()
 	_event_instance += 1
+
+func event_context(house_index: int = -1) -> Dictionary:
+	var hi := player if house_index < 0 else house_index
+	if hi < 0 or hi >= houses.size():
+		return {}
+	var h: Dictionary = houses[hi]
+	var context := {"coastal":false,"war":not h.get("armies", []).is_empty() or not h.get("claims", []).is_empty(),"research":str(h.research.active) != "","sick":int(h.ruler.health) < 65,"poor":int(h.gold) < 50,"rich":int(h.gold) >= 250,"no_heir":str(h.get("heir", "")) == "","roads":false,"developed":false}
+	for p in provinces:
+		if int(p.owner) == hi:
+			var coastal: bool = bool(p.coastal) if p.has("coastal") else data.is_coastal(str(p.id))
+			context.coastal = bool(context.coastal) or coastal
+			context.developed = bool(context.developed) or int(p.dev) >= 5
+			context.war = bool(context.war) or int(p.get("siege", 0)) > 0 or int(p.get("blockade", 0)) > 0
+	for road in roads:
+		if int(road.builder) == hi and str(road.state) == "complete":
+			context.roads = true
+	return context
 
 # --- Aktionen ------------------------------------------------------------
 
@@ -1251,14 +1327,14 @@ func attack(id: String) -> Dictionary:
 		if neighbours(str(q["id"])).has(id) or (data.kingdom_neighbours().get(str(q["kingdom"]), []) as Array).has(target_kingdom):
 			border_power += int(q["levy"])
 	var base_power: int = border_power if border_power > 0 else int(total_power * 0.5)
-	var attack_power: int = int(base_power * (1.0 + int(house()["ruler"]["martial"]) / 20.0) * legacy_war_multiplier(player))
+	var attack_power: int = int(base_power * (1.0 + int(house()["ruler"]["martial"]) / 20.0) * legacy_war_multiplier(player) * float(doctrine_info(player).attack_multiplier) * (1.0 + research_bonus("attack_percent", player) / 100.0))
 	var naval_bonus := 1.0
 	if int(target.get("blockade_owner", -1)) == player and int(target.get("blockade", 0)) > 0:
 		naval_bonus = 1.25
 		note("Die eigene Blockade unterstützt den Angriff auf %s." % target["name"])
 	var defender: Dictionary = houses[int(target["owner"])]
-	var terrain_defense: int = int(target.get("terrain_defense", 0))
-	var defense: int = int(target["levy"] * (1.0 + int(target["dev"]) / 12.0) * (1.0 + int(defender["ruler"]["martial"]) / 25.0) * (1.0 + (int(target.get("defense", 0)) + terrain_defense) / 100.0))
+	var terrain_defense: int = int(target.get("terrain_defense", 0)) + int(research_bonus("defense", int(target.owner), target))
+	var defense: int = int(target["levy"] * (1.0 + int(target["dev"]) / 12.0) * (1.0 + int(defender["ruler"]["martial"]) / 25.0) * (1.0 + (int(target.get("defense", 0)) + terrain_defense) / 100.0) * float(doctrine_info(int(target.owner)).defense_multiplier))
 	var attack_roll: float = randf_range(0.85, 1.15)
 	if attack_roll_override >= 0.0:
 		attack_roll = attack_roll_override
@@ -2908,7 +2984,8 @@ func building_cost(key: String, id: String = "") -> int:
 	if base == 0:
 		return 0
 	var p := province(id)
-	return maxi(1, roundi(base * float(p.get("economic_share", 1.0))))
+	var weighted := maxi(1, roundi(base * float(p.get("economic_share", 1.0))))
+	return maxi(1, roundi(weighted * (1.0 - minf(30.0, research_bonus("build_discount", int(p.get("owner", player)), p)) / 100.0)))
 
 func owned_capacity(hi: int) -> float:
 	var total := 0.0
@@ -3042,9 +3119,10 @@ func faction_power(house_index: int = -1) -> int:
 
 func region_capacity(region: Dictionary) -> Dictionary:
 	var share := maxf(0.0, float(region.get("economic_share", 1.0)))
+	var hi := int(region.get("owner", player))
 	return {"maximum":maxi(1, roundi(4000 * share)), "recruit":maxi(1, roundi(160 * share)),
-		"recruit_cost":maxi(1, roundi(30 * share)), "develop":maxi(1, roundi(120 * share)),
-		"develop_cost":maxi(1, roundi(50 * share)), "annual_flat":maxi(0, roundi(5 * share))}
+		"recruit_cost":maxi(1, roundi(roundi(30 * share) * (1.0 - minf(30.0, research_bonus("recruit_discount", hi, region)) / 100.0))), "develop":maxi(1, roundi(120 * share)),
+		"develop_cost":maxi(1, roundi(roundi(50 * share) * (1.0 - minf(30.0, research_bonus("develop_discount", hi, region)) / 100.0))), "annual_flat":maxi(0, roundi(5 * share))}
 
 func _regenerate_province_levies() -> void:
 	for p in provinces:
@@ -3052,10 +3130,9 @@ func _regenerate_province_levies() -> void:
 		p["levy"] = maxi(int(p["levy"]), mini(int(capacity.maximum), int(p["levy"]) + int(p["levy"] * 0.02) + int(capacity.annual_flat)))
 
 func region_income(region: Dictionary) -> int:
-	if not region.has("base_income"):
-		return int(region["dev"]) * 4
 	var development_delta := int(region["dev"]) - int(region.get("initial_dev", region["dev"]))
-	return maxi(0, int(region["base_income"]) + roundi(development_delta * 4.0 * float(region.get("economic_share", 1.0))))
+	var base: int = maxi(0, int(region.get("base_income", int(region.dev) * 4)) + roundi(development_delta * 4.0 * float(region.get("economic_share", 1.0))))
+	return roundi(base * (1.0 + minf(40.0, research_bonus("income_percent", int(region.get("owner", player)), region)) / 100.0))
 
 func region_income_total() -> int:
 	var total := 0
@@ -3107,7 +3184,7 @@ func _apply_market_income(i: int) -> void:
 		if int(p["owner"]) != i:
 			continue
 		units += building_effect_units(p, "market")
-	var amount := roundi(units * 4.0)
+	var amount := roundi(units * 4.0 * (1.0 + research_bonus("market_percent", i) / 100.0))
 	if amount <= 0:
 		return
 	_resolve([{
@@ -3116,10 +3193,24 @@ func _apply_market_income(i: int) -> void:
 		"amount": amount, "reason": "Marktsteuer",
 	}])
 
-func _apply_army_upkeep(i: int) -> void:
+func army_upkeep(house_index: int = -1) -> int:
+	var hi := player if house_index < 0 else house_index
+	if hi < 0 or hi >= houses.size():
+		return 0
 	var total: int = 0
-	for army in houses[i].get("armies", []):
+	for army in houses[hi].get("armies", []):
 		total += int(army.get("upkeep", 0))
+	return int(ceil(total * float(doctrine_info(hi).upkeep_multiplier)))
+
+func army_supply_capacity(province_id: String, house_index: int = -1) -> int:
+	var p := province(province_id)
+	if p.is_empty():
+		return 0
+	var hi := player if house_index < 0 else house_index
+	return roundi(int(p.get("terrain_supply", 6)) * 100 * (1.0 + research_bonus("supply_percent", hi, p) / 100.0))
+
+func _apply_army_upkeep(i: int) -> void:
+	var total := army_upkeep(i)
 	if total <= 0:
 		return
 	_resolve([{
@@ -3134,7 +3225,7 @@ func _apply_army_supply(i: int) -> void:
 		var p: Dictionary = province(str(army.get("province", "")))
 		if p.is_empty():
 			continue
-		var capacity: int = int(p.get("terrain_supply", 6)) * 100
+		var capacity := army_supply_capacity(str(p.id), i)
 		var strength: int = int(army.get("strength", 0))
 		if strength <= capacity:
 			continue
@@ -3540,7 +3631,7 @@ func advance_siege(province_id: String, house_index: int = -1) -> Dictionary:
 	if str(army.get("province", "")) != province_id:
 		army["province"] = province_id
 	var edge: String = "K4" if hi == player else "AI4"
-	var amount: int = 20 + int(int(army["strength"]) / 60) + int(int(houses[hi]["ruler"]["martial"]) / 4)
+	var amount: int = 20 + int(int(army["strength"]) / 60) + int(int(houses[hi]["ruler"]["martial"]) / 4) + int(doctrine_info(hi).siege_bonus) + int(research_bonus("siege", hi))
 	_resolve([{
 		"edge": edge, "source": "Krieg", "target": "Krieg",
 		"state": "provinces[%s].siege" % province_id, "kind": "siege",
@@ -3937,10 +4028,14 @@ func _apply_effects(e: Dictionary) -> void:
 	if e.has("health"):
 		h["ruler"]["health"] = clampi(int(h["ruler"]["health"]) + int(e["health"]), 10, 100)
 	if e.has("levy"):
+		var remaining := int(e["levy"])
 		for p in provinces:
 			if int(p["owner"]) == player:
-				p["levy"] = mini(4000, int(p["levy"]) + int(e["levy"]))
-				break
+				var amount: int = mini(maxi(0, int(region_capacity(p).maximum) - int(p.levy)), remaining) if remaining >= 0 else maxi(-int(p.levy), remaining)
+				p.levy = int(p.levy) + amount
+				remaining -= amount
+				if remaining == 0:
+					break
 	if e.has("dev"):
 		for p in provinces:
 			if int(p["owner"]) == player:

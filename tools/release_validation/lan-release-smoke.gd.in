@@ -209,7 +209,15 @@ func _marker_exists(role: String, stage: String) -> bool:
 	var path := str(expected.output) + "/" + role + "-" + stage + ".json"
 	if not FileAccess.file_exists(path):
 		return false
-	var marker = JSON.parse_string(FileAccess.get_file_as_string(path))
+	# A concurrently published Windows marker may still be temporarily unreadable.
+	# Poll again without making a transient probe emit an engine error.
+	var raw := FileAccess.get_file_as_string(path)
+	if raw.is_empty():
+		return false
+	var parser := JSON.new()
+	if parser.parse(raw) != OK:
+		return false
+	var marker = parser.data
 	return marker is Dictionary and marker.get("run_id") == expected.run_id and marker.get("role") == role and marker.get("stage") == stage
 
 func _write_marker(stage: String) -> void:

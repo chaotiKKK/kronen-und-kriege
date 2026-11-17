@@ -9,6 +9,7 @@ func _ready() -> void:
 	main._start(0)
 	var ui = main.get_meta("modern_interface")
 	ui.set_text_scale(1.0)
+	main._on_province_selected(str(main.game.owned()[0].id))
 	await settle()
 	var viewport: Vector2 = main.get_viewport_rect().size
 	var map: Rect2 = main.map_view.get_global_rect()

@@ -36,7 +36,7 @@ func _process(_delta: float) -> void:
 		return
 	var fit: Array = host._fit()
 	var game_key: int = host.game.get_instance_id() if host.game != null else 0
-	var key := "%s|%s|%s|%s|%s|%s|%s" % [fit[0], fit[1], host.size, UiScript.text_scale, selected_id, game_key, hash(host.atlas_obstacles)]
+	var key := "%s|%s|%s|%s|%s|%s|%s|%s|%s" % [fit[0], fit[1], host.size, UiScript.text_scale, selected_id, game_key, hash(host.atlas_obstacles), host.map_mode, host.title_level]
 	if key != _last_key:
 		_last_key = key
 		refresh()
@@ -58,6 +58,7 @@ func _draw() -> void:
 	var features: Array = atlas.visible_features(visible, host.zoom)
 	var drawable_features: Array = []
 	_boundaries.update_view(atlas, visible, host.zoom, scale, offset)
+	_boundaries.modulate.a = 1.0 if host.map_mode == "terrain" else (.35 if host.map_mode == "titles" else .18)
 	for feature in features:
 		var kind := str(feature.kind)
 		if kind in ["municipality", "local_admin"] and float(feature.bounds.get_area()) * scale * scale < 256.0:

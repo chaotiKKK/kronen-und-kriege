@@ -1,9 +1,9 @@
 # Gemeinsam im WLAN
 
-Die Fassung 1.7.0 ergänzt eine gemeinsame Partie für zwei bis vier Menschen.
-Jeder führt ein eigenes vorhandenes Haus. Ein Gerät berechnet die gemeinsame
+Die Fassung 1.9.0 bietet eine gemeinsame Partie für zwei bis vier Menschen.
+Jeder führt ein vorhandenes oder vorab selbst gestaltetes Haus. Ein Gerät berechnet die gemeinsame
 Welt, die anderen erhalten dessen bestätigten Zustand. Windows und Android
-verwenden dasselbe Protokoll; unterschiedliche Spiel- oder Datenstände werden
+verwenden Netzwerkprotokoll 3; unterschiedliche Spiel- oder Datenstände werden
 bereits beim Verbindungsaufbau mit einer deutschen Erklärung zurückgewiesen.
 
 ## Eine Partie eröffnen
@@ -16,8 +16,17 @@ bereits beim Verbindungsaufbau mit einer deutschen Erklärung zurückgewiesen.
 4. Gäste wählen **Partien im WLAN suchen** und einen gefundenen Raum. Alternativ
    tragen sie die angezeigte Gastgeber-IP ein und wählen **Über IP beitreten**.
    Der Spielport ist standardmäßig 28741 und muss auf beiden Geräten gleich sein.
-5. Jeder Gast wählt ein freies Haus und **Bereit**. Sobald mindestens zwei
-   verschiedene Häuser bereit sind, startet der Gastgeber die Partie.
+5. In der Lobby kann jeder über **Eigenes Haus gestalten** seinen Entwurf anlegen:
+   Haus-/Herrschername, Heimatregion, Porträt, Wappen, Farbe, vier Charakterwerte
+   und Armeedoktrin. Alternativ bleibt ein freies vorhandenes Haus wählbar.
+   Der Gastgeber prüft Entwürfe, das Punktebudget und freie Heimatgebiete.
+6. Jeder wählt **Bereit**. Änderungen am Entwurf nehmen die Bereitschaft zurück.
+   Sobald mindestens zwei verschiedene Häuser bereit sind, startet der Gastgeber.
+
+Eigene Häuser beginnen mit einer Heimatregion, 150 Gold und 12 Prestige.
+Die Doktrinen Ausgewogen, Fußvolk, Reiterei und Belagerung haben erklärte
+Vor-/Nachteile und erzeugen keine kostenlosen zusätzlichen Truppen.
+Der gemeinsame Designer steht auch im Einzelspieler unter **Eigenes Haus gründen** bereit.
 
 Falls das Netzwerk Geräte voneinander isoliert, ist keine direkte Verbindung
 möglich. Die IP-Alternative hilft bei unterdrückter Raumsuche, umgeht aber keine
@@ -37,7 +46,7 @@ Ein Gastbefehl wird erst nach Bestätigung übernommen. Währenddessen bleibt
 höchstens ein Befehl offen. Veraltete Ereignisantworten, doppelte Befehle und
 Aktionen gegen eine fremde Provinz werden mit dem tatsächlichen Ablehnungsgrund
 angezeigt. Kartenmodus, Auswahl, Theme und Textgröße bleiben lokale Ansichten.
-Herrschereditor und Wappengenerator sind während einer laufenden WLAN-Partie
+Hausdesigner, Herrschereditor und Wappengenerator sind während einer laufenden WLAN-Partie
 gesperrt, weil sie den gemeinsamen Zustand außerhalb der bestätigten Befehle
 verändern würden.
 
@@ -57,6 +66,13 @@ Für eine gespeicherte Partie eröffnet der Gastgeber über
 **LAN-Spielstand laden und hosten** eine Wiederaufnahmelobby. Nach dem Verlust
 des Gastgebergeräts endet die Verbindung der Gäste mit einer Erklärung; ein
 automatischer Hostwechsel gehört nicht zu dieser Fassung.
+
+Bei der Wiederaufnahme werden auch die zuvor gestalteten Häuser angeboten;
+ihre Entwürfe werden dort nicht nachträglich geändert. Gültige lokale
+1.8-Dateien werden mit bytegleicher Sicherung übernommen. Alle verbundenen
+Spielclients benötigen trotzdem dieselbe neue Version. Speichern/Laden und
+der Zugang zur WLAN-Lobby liegen während des Spiels unter **Optionen → Spiel**;
+die Hausseite **Welt** enthält die Weltübersicht.
 
 Die App muss auf den teilnehmenden Geräten geöffnet bleiben. Netzwerk- oder
 Appunterbrechungen pausieren beziehungsweise trennen die Verbindung. Eine

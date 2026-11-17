@@ -120,7 +120,7 @@ func _run() -> void:
 	main._toggle_side_panel()
 	if not _check(main.side_panel.visible, "Hofpanel lässt sich nicht wieder einblenden."):
 		return
-	for mode in ["political", "terrain", "duchy", "kingdom", "development", "war"]:
+	for mode in main.MapViewScript.MAP_MODES:
 		main._set_map_mode(mode)
 		if str(main.map_view.map_mode) != mode:
 			_fail("Kartenmodus %s wurde nicht gesetzt" % mode)

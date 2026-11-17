@@ -30,7 +30,7 @@ func _ready() -> void:
 	if not check(bool(session.save_host(path).ok), "Aktueller WLAN-Stand gespeichert"):
 		return
 	var current = JSON.parse_string(FileAccess.get_file_as_string(path))
-	if not check(int(current.v) == 2 and current.state.region_catalog_hash.length() == 64, "Gespeicherte WLAN-Partie auf aktuellem Protokoll und Katalog"):
+	if not check(int(current.v) == load("res://scripts/LanProtocol.gd").VERSION and current.state.region_catalog_hash.length() == 64, "Gespeicherte WLAN-Partie auf aktuellem Protokoll und Katalog"):
 		return
 	session.close_session()
 	session.queue_free()

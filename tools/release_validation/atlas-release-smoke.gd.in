@@ -12,6 +12,7 @@ func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
+	seed(1900)
 	var started := Time.get_ticks_msec()
 	var sandbox: String = expected.sandbox
 	var user_dir := OS.get_user_data_dir().replace("\\", "/")
@@ -51,18 +52,25 @@ func _run() -> void:
 	_check(not main.start_layer.visible, "New-game action did not dismiss title menu")
 	_check(main.game != null and main.kernel.top_modal() == "game", "New-game action did not bind an active game")
 	_check(main.game.provinces.size() == 108 and main.game.snapshot().get("world_layout", "") == "regions108", "Packaged regular game did not use all 108 regions")
-	main._show_create()
-	main.edit_ruler.text = "Ari Paketprüfung"
-	main.edit_house.text = "Haus Paketprüfung"
-	main.create_home.select(0)
-	main._create_begin()
+	main._show_house_designer()
+	var designer = main.get_meta("singleplayer_designer")
+	_check(is_instance_valid(designer), "Packaged shared house designer did not open")
+	designer.fields.ruler.text = "Ari Paketprüfung"
+	designer.fields.house.text = "Haus Paketprüfung"
+	designer.home_picker.select(0)
+	designer.doctrine_picker.select(2)
+	await _frames()
+	await _shot("shared-house-designer")
+	designer.submit()
 	main.game.speed = 0
 	_check(main.game.custom_start and main.game.house().ruler.name == "Ari Paketprüfung", "Packaged character creation did not start a game")
+	_check(main.game.house().doctrine == "cavalry", "Packaged army doctrine selection was not applied")
 	for month in 18:
 		if main.game.pending_event != null:
 			main.game.apply_event(0)
 		main.game.advance_month()
 	_check(not main.game.game_over and main.game.calendar_index() == 18, "Packaged custom campaign did not reach month eighteen")
+	main.refresh()
 	await _frames()
 	await _shot("regions108-compact-hud")
 	var atlas = main.map_view.atlas_data

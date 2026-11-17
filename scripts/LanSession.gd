@@ -13,6 +13,8 @@ const GameScript = preload("res://scripts/Game.gd")
 const DataScript = preload("res://scripts/GameRegionData.gd")
 const Save = preload("res://scripts/SaveGame.gd")
 const Discovery = preload("res://scripts/LanDiscovery.gd")
+const Design = preload("res://scripts/HouseDesign.gd")
+const Infrastructure = preload("res://scripts/Infrastructure.gd")
 const TIMEOUT_MS := 8000
 static var _cached_fingerprints: Dictionary = {}
 
@@ -51,6 +53,8 @@ var _expected_houses: Array = []
 var _discovered_digest := ""
 var _packet_count: Dictionary = {}
 var _packet_second := -1
+var _lobby_catalog: Array = []
+var _lobby_resuming := false
 
 func _init(data_script = null, fingerprint_override: String = "") -> void:
 	_data = data_script if data_script != null else DataScript
@@ -62,7 +66,8 @@ func _content_fingerprint() -> String:
 	if _cached_fingerprints.has(cache_key):
 		return str(_cached_fingerprints[cache_key])
 	var content := {"schema":Save.CURRENT_VERSION, "protocol":Protocol.VERSION,
-		"houses":_data.houses(), "provinces":_data.provinces(), "adjacency":_data.adjacency()}
+		"houses":_data.houses(), "provinces":_data.provinces(), "adjacency":_data.adjacency(),
+		"events":_data.events(), "innovations":Infrastructure.INNOVATIONS}
 	for path in ["res://data/atlas.json", "res://data/atlas_geometry.bin", "res://data/europe_geometry.json"]:
 		var digest := FileAccess.get_sha256(path)
 		if digest == "":
@@ -140,8 +145,72 @@ func join(address: String, player_name: String, port: int = -1) -> Dictionary:
 func local_house() -> int:
 	return int(players[local_peer_id].house) if players.has(local_peer_id) else -1
 
+func house_catalog() -> Array:
+	if not is_host and not _lobby_catalog.is_empty():
+		return _lobby_catalog.duplicate(true)
+	var result: Array = []
+	var source: Array = game.houses if game != null else _data.houses()
+	for index in source.size():
+		result.append({"id":index, "name":str(source[index].name), "ruler":str(source[index].ruler.name), "selectable":not is_resuming() or game.human_houses.has(index)})
+	return result
+
+func is_resuming() -> bool:
+	return not _resume_state.is_empty() if is_host else _lobby_resuming
+
+func submit_design(profile: Dictionary) -> Dictionary:
+	if phase != "lobby" or is_resuming():
+		return _failure("Eigene Häuser können nur vor einer neuen Partie gestaltet werden.")
+	var checked: Dictionary = Design.validate(profile, _data)
+	if not checked.ok:
+		return _failure(checked.message)
+	if is_host:
+		return _set_design(1, checked.profile)
+	return _send_request({"type":"design", "profile":checked.profile})
+
+func clear_design() -> Dictionary:
+	if phase != "lobby" or is_resuming():
+		return _failure("Der Hausentwurf ist in dieser Phase gesperrt.")
+	if is_host:
+		return _set_design(1, {})
+	return _send_request({"type":"design", "profile":{}})
+
+func _design_conflict(peer: int, profile: Dictionary, chosen_house: int = -1) -> String:
+	var original_owner := {}
+	for province in _data.provinces():
+		original_owner[str(province.id)] = int(province.owner)
+	var own_house: int = int(players[peer].house) if chosen_house < 0 else chosen_house
+	for other in players:
+		if int(other) == peer:
+			continue
+		var draft: Dictionary = players[other].get("design", {})
+		if not profile.is_empty():
+			if not draft.is_empty() and draft.province == profile.province:
+				return "Diese Heimatregion ist bereits für ein anderes eigenes Haus reserviert."
+			if draft.is_empty() and int(original_owner.get(profile.province, -1)) == int(players[other].house):
+				return "Diese Region gehört zum Startreich eines anderen menschlichen Spielers."
+		elif not draft.is_empty() and int(original_owner.get(draft.province, -1)) == own_house:
+			return "In diesem Startreich ist bereits die Heimat eines eigenen Spielerhauses reserviert."
+	return ""
+
+func _set_design(peer: int, profile: Dictionary) -> Dictionary:
+	if phase != "lobby" or is_resuming() or not players.has(peer):
+		return _failure("Hausentwürfe sind nur in einer neuen Lobby veränderbar.")
+	var clean := {}
+	if not profile.is_empty():
+		var checked: Dictionary = Design.validate(profile, _data)
+		if not checked.ok:
+			return _failure(checked.message)
+		clean = checked.profile
+	var conflict := _design_conflict(peer, clean)
+	if conflict != "":
+		return _failure(conflict)
+	players[peer]["design"] = clean.duplicate(true)
+	players[peer].ready = peer == 1
+	_broadcast_lobby()
+	return _success("Hausentwurf angenommen." if not clean.is_empty() else "Vorhandenes Haus ausgewählt.")
+
 func choose_house(house: int) -> Dictionary:
-	if phase != "lobby" or house < 0 or house >= _data.houses().size():
+	if phase != "lobby" or house < 0 or house >= house_catalog().size():
 		return _failure("In dieser Phase kann kein Haus gewählt werden.")
 	if is_host:
 		return _choose_house(1, house)
@@ -182,8 +251,33 @@ func start_match() -> Dictionary:
 		game.select_player_context(int(players[1].house))
 	else:
 		game = GameScript.new(_data, int(players[1].house))
+		var ordered: Array = players.keys()
+		ordered.sort()
+		# Erst sämtliche Entwürfe prüfen; bei Ablehnung bleibt die Lobby erhalten.
+		for id in ordered:
+			var profile: Dictionary = players[id].get("design", {})
+			if not profile.is_empty():
+				var checked: Dictionary = Design.validate(profile, _data)
+				if not checked.ok or _design_conflict(int(id), profile) != "":
+					game = null
+					return _failure("Ein Hausentwurf oder seine Heimat ist nicht mehr gültig.")
+		for id in ordered:
+			var profile: Dictionary = players[id].get("design", {})
+			if not profile.is_empty():
+				game._custom_start(profile)
+				game.house().ruler.portrait = int(profile.portrait)
+				game.house()["doctrine"] = str(profile.doctrine)
+				players[id].house = game.player
+		houses.clear()
+		seats.clear()
+		for id in ordered:
+			houses.append(int(players[id].house))
+			seats[int(id)] = int(players[id].house)
 		if not game.configure_human_houses(houses):
 			return _failure("Die Menschenhäuser konnten nicht eingerichtet werden.")
+		game.select_player_context(int(players[1].house))
+		# Die neue ID-Zuordnung muss vor dem ersten persönlichen Snapshot ankommen.
+		_broadcast_lobby()
 	game.speed = 0
 	_authority = Authority.new(game, seats)
 	all_houses_over = game.all_human_houses_over()
@@ -277,13 +371,15 @@ func load_host_lobby(path: String = "user://lan_partie.json") -> Dictionary:
 	var error := Protocol.handshake_error(envelope, _app, _fingerprint)
 	# Local file migration only. Old network peers still fail the handshake.
 	var legacy_file: bool = _data.has_method("catalog_hash") and Protocol.integer(envelope.get("v"), 1, 1) and str(envelope.get("app", "")).begins_with("1.7.") and str(envelope.state.get("world_layout", "")) != "regions108"
-	if error != "" and not legacy_file:
+	var file_app := str(envelope.get("app", ""))
+	var old_regional: bool = _data.has_method("catalog_hash") and Protocol.integer(envelope.get("v"), 2, Protocol.VERSION) and (file_app == _app or file_app.begins_with("1.8.")) and int(envelope.state.get("schema_version", 0)) == Save.CURRENT_VERSION and str(envelope.state.get("world_layout", "")) == "regions108" and str(envelope.state.get("region_catalog_hash", "")) == _data.catalog_hash()
+	if error != "" and not legacy_file and not old_regional:
 		return _failure(error)
 	var restored = GameScript.new(_data, 0)
 	if not restored.restore(envelope.state) or restored.human_houses.size() < 2:
 		return _failure("Der WLAN-Spielstand enthält keine gültige gemeinsame Partie.")
-	if legacy_file:
-		var backup := path + ".pre-regions-v1.bak"
+	if legacy_file or (old_regional and error != ""):
+		var backup := path + (".pre-regions-v1.bak" if legacy_file else ".pre-design-v%d.bak" % int(envelope.v))
 		if FileAccess.file_exists(backup) and FileAccess.get_file_as_bytes(backup) != original_bytes:
 			var context := HashingContext.new()
 			context.start(HashingContext.HASH_SHA256)
@@ -315,6 +411,7 @@ func load_host_lobby(path: String = "user://lan_partie.json") -> Dictionary:
 					break
 		players[id].house = selected
 		players[id].ready = false
+		players[id].erase("design")
 		occupied.append(selected)
 	_broadcast_lobby()
 	_set_status("WLAN-Spielstand geladen. Alle gespeicherten Häuser müssen wieder besetzt werden.")
@@ -346,6 +443,8 @@ func close_session(reason: String = "") -> void:
 	_authority = null
 	_resume_state = {}
 	_expected_houses = []
+	_lobby_catalog = []
+	_lobby_resuming = false
 	_missing_peer = false
 	is_host = false
 	local_peer_id = 0
@@ -464,12 +563,18 @@ func _receive_host(id: int, kind: String, message: Dictionary) -> void:
 		return
 	match kind:
 		"house":
-			if Protocol.integer(message.get("house"), 0, _data.houses().size() - 1):
+			if Protocol.integer(message.get("house"), 0, house_catalog().size() - 1):
 				var result := _choose_house(id, int(message.house))
 				if not result.ok:
 					_send(id, {"type":"notice", "text":result.message})
 			else:
 				_reject(id, "Ungültige Hausauswahl.")
+		"design":
+			if not message.get("profile") is Dictionary:
+				_reject(id, "Ungültiger Hausentwurf.")
+				return
+			var result := _set_design(id, message.profile)
+			_send(id, {"type":"notice", "text":result.message})
 		"ready":
 			if phase == "lobby" and message.get("ready") is bool:
 				players[id].ready = message.ready
@@ -511,6 +616,12 @@ func _choose_house(id: int, house: int) -> Dictionary:
 	for other in players:
 		if int(other) != id and int(players[other].house) == house:
 			return _failure("Dieses Haus ist bereits besetzt.")
+	if is_resuming() and not _expected_houses.has(house):
+		return _failure("Bitte ein gespeichertes Menschenhaus wählen.")
+	if not is_resuming():
+		var conflict := _design_conflict(id, players[id].get("design", {}), house)
+		if conflict != "":
+			return _failure(conflict)
 	players[id].house = house
 	players[id].ready = id == 1
 	_broadcast_lobby()
@@ -523,7 +634,7 @@ func _free_house() -> int:
 	for house in _expected_houses:
 		if not used.has(int(house)):
 			return int(house)
-	for house in _data.houses().size():
+	for house in house_catalog().size():
 		if not used.has(house):
 			return house
 	return -1
@@ -534,11 +645,20 @@ func _broadcast_lobby() -> void:
 		serialized[str(id)] = players[id].duplicate(true)
 	for id in players:
 		if int(id) != 1:
-			_send(int(id), {"type":"lobby", "players":serialized})
+			_send(int(id), {"type":"lobby", "players":serialized, "houses":house_catalog(), "resuming":is_resuming()})
 	_update_discovery()
 	lobby_changed.emit()
 
 func _receive_lobby(message: Dictionary) -> void:
+	var catalog = message.get("houses")
+	if not catalog is Array or catalog.size() < _data.houses().size() or catalog.size() > _data.houses().size() + 4 or not message.get("resuming") is bool:
+		_disconnected("Ungültiger Hauskatalog in der WLAN-Lobby.")
+		return
+	for index in catalog.size():
+		var entry = catalog[index]
+		if not entry is Dictionary or not Protocol.integer(entry.get("id"), index, index) or not entry.get("name") is String or not _valid_name(entry.name, 48) or not entry.get("ruler") is String or not _valid_name(entry.ruler, 48) or not entry.get("selectable") is bool:
+			_disconnected("Ungültiges Haus im WLAN-Katalog.")
+			return
 	var incoming = message.get("players")
 	if not incoming is Dictionary or incoming.size() < 1 or incoming.size() > 4:
 		_disconnected("Ungültige WLAN-Sitzliste.")
@@ -550,7 +670,7 @@ func _receive_lobby(message: Dictionary) -> void:
 		if not key is String or not key.is_valid_int() or not Protocol.integer(int(key), 1, 2147483647) or not seat is Dictionary:
 			_disconnected("Ungültiger WLAN-Spielersitz.")
 			return
-		if not seat.get("name") is String or not _valid_name(seat.name, 32) or not seat.get("ready") is bool or not Protocol.integer(seat.get("house"), 0, _data.houses().size() - 1):
+		if not seat.get("name") is String or not _valid_name(seat.name, 32) or not seat.get("ready") is bool or not Protocol.integer(seat.get("house"), 0, catalog.size() - 1):
 			_disconnected("Ungültige WLAN-Spielerdaten.")
 			return
 		var house := int(seat.house)
@@ -558,11 +678,17 @@ func _receive_lobby(message: Dictionary) -> void:
 			_disconnected("Doppelte Häuser in der WLAN-Lobby.")
 			return
 		occupied.append(house)
-		next[int(key)] = {"name":str(seat.name), "house":house, "ready":bool(seat.ready)}
+		var draft = seat.get("design", {})
+		if not draft is Dictionary or (not draft.is_empty() and not Design.validate(draft, _data).ok):
+			_disconnected("Ungültiger bestätigter Hausentwurf.")
+			return
+		next[int(key)] = {"name":str(seat.name), "house":house, "ready":bool(seat.ready), "design":draft.duplicate(true)}
 	if not next.has(1) or not next.has(local_peer_id):
 		_disconnected("Der eigene Sitz fehlt in der WLAN-Lobby.")
 		return
 	players = next
+	_lobby_catalog = catalog.duplicate(true)
+	_lobby_resuming = bool(message.resuming)
 	phase = "lobby"
 	_sequence = 0
 	pending_command = false

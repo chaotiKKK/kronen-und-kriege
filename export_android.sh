@@ -24,6 +24,8 @@ if command -v cygpath >/dev/null; then TARGET=$(cygpath -u "$TARGET"); fi
 [ -d "$HERE/android/build" ] || fail "Android-Buildvorlage fehlt: $HERE/android/build"
 
 mkdir -p "$(dirname "$TARGET")"
+mkdir -p "$HERE/build"
+touch "$TOOLS/.gdignore" "$HERE/build/.gdignore"
 BUILD_APPDATA="$TOOLS/appdata"
 BUILD_JAVA_HOME="$JDK"
 if command -v cygpath >/dev/null; then

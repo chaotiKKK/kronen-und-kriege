@@ -29,6 +29,9 @@ var _focus_button: Button
 var _focus_restore: Dictionary = {}
 var touch_layout := OS.has_feature("android") or OS.has_feature("ios")
 var _hud_buttons: Array[Button] = []
+var province_inspector
+var title_tier: OptionButton
+var world_summary: Label
 
 func _font(control: Control, pixels: int) -> void:
 	control.set_meta("atlas_font_size", pixels)
@@ -144,6 +147,9 @@ func set_text_scale(value: float) -> void:
 	fit_layout()
 
 func _scale_text(node: Node) -> void:
+	if node is SpinBox:
+		# SpinBox owns its editable value as an internal child, excluded by get_children().
+		_scale_text(node.get_line_edit())
 	if node is Label or node is Button or node is LineEdit:
 		var control := node as Control
 		var base: int = int(control.get_meta("atlas_font_size", control.get_theme_font_size("font_size")))
@@ -170,6 +176,8 @@ func _prepare_dialogs(node: Node) -> void:
 	for card in node.get_children():
 		if not (card is PanelContainer) or card.get_child_count() != 1 or not (card.get_child(0) is VBoxContainer):
 			continue
+		if node.get_parent() == main.court_layer:
+			continue
 		var content: Control = card.get_child(0)
 		var width: float = maxf(400.0, card.custom_minimum_size.x)
 		card.remove_child(content)
@@ -184,6 +192,13 @@ func _prepare_dialogs(node: Node) -> void:
 
 func _fit_dialogs() -> void:
 	var viewport: Vector2 = main.get_viewport_rect().size
+	if main.court_body != null:
+		var court_scroll: ScrollContainer = main.court_body.get_parent()
+		var court_box: Control = court_scroll.get_parent()
+		var court_card: Control = court_box.get_parent()
+		court_box.custom_minimum_size.x = 0
+		court_card.custom_minimum_size = Vector2(minf(960,viewport.x-40),0)
+		court_scroll.custom_minimum_size.y = clampf(viewport.y-150*text_scale,140,550)
 	for dialog in dialogs:
 		var max_height := maxf(160.0, viewport.y - 100)
 		dialog.card.custom_minimum_size = Vector2(minf(float(dialog.width), viewport.x - 64), 0)
@@ -335,6 +350,16 @@ func _rebuild_map_tools() -> void:
 	modes.reparent(navigation)
 	modes.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	modes.add_theme_constant_override("separation", 3)
+	title_tier = OptionButton.new()
+	title_tier.name = "Rechtsebene"
+	for label in ["Herzogtümer", "Königreiche", "Reiche"]:
+		title_tier.add_item(label)
+	title_tier.select(1)
+	title_tier.accessibility_name = "Angestammte Rechtsebene auf der Karte"
+	title_tier.item_selected.connect(func(index: int): main.map_view.set_title_level(["duchy","kingdom","empire"][index]))
+	title_tier.visible = false
+	modes.add_child(title_tier)
+	modes.move_child(title_tier, main.map_mode_buttons["titles"].get_index() + 1)
 	_focus_button = main._button("Karte groß", _toggle_map_focus)
 	_focus_button.toggle_mode = true
 	_focus_button.accessibility_name = "Kartenfläche vergrößern oder normale Ansicht wiederherstellen"
@@ -471,6 +496,10 @@ func _rebuild_sidebar() -> void:
 	for child in children:
 		if child == portrait_header:
 			continue
+		if child == main.province_side_panel:
+			child.reparent(pages.overview)
+			child.hide()
+			continue
 		var section := "overview"
 		if child == main.family_label or child in [main.marry_btn, main.bed_btn, main.seduce_btn, main.murder_btn, main.kidnap_btn, main.ransom_btn, main.force_btn]:
 			section = "family"
@@ -480,7 +509,10 @@ func _rebuild_sidebar() -> void:
 				section = "family"
 			elif text.contains("Hof") or text.contains("Glaube") or text == "Herrschaft":
 				section = "politics"
-			elif text.contains("speichern") or text.contains("laden") or text.contains("Forschung") or text.contains("WLAN"):
+			elif text.contains("speichern") or text.contains("laden") or text.contains("WLAN"):
+				child.reparent(main.options_sections["spiel"])
+				continue
+			elif text.contains("Forschung"):
 				section = "world"
 		elif child is HSeparator or (child is Label and child != main.hint_label):
 			old_box.remove_child(child)
@@ -488,6 +520,15 @@ func _rebuild_sidebar() -> void:
 			continue
 		child.reparent(pages[section])
 		_compact_sidebar(child)
+	main.hint_label.hide()
+	province_inspector = preload("res://scripts/ProvinceInspector.gd").new()
+	pages.overview.add_child(province_inspector)
+	pages.overview.move_child(province_inspector, 0)
+	province_inspector.configure(main)
+	world_summary = main._label("",12)
+	world_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	pages.world.add_child(world_summary)
+	pages.world.move_child(world_summary,0)
 	var side_style := surface(Color(0.06, 0.10, 0.11, 0.90), 10)
 	side_style.shadow_color = Color(0, 0, 0, 0.18)
 	side_style.shadow_size = 5
@@ -578,6 +619,12 @@ func refresh_summary() -> void:
 	main.title_label.text = str(h.name)
 	main.info_label.text = "%s · %d Jahre\n%d Grafschaften · Legitimität %d" % [h.ruler.name, h.ruler.age, main.game.owned().size(), h.legitimacy]
 	main.family_label.text = "Familie & Nachfolge\nGemahl/in: %s\nErbe: %s · Kinder: %d" % [h.spouse.get("name", "unvermählt"), str(h.heir) if str(h.heir) != "" else "keiner", h.children.size()]
+	if province_inspector != null:
+		province_inspector.refresh(main.game,main.selected)
+		main.province_side_panel.hide()
+		section_buttons.overview.text = "Provinz" if main.selected != "" else "Übersicht"
+	if world_summary != null:
+		world_summary.text = "Welt & Wissen\n%d Spielregionen · %d Häuser\nDein Haus besitzt %d Regionen.\nForschung gilt für das Haus; Gebäude und Heere verwaltest du direkt in der Provinz." % [main.game.provinces.size(), main.game.houses.size(), main.game.owned().size()]
 	_scale_text(main)
 	_fit_dialogs()
 	fit_layout()

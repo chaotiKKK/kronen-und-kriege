@@ -1,0 +1,112 @@
+extends Node
+var checks := 0
+var failures := 0
+var host
+var guest
+
+func _ready() -> void:
+	var session = load("res://scripts/LanSession.gd")
+	host = session.new()
+	guest = session.new()
+	host.discovery_enabled = false
+	guest.discovery_enabled = false
+	add_child(host)
+	add_child(guest)
+	if not host.has_method("submit_design"):
+		check(false, "Angenommene Hausentwürfe fehlen in der Lobby")
+		finish()
+		return
+	var design = load("res://scripts/HouseDesign.gd")
+	var data = load("res://scripts/GameRegionData.gd")
+	var regions: Array = data.provinces()
+	var home_a := ""
+	var home_b := ""
+	for region in regions:
+		if int(region.owner) == 2 and home_a == "": home_a = region.id
+		if int(region.owner) == 3 and home_b == "": home_b = region.id
+	var port := 49000 + OS.get_process_id() % 700
+	check(host.host("Designer", "Host", 0, port).ok, "Eigene Hostlobby")
+	check(guest.join("127.0.0.1", "Gast", port).ok, "Gast verbindet")
+	check(await until(func(): return guest.phase == "lobby" and host.players.size() == 2), "Zwei echte Teilnehmer")
+	var a: Dictionary = design.defaults(data, home_a)
+	a.house = "Haus Kupfer"
+	a.ruler = "Ada"
+	a.portrait = 17
+	a.doctrine = "infantry"
+	check(host.submit_design(a).ok, "Host nimmt eigenen Entwurf an")
+	var stolen := a.duplicate(true)
+	for region in regions:
+		if int(region.owner) == 1:
+			stolen.province = region.id
+			break
+	check(not host.submit_design(stolen).ok and host.players[1].design.province == home_a, "Entwurf stiehlt kein Startgebiet eines vorhandenen Menschenhauses")
+	check(await until(func(): return not guest.players[1].get("design", {}).is_empty()), "Angenommener Hostentwurf wird verteilt")
+	var b := a.duplicate(true)
+	b.house = "Haus Silber"
+	guest.submit_design(b)
+	await get_tree().create_timer(0.1).timeout
+	check(host.players[guest.local_peer_id].get("design", {}).is_empty(), "Doppelte Heimat wird nicht angenommen")
+	b.province = home_b
+	b.ruler = "Bea"
+	b.doctrine = "cavalry"
+	check(guest.submit_design(b).ok, "Gast sendet gültigen Entwurf")
+	check(await until(func(): return host.players[guest.local_peer_id].get("design", {}).get("house", "") == "Haus Silber"), "Host nimmt Gastentwurf an")
+	guest.set_ready(true)
+	check(await until(func(): return host.players[guest.local_peer_id].ready), "Gast bereit")
+	b.ruler = "Bea II"
+	guest.submit_design(b)
+	check(await until(func(): return host.players[guest.local_peer_id].get("design", {}).get("ruler", "") == "Bea II"), "Geänderter Entwurf bestätigt")
+	check(not host.players[guest.local_peer_id].ready, "Änderung nimmt Bereitschaft zurück")
+	guest.set_ready(true)
+	check(await until(func(): return host.players[guest.local_peer_id].ready), "Gast erneut bereit")
+	check(host.start_match().ok, "Eigene Häuser starten")
+	check(await until(func(): return guest.phase == "playing"), "Gast erhält neue dynamische Haus-ID")
+	check(host.game.houses.size() == 11 and host.game.human_houses == [9,10], "Neun NPC-Häuser und zwei neue Menschenhäuser")
+	check(host.game.houses[9].name == "Haus Kupfer" and host.game.houses[10].ruler.name == "Bea II", "Beide Entwürfe tatsächlich angewandt")
+	check(host.game.houses[9].ruler.portrait == 17 and host.game.houses[9].doctrine == "infantry" and host.game.houses[10].doctrine == "cavalry", "Porträt und Armeedoktrin übernommen")
+	check(host.game.province(home_a).owner == 9 and host.game.province(home_b).owner == 10, "Eindeutige Heimatzuordnung")
+	check(host.game.houses[9].gold == 150 and host.game.houses[10].gold == 150, "Gleiches Gründungsbudget")
+	check(load("res://scripts/LanProtocol.gd").world_hash(host.game.snapshot()) == load("res://scripts/LanProtocol.gd").world_hash(guest.game.snapshot()), "Weltgleichheit trotz verschiedener Perspektiven")
+	var path := "user://designer-%d-%d.json" % [OS.get_process_id(),Time.get_ticks_usec()]
+	check(host.save_host(path).ok, "Eigene Häuser gespeichert")
+	check(host.return_to_lobby().ok, "Wiederaufnahmelobby")
+	check(await until(func(): return guest.phase == "lobby" and guest.is_resuming()), "Gast erhält dynamischen Fortsetzungskatalog")
+	check(guest.house_catalog().size() == 11 and guest.local_house() == 10, "Eigene Haus-ID in Lobby erhalten")
+	check(not host.submit_design(a).ok, "Designer bei Fortsetzung gesperrt")
+	guest.set_ready(true)
+	check(await until(func(): return host.players[guest.local_peer_id].ready), "Fortsetzung bereit")
+	check(host.start_match().ok, "Eigene Häuser wiederaufgenommen")
+	check(host.game.houses.size() == 11, "Fortsetzung gründet keine zusätzlichen Häuser")
+	check(host.return_to_lobby().ok, "Lokale Ladeprüfung in Lobby")
+	var old = JSON.parse_string(FileAccess.get_file_as_string(path))
+	old.v = 2
+	old.app = "1.8.0"
+	old.fingerprint = "previous-release"
+	var old_path := path + ".old-v2"
+	var raw := JSON.stringify(old)
+	var old_file := FileAccess.open(old_path, FileAccess.WRITE)
+	old_file.store_string(raw)
+	old_file.close()
+	check(host.load_host_lobby(old_path).ok, "Alte lokale 1.8-Datei trotz neuem Drahtprotokoll ladbar")
+	check(FileAccess.get_file_as_string(old_path + ".pre-design-v2.bak") == raw, "Alte lokale 1.8-Datei bytegleich gesichert")
+	check(host.game.houses.size() == 11 and host.game.human_houses == [9,10], "Lokales Laden erhält eigene Häuser")
+	finish()
+
+func until(condition: Callable) -> bool:
+	var deadline := Time.get_ticks_msec() + 6500
+	while Time.get_ticks_msec() < deadline:
+		if condition.call(): return true
+		await get_tree().create_timer(0.02).timeout
+	return condition.call()
+
+func check(ok: bool, message: String) -> void:
+	checks += 1
+	if not ok:
+		failures += 1
+		print("LANDESIGNERTEST FAIL: " + message)
+
+func finish() -> void:
+	if host != null: host.close_session()
+	if guest != null: guest.close_session()
+	print("LANDESIGNERTEST %s; %d Prüfungen." % ["OK" if failures == 0 else "FAIL", checks])
+	get_tree().quit(0 if failures == 0 else 1)

@@ -1,6 +1,7 @@
 extends Node
-## Prüft, dass jedes der acht Ereignisse eine eigene, vorhandene Bilddatei lädt
-## und dass ein fehlendes Bild auf den Vektor-Fallback ausweicht.
+## Jeder Fall verwendet eine vorhandene passende Bildkategorie. Acht eigene
+## Motive dürfen von mehreren Kontextfällen genutzt werden; unbekanntes Bild
+## weicht weiterhin auf den Vektor-Fallback aus.
 ## Aufruf: godot --headless --path . res://tests/EventArtTest.tscn
 ## Exit-Code 0 = bestanden, 1 = fehlgeschlagen.
 
@@ -22,7 +23,7 @@ func _ready() -> void:
 		await get_tree().process_frame
 
 	var events: Array = DataScript.events()
-	_check(events.size() == 8, "acht Ereignisse erwartet, gefunden %d" % events.size())
+	_check(events.size() >= 32, "mindestens 32 Ereignisse erwartet, gefunden %d" % events.size())
 	_check(main.EVENT_ART_KEYS.size() == 8, "acht Zuordnungen erwartet, gefunden %d" % main.EVENT_ART_KEYS.size())
 	_check(main.EVENT_ARTS.size() == 8, "acht geladene Ereignisbilder erwartet, gefunden %d" % main.EVENT_ARTS.size())
 
@@ -43,13 +44,12 @@ func _ready() -> void:
 
 	for ev in events:
 		var id: String = str(ev.get("id", ""))
-		var key: String = str(main.EVENT_ART_KEYS.get(id, ""))
+		var key: String = str(ev.get("art", main.EVENT_ART_KEYS.get(id, "")))
 		_check(key != "", "Ereignis ohne Bildzuordnung: %s" % id)
 		if key == "":
 			continue
 		var path: String = "res://assets/ui/events/%s.png" % key
 		_check(FileAccess.file_exists(path), "Bilddatei fehlt: %s -> %s" % [id, path])
-		_check(not _seen_files.has(key), "Bilddatei doppelt zugeordnet: %s" % key)
 		_seen_files[key] = true
 		_check(main.EVENT_ARTS.has(key), "Bild nicht im Cache: %s" % key)
 		var tex = load(path)
@@ -57,9 +57,10 @@ func _ready() -> void:
 		if tex != null:
 			_check(tex.resource_path == path, "falscher Bildpfad: %s" % tex.resource_path)
 
+	_check(_seen_files.size() == 8, "Alle acht vorhandenen Bildkategorien bleiben im Ereigniskatalog vertreten")
 	for ev in events:
 		var id: String = str(ev.get("id", ""))
-		var key: String = str(main.EVENT_ART_KEYS.get(id, ""))
+		var key: String = str(ev.get("art", main.EVENT_ART_KEYS.get(id, "")))
 		var path: String = "res://assets/ui/events/%s.png" % key
 		main.game.pending_event = ev
 		main._show_event()
@@ -83,7 +84,7 @@ func _ready() -> void:
 	if _failed:
 		get_tree().quit(1)
 		return
-	print("EVENTARTTEST OK: 8 Ereignisse, 8 eindeutige Bilddateien, 8 Cache-Treffer, Vektor-Fallback aktiv; %d Prüfungen." % _checks)
+	print("EVENTARTTEST OK: %d Ereignisse, 8 Bildkategorien und Vektor-Fallback aktiv; %d Prüfungen." % [events.size(), _checks])
 	get_tree().quit(0)
 
 

@@ -134,8 +134,8 @@ func same_process_cases() -> void:
 	replacement.join("127.0.0.1", "Ersatz", port)
 	check(await wait_until(func(): return replacement.phase == "lobby"), "Neubeitritt in Wiederaufnahmelobby scheiterte.")
 	replacement.choose_house(2)
-	replacement.set_ready(true)
 	await get_tree().create_timer(0.1).timeout
+	check(replacement.local_house() == 1 and not bool(host.players[replacement.local_peer_id].ready), "Ungespeichertes Haus wurde bereits bei der Auswahl abgewiesen.")
 	check(not host.start_match().ok, "Wiederaufnahme ohne alle gespeicherten Menschenhäuser wurde akzeptiert.")
 	replacement.choose_house(1)
 	replacement.set_ready(true)

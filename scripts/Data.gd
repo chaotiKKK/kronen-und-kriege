@@ -530,7 +530,7 @@ static func kingdom_neighbours() -> Dictionary:
 	}
 
 static func events() -> Array:
-	return [
+	var result: Array = [
 		{"id": "zehnt", "title": "Die Gabe an die Götter",
 			"text": "Ein Priester verlangt eine Gabe für den Tempel. Zahlst du, segnet man dein Haus; verweigerst du, zürnen die Götter.",
 			"options": [
@@ -595,6 +595,41 @@ static func events() -> Array:
 				{"label": "Handelsprivileg  (−10 Gold, +6 Prestige, +1 Entwicklung)", "effects": {"gold": -10, "prestige": 6, "dev": 1}},
 				{"label": "Waren beschlagnahmen  (+50 Gold, −12 Prestige)", "effects": {"gold": 50, "prestige": -12}},
 			]},
+	]
+	var original_art := {"zehnt":"event_tithe", "ernte":"event_harvest", "hoftag":"event_court_reception", "grenzstreit":"event_battle", "hochzeit":"event_wedding", "krankheit":"event_fever", "kloster":"event_monastery", "haendler":"event_merchant"}
+	for event in result:
+		event["art"] = original_art[str(event.id)]
+	return result + _context_events()
+
+static func _context_event(id: String, title: String, text: String, art: String, condition: String, first: Array, second: Array) -> Dictionary:
+	return {"id":id, "title":title, "text":text, "art":art, "condition":condition, "options":[{"label":first[0],"effects":first[1]},{"label":second[0],"effects":second[1]}]}
+
+static func _context_events() -> Array:
+	return [
+		_context_event("markttag", "Der große Markttag", "Händler und Handwerker bitten um einen geschützten Platz für ihren Markt.", "event_merchant", "", ["Markt schützen (−15 Gold, +1 Entwicklung)", {"gold":-15,"dev":1}], ["Standgebühren erheben (+22 Gold)", {"gold":22}]),
+		_context_event("wasserquelle", "Eine neue Wasserquelle", "Beim Graben wird frisches Wasser entdeckt. Dein Verwalter schlägt einen gemeinschaftlichen Brunnen vor.", "event_harvest", "", ["Brunnen fassen (−18 Gold, +1 Entwicklung)", {"gold":-18,"dev":1}], ["Heilwasser für den Hof (+4 Gesundheit)", {"health":4}]),
+		_context_event("gerichtstag", "Ein schwieriger Gerichtstag", "Zwei angesehene Familien beanspruchen dieselbe Weide. Beide erwarten deine Entscheidung.", "event_court_reception", "", ["Entschädigung zahlen (−12 Gold, +12 Prestige)", {"gold":-12,"prestige":12}], ["Die Weide gemeinsam nutzen (+5 Prestige)", {"prestige":5}]),
+		_context_event("wanderkuenstler", "Geschichten am Feuer", "Eine reisende Truppe will die Taten deines Hauses besingen.", "event_court_reception", "", ["Künstler fördern (−14 Gold, +16 Prestige)", {"gold":-14,"prestige":16}], ["Eine einfache Bewirtung (+4 Prestige)", {"prestige":4}]),
+		_context_event("massgewichte", "Uneinige Maße", "Händler streiten über Gewichte und Getreidemaße. Einheitliche Regeln könnten Vertrauen schaffen.", "event_merchant", "", ["Maße vereinheitlichen (−16 Gold, +1 Entwicklung)", {"gold":-16,"dev":1}], ["Dem Marktrichter überlassen (+6 Prestige)", {"prestige":6}]),
+		_context_event("hirtentausch", "Herden auf Wanderschaft", "Hirten bieten Tiere im Tausch gegen Werkzeuge und Schutz.", "event_harvest", "", ["Tausch fördern (−10 Gold, +90 Truppen)", {"gold":-10,"levy":90}], ["Durchzug verzollen (+16 Gold)", {"gold":16}]),
+		_context_event("tempeldach", "Das undichte Tempeldach", "Die örtliche Gemeinschaft bittet um Hilfe bei einer aufwendigen Dachreparatur.", "event_monastery", "", ["Gemeinsam reparieren (−12 Gold, +10 Prestige)", {"gold":-12,"prestige":10}], ["Werkzeug spenden (−6 Gold, +4 Prestige)", {"gold":-6,"prestige":4}]),
+		_context_event("obstgarten", "Der junge Obstgarten", "Bauern möchten einen ungenutzten Hang bepflanzen und brauchen Saatgut.", "event_harvest", "", ["Pflanzung finanzieren (−22 Gold, +1 Entwicklung)", {"gold":-22,"dev":1}], ["Eine kleine Pacht verlangen (+12 Gold)", {"gold":12}]),
+		_context_event("salzschiffe", "Salz vom Meer", "Ein Handelsschiff bietet kostbares Salz und bittet um einen sicheren Anlegeplatz.", "event_merchant", "coastal", ["Freien Handel zusagen (+10 Prestige)", {"prestige":10}], ["Hafenzoll erheben (+28 Gold)", {"gold":28}]),
+		_context_event("kuestensturm", "Nach dem Küstensturm", "Ein Sturm hat Boote und Speicher beschädigt. Die Küstenbewohner bitten um Unterstützung.", "event_fever", "coastal", ["Hilfe leisten (−24 Gold, +14 Prestige)", {"gold":-24,"prestige":14}], ["Mit eigenen Mitteln reparieren lassen (−5 Prestige)", {"prestige":-5}]),
+		_context_event("werftmeister", "Der erfahrene Bootsbauer", "Ein Handwerker möchte sein Wissen an junge Leute deiner Küste weitergeben.", "event_merchant", "coastal", ["Werkstatt fördern (−25 Gold, +1 Entwicklung)", {"gold":-25,"dev":1}], ["Einen Auftrag vermitteln (+8 Prestige)", {"prestige":8}]),
+		_context_event("grenzwache", "Die müde Grenzwache", "An deiner umkämpften Grenze fehlen Ablösungen und warme Mahlzeiten.", "event_battle", "war", ["Ablösung entsenden (−20 Gold, +120 Truppen)", {"gold":-20,"levy":120}], ["Ihre Ausdauer ehren (+8 Prestige)", {"prestige":8}]),
+		_context_event("veteranen", "Heimkehr der Veteranen", "Erfahrene Kämpfer suchen nach dem Feldzug eine neue Aufgabe.", "event_battle", "war", ["Als Ausbilder gewinnen (−18 Gold, +150 Truppen)", {"gold":-18,"levy":150}], ["Mit Ehren verabschieden (+12 Prestige)", {"prestige":12}]),
+		_context_event("heerstreit", "Streit im Heerlager", "Zwei Anführer streiten über Vorräte. Dein Schiedsspruch wird im ganzen Lager gehört.", "event_battle", "war", ["Vorräte nachkaufen (−20 Gold, +10 Prestige)", {"gold":-20,"prestige":10}], ["Strenge Disziplin verlangen (+60 Truppen, −6 Prestige)", {"levy":60,"prestige":-6}]),
+		_context_event("gelehrtenstreit", "Zwei Wege zum Wissen", "Deine Forschenden vertreten unterschiedliche Ansätze. Eine öffentliche Aussprache könnte beide Seiten zusammenbringen.", "event_monastery", "research", ["Aussprache finanzieren (−15 Gold, +12 Prestige)", {"gold":-15,"prestige":12}], ["Praktische Versuche fördern (−25 Gold, +1 Entwicklung)", {"gold":-25,"dev":1}]),
+		_context_event("archivfund", "Ein vergessener Bericht", "Bei der Arbeit an deinem Wissensprojekt taucht eine alte Beschreibung bewährter Verfahren auf.", "event_monastery", "research", ["Abschriften anfertigen (−18 Gold, +1 Entwicklung)", {"gold":-18,"dev":1}], ["Den Fund am Hof vorstellen (+14 Prestige)", {"prestige":14}]),
+		_context_event("baumeister", "Der reisende Baumeister", "Ein erfahrener Praktiker hat von deinen Vorhaben gehört und bietet eine Lehrvorführung an.", "event_monastery", "research", ["Vorführung bezahlen (−20 Gold, +1 Entwicklung)", {"gold":-20,"dev":1}], ["Für einen späteren Besuch einladen (+6 Prestige)", {"prestige":6}]),
+		_context_event("wanderheiler", "Der wandernde Heiler", "Ein Heiler bietet an, deinen angeschlagenen Herrscher zu behandeln.", "event_fever", "sick", ["Behandlung bezahlen (−22 Gold, +8 Gesundheit)", {"gold":-22,"health":8}], ["Ruhe verordnen (+3 Gesundheit, −3 Prestige)", {"health":3,"prestige":-3}]),
+		_context_event("heilsuppe", "Rat aus der Hofküche", "Die Köchin empfiehlt deinem kranken Herrscher leichte Kost und einige Tage ohne Audienzen.", "event_fever", "sick", ["Erholung zulassen (+6 Gesundheit, −5 Prestige)", {"health":6,"prestige":-5}], ["Nur die Ernährung ändern (+2 Gesundheit)", {"health":2}]),
+		_context_event("leere_kasse", "Die knappe Kasse", "Ein Händler bietet einen Vorschuss gegen zukünftige Privilegien.", "event_tithe", "poor", ["Privileg gewähren (+35 Gold, −10 Prestige)", {"gold":35,"prestige":-10}], ["Ausgaben offen erklären (+5 Prestige)", {"prestige":5}]),
+		_context_event("gesandtschaft", "Eine festliche Gesandtschaft", "Auswärtige Gäste haben vom Wohlstand deines Hauses gehört.", "event_court_reception", "rich", ["Reich bewirten (−35 Gold, +24 Prestige)", {"gold":-35,"prestige":24}], ["Handelsgeschenke austauschen (+15 Gold, +6 Prestige)", {"gold":15,"prestige":6}]),
+		_context_event("nachfolgesorge", "Sorge um die Nachfolge", "Ein entfernt verwandtes Kind könnte unter dem Schutz deines Hauses aufwachsen.", "event_wedding", "no_heir", ["In die Familie aufnehmen (−30 Gold, Erbe)", {"gold":-30,"heir":1}], ["Die Entscheidung vertagen (+3 Prestige)", {"prestige":3}]),
+		_context_event("wegezoll", "Händler auf der neuen Straße", "Eine Karawane nutzt deine fertige Straße und möchte verlässliche Schutzbedingungen.", "event_merchant", "roads", ["Geleit finanzieren (−12 Gold, +12 Prestige)", {"gold":-12,"prestige":12}], ["Einmaligen Zoll nehmen (+26 Gold)", {"gold":26}]),
+		_context_event("werkzeugmarkt", "Ein Markt für gute Werkzeuge", "In deinen entwickelten Orten wächst die Nachfrage nach hochwertigem Werkzeug.", "event_harvest", "developed", ["Werkstätten fördern (−30 Gold, +1 Entwicklung)", {"gold":-30,"dev":1}], ["Werkzeughandel besteuern (+24 Gold)", {"gold":24}]),
 	]
 
 static func name_pool() -> Array:

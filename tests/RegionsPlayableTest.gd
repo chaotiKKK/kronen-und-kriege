@@ -29,6 +29,9 @@ func _ready() -> void:
 	old.schema_version = 12
 	var raw := JSON.stringify(old)
 	var path := "user://spielstand.json"
+	var primary_backup := path + ".pre-regions-v12.bak"
+	var had_primary := FileAccess.file_exists(primary_backup)
+	var primary_before := FileAccess.get_file_as_bytes(primary_backup) if had_primary else PackedByteArray()
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	f.store_string(raw)
 	f.close()
@@ -36,7 +39,14 @@ func _ready() -> void:
 		return
 	if not check(main.game.provinces.size() == 108, "Altpartie spielt auf 108 Regionen weiter"):
 		return
-	if not check(FileAccess.get_file_as_string("user://spielstand.json.pre-regions-v12.bak") == raw, "Bytegleiche Altstand-Sicherung vorhanden"):
+	var backup_path := ""
+	for filename in DirAccess.get_files_at("user://"):
+		if filename.begins_with("spielstand.json.pre-regions") and filename.ends_with(".bak"):
+			if FileAccess.get_file_as_bytes("user://"+filename) == raw.to_utf8_buffer():
+				backup_path = "user://"+filename
+	if not check(not backup_path.is_empty(), "Bytegleiche Altstand-Sicherung vorhanden"):
+		return
+	if not check(not had_primary or FileAccess.get_file_as_bytes(primary_backup) == primary_before, "Vorhandene fremde Altstandsicherung bleibt unverändert"):
 		return
 	if not check(bool(main._save().ok), "Migrierter Stand regulär gespeichert"):
 		return
@@ -75,9 +85,9 @@ func _ready() -> void:
 	f.store_string(different_raw)
 	f.close()
 	var second: Dictionary = store.load_snapshot(path)
-	if not check(bool(second.ok) and str(second.backup) != path + ".pre-regions-v12.bak", "Zweiter Altstand bekommt eigene Sicherung"):
+	if not check(bool(second.ok) and str(second.backup) != backup_path, "Zweiter Altstand bekommt eigene Sicherung"):
 		return
-	if not check(FileAccess.get_file_as_string(path + ".pre-regions-v12.bak") == raw and FileAccess.get_file_as_string(second.backup) == different_raw, "Beide Altstände bytegleich erhalten"):
+	if not check(FileAccess.get_file_as_string(backup_path) == raw and FileAccess.get_file_as_string(second.backup) == different_raw, "Beide Altstände bytegleich erhalten"):
 		return
 	if not check(FileAccess.get_file_as_string(path) == different_raw, "Laden überschreibt den Altstand nicht vor ausdrücklich gewähltem Speichern"):
 		return

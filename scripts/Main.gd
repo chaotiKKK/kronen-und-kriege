@@ -891,14 +891,9 @@ func _build() -> void:
 	side_box.add_child(hint_label)
 
 	_build_infrastructure_layer()
-	research_label = _label("", 12, INK_SOFT)
-	research_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	infrastructure_body.add_child(research_label)
-	for innovation in ["surveying", "road_building"]:
-		var research_button := _button("", func(): _dispatch({"id": "research", "innovation": innovation}), "scroll")
-		research_button.custom_minimum_size.y = 48
-		research_buttons[innovation] = research_button
-		infrastructure_body.add_child(research_button)
+	var presenter = preload("res://scripts/ResearchPanel.gd").new()
+	set_meta("research_panel",presenter)
+	presenter.configure(self,infrastructure_body)
 	road_buttons = VBoxContainer.new()
 	road_buttons.add_theme_constant_override("separation", 6)
 	infrastructure_body.add_child(road_buttons)
@@ -1153,7 +1148,7 @@ func _build() -> void:
 	var sub_new := _label("2000 v. Chr. · %d Spielregionen · neun Königreiche · drei Reiche" % DataScript.provinces().size(), 14, INK_SOFT)
 	sub_new.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box_new.add_child(sub_new)
-	box_new.add_child(_button("Eigenes Haus gründen", _show_create, "crown"))
+	box_new.add_child(_button("Eigenes Haus gründen", _show_house_designer, "crown"))
 	var scroll3 := ScrollContainer.new()
 	scroll3.custom_minimum_size = Vector2(0, 356)
 	scroll3.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -1518,7 +1513,7 @@ func _refresh_province_page() -> void:
 	for c in province_troops.get_children():
 		province_troops.remove_child(c)
 		c.queue_free()
-	province_troops.add_child(_army_tokens(int(p.get("levy", 0))))
+	province_troops.add_child(_army_tokens(int(p.get("levy", 0)),owner_i))
 	var station_fleet := _fleet_at(selected)
 	if not station_fleet.is_empty():
 		province_troops.add_child(_fleet_tokens(station_fleet))
@@ -2458,7 +2453,22 @@ func _update_points() -> void:
 	for k in stat_labels.keys():
 		stat_labels[k].text = str(stat_values[k])
 
-func _create_begin() -> void:
+func _show_house_designer() -> void:
+	if _lan_active():
+		_show_lan_menu()
+		return
+	var dialog = preload("res://scripts/HouseDesignerDialog.gd").new()
+	dialog.configure(self, preload("res://scripts/HouseDesign.gd").defaults(DataScript), _start_designed_house)
+	set_meta("singleplayer_designer",dialog)
+
+func _start_designed_house(profile: Dictionary) -> void:
+	var result: Dictionary = preload("res://scripts/HouseDesign.gd").validate(profile,DataScript)
+	if not result.ok:
+		title_status.text = str(result.message)
+		return
+	_create_begin(result.profile)
+
+func _create_begin(design: Dictionary = {}) -> void:
 	_hide_event()
 	if _lan_active():
 		lan_session.close_session("Einzelspieler gestartet.")
@@ -2477,6 +2487,8 @@ func _create_begin() -> void:
 		"martial": stat_values["martial"], "diplomacy": stat_values["diplomacy"],
 		"stewardship": stat_values["stewardship"], "intrigue": stat_values["intrigue"],
 	}
+	if not design.is_empty():
+		cfg.merge(design,true)
 	game = GameScript.new(DataScript, 0, cfg)
 	game.speed = clampi(int(settings["start_speed"]), 0, 3)
 	kernel.bind_game(game)
@@ -2526,10 +2538,7 @@ func _start(index: int) -> void:
 # --- Aktionen ------------------------------------------------------------
 
 func _map_mode_title(mode: String) -> String:
-	return {
-		"political": "Politik", "terrain": "Gelände", "duchy": "Titel",
-		"kingdom": "Reiche", "development": "Entwicklung", "war": "Krieg",
-	}.get(mode, "Politik")
+	return MapViewScript.MapModesScript.TITLES.get(MapViewScript.MapModesScript.canonical(mode), "Politik")
 
 func _set_map_mode(mode: String) -> void:
 	if map_view == null:
@@ -2549,6 +2558,11 @@ func _sync_map_mode_buttons() -> void:
 	for mode in map_mode_buttons.keys():
 		var b: Button = map_mode_buttons[mode]
 		b.button_pressed = str(mode) == map_view.map_mode
+	if has_meta("modern_interface"):
+		var ui = get_meta("modern_interface")
+		if ui.title_tier != null:
+			ui.title_tier.visible = map_view.map_mode == "titles"
+			ui.title_tier.select(["duchy","kingdom","empire"].find(map_view.title_level))
 	_refresh_map_header()
 
 func _on_province_selected(id: String) -> void:
@@ -2556,6 +2570,14 @@ func _on_province_selected(id: String) -> void:
 	selected = kernel.selection
 	if map_view != null and map_view.selected != selected:
 		map_view.select(selected)
+	if id != "" and has_meta("modern_interface"):
+		var ui = get_meta("modern_interface")
+		if ui.map_focus:
+			ui.set_map_focus(false)
+		_side_hidden = false
+		side_panel.show()
+		side_toggle_btn.set_pressed_no_signal(true)
+		ui.show_section("overview")
 	refresh()
 
 func _on_province_activated(id: String) -> void:
@@ -2893,7 +2915,7 @@ func _build_infrastructure_layer() -> void:
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	infrastructure_layer.add_child(dim)
 	var panel := PanelContainer.new()
-	panel.anchor_left = 0.55
+	panel.anchor_left = 0.20
 	panel.anchor_top = 0.03
 	panel.anchor_right = 0.99
 	panel.anchor_bottom = 0.97
@@ -2933,22 +2955,9 @@ func _hide_infrastructure() -> void:
 	infrastructure_layer.visible = false
 
 func _refresh_infrastructure() -> void:
-	var research: Dictionary = game.house().research
-	var active := str(research.active)
-	if active == "":
-		research_label.text = "Wissen entwickeln und Verkehrswege auf der Karte bauen. Straßenhandel: +%d Gold/Jahr." % game.road_income()
-	else:
-		var info: Dictionary = GameScript.InfrastructureScript.INNOVATIONS[active]
-		research_label.text = "%s · noch %d Monate · %d von %d Monaten abgeschlossen" % [info.name, research.months, int(info.months) - int(research.months), info.months]
-	if game.calendar_index() >= 50399 and not game.campaign_sandbox:
-		research_label.text = "Die Kampagnenzeit bis 2200 ist erreicht. Mit ‚Als Sandbox fortsetzen‘ läuft dein Spielstand weiter."
-	for choice in game.research_choices():
-		var button: Button = research_buttons[choice.id]
-		button.text = "%s · %d Gold · %d Monate" % [choice.name, choice.gold, choice.months]
-		if research.known.has(choice.id):
-			button.text = str(choice.name) + " · Erforscht"
-		button.disabled = str(choice.reason) != ""
-		button.tooltip_text = str(choice.reason)
+	if game == null:
+		return
+	get_meta("research_panel").refresh(game,selected)
 	for child in road_buttons.get_children():
 		road_buttons.remove_child(child)
 		child.queue_free()
@@ -3060,6 +3069,7 @@ func _build_court_layer() -> void:
 	head.add_theme_constant_override("separation", 10)
 	box.add_child(head)
 	court_title = _label("Hof & Reliquien", 24, INK)
+	court_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	court_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(court_title)
 	var close := _button("Schließen", _hide_court, "")
@@ -3105,182 +3115,11 @@ func _clear_court_body() -> void:
 func _refresh_court() -> void:
 	if game == null or court_body == null:
 		return
-	_clear_court_body()
-	var vm: Dictionary = ViewModelBuilder.court(game)
-	court_title.text = str(vm["title"])
-	court_body.add_child(_label(str(vm["summary"]), 14, INK_SOFT))
-	court_body.add_child(_label(str(vm["benefit"]), 12, INK_SOFT))
-	court_body.add_child(HSeparator.new())
-	court_body.add_child(_label("Reliquien", 18, INK))
-	court_body.add_child(_label("Jede Reliquie ist einzigartig. Schmieden kostet Gold und Prestige; die Wirkung bleibt dauerhaft.", 11, INK_SOFT))
-	for relic in vm["relics"]:
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 10)
-		var icon := TextureRect.new()
-		icon.custom_minimum_size = Vector2(58, 58)
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.texture = TOKENS.get(str(relic["icon"]))
-		icon.tooltip_text = "Reliquien-Token aus der Blender-Pipeline"
-		row.add_child(icon)
-		var text := _label("%s\n%s" % [str(relic["name"]), str(relic["effect"])], 12, INK_SOFT)
-		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		row.add_child(text)
-		var forge := _button(str(relic["button_text"]), Callable(self, "_forge_relic").bind(str(relic["id"])), "")
-		forge.custom_minimum_size = Vector2(190, 40)
-		forge.disabled = bool(relic["disabled"])
-		row.add_child(forge)
-		court_body.add_child(row)
-	court_body.add_child(HSeparator.new())
-	var hall_row := HBoxContainer.new()
-	hall_row.name = "HofhallenVorschau"
-	hall_row.add_theme_constant_override("separation", 14)
-	var frame_style := _flat(Color(0.08, 0.06, 0.04, 0.96), Color(0.55, 0.40, 0.20), 2)
-	frame_style.content_margin_left = 4
-	frame_style.content_margin_right = 4
-	frame_style.content_margin_top = 4
-	frame_style.content_margin_bottom = 4
-	var frame := PanelContainer.new()
-	frame.custom_minimum_size = Vector2(390, 240)
-	frame.add_theme_stylebox_override("panel", frame_style)
-	hall_row.add_child(frame)
-	var preview_stack := Control.new()
-	preview_stack.custom_minimum_size = Vector2(382, 232)
-	preview_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(preview_stack)
-	court_hall_preview = TextureRect.new()
-	court_hall_preview.texture = TEX_COURT
-	court_hall_preview.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	court_hall_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	court_hall_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	court_hall_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	preview_stack.add_child(court_hall_preview)
-	var overlay := PanelContainer.new()
-	overlay.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	overlay.offset_left = 6
-	overlay.offset_top = -70
-	overlay.offset_right = -6
-	overlay.offset_bottom = -6
-	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var overlay_style := _flat(Color(0.03, 0.02, 0.012, 0.86), Color(0.62, 0.46, 0.24, 0.9), 1)
-	overlay_style.content_margin_left = 6
-	overlay_style.content_margin_right = 6
-	overlay_style.content_margin_top = 4
-	overlay_style.content_margin_bottom = 4
-	overlay.add_theme_stylebox_override("panel", overlay_style)
-	preview_stack.add_child(overlay)
-	var overlay_box := VBoxContainer.new()
-	overlay_box.add_theme_constant_override("separation", 2)
-	overlay.add_child(overlay_box)
-	court_expectation_label = _label(str(vm["expectation_text"]), 10, Color(1.0, 0.89, 0.63))
-	overlay_box.add_child(court_expectation_label)
-	court_expectation_track = Control.new()
-	court_expectation_track.custom_minimum_size = Vector2(0, 7)
-	court_expectation_track.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	overlay_box.add_child(court_expectation_track)
-	var track_bg := ColorRect.new()
-	track_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	track_bg.color = Color(0.16, 0.12, 0.07, 0.95)
-	track_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	court_expectation_track.add_child(track_bg)
-	var corridor := ColorRect.new()
-	corridor.anchor_left = clampf(float(int(vm["expected"]) - 5) / 100.0, 0.0, 1.0)
-	corridor.anchor_right = clampf(float(int(vm["expected"]) + 5) / 100.0, 0.0, 1.0)
-	corridor.anchor_bottom = 1.0
-	corridor.offset_top = 1
-	corridor.offset_bottom = -1
-	corridor.color = Color(0.78, 0.58, 0.22, 0.28)
-	corridor.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	court_expectation_track.add_child(corridor)
-	var fill := ColorRect.new()
-	fill.anchor_right = clampf(float(int(vm["grandeur"])) / 100.0, 0.0, 1.0)
-	fill.anchor_bottom = 1.0
-	fill.offset_top = 1
-	fill.offset_bottom = -1
-	fill.color = Color(0.82, 0.61, 0.23, 0.96)
-	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	court_expectation_track.add_child(fill)
-	var target_marker := ColorRect.new()
-	target_marker.anchor_left = clampf(float(int(vm["expected"])) / 100.0, 0.0, 1.0)
-	target_marker.anchor_right = target_marker.anchor_left
-	target_marker.anchor_bottom = 1.0
-	target_marker.offset_left = -1
-	target_marker.offset_right = 1
-	target_marker.color = Color(1.0, 0.88, 0.52)
-	target_marker.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	court_expectation_track.add_child(target_marker)
-	var amenity_pips_row := HBoxContainer.new()
-	amenity_pips_row.add_theme_constant_override("separation", 8)
-	overlay_box.add_child(amenity_pips_row)
-	for amenity in vm["amenities"]:
-		var group := VBoxContainer.new()
-		group.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		group.add_theme_constant_override("separation", 1)
-		amenity_pips_row.add_child(group)
-		group.add_child(_label("%s %s" % [str(amenity["name"]), str(amenity["level_text"])], 9, Color(1.0, 0.92, 0.74)))
-		var pips := HBoxContainer.new()
-		pips.add_theme_constant_override("separation", 2)
-		for i in int(amenity["max"]):
-			var pip := PanelContainer.new()
-			pip.custom_minimum_size = Vector2(22, 4)
-			var pip_style := _flat(Color(0.84, 0.64, 0.24, 0.96) if i < int(amenity["level"]) else Color(0.34, 0.25, 0.14, 0.8), Color(0.16, 0.11, 0.06, 0.8), 1)
-			pip_style.content_margin_left = 0
-			pip_style.content_margin_right = 0
-			pip_style.content_margin_top = 0
-			pip_style.content_margin_bottom = 0
-			pip.add_theme_stylebox_override("panel", pip_style)
-			pips.add_child(pip)
-		group.add_child(pips)
-		court_amenity_pips.append(pips)
-	var hall_info := VBoxContainer.new()
-	hall_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hall_info.add_theme_constant_override("separation", 4)
-	hall_row.add_child(hall_info)
-	court_hall_stage_label = _label("Hofhalle · Stufe %d/%d" % [int(vm["hall"]), int(vm["hall_max"])], 19, INK)
-	hall_info.add_child(court_hall_stage_label)
-	court_hall_stats_label = _label("Hofpracht %d/100 · Reliquien %d/%d" % [
-		int(vm["grandeur"]), int(vm["relics_owned"]), int(vm["relics_total"])
-	], 12, INK_SOFT)
-	hall_info.add_child(court_hall_stats_label)
-	court_hall_pips = HBoxContainer.new()
-	court_hall_pips.add_theme_constant_override("separation", 4)
-	for i in int(vm["hall_max"]):
-		var pip := PanelContainer.new()
-		pip.custom_minimum_size = Vector2(54, 8)
-		var pip_style := _flat(Color(0.78, 0.58, 0.22, 0.96) if i < int(vm["hall"]) else Color(0.48, 0.36, 0.20, 0.34), Color(0.30, 0.20, 0.10, 0.75), 1)
-		pip_style.content_margin_left = 0
-		pip_style.content_margin_right = 0
-		pip_style.content_margin_top = 0
-		pip_style.content_margin_bottom = 0
-		pip.add_theme_stylebox_override("panel", pip_style)
-		court_hall_pips.add_child(pip)
-	hall_info.add_child(court_hall_pips)
-	hall_info.add_child(_label("Hofausstattung · %d G/Jahr Unterhalt" % int(vm["amenity_upkeep"]), 10, INK_SOFT))
-	for amenity in vm["amenities"]:
-		var amenity_row := HBoxContainer.new()
-		amenity_row.add_theme_constant_override("separation", 6)
-		var amenity_name := _label("%s %s" % [str(amenity["name"]), str(amenity["level_text"])], 11, INK)
-		amenity_name.custom_minimum_size = Vector2(92, 0)
-		amenity_row.add_child(amenity_name)
-		var amenity_effect := _label(str(amenity["effect"]), 9, INK_SOFT)
-		amenity_effect.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		amenity_effect.tooltip_text = "%s · Unterhalt %d G/Jahr" % [str(amenity["effect"]), int(amenity["upkeep"])]
-		amenity_row.add_child(amenity_effect)
-		var amenity_button := _button(str(amenity["button_text"]), Callable(self, "_upgrade_court_amenity").bind(str(amenity["id"])), "")
-		amenity_button.custom_minimum_size = Vector2(118, 27)
-		amenity_button.disabled = not bool(amenity["can_upgrade"])
-		amenity_row.add_child(amenity_button)
-		court_amenity_buttons[str(amenity["id"])] = amenity_button
-		hall_info.add_child(amenity_row)
-	var spacer := Control.new()
-	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	hall_info.add_child(spacer)
-	var hall_button := _button(str(vm["hall_button"]), _upgrade_court_hall, "")
-	hall_button.custom_minimum_size = Vector2(0, 36)
-	hall_button.disabled = bool(vm["hall_maxed"]) or not bool(vm["can_upgrade_hall"])
-	hall_info.add_child(hall_button)
-	court_body.add_child(hall_row)
+	if not has_meta("court_management"):
+		var presenter = preload("res://scripts/CourtManagementPanel.gd").new()
+		set_meta("court_management", presenter)
+		presenter.configure(self)
+	get_meta("court_management").refresh(game)
 
 func _forge_relic(relic_id: String) -> void:
 	_dispatch({"id": "forge_relic", "relic": relic_id})
@@ -3795,10 +3634,10 @@ func _fleet_tokens(fleet: Dictionary) -> HBoxContainer:
 	row.add_child(_label("%d Schiffe" % int(fleet.get("ships", 0)), 10, INK_SOFT))
 	return row
 
-func _army_tokens(strength: int) -> HBoxContainer:
+func _army_tokens(strength: int, house_index: int = -1) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 14)
-	var comp: Dictionary = game.army_composition(strength)
+	var comp: Dictionary = game.army_composition(strength,house_index)
 	for entry in [["levy", "Fußvolk"], ["archer", "Bogenschützen"], ["knight", "Reiterei"], ["siege", "Belagerung"]]:
 		var cell := VBoxContainer.new()
 		cell.add_theme_constant_override("separation", 1)
@@ -4067,7 +3906,9 @@ func _show_event() -> void:
 	var outline := Color(1, 1, 1, 0.95) if ModernInterfaceScript.is_light() else Color(0.015, 0.035, 0.05, 0.95)
 	event_title.add_theme_color_override("font_outline_color", outline)
 	event_text.add_theme_color_override("font_outline_color", outline)
-	var art_key: String = str(EVENT_ART_KEYS.get(str(vm.get("id", "")), ""))
+	var art_key: String = str(vm.get("art", ""))
+	if art_key.is_empty():
+		art_key = str(EVENT_ART_KEYS.get(str(vm.get("id", "")), ""))
 	_apply_event_art(art_key)
 	for c in event_buttons.get_children():
 		event_buttons.remove_child(c)
@@ -4132,6 +3973,11 @@ func _show_event() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		var top: String = kernel.top_modal()
+		if top == "house_designer":
+			var designer = lan_menu.designer if lan_menu != null and is_instance_valid(lan_menu.designer) else get_meta("singleplayer_designer",null)
+			if is_instance_valid(designer): designer.cancel()
+			get_viewport().set_input_as_handled()
+			return
 		if top == "lan":
 			lan_menu.hide_menu()
 			get_viewport().set_input_as_handled()
@@ -4201,11 +4047,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_2:
 				_set_map_mode("terrain")
 			KEY_3:
-				_set_map_mode("duchy")
+				_set_map_mode("titles")
 			KEY_4:
-				_set_map_mode("kingdom")
+				_set_map_mode("economy")
 			KEY_5:
-				_set_map_mode("development")
+				_set_map_mode("war")
 			KEY_6:
 				_set_map_mode("war")
 			KEY_M:

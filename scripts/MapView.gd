@@ -8,13 +8,16 @@ signal map_mode_changed(mode: String)
 signal province_activated(province_id: String)
 signal atlas_location_selected(record: Dictionary)
 
-const MAP_MODES := ["political", "terrain", "duchy", "kingdom", "development", "war"]
+const MapModesScript = preload("res://scripts/MapModes.gd")
+const MAP_MODES := MapModesScript.IDS
 const MODE_TITLES := {
 	"political": "Politik",
 	"terrain": "Gelände",
 	"duchy": "Titel",
 	"kingdom": "Reiche",
 	"development": "Entwicklung",
+	"titles": "Rechtstitel",
+	"economy": "Wirtschaft",
 	"war": "Krieg",
 }
 const MODE_HINTS := {
@@ -23,6 +26,8 @@ const MODE_HINTS := {
 	"duchy": "Herzogtümer und ihre Grenzen",
 	"kingdom": "Königreiche und Reichsgrenzen",
 	"development": "Entwicklung der Grafschaften",
+	"titles": "Angestammte Titel · Rechtsstufe rechts umschalten",
+	"economy": "Landsertrag, Entwicklung, Gebäude und Straßen",
 	"war": "Belagerungen, Flotten und Kriegsstand",
 }
 const TERRAIN_ORDER := ["plains", "farmland", "forest", "hills", "mountains", "marsh", "coast", "steppe", "heath"]
@@ -54,6 +59,7 @@ var game = null
 var selected: String = ""
 var hovered: String = ""
 var map_mode: String = "political"
+var title_level := "kingdom"
 var legend_visible := false
 var crests: Array = []
 var _edge_neighbor: Dictionary = {}
@@ -135,7 +141,9 @@ func set_game(g) -> void:
 	queue_redraw()
 
 func set_mode(mode: String) -> void:
-	var clean: String = mode if MAP_MODES.has(mode) else "political"
+	var clean := MapModesScript.canonical(mode)
+	if mode == "duchy": set_title_level("duchy")
+	if mode == "kingdom": set_title_level("kingdom")
 	if clean == map_mode:
 		queue_redraw()
 		return
@@ -144,6 +152,16 @@ func set_mode(mode: String) -> void:
 		_base.queue_redraw()
 	queue_redraw()
 	map_mode_changed.emit(map_mode)
+
+func set_title_level(level: String) -> void:
+	if not level in ["duchy", "kingdom", "empire"]:
+		return
+	title_level = level
+	if _base != null:
+		_base.queue_redraw()
+	queue_redraw()
+	if atlas_layer != null:
+		atlas_layer.refresh()
 
 func mode_title() -> String:
 	return str(MODE_TITLES.get(map_mode, "Politik"))
@@ -511,22 +529,29 @@ func _draw_labels(s: float, off: Vector2) -> void:
 	var groups: Array = []
 	var seen := {}
 	for p in game.provinces:
-		var kid := str(p["kingdom"])
+		var field := title_level if map_mode == "titles" else ("empire" if map_mode == "terrain" else "owner")
+		var kid := str(p[field])
 		if seen.has(kid):
 			continue
 		seen[kid] = true
 		var sum := Vector2.ZERO
 		var count := 0
+		var income := 0
+		var levy := 0
 		for q in game.provinces:
-			if str(q["kingdom"]) != kid:
+			if str(q[field]) != kid:
 				continue
 			sum += _label_point(q) * s + off
 			count += 1
-		groups.append({"id": kid, "pos": sum / maxf(1.0, float(count)), "p": p})
+			income += int(game.region_income(q))
+			levy += int(q.get("levy",0))
+		groups.append({"id": kid, "pos": sum / maxf(1.0, float(count)), "p": p, "field":field, "count":count,"income":income,"levy":levy})
 	for g in groups:
 		var p: Dictionary = g["p"]
-		var title: String = str(p["kingdom_name"]).replace("Königreich ", "")
-		var house_name: String = str(game.houses[int(p["owner"])]["name"])
+		var title: String = str(p.get(str(g.field) + "_name", "")) if str(g.field) != "owner" else str(game.houses[int(p.owner)].name)
+		var house_name: String = "Angestammter Titel" if map_mode in ["terrain", "titles"] else "%d Spielregionen" % int(g.count)
+		if map_mode == "economy": house_name = "%d Gold/Jahr Landsertrag" % int(g.income)
+		if map_mode == "war": house_name = "%d Mann Aufgebot" % int(g.levy)
 		var tw: float = font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_title).x
 		var ow: float = font.get_string_size(house_name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_owner).x
 		var w: float = maxf(tw, ow) + 18.0
@@ -599,7 +624,7 @@ func _draw_labels(s: float, off: Vector2) -> void:
 	var label_provinces: Array = game.provinces if atlas_layer == null else []
 	for p in label_provinces:
 		var name := str(p["name"])
-		if map_mode == "development":
+		if map_mode == "economy":
 			name = "%s · %d" % [name, int(p.get("dev", 1))]
 		var w: float = font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_label).x
 		var h: float = float(fs_label + 3)
@@ -763,22 +788,7 @@ func _draw_hover_tooltip(font: Font) -> void:
 	draw_string(font, pos + Vector2(14, 86), "Klick wählt · Doppelklick öffnet die Provinzseite", HORIZONTAL_ALIGNMENT_LEFT, w - 24, 8, Color(0.68, 0.64, 0.56))
 
 func _fill_color(p: Dictionary) -> Color:
-	var base: Color
-	match map_mode:
-		"terrain":
-			base = p.get("terrain_color", Color(0.47, 0.54, 0.30))
-		"duchy":
-			base = _title_color(str(p["duchy"]))
-		"kingdom":
-			base = _title_color(str(p["kingdom"]))
-		"development":
-			base = _dev_color(int(p.get("dev", 1)))
-		_:
-			base = game.houses[int(p["owner"])]["color"]
-	if selected == str(p["id"]):
-		base = base.lightened(0.25)
-	base.a = 0.08 if map_mode == "terrain" else (0.38 if map_mode == "development" else 0.26)
-	return base
+	return MapModesScript.fill(game, p, map_mode, title_level, selected)
 
 func _title_color(id: String) -> Color:
 	if TITLE_COLORS.is_empty():
@@ -813,6 +823,16 @@ func _draw_war_markers(s: float, off: Vector2, font: Font) -> void:
 	# Küste. Der Ring trägt die Hausfarbe, die Zahl die Schiffszahl.
 	for house_index in game.houses.size():
 		var house_color: Color = game.houses[house_index].get("color", Color(0.7, 0.5, 0.2))
+		for army in game.houses[house_index].get("armies", []):
+			var station: Dictionary = game.province(str(army.get("province", "")))
+			if station.is_empty(): continue
+			var pos: Vector2 = _label_point(station)*s+off+Vector2(0,-22)
+			if not Rect2(Vector2.ZERO,size).has_point(pos): continue
+			var marker := Rect2(pos-Vector2(18,15),Vector2(100,30))
+			draw_rect(marker,Color(.035,.06,.07,.92))
+			draw_rect(marker,house_color,false,1.5)
+			draw_string(font,pos+Vector2(-10,5),"%d Mann" % int(army.get("strength",0)),HORIZONTAL_ALIGNMENT_LEFT,90,12,CREAM)
+			atlas_obstacles.append(marker)
 		for fleet in game.houses[house_index].get("fleets", []):
 			var station: Dictionary = game.province(str(fleet.get("station", "")))
 			if station.is_empty():
@@ -839,86 +859,45 @@ func _draw_war_markers(s: float, off: Vector2, font: Font) -> void:
 			draw_string(font, label_pos, "%d" % ships, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1.0, 0.96, 0.86))
 
 func _legend_rows() -> Array:
-	match map_mode:
-		"duchy":
-			return [
-				["Grafschaft", Color(0.16, 0.11, 0.07, 0.55), 1.0],
-				["Herzogtum", Color(0.43, 0.30, 0.14, 0.9), 2.1],
-				["Königreich", Color(0.72, 0.52, 0.22, 0.95), 3.2],
-				["Reich", Color(0.64, 0.18, 0.13, 0.95), 5.0],
-			]
-		"kingdom":
-			return [
-				["Grafschaft", Color(0.16, 0.11, 0.07, 0.55), 1.0],
-				["Königreich", Color(0.72, 0.52, 0.22, 0.95), 3.2],
-				["Reich", Color(0.64, 0.18, 0.13, 0.95), 5.0],
-			]
-		_:
-			return [
-				["Grafschaft", Color(0.16, 0.11, 0.07, 0.55), 1.0],
-				["Grenze zwischen Häusern", Color(0.98, 0.84, 0.45, 0.95), 4.0],
-				["Herzogtum", Color(0.43, 0.30, 0.14, 0.9), 2.1],
-				["Königreich", Color(0.72, 0.52, 0.22, 0.95), 3.2],
-				["Reich", Color(0.64, 0.18, 0.13, 0.95), 5.0],
-			]
+	var styles := MapModesScript.border_styles(map_mode)
+	var rows: Array = []
+	if map_mode == "terrain":
+		rows = [["Feste Königreichsgrenze",styles.kingdom[0],styles.kingdom[1]],["Feste Reichsgrenze",styles.empire[0],styles.empire[1]]]
+	elif map_mode == "titles":
+		rows = [["Angestammte " + {"duchy":"Herzogtümer","kingdom":"Königreiche","empire":"Reiche"}[title_level],styles[title_level][0],styles[title_level][1]]]
+	else:
+		rows = [["Tatsächliche Hausgrenze",styles.owner[0],styles.owner[1]]]
+	return rows
 
 func _draw_legend(map_rect: Rect2, font: Font) -> void:
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	var w := 246.0
-	var h := 124.0
-	if map_mode == "terrain":
-		h = 134.0
-	elif map_mode == "development":
-		h = 78.0
-	elif map_mode == "war":
-		h = 118.0
-	var box := Rect2(map_rect.position + Vector2(12, 92), Vector2(w, h))
-	draw_rect(box, Color(0.06, 0.05, 0.03, 0.89), true)
-	draw_rect(box, Color(0.72, 0.57, 0.30, 0.92), false, 1.0)
-	draw_string(font, box.position + Vector2(8, 15), "KARTE · %s" % mode_title(), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.98, 0.86, 0.58))
-	if map_mode == "terrain":
-		for i in TERRAIN_ORDER.size():
-			var key: String = str(TERRAIN_ORDER[i])
-			var info: Dictionary = _terrain_info(key)
-			var col: int = i % 3
-			var row: int = int(i / 3)
-			var origin: Vector2 = box.position + Vector2(8 + col * 79, 23 + row * 22)
-			var tex: Texture2D = _terrain_tex.get(key)
-			if tex != null:
-				draw_texture_rect(tex, Rect2(origin, Vector2(18, 18)), false, Color(1, 1, 1, 0.97))
-			else:
-				draw_rect(Rect2(origin + Vector2(2, 2), Vector2(14, 14)), info["color"], true)
-			draw_string(font, origin + Vector2(22, 14), str(info["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.94, 0.90, 0.80))
-		draw_line(box.position + Vector2(8, h - 34), box.position + Vector2(32, h - 34), Color(0.18, 0.45, 0.58, 0.9), 2.0)
-		draw_string(font, box.position + Vector2(38, h - 31), "Flüsse · Geländesymbole", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.82, 0.88, 0.86))
-		draw_string(font, box.position + Vector2(8, h - 12), "Symbole zeigen den Geländetyp", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.76, 0.70, 0.58))
-	elif map_mode == "development":
-		for i in 5:
-			var t: float = float(i) / 4.0
-			var c: Color = Color(0.30, 0.24, 0.18).lerp(Color(0.83, 0.70, 0.32), t)
-			draw_rect(Rect2(box.position + Vector2(8 + i * 42, 30), Vector2(40, 12)), c, true)
-		draw_string(font, box.position + Vector2(8, 57), "niedrig", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.82, 0.78, 0.68))
-		draw_string(font, box.position + Vector2(176, 57), "hoch", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.96, 0.86, 0.58))
-		draw_string(font, box.position + Vector2(8, 69), "Entwicklungsstufe 1–10", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.82, 0.88, 0.86))
-	elif map_mode == "war":
-		draw_circle(box.position + Vector2(14, 33), 7.0, Color(0.55, 0.10, 0.06, 0.92))
-		draw_arc(box.position + Vector2(14, 33), 7.0, 0.0, TAU, 16, Color(1.0, 0.83, 0.44, 0.95), 1.2, true)
-		draw_string(font, box.position + Vector2(28, 37), "Belagerung / Kriegsstand", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.92, 0.88, 0.78))
-		draw_line(box.position + Vector2(12, 58), box.position + Vector2(42, 58), Color(0.64, 0.18, 0.13, 0.95), 5.0)
-		draw_string(font, box.position + Vector2(52, 62), "Reichsgrenze", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.92, 0.88, 0.78))
-		draw_line(box.position + Vector2(12, 79), box.position + Vector2(42, 79), Color(0.98, 0.84, 0.45, 0.95), 4.0)
-		draw_string(font, box.position + Vector2(52, 83), "Grenze zwischen Häusern", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.92, 0.88, 0.78))
-		draw_circle(box.position + Vector2(14, 100), 7.0, Color(0.20, 0.36, 0.44, 0.94))
-		draw_arc(box.position + Vector2(14, 100), 7.0, 0.0, TAU, 16, Color(0.86, 0.68, 0.32, 0.95), 1.5, true)
-		draw_string(font, box.position + Vector2(28, 104), "Flotte / Blockade", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.92, 0.88, 0.78))
-	else:
-		var rows: Array = _legend_rows()
-		for i in rows.size():
-			var row: Array = rows[i]
-			var yy: float = 31.0 + i * 16.0
-			draw_line(box.position + Vector2(12, yy), box.position + Vector2(42, yy), row[1], float(row[2]))
-			draw_string(font, box.position + Vector2(52, yy + 4), str(row[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.92, 0.88, 0.78))
-		draw_string(font, box.position + Vector2(8, h - 8), "Hellgold: ausgewähltes Spielgebiet", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(0.98, 0.90, 0.62))
+	draw_set_transform(Vector2.ZERO,0,Vector2.ONE)
+	var ui_scale: float = preload("res://scripts/ModernInterface.gd").text_scale
+	var rows := _legend_rows()
+	var explanations: Array = {
+		"political":["Flächen: aktueller Hausbesitz","Eroberungen verschieben diese Grenzen"],
+		"terrain":["Relief, Flüsse und Geländesymbole","Titelgrenzen bleiben bei Eroberung fest"],
+		"titles":["Rechtsebene oben umschalten","Titelgebiet und Besitz können abweichen"],
+		"economy":["Rot → Gelb → Grün: weniger → mehr","Farbe: Landsertrag und Entwicklung","Straßen: gebaut oder im Bau"],
+		"war":["Grün: eigene Spielregionen","Orange: aktuell angreifbare Gebiete","Grau: weitere Gebiete · Ringe: Belagerung"],
+	}[map_mode]
+	var w := minf(320.0*ui_scale,size.x-24)
+	var h := (36.0 + (rows.size()+explanations.size())*20.0)*ui_scale
+	var origin := map_rect.position.max(Vector2.ZERO)+Vector2(12,12)
+	origin.x = clampf(origin.x,8,maxf(8,size.x-w-8))
+	origin.y = clampf(origin.y,8,maxf(8,size.y-h-8))
+	var box := Rect2(origin,Vector2(w,h))
+	draw_rect(box,Color(.045,.055,.055,.94))
+	draw_rect(box,Color(.72,.61,.38,.65),false,1)
+	var fs := int(round(12*ui_scale))
+	draw_string(font,origin+Vector2(10,20)*ui_scale,"KARTE · "+mode_title(),HORIZONTAL_ALIGNMENT_LEFT,w-20,fs,CREAM)
+	var y := 43.0*ui_scale
+	for row in rows:
+		draw_line(origin+Vector2(10*ui_scale,y-4*ui_scale),origin+Vector2(34*ui_scale,y-4*ui_scale),row[1],float(row[2])*ui_scale,true)
+		draw_string(font,origin+Vector2(42*ui_scale,y),str(row[0]),HORIZONTAL_ALIGNMENT_LEFT,w-52*ui_scale,fs,CREAM)
+		y += 20*ui_scale
+	for line in explanations:
+		draw_string(font,origin+Vector2(10*ui_scale,y),str(line),HORIZONTAL_ALIGNMENT_LEFT,w-20*ui_scale,fs,Color("d7cfbc"))
+		y += 20*ui_scale
 
 func _gui_input(event: InputEvent) -> void:
 	if game == null:

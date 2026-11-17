@@ -128,7 +128,39 @@ static func event(game) -> Dictionary:
 	var options: Array = []
 	for opt in ev.get("options", []):
 		options.append({"label": str(opt["label"]), "chips": _effect_chips(opt.get("effects", {}))})
-	return {"id": str(ev.get("id", "")), "title": str(ev["title"]), "text": str(ev["text"]), "options": options}
+	return {"id": str(ev.get("id", "")), "art":str(ev.get("art", "")), "title": str(ev["title"]), "text": str(ev["text"]), "options": options}
+
+static func province(game, id: String) -> Dictionary:
+	var p: Dictionary = game.province(id)
+	if p.is_empty():
+		return {}
+	var owner := int(p.owner)
+	var own: bool = owner == game.player
+	var capacity: Dictionary = game.region_capacity(p)
+	var buildings: Array = []
+	for entry in [["market","Markt","Zusätzlicher jährlicher Ertrag entsprechend der Regionskapazität."], ["barracks","Kaserne","Verstärkt das örtliche Aufgebot entsprechend der Regionskapazität."], ["walls","Mauern","Zusätzliche örtliche Verteidigung; höhere Stufen verstärken sie."]]:
+		var key := str(entry[0])
+		var level := int(p.get("buildings", {}).get(key, 0))
+		var cost: int = game.building_cost(key, id)
+		var reason := "" if game.can_build(id, key) else ("Fremdes Eigentum" if not own else ("Höchste Stufe erreicht" if level >= 3 else "Nicht genug Gold"))
+		buildings.append({"key":key,"name":entry[1],"level":level,"cost":cost,"effect":entry[2],"reason":reason,"enabled":reason.is_empty()})
+	var armies: Array = []
+	var fleets: Array = []
+	for h in game.houses:
+		for army in h.get("armies", []):
+			if str(army.get("province", "")) == id:
+				armies.append({"house":h.name,"strength":army.strength,"morale":army.get("morale",100),"upkeep":army.get("upkeep",0)})
+		for fleet in h.get("fleets", []):
+			if str(fleet.get("station", fleet.get("province", ""))) == id:
+				fleets.append({"house":h.name,"ships":fleet.get("ships",0)})
+	var legacies: Array = []
+	for track in ["war", "crown", "guile"]:
+		var info: Dictionary = game.legacy_track_info(track)
+		legacies.append({"id":track,"name":info.get("name",track),"effect":info.get("effect",""),"level":game.legacy_level(track,owner)})
+	return {"id":id,"name":str(p.name),"owner":str(game.houses[owner].name),"owner_index":owner,"own":own,
+		"terrain":p.get("terrain_name","Ebenen"),"defense":p.get("defense",0),"terrain_defense":p.get("terrain_defense",0),"supply":game.army_supply_capacity(id,owner),
+		"income":game.region_income(p),"development":p.dev,"levy":p.levy,"capacity":capacity,"buildings":buildings,"armies":armies,"fleets":fleets,"army_upkeep_total":game.army_upkeep(owner),"coastal":game.is_coastal(id),
+		"research":game.research_choices(owner,id),"legacies":legacies,"siege":p.get("siege",0),"blockade":p.get("blockade",0),"kingdom":p.get("kingdom_name",""),"empire":p.get("empire_name","")}
 
 const EFFECT_NAMES := {
 	"gold": ["Gold", 1], "prestige": ["Prestige", 1], "legitimacy": ["Legitimität", 1],

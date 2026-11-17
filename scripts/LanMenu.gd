@@ -2,6 +2,8 @@ extends Control
 ## Deutsche, rollbare WLAN-Lobby. Die festen Aktionen bleiben erreichbar.
 
 const Appearance = preload("res://scripts/ModernInterface.gd")
+const Design = preload("res://scripts/HouseDesign.gd")
+const DesignerDialog = preload("res://scripts/HouseDesignerDialog.gd")
 var main
 var session
 var card: PanelContainer
@@ -24,8 +26,13 @@ var join_button: Button
 var resume_button: Button
 var save_button: Button
 var lobby_button: Button
+var design_button: Button
+var existing_button: Button
+var design_preview: Label
+var designer
 var _updating := false
 var _room_signature := ""
+var _house_signature := ""
 
 func install(owner, network) -> void:
 	main = owner
@@ -76,6 +83,12 @@ func install(owner, network) -> void:
 		house_picker.add_item(str(house.name))
 	house_picker.item_selected.connect(_choose_house)
 	body.add_child(house_picker)
+	design_button = main._button("Eigenes Haus · Reich & Armee gestalten", _open_designer)
+	design_button.name = "LanHouseDesignerButton"
+	body.add_child(design_button)
+	existing_button = main._button("Zum vorhandenen Haus zurück", _clear_design)
+	body.add_child(existing_button)
+	design_preview = _text("")
 	_text("Spielport · auf allen Geräten gleich")
 	port_box = SpinBox.new()
 	port_box.min_value = 1024
@@ -141,12 +154,17 @@ func _field(label: String, value: String) -> LineEdit:
 func show_menu() -> void:
 	visible = true
 	move_to_front()
-	main.kernel.push_modal("lan")
+	var designing: bool = is_instance_valid(designer) and designer.visible
+	if not designing:
+		main.kernel.push_modal("lan")
 	refresh()
+	if designing:
+		designer.move_to_front()
 	if session.phase == "idle":
 		session.search_rooms()
 
 func hide_menu() -> void:
+	if is_instance_valid(designer): designer.cancel()
 	if session.phase in ["idle", "connecting", "lobby", "disconnected"]:
 		session.close_session("WLAN-Lobby verlassen.")
 		if main.game != null and not main.game.human_houses.is_empty():
@@ -181,7 +199,32 @@ func _return_to_lobby() -> void:
 
 func _choose_house(index: int) -> void:
 	if not _updating and session.phase == "lobby":
-		_present(session.choose_house(index))
+		_present(session.choose_house(int(house_picker.get_item_metadata(index))))
+
+func _open_designer() -> void:
+	if session.phase != "lobby" or session.is_resuming() or is_instance_valid(designer):
+		return
+	var own: Dictionary = session.players.get(session.local_peer_id,{})
+	if bool(own.get("ready",false)) and not session.is_host:
+		_present({"message":"Bitte zuerst die Bereitschaft zurücknehmen, um dein Haus zu gestalten."})
+		return
+	var draft: Dictionary = own.get("design",{}).duplicate(true)
+	if draft.is_empty():
+		draft = Design.defaults(main.DataScript)
+		for region in Design.catalog(main.DataScript):
+			var blocked := false
+			for peer in session.players:
+				if int(peer) == session.local_peer_id: continue
+				var other: Dictionary = session.players[peer].get("design",{})
+				if (other.is_empty() and int(session.players[peer].house) == int(region.owner)) or (not other.is_empty() and other.province == region.id): blocked = true
+			if not blocked:
+				draft.province = str(region.id)
+				break
+	designer = DesignerDialog.new()
+	designer.configure(main,draft,func(profile: Dictionary): _present(session.submit_design(profile)))
+
+func _clear_design() -> void:
+	_present(session.clear_design())
 
 func _toggle_ready() -> void:
 	var own: Dictionary = session.players.get(session.local_peer_id, {})
@@ -193,6 +236,7 @@ func _present(result: Dictionary) -> void:
 	refresh()
 
 func _started() -> void:
+	if is_instance_valid(designer): designer.cancel()
 	visible = false
 	main.kernel.pop_modal("lan")
 
@@ -211,6 +255,14 @@ func refresh() -> void:
 	address.editable = inactive
 	port_box.editable = inactive
 	house_picker.disabled = not lobby and not inactive
+	var catalog: Array = session.house_catalog()
+	var house_signature := JSON.stringify(catalog)
+	if house_signature != _house_signature:
+		_house_signature = house_signature
+		house_picker.clear()
+		for entry in catalog:
+			house_picker.add_item(str(entry.name))
+			house_picker.set_item_metadata(house_picker.item_count-1,int(entry.id))
 	var local_house: int = session.local_house()
 	if lobby and local_house >= 0 and local_house < house_picker.item_count:
 		house_picker.select(local_house)
@@ -219,18 +271,38 @@ func refresh() -> void:
 		for peer in session.players:
 			if int(peer) != session.local_peer_id and int(session.players[peer].house) == index:
 				occupied = true
-		house_picker.set_item_disabled(index, occupied)
+		house_picker.set_item_disabled(index, occupied or not bool(catalog[index].get("selectable",true)))
 	var names: PackedStringArray = []
 	var all_ready: bool = session.players.size() >= 2
 	for peer in session.players:
 		var player: Dictionary = session.players[peer]
 		var index: int = int(player.house)
-		var house_name := str(main.DataScript.houses()[index].name) if index >= 0 and index < house_picker.item_count else "Sitz wählen"
+		var player_draft: Dictionary = player.get("design",{})
+		var house_name := str(catalog[index].name) if index >= 0 and index < catalog.size() else "Sitz wählen"
+		if not player_draft.is_empty(): house_name = str(player_draft.house)
 		names.append("%s · %s · %s" % [player.name, house_name, "bereit" if player.ready else "noch nicht bereit"])
 		all_ready = all_ready and bool(player.ready)
 	players_label.text = "Spieler: %d / 4\n%s" % [session.players.size(), "\n".join(names)] if not names.is_empty() else "Noch keiner Partie beigetreten."
 	ready_button.visible = lobby and not session.is_host
 	var own: Dictionary = session.players.get(session.local_peer_id, {})
+	var draft: Dictionary = own.get("design",{})
+	var resuming: bool = session.is_resuming()
+	design_button.disabled = not lobby or resuming or (bool(own.get("ready",false)) and not session.is_host)
+	design_button.tooltip_text = "Bei einer Fortsetzung bleiben die gespeicherten Häuser unverändert." if resuming else "Vor der Gestaltung die Bereitschaft zurücknehmen."
+	existing_button.visible = lobby and not resuming and not draft.is_empty()
+	house_picker.tooltip_text = "Vorhandenes Ausgangshaus. Ein bestätigter eigener Entwurf hat Vorrang, bis du zurückwechselst." if not draft.is_empty() else "Ein freies Haus auswählen."
+	if not draft.is_empty() and not resuming:
+		var home_name := str(draft.land).strip_edges()
+		if home_name.is_empty():
+			for region in Design.catalog(main.DataScript):
+				if region.id == draft.province:
+					home_name = str(region.name)
+					break
+		design_preview.text = "Bestätigter Entwurf: %s · %s\nHeimat: %s · Armee: %s" % [draft.house,draft.ruler,home_name,DesignerDialog.DOCTRINE_NAMES[Design.DOCTRINES.find(draft.doctrine)]]
+	elif resuming:
+		design_preview.text = "Fortsetzung: Namen, Heimat und Armeeprofil kommen aus dem gespeicherten Spielstand."
+	else:
+		design_preview.text = "Öffne oder betrete eine Lobby, um ein eigenes Haus mit Heimatregion und Armeeprofil zu gründen."
 	ready_button.text = "Bereitschaft zurücknehmen" if own.get("ready", false) else "Bereit"
 	start_button.visible = session.is_host and lobby
 	start_button.disabled = not (lobby and session.is_host and all_ready)

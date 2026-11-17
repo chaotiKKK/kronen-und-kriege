@@ -88,3 +88,16 @@ Aktiver Checkout: `F:\Crusader Kings III v1.18.3\banger-queens-recovery-20261117
 5. Finale EXE und APK 1.8.0 gebaut und statisch geprüft. Exportierte EXE: 368 Runtime-Prüfungen plus 66 Prüfungen mit zwei ENet-Prozessen. Android-Emulator: eigener Charakter und Speichern per Geräteeingabe, Datei mit 108 Regionen und korrektem Schema/Hash bestätigt.
 
 Abnahmegrenzen: physisches Poco und echtes Smartphone-WLAN offen; etwa 11,7 FPS beim 4×-Kartenschwenk im PC-Benchmark; Android-Emulator rund 3 GiB PSS einschließlich Swap. Signaturschlüssel der vorhandenen APK 1.6.1 fehlt; dadurch ist die neue APK kein direktes Update über diese Fassung. Bericht: `docs/releases/1.8.0.md`, endgültige Belege: `build/verify/release-180-final/`.
+
+## Folgeauftrag 1.9.0 – Strategieansichten und gestaltbare WLAN-Häuser
+
+- Fünf getrennte Kartenpolitiken, feste Rechtsgrenzen im Gelände, zusammengefasste Rechtstitelansicht und sofortiger Provinzinspektor umgesetzt.
+- Örtliche Bau-/Heeres-/Forschungs-/Vermächtnisansichten; Datei- und Lobbyverwaltung in den Optionen; Weltseite bereinigt.
+- 16 Innovationen mit realen Regelwirkungen, 32 kontextabhängige Ereignisse, vier ausgewogene Armeedoktrinen.
+- Gemeinsamer Einzelspieler-/WLAN-Hausdesigner, autoritative Heimatreservierung, dynamische Haussitze, Protokoll 3 und getrennte lokale Altdateimigration.
+- Stabile Hofverwaltung mit sichtbaren Kosten, Unterhalt, Sperrgründen und Bestätigungen; Fokus und Aktionsinstanzen bleiben beim Refresh erhalten.
+- 61/61 Godot-Suiten nach drei belegten Nachläufen, 36.003 Prüfungen. Ursprüngliche Fehlerlogs bleiben erhalten; `build/verify/release-190/regression-reconciled.json` hält die Zusammenführung fest.
+- Erstpakete statisch geprüft: 628 PCK-/743 APK-Einträge; EXE 371 Laufzeitprüfungen und zwei getrennte ENet-Prozesse 66 Prüfungen. Separater Funktionsprüfer 49 Prüfungen und sieben Aufnahmen.
+- Abschluss: 200%-SpinBox-Schrift rot/grün korrigiert, finale EXE/APK gebaut, 51+371+66 Paketprüfungen und Android-Geräteeingaben mit gespeicherten echten Aktionswerten nachgewiesen. Bericht: docs/releases/1.9.0.md; finale Belege: build/verify/release-190-final2. Downloads und Quellcommit werden abschließend hashgebunden übergeben.
+
+Koordination: drei isolierte Feature-Worker und ein unabhängiger Abschlussprüfer; Root besitzt Integration, Builds und ausschließlich den eigenen Emulator. Poco bleibt unbenutzt. Keine Änderungen am 108-Regionen-Katalog oder der Atlasgeometrie.

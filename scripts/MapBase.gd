@@ -12,6 +12,7 @@ const RELIEF_SHADER := preload("res://shaders/map_relief.gdshader")
 var host
 var _relief_overlay: TextureRect
 var _relief_material: ShaderMaterial
+var border_counts: Dictionary = {}
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -62,34 +63,20 @@ func _draw() -> void:
 				var b: Vector2 = pts[(i + 1) % pts.size()]
 				var nid: String = str(host._edge_neighbor.get("%s|%d|%d" % [p["id"], pi, i], ""))
 				var q: Dictionary = host.game.province(nid) if nid != "" else {}
-				var key := "province"
-				if q.is_empty():
-					key = "coast"
-				elif str(p["empire"]) != str(q["empire"]):
-					key = "empire"
-				elif int(p["owner"]) != int(q["owner"]):
-					key = "owner"
-				elif str(p["kingdom"]) != str(q["kingdom"]):
-					key = "kingdom"
-				elif str(p["duchy"]) != str(q["duchy"]):
-					key = "duchy"
+				var key: String = host.MapModesScript.border_key(p, q, host.map_mode, host.title_level)
 				var seg: Array = border_batches[key]
 				seg.append(a)
 				seg.append(b)
 	var screen_scale: float = maxf(0.1, float(host._fit()[0]))
-	var border_style := {
-		"province": [Color(0.16, 0.18, 0.13, 0.20), 0.55],
-		"duchy": [Color(0.32, 0.30, 0.20, 0.38), 0.8],
-		"kingdom": [Color(0.50, 0.40, 0.23, 0.68), 1.1],
-		"owner": [Color(0.95, 0.82, 0.49, 0.85), 1.6],
-		"empire": [Color(0.31, 0.25, 0.16, 0.78), 2.0],
-		"coast": [Color(0.14, 0.23, 0.23, 0.48), 0.65],
-	}
+	var border_style: Dictionary = host.MapModesScript.border_styles(host.map_mode)
+	border_counts.clear()
 	for key in ["province", "duchy", "kingdom", "owner", "empire", "coast"]:
 		var points := PackedVector2Array(border_batches[key])
+		border_counts[key] = points.size() / 2
 		if points.size() >= 2:
 			var style: Array = border_style[key]
-			draw_multiline(points, style[0], float(style[1]) / screen_scale, true)
+			if float(style[1]) > 0:
+				draw_multiline(points, style[0], float(style[1]) / screen_scale, true)
 
 	if host.selected != "":
 		var sel: Dictionary = host.game.province(host.selected)

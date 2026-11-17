@@ -1,19 +1,25 @@
-# Save-Schema 12 und Migration
+# Save-Schema 13 und Migration
 
-> Dokumentversion: 8.0
-> Stand: 2026-11-09
-> Aktuelles Schema: 12
+> Dokumentversion: 9.0
+> Stand: 2026-11-17
+> Aktuelles Schema: 13
 > Status: implementiert und getestet
 
 ## Datei
 
 `user://spielstand.json` wird von `Main._save()` über `Game.snapshot()` geschrieben und von `Main._load()` über `Game.restore()` gelesen. Schema, Migration, Validierung und Diff liegen ausschließlich in `scripts/SaveGame.gd`.
 
-## Schema 12: Banger Queens
+## Schema 13: 108 Spielregionen
+
+Seit 1.8.0 kennzeichnen `world_layout=regions108` und `region_catalog_hash` die vollständige Regionswelt. `RegionMigration.gd` ordnet alte 49-Gebiete-Stände zu, erhält Wirtschafts- und Truppensummen und archiviert das alte Provinz-/Straßeninventar. `SaveStore.gd` sichert Originalbytes vor der Migration; bestehende abweichende Backups bleiben bestehen. Erst ein ausdrückliches Speichern ersetzt die Hauptdatei über eine validierte temporäre Datei. Siehe [Migrations- und Paketbelege 1.8.0](releases/1.8.0.md).
+
+1.9.0 erweitert die erlaubten Forschungsdefinitionen auf 16. Alte Kennungen `surveying` und `road_building` bleiben unverändert. Häuser erhalten additiv `doctrine` (Standard `balanced`) und eine begrenzte `event_history`; alte Stände behalten ihre laufenden Ereignisse und Forschung. Für lokale WLAN-Dateien wird der gültige 1.8-Katalog getrennt vom neuen Drahtprotokoll 3 migriert und bytegleich als `.pre-design-v2.bak` gesichert. Eine alte Netzwerkversion kann dadurch nicht dem neuen Netzspiel beitreten.
+
+## Schema 12: Banger Queens (historischer Einführungsschritt)
 
 Kalenderfelder: `calendar_version = 1`, `month_index` (Januar 2000 v. Chr. = 0; Dezember 2200 = 50399) und `campaign_sandbox`. Jahr null wird ausgelassen. Die Umstellung alter Saves erhält vergangene Dauer und Fristen: altes Jahr 0 wird 1 n. Chr., altes Jahr 1 wird 2 n. Chr.; `_now()` bleibt für bestehende absolute Fristen einsbasiert.
 
-Forschung liegt pro Haus in `research = {known, active, months}`. Aktuell sind `surveying` und `road_building` definiert. `roads[]` enthält sortierte Endpunkte `from/to`, `builder`, `months` und `state` (`building`/`complete`). Unbekannte Innovationen, fehlende Voraussetzungen, doppelte oder nicht benachbarte Verbindungen sowie widersprüchliche Datums-/Indexfelder werden abgewiesen. Altdaten bekommen leere Forschung und ein leeres Straßennetz. Aktuelle Saves dürfen diese Felder nicht still verlieren.
+Forschung liegt pro Haus in `research = {known, active, months}`. Schema 12 führte `surveying` und `road_building` ein. `roads[]` enthält sortierte Endpunkte `from/to`, `builder`, `months` und `state` (`building`/`complete`). Unbekannte Innovationen, fehlende Voraussetzungen, doppelte oder nicht benachbarte Verbindungen sowie widersprüchliche Datums-/Indexfelder werden abgewiesen. Altdaten bekommen leere Forschung und ein leeres Straßennetz. Aktuelle Saves dürfen diese Felder nicht still verlieren.
 
 `CampaignTest` und `InfrastructureTest` prüfen diese Erweiterungen zusätzlich zu den bestehenden Migrationsprüfungen. Die folgenden Abschnitte dokumentieren die schrittweise Entstehung der älteren Schemas.
 

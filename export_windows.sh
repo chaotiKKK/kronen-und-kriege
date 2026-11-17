@@ -29,6 +29,10 @@ command -v "$PYTHON_EXE" >/dev/null || fail "Python fehlt: $PYTHON_EXE (übersch
 # Vorlagenkopie vorbereitet. Die verpackte Spiel-EXE wird nicht nachbearbeitet.
 "$PYTHON_EXE" "$HERE/tools/prepare_windows_export_template.py" --project "$HERE"
 mkdir -p "$(dirname "$TARGET")"
+# Diagnose-Sandboxes und lokale SDKs sind keine Projektressourcen. Auch
+# Exportfilter verhindern nicht deren vorherigen Editor-/Abhängigkeitsscan.
+mkdir -p "$HERE/build"
+touch "$TOOLS/.gdignore" "$HERE/build/.gdignore"
 BUILD_APPDATA="$TOOLS/appdata"
 if command -v cygpath >/dev/null; then BUILD_APPDATA=$(cygpath -m "$BUILD_APPDATA"); fi
 

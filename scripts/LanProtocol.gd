@@ -1,7 +1,7 @@
 extends RefCounted
 ## Kleines, ausdrücklich typisiertes LAN-Protokoll. Keine Objektdekodierung.
 
-const VERSION := 2
+const VERSION := 3
 const GAME_PORT := 28741
 const DISCOVERY_PORT := 28740
 const MAX_PLAYERS := 4
