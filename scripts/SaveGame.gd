@@ -18,7 +18,7 @@ extends RefCounted
 ## erhält alle vorhandenen Felder und ergänzt nur neue Pflichtfelder mit
 ## deterministischen Defaults. Sie überschreibt keine unbekannten Felder.
 
-const CURRENT_VERSION := 14
+const CURRENT_VERSION := 15
 const RegionMigrationScript = preload("res://scripts/RegionMigration.gd")
 const CalendarScript = preload("res://scripts/CampaignCalendar.gd")
 const InfrastructureScript = preload("res://scripts/Infrastructure.gd")
@@ -73,6 +73,7 @@ static func migrate(data: Dictionary) -> Dictionary:
 	var from_version: int = int(out.get("schema_version", 1))
 	errors.append_array(_siege_dates(out))
 	errors.append_array(_focus_fields(out,from_version >= 14))
+	errors.append_array(_naval_dates(out,from_version >= 15))
 	if not errors.is_empty():
 		return {"ok":false,"data":out,"from_version":from_version,"to_version":CURRENT_VERSION,"errors":errors}
 	if from_version < 1:
@@ -143,6 +144,7 @@ static func make_current(data: Dictionary) -> Dictionary:
 static func validate(data: Dictionary) -> Array:
 	var errors: Array = []
 	errors.append_array(_siege_dates(data))
+	errors.append_array(_naval_dates(data,true))
 	# Pflichtfelder am Rohstand prüfen, bevor migrate() Defaults ergänzt.
 	# Sonst würde validate() einen Feldverlust nie bemerken.
 	if int(data.get("schema_version", 0)) != CURRENT_VERSION:
@@ -589,6 +591,8 @@ static func _migrate_claims(raw) -> Array:
 					"strength": clampi(int(item.get("strength", 1)), 1, 5),
 					"expires": int(item.get("expires", 0)),
 				})
+				if not item.has("expires"):
+					out[-1].erase("expires")
 	return out
 
 static func _focus_fields(data: Dictionary, required: bool) -> Array:
@@ -638,6 +642,30 @@ static func _siege_dates(data: Dictionary) -> Array:
 				var v = army.last_siege_month
 				if not (v is int or v is float) or not floor(v)==v or v<0 or v>now:
 					errors.append("Ungültiger Belagerungszeitpunkt.")
+	return errors
+
+static func _naval_dates(data: Dictionary, required: bool) -> Array:
+	var errors: Array = []
+	var year := int(data.get("year",-2000))
+	if int(data.get("calendar_version",0)) == 0 and year >= 0:
+		year += 1
+	var now := CalendarScript.to_index(year,int(data.get("month",1))) + 1
+	var raw_houses = data.get("houses",[])
+	if not raw_houses is Array: return errors
+	for house in raw_houses:
+		if not house is Dictionary: continue
+		var fleets = house.get("fleets",[])
+		if not fleets is Array:
+			errors.append("Flotten müssen als Liste gespeichert sein.")
+			continue
+		for fleet in fleets:
+			if not fleet is Dictionary:
+				errors.append("Ungültiger Flotteneintrag.")
+				continue
+			if required or fleet.has("last_naval_month"):
+				var used = fleet.get("last_naval_month")
+				if not (used is int or used is float) or not is_finite(float(used)) or floor(used) != used or used < -1 or used == 0 or used > now:
+					errors.append("Ungültiger oder fehlender Flottenaktionsmonat.")
 	return errors
 
 static func _migrate_armies(raw) -> Array:
@@ -690,6 +718,7 @@ static func _migrate_fleets(raw) -> Array:
 					"ships": ships,
 					"upkeep": clampi(int(item.get("upkeep", maxi(1, int(ceil(float(ships) / 10.0))))), 0, 10),
 					"morale": clampi(int(item.get("morale", 100)), 0, 100),
+					"last_naval_month": int(item.get("last_naval_month",-1)),
 				})
 	return out
 

@@ -201,6 +201,13 @@ func _route(id: String, command: Dictionary) -> Dictionary:
 			if selection == "":
 				return _blocked("invalid", "Keine Provinz als Marschziel gewählt.")
 			raw = game.march_army(selection)
+		"transport_army":
+			if selection == "":
+				return _blocked("invalid", "Keine Küste als Landungsziel gewählt.")
+			raw = game.transport_army(selection)
+			# Aufgelöste Versuche protokolliert Game selbst. Reine Abweisungen
+			# dürfen auch über Kernel/Netzwerk keine Historymutation erzeugen.
+			log_result = false
 		"siege":
 			if selection == "":
 				return _blocked("invalid", "Keine Provinz gewählt.")
@@ -239,13 +246,16 @@ func _finish(raw: Dictionary, before: Dictionary, refresh: Array, log_result: bo
 	var message := str(raw.get("msg", ""))
 	if log_result and message != "":
 		game.note(message)
-	return {
+	var result := {
 		"ok": ok,
 		"code": "ok" if ok else "blocked",
 		"message": message,
 		"delta": _delta(before, _digest()),
 		"refresh": refresh.duplicate(),
 	}
+	for key in ["landed","blockaded"]:
+		if raw.has(key): result[key] = bool(raw[key])
+	return result
 
 func _blocked(code: String, message: String) -> Dictionary:
 	return {

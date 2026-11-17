@@ -921,6 +921,7 @@ func _free_army_rect(origin: Vector2, placed: Array) -> Rect2:
 	return best
 
 func _draw_war_markers(s: float, off: Vector2, font: Font) -> void:
+	_draw_naval_route()
 	for p in game.provinces:
 		var siege: int = int(p.get("siege", 0))
 		if siege <= 0:
@@ -948,8 +949,8 @@ func _draw_war_markers(s: float, off: Vector2, font: Font) -> void:
 		draw_string(font,panel.position+Vector2(6,27),"Moral %d · %s" % [int(marker.morale),"dein Heer" if own else "fremd"],HORIZONTAL_ALIGNMENT_LEFT,90,9,CREAM)
 		army_markers_drawn.append(marker)
 		atlas_obstacles.append(panel)
-	# Flotten stehen im Kriegsmodus an ihrem Heimathafen oder vor der blockierten
-	# Küste. Der Ring trägt die Hausfarbe, die Zahl die Schiffszahl.
+	# Flotten stehen an ihrer tatsächlichen Station: operativer Stützpunkt oder
+	# blockierte Küste. Der Ring trägt die Hausfarbe, die Zahl die Schiffszahl.
 	for house_index in game.houses.size():
 		var house_color: Color = game.houses[house_index].get("color", Color(0.7, 0.5, 0.2))
 		for fleet in game.houses[house_index].get("fleets", []):
@@ -977,6 +978,33 @@ func _draw_war_markers(s: float, off: Vector2, font: Font) -> void:
 			draw_arc(pos, 15.0, 0.0, TAU, 20, ring_color, 2.0, true)
 			draw_string(font, label_pos, "%d" % ships, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(1.0, 0.96, 0.86))
 
+func naval_route_overlay() -> Dictionary:
+	if game==null or map_mode!="war" or selected.is_empty(): return {}
+	var preview: Dictionary = game.naval_transport_preview(selected)
+	if str(preview.get("route_id","")).is_empty(): return {}
+	var fit := _fit()
+	var points := PackedVector2Array()
+	for point in preview.route_points: points.append(point*float(fit[0])+fit[1])
+	return {"route_id":preview.route_id,"origin":preview.origin,"target":preview.target,
+		"map_points":preview.route_points,"points":points,"ready":preview.ok,"reason":preview.reason}
+
+func _draw_naval_route() -> void:
+	var overlay := naval_route_overlay()
+	if overlay.is_empty(): return
+	var points: PackedVector2Array = overlay.points
+	var color := Color(GOLD,0.95 if overlay.ready else 0.55)
+	for index in range(1,points.size()):
+		draw_line(points[index-1],points[index],Color(.05,.045,.025,.85),4.0,true)
+		draw_line(points[index-1],points[index],color,2.0,true)
+	for point in [points[0],points[points.size()-1]]:
+		draw_circle(point,4.0,Color(.05,.045,.025,.9))
+		draw_circle(point,2.5,color)
+	var end: Vector2 = points[points.size()-1]
+	var direction: Vector2 = (end-points[points.size()-2]).normalized()
+	var side := Vector2(-direction.y,direction.x)
+	draw_line(end,end-direction*9+side*4,color,2.0,true)
+	draw_line(end,end-direction*9-side*4,color,2.0,true)
+
 func _legend_rows() -> Array:
 	var styles := MapModesScript.border_styles(map_mode)
 	var rows: Array = []
@@ -997,7 +1025,7 @@ func _draw_legend(map_rect: Rect2, font: Font) -> void:
 		"terrain":["Relief, Flüsse und Geländesymbole","Titelgrenzen bleiben bei Eroberung fest"],
 		"titles":["Rechtsebene oben umschalten","Titelgebiet und Besitz können abweichen"],
 		"economy":["Rot → Gelb → Grün: weniger → mehr","Schilder: Kornkammer oder Handelsort","Straßen grün: eigenes Transportnetz","Straßen rot: Versorgung unterbrochen","Gestrichelt: Straße noch im Bau"],
-		"war":["Grün: eigene Spielregionen","Orange: aktuell angreifbare Gebiete","Grau: weitere Gebiete · Ringe: Belagerung"],
+		"war":["Grün: eigene Spielregionen","Orange: aktuell angreifbare Gebiete","Grau: weitere Gebiete · Ringe: Belagerung","Goldene Linie: gewählter geprüfter Seeweg"],
 	}[map_mode]
 	var w := minf(320.0*ui_scale,size.x-24)
 	var h := (36.0 + (rows.size()+explanations.size())*20.0)*ui_scale

@@ -1,0 +1,91 @@
+{
+  "kind": "genuine-old-context-wessex-fleet-save",
+  "created_utc": "2026-11-17T19:34:34.810941+00:00",
+  "fixture": {
+    "path": "tests/fixtures/wessex-context-schema14-fleet-original.json",
+    "bytes": 68395,
+    "sha256": "718510a7355b856962070c8a63022634bf89f04a82e27daf051d6778e75f56ff"
+  },
+  "source": {
+    "path": "build/verify/naval-gameplay/legacy-fleet-export/wessex-context-schema14-fleet-original.json",
+    "bytes": 68395,
+    "sha256": "718510a7355b856962070c8a63022634bf89f04a82e27daf051d6778e75f56ff"
+  },
+  "executable_sha256": "76b66e2c2a1786aa9e94c8dafb8cc001bcb86b82f39a32a0514398a66f43e6fa",
+  "actual_pid": 49204,
+  "actual_exit_code": 0,
+  "source_model_checks": 14,
+  "legal_initial_gold": 120,
+  "fleet_cost": 60,
+  "army_cost": 50,
+  "final_gold": 10,
+  "no_state_injection": true,
+  "schema": 14,
+  "main_scene_used": false,
+  "isolated_empty_cwd": "F:\\Crusader Kings III v1.18.3\\banger-queens-recovery-20261117\\build\\verify\\naval-gameplay\\legacy-fleet-export\\empty-work",
+  "source_result": {
+    "army": {
+      "id": 1,
+      "morale": 100,
+      "province": "britannien__03",
+      "strength": 438,
+      "upkeep": 1
+    },
+    "checks": 14,
+    "executable": "F:/Crusader Kings III v1.18.3/banger-queens-recovery-20261117/build/exports/banger-queens-1.9.1-context.exe",
+    "failures": 0,
+    "fleet": {
+      "id": 1,
+      "morale": 100,
+      "province": "britannien__03",
+      "ships": 18,
+      "station": "britannien__03",
+      "upkeep": 2
+    },
+    "gold": 10,
+    "house": 2,
+    "house_name": "Haus Wessex",
+    "month_index": 0,
+    "passed": true,
+    "schema": 14,
+    "scope": "Actual frozen old Context EXE; Game model only, regular120gold, real fleet60+army50, no Main, no time advance or state injection",
+    "snapshot_path": "F:\\Crusader Kings III v1.18.3\\banger-queens-recovery-20261117\\build\\verify\\naval-gameplay\\legacy-fleet-export/wessex-context-schema14-fleet-original.json"
+  },
+  "evidence": {
+    "result.json": {
+      "path": "build/verify/naval-gameplay/legacy-fleet-export/result.json",
+      "bytes": 833,
+      "sha256": "eb1e620044bee6acfa7c8f8a11ce549f0a8b2b965a5c0dade5fea4456782bfb3"
+    },
+    "launch.json": {
+      "path": "build/verify/naval-gameplay/legacy-fleet-export/launch.json",
+      "bytes": 1411,
+      "sha256": "488bcb2f75d5c1156840e685f00d7126e31b8c21295307b587af7191e4fea907"
+    },
+    "produce-old-fleet.gd": {
+      "path": "build/verify/naval-gameplay/legacy-fleet-export/produce-old-fleet.gd",
+      "bytes": 2883,
+      "sha256": "2fbf7b668af8a896d8dcb89a43e641f447d29200a8bcd2bc824fee5a3b64fe94"
+    },
+    "runtime.godot.log": {
+      "path": "build/verify/naval-gameplay/legacy-fleet-export/runtime.godot.log",
+      "bytes": 106,
+      "sha256": "1fa5875dfcf78fa68ddb4533db288184f94e2f985da69cca64d69d1d58546473"
+    },
+    "runtime.stdout.log": {
+      "path": "build/verify/naval-gameplay/legacy-fleet-export/runtime.stdout.log",
+      "bytes": 109,
+      "sha256": "637c63950b9e0f65bbaff22dca6ae0ee3b5e0c83941eb594b62b7169c2f5a77b"
+    },
+    "runtime.stderr.log": {
+      "path": "build/verify/naval-gameplay/legacy-fleet-export/runtime.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "source_commit": "071f5ae0cdeb39198902549e14c1414799af97e9",
+  "limitations": [
+    "Only the legal fleet and army commands were executed; no transport existed in this old binary.",
+    "The old save contains no last_naval_month field. No metadata was manually relabelled."
+  ]
+}

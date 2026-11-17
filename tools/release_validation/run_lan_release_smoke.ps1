@@ -1,6 +1,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$Exe,
     [string]$ExpectedVersion = '1.9.1',
+    [ValidateRange(1, 999)][int]$ExpectedSchema = 15,
     [ValidateRange(0, 65535)][int]$Port = 0,
     [ValidateRange(10, 180)][int]$PhaseTimeoutSeconds = 120,
     [ValidateRange(30, 600)][int]$OverallTimeoutSeconds = 300,
@@ -41,7 +42,7 @@ foreach ($role in @('host', 'guest')) {
     foreach ($path in @($work, $appdata, $localdata, $temporary)) { New-Item -ItemType Directory -Path $path | Out-Null }
     $expectations = [ordered]@{
         run_id = $runId; role = $role; output = $outputPath.Replace('\', '/');
-        profile = $profile.Replace('\', '/'); version = $ExpectedVersion; exe_sha256 = $exeHash; schema_version = 14;
+        profile = $profile.Replace('\', '/'); version = $ExpectedVersion; exe_sha256 = $exeHash; schema_version = $ExpectedSchema;
         port = $Port; phase_timeout_ms = $PhaseTimeoutSeconds * 1000; overall_timeout_ms = $OverallTimeoutSeconds * 1000
     }
     $expectedJson = ConvertTo-Json -InputObject $expectations -Compress -Depth 8
@@ -173,7 +174,7 @@ try {
             throw "Ergebnisidentität stimmt nicht: $($role.Role)"
         }
         if ($report.checks -lt 20 -or $report.failures.Count -ne 0 -or -not $report.observed.references_current) { throw "Unvollständiger oder fehlgeschlagener Main-Paketnachweis: $($role.Role)" }
-        if ($report.observed.schema_version -ne 14 -or -not $report.observed.focus_verified -or -not $report.observed.army_commands_verified -or -not $report.observed.schema14_resume_verified) { throw "Fokus, Armee oder Schema14-Fortsetzung wurden nicht vollständig nachgewiesen: $($role.Role)" }
+        if ($report.observed.schema_version -ne $ExpectedSchema -or -not $report.observed.focus_verified -or -not $report.observed.army_commands_verified -or -not $report.observed.current_schema_resume_verified) { throw "Fokus, Armee oder aktuelle Schema-Fortsetzung wurden nicht vollständig nachgewiesen: $($role.Role)" }
         $runtimeLog = Get-Content -LiteralPath $role.Log -Raw -Encoding utf8
         $stdout = $role.StdoutTask.Result
         $stderr = $role.StderrTask.Result
@@ -199,7 +200,8 @@ try {
         exe = $exePath; exe_sha256 = $exeHash; host_pid = $roles.host.Process.Id; guest_pid = $roles.guest.Process.Id;
         checks = $hostReport.checks + $guestReport.checks; world_hash = $hostReport.observed.world_hash;
         isolated_profiles = $true; real_enet_between_processes = $true; real_main_dispatch = $true;
-        province_focus_verified = $true; select_army_and_march_verified = $true; schema14_save_resume_verified = $true;
+        province_focus_verified = $true; select_army_and_march_verified = $true; current_schema_save_resume_verified = $true;
+        schema_version = [int]$hostReport.observed.schema_version;
         physical_android_wlan_test = $false; output = $outputPath }
     $summary | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $outputPath 'summary.json') -Encoding utf8
     $succeeded = $true

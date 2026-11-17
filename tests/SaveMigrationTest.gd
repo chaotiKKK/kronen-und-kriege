@@ -52,7 +52,7 @@ func _ready() -> void:
 	h["secrets"].append({"id": "s1", "target": 1, "kind": "scandal", "known": true})
 	h["claims"].append({"province": "lugdunum", "strength": 2, "expires": 240})
 	h["armies"].append({"id": 1, "province": "cantium", "strength": 420, "upkeep": 2, "morale": 91})
-	h["fleets"].append({"id": 1, "province": "cantium", "station": "cantium", "ships": 12, "upkeep": 2, "morale": 88})
+	h["fleets"].append({"id": 1, "province": "cantium", "station": "cantium", "ships": 12, "upkeep": 2, "morale": 88, "last_naval_month": -1})
 	h["truces"]["1"] = 99
 	var owned: Array = source.owned()
 	_check(not owned.is_empty(), "Haus 2 besitzt keine Provinz.")

@@ -116,7 +116,7 @@ func _test_sandbox() -> void:
 func _test_migration() -> void:
 	var g = Game.new(Regions,0)
 	var s: Dictionary = g.snapshot()
-	check(int(s.schema_version) == 14,"Snapshot verwendet Schema14")
+	check(int(s.schema_version) == Save.CURRENT_VERSION,"Snapshot verwendet das aktuelle Schema")
 	var old: Dictionary = s.duplicate(true)
 	old.schema_version = 13
 	for p in old.provinces:

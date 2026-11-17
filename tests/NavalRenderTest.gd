@@ -15,6 +15,7 @@ func _ready() -> void:
 	if DisplayServer.get_name() == "headless":
 		_fail("NavalRenderTest braucht ein echtes Fenster")
 		return
+	print("NAVALRENDERTEST WINDOW position=%s screen=%d screen_origin=%s" % [DisplayServer.window_get_position(),DisplayServer.window_get_current_screen(),DisplayServer.screen_get_position(DisplayServer.window_get_current_screen())])
 	main = load(MAIN_SCENE).instantiate()
 	add_child(main)
 	await get_tree().process_frame
@@ -82,6 +83,8 @@ func _run() -> void:
 	if capture_target.is_empty():
 		_fail("Kein sichtbares Küstenziel für den Eroberungsfall gefunden.")
 		return
+	if not _advance_blockade_month(capture_target, "nach Frieden"):
+		return
 	blocked = _dispatch_on(capture_target, "blockade")
 	if not _expect(bool(blocked.get("ok", false)), "Blockade für den Eroberungsfall scheiterte: %s" % str(blocked.get("message", ""))):
 		return
@@ -102,6 +105,8 @@ func _run() -> void:
 	if sink_target.is_empty():
 		_fail("Kein sichtbares Küstenziel für den Versenkungsfall gefunden.")
 		return
+	if not _advance_blockade_month(sink_target, "nach Eroberung"):
+		return
 	blocked = _dispatch_on(sink_target, "blockade")
 	if not _expect(bool(blocked.get("ok", false)), "Blockade für den Versenkungsfall scheiterte: %s" % str(blocked.get("message", ""))):
 		return
@@ -119,6 +124,30 @@ func _run() -> void:
 
 	print("NAVALRENDERTEST OK: Kriegskarte, sichtbarer unit_fleet-Marker mit Hausfarbenring, %d Schiffen und Provinzposition; Marker verschwindet nach Frieden, Eroberung und Versenkung; %d Prüfungen." % [ships, _checks])
 	get_tree().quit(0)
+
+func _advance_blockade_month(target: Dictionary, phase: String) -> bool:
+	var before: Dictionary = game.snapshot()
+	var used_month := int(game.fleet_for().get("last_naval_month",-1))
+	var current_month: int = game._now()
+	var direct: Dictionary = game.blockade(str(target.id))
+	if not _expect(not bool(direct.get("ok",false)) and game.snapshot()==before,"Die Modellabweisung %s verändert im selben Monat keinen Welt- oder persönlichen Spielwert." % phase):
+		return false
+	var rejected: Dictionary = _dispatch_on(target, "blockade")
+	var message := str(rejected.get("message",rejected.get("msg","")))
+	# UiKernel._finish documents the rejected command in the existing log.
+	# Admit exactly that one note and compare every other snapshot field.
+	var expected: Dictionary = before.duplicate(true)
+	expected.log.append(message)
+	while expected.log.size()>10: expected.log.pop_front()
+	if not _expect(not bool(rejected.get("ok",false)) and game.snapshot()==expected,"UI-Abweisung %s ergänzt ausschließlich die tatsächliche Fehlermeldung in der Chronik." % phase):
+		return false
+	if not _expect(message.contains("Monat") and used_month==current_month,"Die echte Flotten-Monatswache sperrt die Folgeblockade %s." % phase):
+		return false
+	game.advance_month()
+	if not _expect(game._now()==current_month+1 and int(game.fleet_for().get("last_naval_month",-1))==used_month,"Regulärer Folgemonat %s erhält statt Zurücksetzen die benutzte Flottenmarke." % phase):
+		return false
+	print("NAVALRENDERTEST MONTH %s: used=%d before=%d after=%d" % [phase,used_month,current_month,game._now()])
+	return true
 
 func _check_marker(province: Dictionary, ships: int, image: Image, baseline: Image, phase: String) -> Dictionary:
 	var marker := _marker_for(str(province["id"]))

@@ -214,6 +214,10 @@ static func migrate_state(source: Dictionary) -> Dictionary:
 				if not successors.has(id):
 					return _failure(source, "Eine alte Einheit hat einen unbekannten Standort.")
 				unit.province = ports[id] if group == "fleets" else successors[id]
+				if group == "fleets" and not unit.has("last_naval_month"):
+					if int(source.get("schema_version",1)) >= 15:
+						return _failure(source,"Der aktuelle Flottenaktionsmonat fehlt.")
+					unit["last_naval_month"] = -1
 				if unit.has("station"):
 					var station := str(unit.station)
 					if not ports.has(station):
@@ -262,7 +266,9 @@ static func migrate_state(source: Dictionary) -> Dictionary:
 		road["legacy_connection"] = true
 		road["migration_origin"] = index
 		report.roads.append({"from":a,"to":b,"new_from":road.from,"new_to":road.to})
-	out["schema_version"] = 14
+	# SaveGame preloads this converter. Resolve its version at call time to
+	# avoid a preload cycle and a stale hardcoded schema after future upgrades.
+	out["schema_version"] = int(load("res://scripts/SaveGame.gd").CURRENT_VERSION)
 	out["world_layout"] = "regions108"
 	out["region_catalog_hash"] = Regions.catalog_hash()
 	out["migration_report"] = report

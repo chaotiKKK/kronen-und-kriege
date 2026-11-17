@@ -90,6 +90,13 @@ HEADLESS=(
 	UiKernelTest
 	EventArtTest
 	NavalTest
+	NavalRouteTest
+	NavalTransportTest
+	NavalCommandTest
+	NavalSaveTest
+	NavalCampaignTest
+	NavalExpeditionTest
+	NavalAiIntegrationTest
 	CouncilTest
 	CouncilUiTest
 	CourtTest
@@ -103,6 +110,7 @@ HEADLESS=(
 # CourtShotTest gehört ebenfalls hierher; es war zuvor nicht registriert.
 WINDOWED=(
 	ProvinceContextTest
+	ProvinceActionContextTest
 	MiniMapCacheTest
 	ProvinceEconomyUiTest
 	WarInteractionTest
@@ -119,6 +127,7 @@ WINDOWED=(
 	ShotTest
 	TitleShot
 	NavalRenderTest
+	NavalTransportUiTest
 	MapPerfTest
 	FaithShotTest
 	CourtShotTest

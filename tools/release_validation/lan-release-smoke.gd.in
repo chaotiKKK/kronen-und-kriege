@@ -36,7 +36,7 @@ func _run() -> void:
 		return
 	protocol = load("res://scripts/LanProtocol.gd")
 	var save_format = load("res://scripts/SaveGame.gd")
-	if not _check(save_format != null and int(save_format.CURRENT_VERSION) == int(expected.schema_version), "Das Paket besitzt nicht das erwartete Save-Schema14."):
+	if not _check(save_format != null and int(save_format.CURRENT_VERSION) == int(expected.schema_version), "Das Paket besitzt nicht das erwartete Speicherformat."):
 		_finish()
 		return
 	var scene = load("res://scenes/Main.tscn")
@@ -277,14 +277,14 @@ func _host_save_resume(actions: Dictionary) -> bool:
 	var before_hash := str(protocol.world_hash(main.game.snapshot()))
 	main.lan_menu.save_button.pressed.emit()
 	var saved = JSON.parse_string(FileAccess.get_file_as_string("user://lan_partie.json"))
-	if not _check(saved is Dictionary and int(saved.get("state",{}).get("schema_version",0))==14 and saved.get("fingerprint")==session._fingerprint,"Produktiver Speichernbutton schreibt keinen aktuellen Schema14-WLAN-Stand."):
+	if not _check(saved is Dictionary and int(saved.get("state",{}).get("schema_version",0))==int(expected.schema_version) and saved.get("fingerprint")==session._fingerprint,"Produktiver Speichernbutton schreibt keinen aktuellen WLAN-Stand."):
 		return false
 	_check(protocol.world_hash(saved.state)==before_hash,"Gespeicherte Paketwelt unterscheidet sich vom bestätigten Hoststand.")
 	main.lan_menu.lobby_button.pressed.emit()
 	if not await _until(func(): return session.phase=="lobby", "Produktive Rückkehr zur Fortsetzungslobby"):
 		return false
 	var loaded: Dictionary = session.load_host_lobby()
-	if not _check(bool(loaded.get("ok",false)) and session.is_resuming(),"Der echte gespeicherte Schema14-Stand kann nicht geladen werden."):
+	if not _check(bool(loaded.get("ok",false)) and session.is_resuming(),"Der echte gespeicherte aktuelles Schema-Stand kann nicht geladen werden."):
 		return false
 	_check(protocol.world_hash(session.game.snapshot())==before_hash,"Laden verändert den Fokus-/Armee-Spielstand.")
 	_write_marker("loaded")
@@ -295,20 +295,20 @@ func _host_save_resume(actions: Dictionary) -> bool:
 		return true, "Beide Prozesse zur gespeicherten Fortsetzung bereit"):
 		return false
 	main.lan_menu.start_button.pressed.emit()
-	if not await _until(func(): return session.phase=="playing" and main.game==session.game,"Produktive Schema14-Fortsetzung"):
+	if not await _until(func(): return session.phase=="playing" and main.game==session.game,"Produktive aktuelles Schema-Fortsetzung"):
 		return false
 	_check_references(0)
 	_check(protocol.world_hash(main.game.snapshot())==before_hash,"Wiederaufgenommene Paketwelt änderte ihren Inhalt.")
 	_check(str(main.game.province(str(actions.focus_province)).economic_focus)=="agriculture" and int(main.game.houses[1].armies[0].id)==int(actions.army_id) and str(main.game.houses[1].armies[0].province)==str(actions.march_to),"Fokus, Armeewahl oder Marschziel gehen beim Fortsetzen verloren.")
 	observed["focus_verified"] = true
 	observed["army_commands_verified"] = true
-	observed["schema14_resume_verified"] = true
+	observed["current_schema_resume_verified"] = true
 	_write_marker("resumed")
 	return await _until(func(): return _marker_exists("guest","resume-verified"),"Gast prüft gespeicherte Fokus-/Marschbindung")
 
 func _guest_save_resume(actions: Dictionary) -> bool:
 	var session = main.lan_session
-	if not await _until(func(): return session.phase=="lobby" and session.is_resuming(),"Gast erhält Schema14-Fortsetzungslobby"):
+	if not await _until(func(): return session.phase=="lobby" and session.is_resuming(),"Gast erhält aktuelles Schema-Fortsetzungslobby"):
 		return false
 	if not await _until(func(): return _marker_exists("host","loaded"),"Host hat den tatsächlichen Paketspielstand geladen"):
 		return false
@@ -318,7 +318,7 @@ func _guest_save_resume(actions: Dictionary) -> bool:
 	if not await _until(func(): return _marker_exists("host","resumed"),"Host bestätigt gespeicherte Fortsetzung"):
 		return false
 	_check_references(1)
-	_check(main.game.snapshot().schema_version==14 and str(main.game.province(str(actions.focus_province)).economic_focus)=="agriculture" and int(main.game.province(str(actions.focus_province)).focus_changed_month)==int(actions.focus_changed_month),"Gast verlor Schema14 oder Schwerpunktbindung nach Laden.")
+	_check(main.game.snapshot().schema_version==int(expected.schema_version) and str(main.game.province(str(actions.focus_province)).economic_focus)=="agriculture" and int(main.game.province(str(actions.focus_province)).focus_changed_month)==int(actions.focus_changed_month),"Gast verlor aktuelles Schema oder Schwerpunktbindung nach Laden.")
 	_check(int(main.game.houses[1].armies[0].id)==int(actions.army_id) and str(main.game.houses[1].armies[0].province)==str(actions.march_to),"Gast verlor gespeicherte Armeewahl oder Marschposition.")
 	var before_hash := str(protocol.world_hash(main.game.snapshot()))
 	main._on_province_selected(str(actions.focus_province))
@@ -327,7 +327,7 @@ func _guest_save_resume(actions: Dictionary) -> bool:
 	main._on_province_selected(str(actions.march_from))
 	result = await _guest_command({"id":"march"},"Gespeicherte monatliche Marschsperre")
 	_check(not bool(result.get("ok",true)) and protocol.world_hash(main.game.snapshot())==before_hash,"Save/Resume umgeht die Monatsgrenze oder verändert abgewiesene Befehle.")
-	observed["schema14_resume_verified"] = true
+	observed["current_schema_resume_verified"] = true
 	_write_marker("resume-verified")
 	return true
 

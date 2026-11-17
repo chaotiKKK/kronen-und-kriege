@@ -246,7 +246,7 @@ func _save_roundtrip(game) -> void:
 	var save = load("res://scripts/SaveGame.gd")
 	var path := output.path_join("gameplay-schema14-save.json")
 	var state: Dictionary = game.snapshot()
-	_check(int(state.schema_version) == 14,"Budgeted gameplay snapshot uses schema14")
+	_check(int(state.schema_version) == 15,"Budgeted gameplay snapshot uses schema15")
 	_check(store.write_snapshot(path,state),"Embedded SaveStore writes actual schema14JSON")
 	var loaded: Dictionary = store.load_snapshot(path)
 	if not _check(loaded.ok,"Embedded SaveStore reloads written schema14JSON"): return
@@ -310,7 +310,7 @@ func _check(ok: bool,label: String) -> bool:
 	return ok
 
 func _finish() -> void:
-	var report := {"passed":failures == 0,"version":str(ProjectSettings.get_setting("application/config/version")),"schema":14,"checks":results.size(),"failures":failures,"results":results,"screenshots":screenshots,"elapsed_ms":Time.get_ticks_msec()-started_ms,"omitted_screenshots":omitted_screenshots,"render_validation":"not_run_headless" if DisplayServer.get_name() == "headless" else "rendered_root_viewport","resource_scope":"source CLI only" if source_probe else "res resources embedded in the launched release executable","executable":OS.get_executable_path(),"engine":Engine.get_version_info().string,"viewport":[root.get_visible_rect().size.x,root.get_visible_rect().size.y],"evidence":evidence,"limitations":"Local deterministic package/CLI probe; no physical Android or WLAN claim. Controlled interruption fixture is separate from normal and budgeted progression."}
+	var report := {"passed":failures == 0,"version":str(ProjectSettings.get_setting("application/config/version")),"schema":15,"checks":results.size(),"failures":failures,"results":results,"screenshots":screenshots,"elapsed_ms":Time.get_ticks_msec()-started_ms,"omitted_screenshots":omitted_screenshots,"render_validation":"not_run_headless" if DisplayServer.get_name() == "headless" else "rendered_root_viewport","resource_scope":"source CLI only" if source_probe else "res resources embedded in the launched release executable","executable":OS.get_executable_path(),"engine":Engine.get_version_info().string,"viewport":[root.get_visible_rect().size.x,root.get_visible_rect().size.y],"evidence":evidence,"limitations":"Local deterministic package/CLI probe; no physical Android or WLAN claim. Controlled interruption fixture is separate from normal and budgeted progression."}
 	var f := FileAccess.open(output.path_join("gameplay-result.json"),FileAccess.WRITE)
 	if f == null:
 		push_error("Cannot write gameplay-result.json")

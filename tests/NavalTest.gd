@@ -114,7 +114,7 @@ func _test_naval_battle() -> bool:
 	var defender: int = int(target["owner"])
 	g.houses[defender]["fleets"] = [{
 		"id": 1, "province": str(target["id"]), "station": str(target["id"]),
-		"ships": 6, "upkeep": 1, "morale": 100,
+		"ships": 6, "upkeep": 1, "morale": 100, "last_naval_month": -1,
 	}]
 	g.attack_roll_override = 2.0
 	var won: Dictionary = g.blockade(str(target["id"]))
@@ -132,12 +132,12 @@ func _test_naval_battle() -> bool:
 	var lost_defender: int = int(lost_target["owner"])
 	lost.houses[lost_defender]["fleets"] = [{
 		"id": 1, "province": str(lost_target["id"]), "station": str(lost_target["id"]),
-		"ships": 30, "upkeep": 3, "morale": 100,
+		"ships": 30, "upkeep": 3, "morale": 100, "last_naval_month": -1,
 	}]
 	var ships_before: int = int(lost.fleet_for(lost.player).get("ships", 0))
 	lost.attack_roll_override = 0.1
 	var defeat: Dictionary = lost.blockade(str(lost_target["id"]))
-	_check(not bool(defeat["ok"]), "Seeniederlage wurde als Erfolg gewertet.")
+	_check(bool(defeat["ok"]) and not bool(defeat.get("blockaded",true)), "Aufgelöste Seeniederlage muss Verluste mit blockaded=false bestätigen.")
 	_check(int(lost_target.get("blockade", 0)) == 0, "Seeniederlage errichtet eine Blockade.")
 	var survivor: Dictionary = lost.fleet_for(lost.player)
 	_check(survivor.is_empty() or int(survivor.get("ships", 0)) < ships_before, "Seeniederlage kostet keine Schiffe.")

@@ -16,6 +16,7 @@ const Discovery = preload("res://scripts/LanDiscovery.gd")
 const Design = preload("res://scripts/HouseDesign.gd")
 const Infrastructure = preload("res://scripts/Infrastructure.gd")
 const Economy = preload("res://scripts/ProvinceEconomy.gd")
+const Naval = preload("res://scripts/NavalTransport.gd")
 const TIMEOUT_MS := 8000
 # Tatsächlicher Fingerabdruck der veröffentlichten 1.9.0-Definitionen.
 # Der damalige Algorithmus band Ereignisse/Forschung, jedoch noch nicht FIELDS.
@@ -25,6 +26,9 @@ const LOCAL_UI_190_FINGERPRINT := "ca7c50860f0e76f19153a6f985117ac8de7277a0f3559
 # Herkunft: tests/fixtures/lan-191-gameplay-schema14-provenance.json.
 # Ausschließlich lokale Dateien; der Peer-Handshake bleibt unverändert strikt.
 const LOCAL_GAMEPLAY_191_FINGERPRINT := "fcc2237b4e44b454f78a0a0721cc10ca7167289ec3c8d01ae49a455b2c98c9d3"
+# Genuine context schema14 file and immutable packaged-run provenance.
+# Local migration only; network handshakes never recognize old identities.
+const LOCAL_CONTEXT_191_FINGERPRINT := "49efe0af83dff5e58b98eff1d9e2978a8200f835562ac0202da13b036ac884a6"
 static var _cached_fingerprints: Dictionary = {}
 
 var phase := "idle"
@@ -71,13 +75,17 @@ func _init(data_script = null, fingerprint_override: String = "") -> void:
 	_fingerprint = fingerprint_override if fingerprint_override != "" else _content_fingerprint()
 
 func _content_fingerprint() -> String:
-	var cache_key := str(_data.resource_path)
+	var route_fingerprint: String = Naval.shared_routes().fingerprint()
+	if route_fingerprint.is_empty():
+		return ""
+	var cache_key := str(_data.resource_path)+"|"+route_fingerprint+"|"+JSON.stringify(Save.canonical(Naval.RULES))
 	if _cached_fingerprints.has(cache_key):
 		return str(_cached_fingerprints[cache_key])
 	var content := {"schema":Save.CURRENT_VERSION, "protocol":Protocol.VERSION,
 		"houses":_data.houses(), "provinces":_data.provinces(), "adjacency":_data.adjacency(),
 		"events":_data.events(), "innovations":Infrastructure.INNOVATIONS, "commands":Protocol.FIELDS,
-		"province_economy":{"foci":Economy.FOCI,"lock_months":Economy.LOCK_MONTHS}}
+		"province_economy":{"foci":Economy.FOCI,"lock_months":Economy.LOCK_MONTHS},
+		"naval_transport":{"rules":Naval.RULES,"route_fingerprint":route_fingerprint}}
 	for path in ["res://data/atlas.json", "res://data/atlas_geometry.bin", "res://data/europe_geometry.json"]:
 		var digest := FileAccess.get_sha256(path)
 		if digest == "":
@@ -395,23 +403,36 @@ func _protect_save_target(path: String) -> Dictionary:
 	var current_schema := Protocol.integer(envelope.state.get("schema_version"),Save.CURRENT_VERSION,Save.CURRENT_VERSION)
 	if current_schema and Protocol.handshake_error(envelope,_app,_fingerprint).is_empty():
 		return _success()
-	# Same narrow historical identification as the local load path. Unknown
-	# targets are never silently replaced, even when they contain parseable JSON.
-	var suffix := ""
-	var file_app := str(envelope.get("app",""))
-	var matching_catalog: bool = _data.has_method("catalog_hash") and str(envelope.state.get("world_layout","")) == "regions108" and str(envelope.state.get("region_catalog_hash","")) == _data.catalog_hash()
+	# Both local paths identify exactly the same historical sources. Unknown
+	# targets remain untouched even if their JSON can otherwise migrate.
 	if envelope.get("fingerprint") == _fingerprint:
 		return _failure("Fingerabdruck und vorhandenes Speicherformat widersprechen sich.")
-	if _data.has_method("catalog_hash") and Protocol.integer(envelope.get("v"),1,1) and file_app.begins_with("1.7.") and str(envelope.state.get("world_layout","")) != "regions108":
-		suffix = ".pre-regions-v1.bak"
-	elif _app == "1.9.1" and Save.CURRENT_VERSION == 14 and file_app in ["1.9.0","1.9.1"] and matching_catalog and Protocol.integer(envelope.get("v"),3,3) and Protocol.integer(envelope.state.get("schema_version"),13,13) and envelope.get("fingerprint") == LOCAL_UI_190_FINGERPRINT:
-		suffix = ".pre-ui191.bak" if file_app == "1.9.0" else ".pre-economy-schema13.bak"
-	elif _is_previous_gameplay_file(envelope, matching_catalog):
-		suffix = ".pre-choice-guards-v14.bak"
-	elif matching_catalog and file_app.begins_with("1.8.") and Protocol.integer(envelope.get("v"),2,Protocol.VERSION) and Protocol.integer(envelope.state.get("schema_version"),13,Save.CURRENT_VERSION):
-		suffix = ".pre-design-v%d.bak" % int(envelope.v)
-	if suffix == "":
+	var matching_catalog: bool = _data.has_method("catalog_hash") and str(envelope.state.get("world_layout","")) == "regions108" and str(envelope.state.get("region_catalog_hash","")) == _data.catalog_hash()
+	var suffix := _local_legacy_backup_suffix(envelope,matching_catalog)
+	if suffix.is_empty():
 		return _failure("Das vorhandene WLAN-Speicherformat ist unbekannt und bleibt erhalten.")
+	return _ensure_local_backup(path,original,suffix)
+
+func _is_previous_gameplay_file(envelope: Dictionary, matching_catalog: bool) -> bool:
+	return _app == "1.9.1" and Save.CURRENT_VERSION >= 14 and str(envelope.get("app", "")) == "1.9.1" and matching_catalog and Protocol.integer(envelope.get("v"), 3, 3) and Protocol.integer(envelope.state.get("schema_version"), 14, 14) and envelope.get("fingerprint") == LOCAL_GAMEPLAY_191_FINGERPRINT
+
+func _local_legacy_backup_suffix(envelope: Dictionary, matching_catalog: bool) -> String:
+	var file_app := str(envelope.get("app",""))
+	if _data.has_method("catalog_hash") and Protocol.integer(envelope.get("v"),1,1) and file_app.begins_with("1.7.") and str(envelope.state.get("world_layout","")) != "regions108":
+		return ".pre-regions-v1.bak"
+	if _app == "1.9.1" and Save.CURRENT_VERSION >= 14 and file_app in ["1.9.0","1.9.1"] and matching_catalog and Protocol.integer(envelope.get("v"),3,3) and Protocol.integer(envelope.state.get("schema_version"),13,13) and envelope.get("fingerprint") == LOCAL_UI_190_FINGERPRINT:
+		return ".pre-ui191.bak" if file_app == "1.9.0" else ".pre-economy-schema13.bak"
+	if _is_previous_gameplay_file(envelope,matching_catalog):
+		return ".pre-choice-guards-v14.bak"
+	if _app == "1.9.1" and Save.CURRENT_VERSION >= 15 and file_app == "1.9.1" and matching_catalog and Protocol.integer(envelope.get("v"),3,3) and Protocol.integer(envelope.state.get("schema_version"),14,14) and envelope.get("fingerprint") == LOCAL_CONTEXT_191_FINGERPRINT:
+		return ".pre-naval-schema14.bak"
+	# 13/14 are source versions actually supported by the earlier regional
+	# family; increasing our target schema must not extend this source range.
+	if matching_catalog and file_app.begins_with("1.8.") and Protocol.integer(envelope.get("v"),2,Protocol.VERSION) and Protocol.integer(envelope.state.get("schema_version"),13,14):
+		return ".pre-design-v%d.bak" % int(envelope.v)
+	return ""
+
+func _ensure_local_backup(path: String, original: PackedByteArray, suffix: String) -> Dictionary:
 	var backup := path+suffix
 	if FileAccess.file_exists(backup) and FileAccess.get_file_as_bytes(backup) != original:
 		var context := HashingContext.new()
@@ -432,9 +453,6 @@ func _protect_save_target(path: String) -> Dictionary:
 		return _failure("Die Sicherung der WLAN-Zieldatei ist nicht bytegleich.")
 	return _success()
 
-func _is_previous_gameplay_file(envelope: Dictionary, matching_catalog: bool) -> bool:
-	return _app == "1.9.1" and Save.CURRENT_VERSION == 14 and str(envelope.get("app", "")) == "1.9.1" and matching_catalog and Protocol.integer(envelope.get("v"), 3, 3) and Protocol.integer(envelope.state.get("schema_version"), 14, 14) and envelope.get("fingerprint") == LOCAL_GAMEPLAY_191_FINGERPRINT
-
 func load_host_lobby(path: String = "user://lan_partie.json") -> Dictionary:
 	if not is_host or phase != "lobby":
 		return _failure("WLAN-Spielstände können nur in einer geöffneten Gastgeberlobby geladen werden.")
@@ -448,48 +466,24 @@ func load_host_lobby(path: String = "user://lan_partie.json") -> Dictionary:
 		return _failure("Der WLAN-Spielstand ist beschädigt.")
 	var error := Protocol.handshake_error(envelope, _app, _fingerprint)
 	# Local file migration only. Old network peers still fail the handshake.
-	var legacy_file: bool = _data.has_method("catalog_hash") and Protocol.integer(envelope.get("v"), 1, 1) and str(envelope.get("app", "")).begins_with("1.7.") and str(envelope.state.get("world_layout", "")) != "regions108"
 	var file_app := str(envelope.get("app", ""))
 	var current_schema := Protocol.integer(envelope.state.get("schema_version"),Save.CURRENT_VERSION,Save.CURRENT_VERSION)
 	# A current fingerprint cannot truthfully identify an old app/schema/wire.
 	if envelope.get("fingerprint") == _fingerprint and (file_app != _app or not current_schema or not Protocol.integer(envelope.get("v"),Protocol.VERSION,Protocol.VERSION)):
 		return _failure("Fingerabdruck und angegebenes Spielstandformat widersprechen sich.")
 	var matching_catalog: bool = _data.has_method("catalog_hash") and str(envelope.state.get("world_layout","")) == "regions108" and str(envelope.state.get("region_catalog_hash","")) == _data.catalog_hash()
-	var old_regional: bool = matching_catalog and file_app.begins_with("1.8.") and Protocol.integer(envelope.get("v"),2,Protocol.VERSION) and Protocol.integer(envelope.state.get("schema_version"),13,Save.CURRENT_VERSION)
-	# Both shipped executables wrote this actual schema13 fingerprint. Their
-	# local saves migrate; a same-app peer with the old content still cannot join.
-	var previous_economy: bool = _app == "1.9.1" and Save.CURRENT_VERSION == 14 and file_app in ["1.9.0","1.9.1"] and matching_catalog and Protocol.integer(envelope.get("v"),3,3) and Protocol.integer(envelope.state.get("schema_version"),13,13) and envelope.get("fingerprint") == LOCAL_UI_190_FINGERPRINT
-	var previous_gameplay := _is_previous_gameplay_file(envelope, matching_catalog)
-	if not current_schema and not legacy_file and not old_regional and not previous_economy and not previous_gameplay:
+	var suffix := _local_legacy_backup_suffix(envelope,matching_catalog)
+	if not current_schema and suffix.is_empty():
 		return _failure("Das ältere WLAN-Spielstandformat besitzt keinen belegten Migrationspfad.")
-	if error != "" and not legacy_file and not old_regional and not previous_economy and not previous_gameplay:
+	if error != "" and suffix.is_empty():
 		return _failure(error)
 	var restored = GameScript.new(_data, 0)
 	if not restored.restore(envelope.state) or restored.human_houses.size() < 2:
 		return _failure("Der WLAN-Spielstand enthält keine gültige gemeinsame Partie.")
-	if legacy_file or previous_economy or previous_gameplay or (old_regional and error != ""):
-		var suffix := ".pre-regions-v1.bak"
-		if previous_gameplay:
-			suffix = ".pre-choice-guards-v14.bak"
-		elif previous_economy:
-			suffix = ".pre-ui191.bak" if file_app == "1.9.0" else ".pre-economy-schema13.bak"
-		elif old_regional:
-			suffix = ".pre-design-v%d.bak" % int(envelope.get("v", 0))
-		var backup := path + suffix
-		if FileAccess.file_exists(backup) and FileAccess.get_file_as_bytes(backup) != original_bytes:
-			var context := HashingContext.new()
-			context.start(HashingContext.HASH_SHA256)
-			context.update(original_bytes)
-			backup = path + ".pre-regions-" + context.finish().hex_encode().substr(0,16) + ".bak"
-		if not FileAccess.file_exists(backup):
-			var backup_file := FileAccess.open(backup, FileAccess.WRITE)
-			if backup_file == null:
-				return _failure("Die alte WLAN-Partie konnte nicht gesichert werden.")
-			backup_file.store_buffer(original_bytes)
-			backup_file.flush()
-			backup_file.close()
-		if FileAccess.get_file_as_bytes(backup) != original_bytes:
-			return _failure("Die Sicherung der alten WLAN-Partie ist unvollständig.")
+	if not suffix.is_empty():
+		var protected := _ensure_local_backup(path,original_bytes,suffix)
+		if not protected.ok:
+			return protected
 	game = restored
 	game.speed = 0
 	_resume_state = game.snapshot()

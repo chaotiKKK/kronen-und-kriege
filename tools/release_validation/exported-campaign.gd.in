@@ -1,0 +1,14 @@
+extends SceneTree
+## External driver only. All game dependencies resolve inside the exported PCK.
+func _initialize() -> void:
+	var args := OS.get_cmdline_user_args()
+	if args.is_empty():
+		push_error("External campaign driver path is missing.")
+		quit(1)
+		return
+	var script = load(args[0])
+	if script == null:
+		push_error("External campaign driver could not be loaded.")
+		quit(1)
+		return
+	root.call_deferred("add_child",script.new())

@@ -103,18 +103,47 @@ func _ready() -> void:
 	check(host.start_match().ok, "Eigene Häuser wiederaufgenommen")
 	check(host.game.houses.size() == 11, "Fortsetzung gründet keine zusätzlichen Häuser")
 	check(host.return_to_lobby().ok, "Lokale Ladeprüfung in Lobby")
-	var old = JSON.parse_string(FileAccess.get_file_as_string(path))
+	var source_bytes := FileAccess.get_file_as_bytes(path)
+	var source: Dictionary = JSON.parse_string(source_bytes.get_string_from_utf8())
+	check(int(source.state.schema_version)==load("res://scripts/SaveGame.gd").CURRENT_VERSION and int(source.state.schema_version)>=15, "Quelle ist die tatsächlich erzeugte aktuelle Designer-Testpartie, keine historische Originaldatei")
+	# Explicitly controlled, derived compatibility fixture. It is not genuine
+	# 1.8 provenance: the old regional family supports source schemas13/14.
+	var old := source.duplicate(true)
 	old.v = 2
 	old.app = "1.8.0"
-	old.fingerprint = "previous-release"
+	old.fingerprint = "controlled-derived-regional-schema14"
+	old.state.schema_version = 14
+	var no_new_markers := true
+	for house in old.state.houses:
+		for fleet in house.fleets:
+			if fleet.has("last_naval_month"):
+				if int(fleet.last_naval_month)!=-1: no_new_markers = false
+				else: fleet.erase("last_naval_month")
+	var historical_ids: Array = []
+	for id in old.state.lan_human_houses: historical_ids.append(int(id))
+	check(no_new_markers and int(old.state.schema_version)==14 and old.state.houses.size()==11 and historical_ids==[9,10], "Kontrollierte abgeleitete Schema14-Quelle erhält elf echte Designerhäuser und die Menschen-IDs9/10")
+	# Merely relabelling the current schema as an older app must still fail.
+	var relabelled := source.duplicate(true)
+	relabelled.v = 2
+	relabelled.app = "1.8.0"
+	relabelled.fingerprint = "controlled-relabelled-current"
+	var bad_path := path+".relabelled-current-v2"
+	var bad_raw := JSON.stringify(relabelled).to_utf8_buffer()
+	var bad_file := FileAccess.open(bad_path,FileAccess.WRITE)
+	bad_file.store_buffer(bad_raw)
+	bad_file.close()
+	var live: Dictionary = host.game.snapshot()
+	check(not host.load_host_lobby(bad_path).ok and not host.save_host(bad_path).ok, "Nur umetikettierte Schema15-Datei wird beim lokalen Laden und direkten Überschreiben abgewiesen")
+	check(FileAccess.get_file_as_bytes(bad_path)==bad_raw and not FileAccess.file_exists(bad_path+".pre-design-v2.bak") and host.game.snapshot()==live, "Abgewiesene Schema15-Umetikettierung erhält Originalbytes und lebende Welt ohne historisches Backup")
 	var old_path := path + ".old-v2"
-	var raw := JSON.stringify(old)
+	var raw := JSON.stringify(old).to_utf8_buffer()
 	var old_file := FileAccess.open(old_path, FileAccess.WRITE)
-	old_file.store_string(raw)
+	old_file.store_buffer(raw)
 	old_file.close()
-	check(host.load_host_lobby(old_path).ok, "Alte lokale 1.8-Datei trotz neuem Drahtprotokoll ladbar")
-	check(FileAccess.get_file_as_string(old_path + ".pre-design-v2.bak") == raw, "Alte lokale 1.8-Datei bytegleich gesichert")
-	check(host.game.houses.size() == 11 and host.game.human_houses == [9,10], "Lokales Laden erhält eigene Häuser")
+	check(host.load_host_lobby(old_path).ok, "Kontrollierte abgeleitete lokale1.8-Schema14-Datei trotz neuem Drahtprotokoll ladbar")
+	check(FileAccess.get_file_as_bytes(old_path)==raw and FileAccess.get_file_as_bytes(old_path + ".pre-design-v2.bak") == raw, "Kontrollierte Schema14-Testdatei bleibt original und wird bytegleich gesichert")
+	check(host.game.houses.size() == 11 and host.game.human_houses == [9,10] and host.game.houses[9].name=="Haus Kupfer" and host.game.houses[10].ruler.name=="Bea II", "Lokales Laden erhält elf Häuser, beide Menschen-IDs und tatsächlich angenommene Entwürfe")
+	check(FileAccess.get_file_as_bytes(path)==source_bytes, "Die zugrunde liegende aktuelle Designer-Speicherdatei wird nicht als Historie umgeschrieben")
 	finish()
 
 func until(condition: Callable) -> bool:

@@ -1,4 +1,5 @@
 extends Node
+const Save = preload("res://scripts/SaveGame.gd")
 var checks := 0
 
 func _ready() -> void:
@@ -111,7 +112,7 @@ func _previous_economy_release() -> bool:
 	var session = load("res://scripts/LanSession.gd").new()
 	session.discovery_enabled = false
 	add_child(session)
-	if not check(load("res://scripts/SaveGame.gd").CURRENT_VERSION == 14 and envelope.state.schema_version == 13,"Wirtschaftsmigration wechselt tatsächlich von Schema13 nach14"):
+	if not check(Save.CURRENT_VERSION >= 14 and envelope.state.schema_version == 13,"Echter Wirtschaftsvorgänger bleibt Schema13 und migriert zum aktuellen Schema"):
 		return false
 	if not check(session.host("Schemafortsetzung","Host",0,49300+OS.get_process_id()%300).ok,"Eigene Gastgeberlobby für Wirtschaftsmigration"):
 		return false
@@ -122,7 +123,7 @@ func _previous_economy_release() -> bool:
 	var result: Dictionary = session.load_host_lobby(path)
 	if not check(result.ok,"Echte lokale1.9.1-Schema13-Partie migriert: "+str(result.message)):
 		return false
-	if not check(session.game.snapshot().schema_version == 14 and _without_economy(protocol,session.game.snapshot()) == _without_economy(protocol,envelope.state),"Migration ergänzt ausschließlich neue Wirtschaftsfelder"):
+	if not check(session.game.snapshot().schema_version == Save.CURRENT_VERSION and _without_economy(protocol,session.game.snapshot()) == _without_economy(protocol,envelope.state),"Migration ergänzt ausschließlich neue Wirtschafts- und unbenutzte Flottenfelder"):
 		return false
 	var defaults_valid := true
 	for province in session.game.provinces:
@@ -145,7 +146,7 @@ func _previous_economy_release() -> bool:
 			"protocol": rejected.v = 2
 			"future_app": rejected.app = "1.9.2"
 			"new_schema": rejected.state.schema_version = 14
-			"future_schema": rejected.state.schema_version = 15
+			"future_schema": rejected.state.schema_version = Save.CURRENT_VERSION + 1
 			"corrupt_state": rejected.state.lan_human_houses = [0,0]
 		var bad_path: String = path+"."+str(variant)
 		_write_bytes(bad_path,JSON.stringify(rejected).to_utf8_buffer())
@@ -156,7 +157,7 @@ func _previous_economy_release() -> bool:
 	if not check(session.save_host(path).ok,"Migrierte1.9.1-Datei wird aktuell gespeichert"):
 		return false
 	var current: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
-	if not check(current.app == "1.9.1" and current.state.schema_version == 14 and current.fingerprint == session._fingerprint and FileAccess.get_file_as_bytes(path+".pre-economy-schema13.bak") == original,"Aktuelles Speichern erneuert Schema/Hash und erhält ursprüngliche Bytes"):
+	if not check(current.app == "1.9.1" and current.state.schema_version == Save.CURRENT_VERSION and current.fingerprint == session._fingerprint and FileAccess.get_file_as_bytes(path+".pre-economy-schema13.bak") == original,"Aktuelles Speichern erneuert Schema/Hash und erhält ursprüngliche Bytes"):
 		return false
 	if not _direct_save_preservation(session):
 		return false
@@ -181,7 +182,7 @@ func _direct_save_preservation(session) -> bool:
 		if not check(FileAccess.get_file_as_bytes(path+suffix)==raw,"Nie geladene Altdatei wird vor Überschreiben bytegleich gesichert: "+str(index)):
 			return false
 		var current = JSON.parse_string(FileAccess.get_file_as_string(path))
-		if not check(current.state.schema_version==14 and current.fingerprint==session._fingerprint and session.game.snapshot()==live,"Direktes Speichern schreibt aktuelle Datei ohne Änderung der laufenden Welt"):
+		if not check(current.state.schema_version==Save.CURRENT_VERSION and current.fingerprint==session._fingerprint and session.game.snapshot()==live,"Direktes Speichern schreibt aktuelle Datei ohne Änderung der laufenden Welt"):
 			return false
 	var original := FileAccess.get_file_as_bytes(fixtures[0][0])
 	var collision := stem+"-collision.json"
@@ -263,9 +264,9 @@ func _previous_gameplay_release() -> bool:
 	var suffix := ".pre-choice-guards-v14.bak"
 	var expected_humans: Array = []
 	for seat in envelope.state.lan_human_houses: expected_humans.append(int(seat))
-	if protocol.world_hash(session.game.snapshot()) != protocol.world_hash(envelope.state):
+	if _without_naval(protocol,session.game.snapshot()) != _without_naval(protocol,envelope.state):
 		print("GAMEPLAY_LEGACY_DIFF ",load("res://scripts/SaveGame.gd").diff(envelope.state,session.game.snapshot()))
-	if not check(protocol.world_hash(session.game.snapshot()) == protocol.world_hash(envelope.state) and session.game.human_houses == expected_humans,"Vorherige Schema14-Welt und Menschenplätze bleiben ohne Datenmigration erhalten"):
+	if not check(_without_naval(protocol,session.game.snapshot()) == _without_naval(protocol,envelope.state) and session.game.human_houses == expected_humans,"Vorherige Schema14-Welt und Menschenplätze bleiben bis auf neue Schema-/Flottenfelder erhalten"):
 		return false
 	if not check(FileAccess.get_file_as_bytes(path) == raw and FileAccess.get_file_as_bytes(path+suffix) == raw and FileAccess.get_file_as_bytes(direct+suffix) == raw,"Lokales Laden und direktes Speichern sichern ursprüngliche Gameplay-Bytes"):
 		return false
@@ -296,12 +297,26 @@ func _previous_gameplay_release() -> bool:
 	return true
 
 func _without_economy(protocol, state: Dictionary) -> String:
-	var old := state.duplicate(true)
+	var old := _project_unused_naval_fields(state)
 	old.schema_version = 13
 	for province in old.provinces:
 		province.erase("economic_focus")
 		province.erase("focus_changed_month")
 	return protocol.world_hash(old)
+
+func _without_naval(protocol, state: Dictionary) -> String:
+	var old := _project_unused_naval_fields(state)
+	old.schema_version = 14
+	return protocol.world_hash(old)
+
+func _project_unused_naval_fields(state: Dictionary) -> Dictionary:
+	var old := state.duplicate(true)
+	for house in old.houses:
+		for fleet in house.get("fleets",[]):
+			if fleet.has("last_naval_month"):
+				check(fleet.last_naval_month == -1,"Historische Flotte erhält ausschließlich eine unbenutzte Monatswache")
+				fleet.erase("last_naval_month")
+	return old
 
 func _write_bytes(path: String, bytes: PackedByteArray) -> void:
 	var file := FileAccess.open(path, FileAccess.WRITE)

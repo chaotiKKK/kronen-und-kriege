@@ -1,0 +1,174 @@
+{
+  "stage": "genuine-context-schema14-lan-preservation",
+  "passed": true,
+  "created_utc": "2026-11-17T19:23:10.067147+00:00",
+  "snapshot_bytes_unchanged": true,
+  "source": {
+    "path": "build/verify/lan-release-1.9.1-20261117-200640-336-b9aba060/host/profile/appdata/Godot/app_userdata/Kronen und Kriege/lan_partie.json",
+    "bytes": 71212,
+    "sha256": "4485f3fe576f2c1b2cd001bb13af0c77638c80c3183e5d89c34f8a207f424fbc"
+  },
+  "copy": {
+    "path": "build/verify/naval-gameplay/legacy/lan-191-context-schema14-original.json",
+    "bytes": 71212,
+    "sha256": "4485f3fe576f2c1b2cd001bb13af0c77638c80c3183e5d89c34f8a207f424fbc"
+  },
+  "executable": {
+    "path": "build/exports/banger-queens-1.9.1-context.exe",
+    "bytes": 321369152,
+    "sha256": "76b66e2c2a1786aa9e94c8dafb8cc001bcb86b82f39a32a0514398a66f43e6fa"
+  },
+  "context_git_source_commit": "071f5ae0cdeb39198902549e14c1414799af97e9",
+  "context_git_documentation_commit": "44bcb3efd33e59429307b964c9db16c56ea3c5ca",
+  "state_metadata": {
+    "kind": "BQ-LAN-SAVE",
+    "app": "1.9.1",
+    "wire": 3,
+    "fingerprint": "49efe0af83dff5e58b98eff1d9e2978a8200f835562ac0202da13b036ac884a6",
+    "schema": 14,
+    "layout": "regions108",
+    "catalog_hash": "6112a370a9c26d1186059519e26742db7b63a10b4082c41e2fb2623b30f5f629",
+    "provinces": 108,
+    "houses": 9,
+    "human_houses": [
+      0,
+      1
+    ],
+    "month_index": 0,
+    "calendar_version": 1,
+    "fleet_counts": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "original_run_world_hash": "3695678b8f6228ed783c13f5c8592d5c1581246ea6eff4c4663be59694b6b76e",
+  "world_hash_recomputed_by_this_audit": false,
+  "supporting_records": [
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-200640-336-b9aba060/summary.json",
+        "bytes": 901,
+        "sha256": "dcbaf3e0ec025142a868074c56faa064303ba25d893949bc6375d44494b4fdf4"
+      },
+      "copy": {
+        "path": "build/verify/naval-gameplay/legacy/run-evidence/summary.json",
+        "bytes": 901,
+        "sha256": "dcbaf3e0ec025142a868074c56faa064303ba25d893949bc6375d44494b4fdf4"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-200640-336-b9aba060/host/launch.json",
+        "bytes": 2031,
+        "sha256": "7108903e2b463d24444a05296cd943aecf34acf4d546e1c7e767d86e5a76281d"
+      },
+      "copy": {
+        "path": "build/verify/naval-gameplay/legacy/run-evidence/host/launch.json",
+        "bytes": 2031,
+        "sha256": "7108903e2b463d24444a05296cd943aecf34acf4d546e1c7e767d86e5a76281d"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-200640-336-b9aba060/guest/launch.json",
+        "bytes": 2042,
+        "sha256": "595e5ae91be2c810e2576a22687ce53f19060b375b9fcc2a3b9f97310fd7ede9"
+      },
+      "copy": {
+        "path": "build/verify/naval-gameplay/legacy/run-evidence/guest/launch.json",
+        "bytes": 2042,
+        "sha256": "595e5ae91be2c810e2576a22687ce53f19060b375b9fcc2a3b9f97310fd7ede9"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-200640-336-b9aba060/host-result.json",
+        "bytes": 1256,
+        "sha256": "af1b3e051d2306c12763beeb433eeb4d1cd71a2daf9028962ffcdf9d01428adb"
+      },
+      "copy": {
+        "path": "build/verify/naval-gameplay/legacy/run-evidence/host-result.json",
+        "bytes": 1256,
+        "sha256": "af1b3e051d2306c12763beeb433eeb4d1cd71a2daf9028962ffcdf9d01428adb"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-200640-336-b9aba060/guest-result.json",
+        "bytes": 1544,
+        "sha256": "521ea51752ee25f14ce70792728747943cc65f383c6918afc8b885dd36469aef"
+      },
+      "copy": {
+        "path": "build/verify/naval-gameplay/legacy/run-evidence/guest-result.json",
+        "bytes": 1544,
+        "sha256": "521ea51752ee25f14ce70792728747943cc65f383c6918afc8b885dd36469aef"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-200640-336-b9aba060/host-resumed.json",
+        "bytes": 125,
+        "sha256": "c9a18bd7fa60ee62b0d0a5ba5f3e0758f4a69e56b6eee73318a6a1ab9cf7ed72"
+      },
+      "copy": {
+        "path": "build/verify/naval-gameplay/legacy/run-evidence/host-resumed.json",
+        "bytes": 125,
+        "sha256": "c9a18bd7fa60ee62b0d0a5ba5f3e0758f4a69e56b6eee73318a6a1ab9cf7ed72"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-200640-336-b9aba060/guest-resume-verified.json",
+        "bytes": 134,
+        "sha256": "96709dfda5a09016eaa6fcaf46cf471992050d4069d09342605474f5d9c7dad0"
+      },
+      "copy": {
+        "path": "build/verify/naval-gameplay/legacy/run-evidence/guest-resume-verified.json",
+        "bytes": 134,
+        "sha256": "96709dfda5a09016eaa6fcaf46cf471992050d4069d09342605474f5d9c7dad0"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261117-200640-336-b9aba060/host/packaged-lan-smoke.gd",
+        "bytes": 26340,
+        "sha256": "1feee0053df394eea54da7268e4187db582a3c848396f82c45e863662d5fc95b"
+      },
+      "copy": {
+        "path": "build/verify/naval-gameplay/legacy/run-evidence/host/packaged-lan-smoke.gd",
+        "bytes": 26340,
+        "sha256": "1feee0053df394eea54da7268e4187db582a3c848396f82c45e863662d5fc95b"
+      }
+    }
+  ],
+  "packaged_validation": {
+    "source": {
+      "path": "build/verify/context-ui/windows-packaged-validation.json",
+      "bytes": 9235,
+      "sha256": "e8eb6acdb5ea2cbceb715d08fb09a8a86af88231ff9a799546d7a36e1cb3f1ca"
+    },
+    "copy": {
+      "path": "build/verify/naval-gameplay/legacy/windows-packaged-validation.json",
+      "bytes": 9235,
+      "sha256": "e8eb6acdb5ea2cbceb715d08fb09a8a86af88231ff9a799546d7a36e1cb3f1ca"
+    }
+  },
+  "current_head_at_copy": "44bcb3efd33e59429307b964c9db16c56ea3c5ca",
+  "limitations": [
+    "No game or test executable was run by this preservation audit.",
+    "The copied bytes are the original existing file; no fields, formatting, metadata or newline changed.",
+    "The original packaged run validates schema14 save/resume; world hash here is the recorded Godot run value, not a Python recomputation."
+  ],
+  "fixture": {
+    "path": "tests/fixtures/lan-191-context-schema14-original.json",
+    "bytes": 71212,
+    "sha256": "4485f3fe576f2c1b2cd001bb13af0c77638c80c3183e5d89c34f8a207f424fbc"
+  }
+}

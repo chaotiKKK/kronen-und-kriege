@@ -14,7 +14,7 @@ const FIELDS := {
 	"continue_sandbox":{}, "develop":{}, "recruit":{}, "attack":{}, "court":{}, "bed":{},
 	"ransom":{}, "force_marry":{}, "law_succession":{}, "set_tax":{}, "upgrade_court_hall":{},
 	"pilgrimage":{}, "suppress_heresy":{}, "reform_faith":{}, "claim":{}, "army":{},
-	"siege":{}, "march":{}, "fleet":{}, "blockade":{}, "peace":{}, "secret_discover":{}, "secret_expose":{},
+	"siege":{}, "march":{}, "transport_army":{}, "fleet":{}, "blockade":{}, "peace":{}, "secret_discover":{}, "secret_expose":{},
 	"select_army":{"army":"army_id"},
 	"research":{"innovation":"text"}, "road":{"to":"text"}, "build":{"key":"text"},
 	"province_focus":{"focus":"text"},

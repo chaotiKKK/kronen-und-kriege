@@ -8,6 +8,10 @@
 # Region fingerprints hash exact JSON and generator bytes across platforms.
 /data/europe_geometry.json text eol=lf
 /data/game_regions.json text eol=lf
+# Preserve the exact admitted route bytes recorded by the packaged proof.
+/data/naval_routes.json -text whitespace=cr-at-eol
+# Historical save receipts must remain byte-exact across checkouts.
+/tests/fixtures/*-original.json -text
 /data/game_region_sources.json text eol=lf
 /data/game_region_geometry.bin binary
 /tools/game_regions.py text eol=lf

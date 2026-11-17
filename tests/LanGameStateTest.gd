@@ -305,7 +305,7 @@ func _test_passive_guest_military_and_faith() -> void:
 	_check(int(game.province(capital).levy) == 508, "Gastmarschall trainierte nicht exakt einmal acht Mann.")
 	_check(_messages_with(game, 1, "trainiert") == 1 and _messages_with(game, 0, "trainiert") == 0, "Marschallmeldung fehlt im Gastlog oder leakt zum Host.")
 	game.houses[1].gold = 0
-	game.houses[1].fleets = [{"id":1, "province":capital, "station":capital, "ships":5, "upkeep":2, "morale":100}]
+	game.houses[1].fleets = [{"id":1, "province":capital, "station":capital, "ships":5, "upkeep":2, "morale":100, "last_naval_month":-1}]
 	game._apply_fleet_upkeep(1)
 	_check(int(game.houses[1].fleets[0].ships) == 4 and int(game.houses[1].fleets[0].morale) == 80, "Unbezahlte Gastflotte wurde mehrfach beschädigt.")
 	_check(_messages_with(game, 1, "Schiffe desertieren") == 1 and _messages_with(game, 0, "Schiffe desertieren") == 0, "Flottenunterhalt meldet an das falsche Haus.")
@@ -337,7 +337,7 @@ func _naval_log_fixture():
 	game.province("iceni").levy = 500
 	game.houses[1].gold = 100
 	game.houses[2].gold = 1000
-	game.houses[1].fleets = [{"id":1, "province":"cantium", "station":"cantium", "ships":12, "upkeep":2, "morale":100}]
+	game.houses[1].fleets = [{"id":1, "province":"cantium", "station":"cantium", "ships":12, "upkeep":2, "morale":100, "last_naval_month":-1}]
 	game.houses[2].fleets = []
 	return game
 
@@ -357,9 +357,13 @@ func _test_naval_recipient_messages() -> void:
 	_check(_messages_with(game, 1, "Belagerung nimmt") == 1 and _messages_with(game, 2, "Belagerung nimmt") == 0 and game.log_lines.is_empty(), "Einnahmemeldung fehlt beim neuen Besitzer oder geht an Fremde.")
 	var battle = _naval_log_fixture()
 	battle.houses[1].fleets[0].ships = 1
-	battle.houses[2].fleets = [{"id":1, "province":"iceni", "station":"iceni", "ships":30, "upkeep":3, "morale":100}]
+	battle.houses[2].fleets = [{"id":1, "province":"iceni", "station":"iceni", "ships":30, "upkeep":3, "morale":100, "last_naval_month":-1}]
 	battle.attack_roll_override = 0.0
-	_check(not battle.blockade("iceni", 1).ok and battle.houses[1].fleets.is_empty(), "Kontrollierte Seeniederlage trat nicht ein.")
+	var lost_escort: Dictionary = battle.houses[1].fleets[0]
+	var defeat: Dictionary = battle.blockade("iceni", 1)
+	_check(defeat.ok and not bool(defeat.get("blockaded",true)) and battle.houses[1].fleets.is_empty(), "Aufgelöste Seeniederlage bestätigt die versenkte Flotte mit blockaded=false.")
+	_check(int(lost_escort.last_naval_month)==battle._now() and int(battle.houses[2].fleets[0].ships)==29, "Die tatsächliche Seeabwehr verbraucht die Angriffsaktion und verbucht beide Schiffsverluste genau einmal.")
+	_check(int(battle.province("iceni").blockade)==0 and int(battle.province("iceni").levy)==500 and int(battle.houses[1].gold)==100 and int(battle.houses[2].gold)==1000, "Die abgewehrte Blockade erzeugt weder Blockadebeute noch Aufgebotsverlust.")
 	_check(_messages_with(battle, 1, "Seeschlacht vor") == 1 and _messages_with(battle, 2, "Seeschlacht vor") == 1 and battle.log_lines.is_empty(), "Seeniederlage meldet nicht beiden Beteiligten.")
 	_check(game.player == 0 and battle.player == 0 and game.calendar_index() == 0, "Empfängerwechsel taktete Welt oder aktive Perspektive um.")
 

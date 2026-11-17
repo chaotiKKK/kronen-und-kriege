@@ -97,10 +97,26 @@ func _ready() -> void:
 			return
 		if not check(initial_runtime.renown_gain(index) == legacy_runtime.renown_gain(index), "Ruhm wächst durch Gebietsteilung nicht"):
 			return
-	runtime.provinces = [{"id":"own","owner":0}, {"id":"poor","owner":1,"dev":2,"base_income":5,"initial_dev":2,"levy":100,"defense":0}, {"id":"wealthy","owner":1,"dev":4,"initial_dev":4,"base_income":120,"levy":800,"defense":20}]
+	# Eigenständige kontrollierte Miniwelt: auch Heer/Hauptstadt müssen zu
+	# ihren IDs gehören, statt die migrierte echte Armee außerhalb zu belassen.
+	runtime.provinces = [{"id":"own","owner":0,"dev":3,"levy":800}, {"id":"poor","owner":1,"dev":2,"base_income":5,"initial_dev":2,"levy":100,"defense":0}, {"id":"wealthy","owner":1,"dev":4,"initial_dev":4,"base_income":120,"levy":800,"defense":20}]
 	runtime.adjacency = {"own":["poor","wealthy"],"poor":["own"],"wealthy":["own"]}
+	runtime.houses[0].capital = "own"
+	runtime.houses[0].armies = [{"id":1,"province":"own","strength":500,"morale":100,"upkeep":2}]
+	runtime.houses[0].fleets = []
 	runtime.houses[0].claims = []
 	if not check(runtime._ai_claim_target(0) == "wealthy", "KI bewertet erreichbare Wirtschaftsziele statt der ersten ID"):
+		return
+	runtime.province("wealthy").base_income = 5
+	if not check(runtime._ai_claim_target(0) == "poor", "Bei gleichem Einkommen bevorzugt KI das Ziel mit geringeren Aufgebots- und Verteidigungskosten"):
+		return
+	runtime.province("wealthy").base_income = 120
+	runtime.provinces.append({"id":"remote_own","owner":0,"dev":3,"levy":800})
+	runtime.adjacency = {"own":["poor"],"poor":["own"],"remote_own":["wealthy"],"wealthy":["remote_own"]}
+	if not check(runtime._ai_claim_target(0) == "poor", "Lukratives Ziel am abgetrennten Eigenbesitz verdrängt kein vom echten Heer erreichbares Ziel"):
+		return
+	runtime._add_claim(0,"poor")
+	if not check(runtime._ai_claim_target(0) == "", "Aktiver erreichbarer Anspruch verhindert weiteren Kauf am unerreichbaren Splitbesitz"):
 		return
 	var road_source: Dictionary = original.duplicate(true)
 	road_source.roads = [{"from":"gades","to":"corduba","builder":3,"state":"complete","months":0}]

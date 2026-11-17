@@ -1,0 +1,61 @@
+{
+  "schema": 1,
+  "catalog_hash": "6112a370a9c26d1186059519e26742db7b63a10b4082c41e2fb2623b30f5f629",
+  "projection": {
+    "lon": [
+      -12.0,
+      52.0
+    ],
+    "lat": [
+      33.0,
+      72.0
+    ],
+    "size": [
+      1200.0,
+      760.0
+    ]
+  },
+  "sources": {
+    "data/game_regions.json": "234a70fc110f827a2f6ba661c6e8a0b0c6dda435109beb71196e92f50cfb3c72",
+    "data/game_region_geometry.bin": "fb2f313cfe062a55ac92d538c75168cae95bcdd4e287f3f4b11785b2b3035e9b",
+    "data/europe_geometry.json": "c163f907b35f47acaec7088efa6a0499165c48703a3daa0cb5ef425e498b0dda",
+    "data/atlas.json": "38379a047444092c35ee42cd7b533888b3d04a8a2fdf0868d2a88594054ed398",
+    "data/atlas_geometry.bin": "5a81d924bda6d587de0d6c37de255d09974a910d90cbf1251b35a740fe597815"
+  },
+  "verification": {
+    "method": "open-water-land-union-v1",
+    "proof_sha256": "75ed46deac1d148913a8b48ca095362dff266ae952811347666b7c341378e0f9",
+    "verifier_sha256": "4e1d08164b4c1ac2b15705131717f66d7b1324399aa66ad471c8eeeba538cb50",
+    "max_length_map_units": 150.0,
+    "scope": "Generalized frozen map geometry; not nautical or historical coastline accuracy. Current actual input hashes were reverified before admission."
+  },
+  "routes": [
+    {
+      "id": "channel_london_brussels",
+      "name": "Ärmelkanal",
+      "from": "britannien__03",
+      "to": "gallien__04",
+      "points": [
+        [
+          244.58000027674163,
+          408.30999989005585
+        ],
+        [
+          270.0573627821329,
+          408.04879030824435
+        ]
+      ],
+      "length_map_units": 25.478701510805966,
+      "proof": {
+        "accepted": true,
+        "reverse_accepted": true,
+        "strict_ocean_covers": true,
+        "reverse_strict_ocean_covers": true,
+        "land_contact_length": 0.0,
+        "reverse_land_contact_length": 0.0,
+        "only_endpoint_land_contacts": true,
+        "reverse_only_endpoint_land_contacts": true
+      }
+    }
+  ]
+}

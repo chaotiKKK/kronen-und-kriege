@@ -2,6 +2,7 @@ extends Node
 const Game = preload("res://scripts/Game.gd")
 const Regions = preload("res://scripts/GameRegionData.gd")
 const Store = preload("res://scripts/SaveStore.gd")
+const Save = preload("res://scripts/SaveGame.gd")
 var checks := 0
 var failures := 0
 
@@ -18,7 +19,7 @@ func _ready() -> void:
 	var load_path := stem + "-load.json"
 	_write(load_path,raw)
 	var loaded: Dictionary = Store.load_snapshot(load_path)
-	check(loaded.ok and int(loaded.data.schema_version) == 14,"Regionaler Schema13-Spielstand wird vor Ladung auf14 gehoben")
+	check(loaded.ok and int(loaded.data.schema_version) == Save.CURRENT_VERSION,"Regionaler Schema13-Spielstand wird vor Ladung ins aktuelle Schema gehoben")
 	check(loaded.backup != "" and FileAccess.get_file_as_string(str(loaded.backup)) == raw,"Regionaler Altstand erhält bytegleiche Sicherung samt Leerraum")
 	check(FileAccess.get_file_as_string(load_path) == raw,"Prüfung und Migration überschreiben Quelle nicht")
 	var direct_path := stem + "-direct.json"

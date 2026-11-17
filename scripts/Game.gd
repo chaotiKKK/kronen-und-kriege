@@ -136,6 +136,8 @@ const InfrastructureScript = preload("res://scripts/Infrastructure.gd")
 const ProvinceEconomyScript = preload("res://scripts/ProvinceEconomy.gd")
 const SupplyNetworkScript = preload("res://scripts/SupplyNetwork.gd")
 const EventDirectorScript = preload("res://scripts/EventDirector.gd")
+const NavalTransportScript = preload("res://scripts/NavalTransport.gd")
+const NavalCampaignScript = preload("res://scripts/NavalCampaign.gd")
 const ARMY_DOCTRINES := {
 	"balanced":{"id":"balanced","name":"Ausgewogen","effect_text":"Keine Zu- oder Abschläge; gemischtes Aufgebot.","attack_multiplier":1.0,"defense_multiplier":1.0,"upkeep_multiplier":1.0,"siege_bonus":0,"levy_share":0.55,"archer_share":0.25,"siege_share":0.01},
 	"infantry":{"id":"infantry","name":"Infanterie","effect_text":"+10 % Verteidigung, −5 % Angriff; normaler Unterhalt.","attack_multiplier":0.95,"defense_multiplier":1.10,"upkeep_multiplier":1.0,"siege_bonus":0,"levy_share":0.72,"archer_share":0.20,"siege_share":0.01},
@@ -690,6 +692,7 @@ func _normalize_fleets(h: Dictionary) -> void:
 				"ships": ships,
 				"upkeep": clampi(int(item.get("upkeep", maxi(1, int(ceil(float(ships) / 10.0))))), 0, 10),
 				"morale": clampi(int(item.get("morale", 100)), 0, 100),
+				"last_naval_month": item.get("last_naval_month",-1),
 			})
 	h["fleets"] = clean
 
@@ -2859,6 +2862,15 @@ func run_ai_turn(include_military: bool = true) -> void:
 		if h.get("courtiers", []).is_empty():
 			continue
 		_assign_best_council(i)
+		# Inselreiche sparen für einen tatsächlich erreichbaren Feldzug. Die
+		# Vorschau schenkt keine Mittel: alle fehlenden Teile werden regulär bezahlt.
+		var preparation: Dictionary = NavalCampaignScript.preparation(self,i)
+		if not preparation.is_empty():
+			if bool(preparation.affordable):
+				if bool(preparation.needs_fleet): raise_fleet(str(preparation.port),i)
+				if bool(preparation.needs_army): raise_army(str(preparation.port),i)
+				if bool(preparation.needs_claim): fabricate_claim(str(preparation.target),i)
+			continue
 		_ai_court(i)
 		_ai_faith(i)
 		if int(h.get("gold", 0)) >= 220:
@@ -2881,7 +2893,7 @@ func run_ai_turn(include_military: bool = true) -> void:
 				if _settle_marriage_for(i, target, "AI3")["ok"]:
 					h["gold"] = int(h["gold"]) - 30
 					break
-		if h["claims"].is_empty() and int(h.get("gold", 0)) >= 40:
+		if int(h.get("gold", 0)) >= 40:
 			var claim_target: String = _ai_claim_target(i)
 			if claim_target != "":
 				fabricate_claim(claim_target, i)
@@ -2892,7 +2904,7 @@ func run_ai_turn(include_military: bool = true) -> void:
 			var port_id := _ai_port(i)
 			if port_id != "":
 				raise_fleet(port_id, i)
-		if not h["fleets"].is_empty() and not _ai_has_blockade(i):
+		if not h["fleets"].is_empty() and not _ai_has_blockade(i) and not bool(NavalCampaignScript.next_order(self,i).get("uses_sea",false)):
 			var naval_target := _ai_naval_target(i)
 			if naval_target != "":
 				blockade(naval_target, i)
@@ -2924,15 +2936,15 @@ func _run_ai_military() -> void:
 		if is_human_house(hi):
 			continue
 		var h: Dictionary = houses[hi]
-		if h["claims"].is_empty() or h["armies"].is_empty():
+		if h["armies"].is_empty():
 			continue
-		var target := str(h["claims"][0].get("province", ""))
-		if target == "":
-			continue
-		if can_siege(target, hi):
-			advance_siege(target, hi)
-		else:
-			_ai_march(target, hi)
+		var order: Dictionary = NavalCampaignScript.next_order(self,hi)
+		if order.is_empty(): continue
+		var destination := str(order.destination)
+		match str(order.action):
+			"siege": advance_siege(destination,hi)
+			"march": march_army(destination,hi)
+			"transport": transport_army(destination,hi)
 
 func _ai_march(target: String, hi: int) -> bool:
 	var army := army_for(hi)
@@ -3494,17 +3506,12 @@ func _apply_education_succession(i: int, education: String) -> void:
 		}])
 
 func has_claim(province_id: String, house_index: int = -1) -> bool:
-	var hi: int = player if house_index < 0 else house_index
-	if hi < 0 or hi >= houses.size():
-		return false
-	for claim in houses[hi].get("claims", []):
-		if str(claim.get("province", "")) == province_id:
-			return true
-	return false
+	return claim_active(province_id,house_index)
 
 func _add_claim(house_index: int, province_id: String, strength: int = 1) -> bool:
 	if province(province_id).is_empty() or has_claim(province_id, house_index):
 		return false
+	_remove_claim(province_id,house_index)
 	var before: int = houses[house_index].get("claims", []).size()
 	houses[house_index]["claims"].append({
 		"province": province_id, "strength": clampi(strength, 1, 5),
@@ -3528,23 +3535,32 @@ func _remove_claim(province_id: String, house_index: int = -1) -> void:
 	houses[hi]["claims"] = kept
 
 func fabricate_claim(province_id: String, house_index: int = -1) -> Dictionary:
+	var reason := claim_reason(province_id,house_index)
+	if not reason.is_empty(): return _res(false,reason)
 	var hi: int = player if house_index < 0 else house_index
-	if hi < 0 or hi >= houses.size():
-		return _res(false, "Ungültiges Haus.")
-	if has_claim(province_id, hi):
-		return _res(false, "Ein Anspruch besteht bereits.")
 	var p := province(province_id)
-	if p.is_empty() or int(p["owner"]) == hi:
-		return _res(false, "Anspruch nur auf fremdes Land.")
-	if int(houses[hi]["gold"]) < 40:
-		return _res(false, "Anspruch schmieden kostet 40 Gold.")
-	if not _is_border_province(hi, province_id):
-		return _res(false, "Nur an der eigenen Grenze.")
 	houses[hi]["gold"] = int(houses[hi]["gold"]) - 40
 	_add_claim(hi, province_id)
 	if hi == player:
 		note("Ein Anspruch auf %s wird geschmiedet." % p["name"])
 	return _res(true, "Anspruch auf %s." % p["name"])
+
+func claim_reason(province_id: String, house_index: int = -1) -> String:
+	var hi: int = player if house_index < 0 else house_index
+	if hi < 0 or hi >= houses.size():
+		return "Ungültiges Haus."
+	if has_claim(province_id, hi):
+		return "Ein aktiver Anspruch besteht bereits."
+	var p := province(province_id)
+	if p.is_empty() or int(p["owner"]) == hi:
+		return "Anspruch nur auf fremdes Land."
+	if int(houses[hi]["gold"]) < 40:
+		return "Anspruch schmieden kostet 40 Gold."
+	if _is_border_province(hi, province_id): return ""
+	return coastal_claim_reason(province_id,hi)
+
+func coastal_claim_reason(province_id: String, house_index: int = -1) -> String:
+	return NavalTransportScript.coastal_claim_reason(self,province_id,player if house_index<0 else house_index)
 
 func press_claim(province_id: String, house_index: int = -1) -> Dictionary:
 	var hi: int = player if house_index < 0 else house_index
@@ -3560,6 +3576,13 @@ func press_claim(province_id: String, house_index: int = -1) -> Dictionary:
 	])
 	return _res(true, "Der Anspruch wird öffentlich erhoben.")
 
+func army_raise_strength(province_id: String, house_index: int = -1) -> int:
+	var hi: int = player if house_index<0 else house_index
+	if hi<0 or hi>=houses.size(): return 0
+	var p := province(province_id)
+	if p.is_empty() or int(p.owner)!=hi: return 0
+	return maxi(100,int(round(float(int(p.levy)/2)*legacy_war_multiplier(hi))))+vassal_levy_bonus(hi)
+
 func raise_army(province_id: String, house_index: int = -1) -> Dictionary:
 	var hi: int = player if house_index < 0 else house_index
 	if hi < 0 or hi >= houses.size(): return _res(false,"Ungültiges Haus.")
@@ -3570,9 +3593,9 @@ func raise_army(province_id: String, house_index: int = -1) -> Dictionary:
 		return _res(false, "Armee nur im eigenen Land.")
 	if int(houses[hi]["gold"]) < 50:
 		return _res(false, "Armeeaufstellung kostet 50 Gold.")
-	var base_strength: int = maxi(100, int(round(float(int(p["levy"]) / 2) * legacy_war_multiplier(hi))))
 	var vassal_levy := vassal_levy_bonus(hi)
-	var strength: int = base_strength + vassal_levy
+	var strength := army_raise_strength(province_id,hi)
+	var base_strength: int = strength-vassal_levy
 	houses[hi]["gold"] = int(houses[hi]["gold"]) - 50
 	houses[hi]["armies"].append({
 		"id": houses[hi]["armies"].size() + 1, "province": province_id,
@@ -3654,7 +3677,56 @@ func march_army(province_id: String, house_index: int = -1) -> Dictionary:
 # --- Seekrieg ------------------------------------------------------------
 
 func is_coastal(province_id: String) -> bool:
+	if not province(province_id).is_empty() and naval_routes().is_port(province_id): return true
 	return data.is_coastal(province_id)
+
+func naval_routes() -> RefCounted:
+	return NavalTransportScript.shared_routes()
+
+func naval_transport_preview(target_id: String, house_index: int = -1) -> Dictionary:
+	return NavalTransportScript.preview(self,target_id,player if house_index<0 else house_index)
+
+func transport_army(target_id: String, house_index: int = -1) -> Dictionary:
+	var hi: int = player if house_index<0 else house_index
+	var preview := naval_transport_preview(target_id,hi)
+	if not preview.ok: return _res(false,str(preview.reason))
+	var army := army_for(hi)
+	var fleet := fleet_for(hi)
+	var origin := str(army.province)
+	var target := province(target_id)
+	army.last_siege_month = _now()
+	fleet.last_naval_month = _now()
+	var battle_text := ""
+	if int(target.owner)!=hi:
+		var defender := _defending_fleet(target_id,int(target.owner))
+		if not defender.is_empty():
+			var battle := _naval_battle(fleet,hi,defender,int(target.owner))
+			battle_text = str(battle.get("msg",""))
+			if not bool(battle.get("won",false)):
+				return _transport_resolved(hi,false,battle_text+" Keine Landung; das Heer bleibt am Abfahrtsufer.")
+	# Die ursprüngliche Referenz bleibt maßgeblich, auch wenn die Flottenliste
+	# nach Versenkung eine andere erste Legacy-Flotte enthalten sollte.
+	if int(fleet.get("ships",0))<=0 or int(fleet.get("ships",0))*int(NavalTransportScript.RULES.soldiers_per_ship)<int(army.strength) or int(fleet.get("morale",0))<int(NavalTransportScript.RULES.minimum_fleet_morale):
+		return _transport_resolved(hi,false,battle_text+" Das verbliebene Geleit reicht nicht für die Landung; das Heer bleibt am Abfahrtsufer.")
+	army.province = target_id
+	fleet.province = target_id
+	fleet.station = target_id
+	_end_unsupported_siege(origin,hi)
+	return _transport_resolved(hi,true,battle_text+" Heer und Geleit sind in %s gelandet. Belagerung frühestens im nächsten Monat." % str(target.name))
+
+func _transport_resolved(hi: int, landed: bool, text: String) -> Dictionary:
+	_note_for_house(hi,text.strip_edges())
+	var result := _res(true,text.strip_edges())
+	result.landed = landed
+	return result
+
+func _end_unsupported_siege(origin: String, hi: int) -> void:
+	var p := province(origin)
+	if p.is_empty() or int(p.get("siege_owner",-1))!=hi or int(p.get("siege",0))<=0: return
+	for remaining in houses[hi].get("armies",[]):
+		if str(remaining.get("province",""))==origin and int(remaining.get("strength",0))>0 and int(remaining.get("morale",0))>0: return
+	p.siege = 0
+	p.siege_owner = -1
 
 func fleet_for(house_index: int = -1) -> Dictionary:
 	var hi: int = player if house_index < 0 else house_index
@@ -3675,17 +3747,25 @@ func can_raise_fleet(province_id: String, house_index: int = -1) -> bool:
 		return false
 	return int(houses[hi]["gold"]) >= FLEET_COST
 
+func fleet_raise_ships(province_id: String, house_index: int = -1) -> int:
+	var hi: int = player if house_index<0 else house_index
+	if hi<0 or hi>=houses.size(): return 0
+	var p := province(province_id)
+	if p.is_empty() or int(p.owner)!=hi or not is_coastal(province_id): return 0
+	return clampi(8+int(p.dev)+int(int(p.levy)/180)+int(int(houses[hi].ruler.get("martial",0))/3),8,24)
+
 func raise_fleet(province_id: String, house_index: int = -1) -> Dictionary:
 	var hi: int = player if house_index < 0 else house_index
 	if not can_raise_fleet(province_id, hi):
 		return _res(false, "Flotte nur in einer eigenen Küstenprovinz ohne bestehende Flotte (60 Gold).")
 	var p := province(province_id)
 	var h: Dictionary = houses[hi]
-	var ships: int = clampi(8 + int(p["dev"]) + int(int(p["levy"]) / 180) + int(int(h["ruler"]["martial"]) / 3), 8, 24)
+	var ships := fleet_raise_ships(province_id,hi)
 	h["gold"] = int(h["gold"]) - FLEET_COST
 	h["fleets"].append({
 		"id": h["fleets"].size() + 1, "province": province_id, "station": province_id,
 		"ships": ships, "upkeep": maxi(1, int(ceil(float(ships) / 10.0))), "morale": 100,
+		"last_naval_month":-1,
 	})
 	if hi == player:
 		note("In %s wird eine Flotte von %d Schiffen aufgestellt." % [p["name"], ships])
@@ -3705,32 +3785,37 @@ func _maritime_reachable(origin_id: String, target_id: String) -> bool:
 	return neighbours.has(str(target["kingdom"]))
 
 func can_blockade(province_id: String, house_index: int = -1) -> bool:
+	return blockade_reason(province_id,house_index).is_empty()
+
+func blockade_reason(province_id: String, house_index: int = -1) -> String:
 	var hi: int = player if house_index < 0 else house_index
 	if hi < 0 or hi >= houses.size():
-		return false
+		return "Ungültiges Haus."
 	var target := province(province_id)
 	if target.is_empty() or int(target["owner"]) == hi:
-		return false
+		return "Blockade nur an einer fremden Küste."
 	if not is_coastal(province_id):
-		return false
+		return "Das Ziel hat keine Küste."
 	var fleet := fleet_for(hi)
-	if fleet.is_empty() or int(fleet.get("ships", 0)) <= 0 or int(fleet.get("morale", 0)) < 20:
-		return false
+	var reason := NavalTransportScript.fleet_availability_reason(self,fleet,hi)
+	if not reason.is_empty(): return reason
+	if int(fleet.get("last_naval_month",-1))==_now(): return "Die Flotte hat diesen Monat bereits gehandelt."
 	if not _maritime_reachable(str(fleet.get("province", "")), province_id):
-		return false
+		return "Das Blockadeziel ist außer Reichweite."
 	if truce_until(int(target["owner"]), hi) > _now():
-		return false
+		return "Ein Waffenstillstand sperrt die Blockade."
 	if int(target.get("blockade", 0)) > 0 and int(target.get("blockade_owner", -1)) != hi:
-		return false
-	return true
+		return "Eine andere Flotte blockiert diese Küste bereits."
+	return ""
 
 func blockade(province_id: String, house_index: int = -1) -> Dictionary:
 	var hi: int = player if house_index < 0 else house_index
-	if not can_blockade(province_id, hi):
-		return _res(false, "Blockade nicht möglich (eigene Flotte, Küstenziel, Seeweg, kein Waffenstillstand).")
+	var reason := blockade_reason(province_id,hi)
+	if not reason.is_empty(): return _res(false,reason)
 	var h: Dictionary = houses[hi]
 	var target := province(province_id)
 	var fleet := fleet_for(hi)
+	fleet.last_naval_month = _now()
 	var defender: int = int(target["owner"])
 	var defending_fleet := _defending_fleet(province_id, defender)
 	var battle_text := ""
@@ -3739,7 +3824,9 @@ func blockade(province_id: String, house_index: int = -1) -> Dictionary:
 		battle_text = str(battle.get("msg", ""))
 		if not bool(battle.get("won", false)):
 			_note_for_houses([hi, defender], "Seeschlacht vor %s: %s" % [target["name"], battle_text])
-			return _res(false, battle_text)
+			var repelled := _res(true,battle_text)
+			repelled.blockaded = false
+			return repelled
 	target["blockade"] = BLOCKADE_MONTHS
 	target["blockade_owner"] = hi
 	target["levy"] = maxi(40, int(int(target["levy"]) * 0.9))
@@ -3754,7 +3841,9 @@ func blockade(province_id: String, house_index: int = -1) -> Dictionary:
 	if battle_text != "":
 		prefix = battle_text + " "
 	_note_for_houses([hi, defender], "%sDie Küste von %s wird blockiert (%d Monate, %d Gold Beute)." % [prefix, target["name"], BLOCKADE_MONTHS, loot])
-	return _res(true, "Küste von %s blockiert." % target["name"])
+	var result := _res(true, "Küste von %s blockiert." % target["name"])
+	result.blockaded = true
+	return result
 
 func _defending_fleet(province_id: String, house_index: int) -> Dictionary:
 	if house_index < 0 or house_index >= houses.size():
@@ -3762,7 +3851,7 @@ func _defending_fleet(province_id: String, house_index: int) -> Dictionary:
 	for fleet in houses[house_index].get("fleets", []):
 		if int(fleet.get("ships", 0)) <= 0:
 			continue
-		if str(fleet.get("station", "")) == province_id or str(fleet.get("province", "")) == province_id:
+		if str(fleet.get("station", fleet.get("province", ""))) == province_id:
 			return fleet
 	return {}
 
@@ -3806,7 +3895,9 @@ func _sink_fleet(house_index: int, fleet: Dictionary) -> void:
 		if int(item.get("id", -1)) != int(fleet.get("id", -2)):
 			kept.append(item)
 	houses[house_index]["fleets"] = kept
-	_clear_blockades(house_index)
+	for p in provinces:
+		if int(p.get("blockade_owner",-1))==house_index and int(p.get("blockade",0))>0 and _defending_fleet(str(p.id),house_index).is_empty():
+			_release_blockade(p)
 	_note_for_house(house_index, "Die eigene Flotte ist versenkt worden.")
 
 func _clear_blockades(house_index: int) -> void:
@@ -4048,19 +4139,7 @@ func _is_border_province(house_index: int, province_id: String) -> bool:
 	return false
 
 func _ai_claim_target(house_index: int) -> String:
-	var best := ""
-	var best_score := -INF
-	for p in provinces:
-		if int(p["owner"]) != house_index:
-			continue
-		for n in neighbours(str(p["id"])):
-			var q := province(str(n))
-			if not q.is_empty() and int(q["owner"]) != house_index and not has_claim(str(n), house_index):
-				var score := float(region_income(q) * 4) - float(q.get("levy", 0)) / 100.0 - float(q.get("defense", 0))
-				if score > best_score or (score == best_score and str(n) < best):
-					best_score = score
-					best = str(n)
-	return best
+	return NavalCampaignScript.claim_target(self,house_index)
 
 # --- Familie -------------------------------------------------------------
 
@@ -4404,6 +4483,7 @@ func snapshot() -> Dictionary:
 			if p.has(key):
 				ps[-1][key] = p[key].duplicate(true) if p[key] is Dictionary else p[key]
 	var data_state: Dictionary = extra_state.duplicate(true)
+	data_state["schema_version"] = SaveGameScript.CURRENT_VERSION
 	data_state["year"] = year
 	data_state["month"] = month
 	data_state["calendar_version"] = 1

@@ -1,0 +1,4 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://tests/NavalTransportUiTest.gd" id="1"]
+[node name="NavalTransportUiTest" type="Node"]
+script = ExtResource("1")
