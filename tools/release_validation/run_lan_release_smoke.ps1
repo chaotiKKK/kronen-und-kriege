@@ -72,8 +72,16 @@ function Assert-OwnedProcess {
     $process = $Role.Process
     if ($null -eq $process -or $process.HasExited) { return }
     $actual = Get-CimInstance Win32_Process -Filter ('ProcessId=' + $process.Id)
+    # Direkt nach CreateProcess kann WMI den Pfad noch nicht liefern. Nur auf
+    # fehlende Metadaten warten; ein abweichender Prozess wird nie akzeptiert.
+    $metadataDeadline = [DateTime]::UtcNow.AddSeconds(2)
+    while (($null -eq $actual -or [string]::IsNullOrEmpty([string]$actual.ExecutablePath)) -and [DateTime]::UtcNow -lt $metadataDeadline) {
+        if ($process.HasExited) { return }
+        Start-Sleep -Milliseconds 50
+        $actual = Get-CimInstance Win32_Process -Filter ('ProcessId=' + $process.Id)
+    }
     if ($null -eq $actual -or -not [string]::Equals([string]$actual.ExecutablePath, $exePath, [StringComparison]::OrdinalIgnoreCase)) {
-        throw "Prozess $($process.Id) gehört nicht zur eingefrorenen Paket-EXE."
+        throw "Prozess $($process.Id) gehört nicht zur eingefrorenen Paket-EXE (ermittelter Pfad: $($actual.ExecutablePath))."
     }
     $command = [string]$actual.CommandLine
     if (-not $command.Contains($Role.Helper) -or -not $command.Contains('--lan-release-run-id=' + $runId) -or -not $command.Contains('--lan-release-role=' + $Role.Role)) {

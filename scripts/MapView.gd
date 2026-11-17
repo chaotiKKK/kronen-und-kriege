@@ -58,6 +58,7 @@ var legend_visible := false
 var crests: Array = []
 var _edge_neighbor: Dictionary = {}
 var _game_id: int = -1
+var _edge_catalog_hash := ""
 var zoom: float = 1.0
 var pan := Vector2.ZERO
 var _dragging := false
@@ -123,7 +124,12 @@ func set_game(g) -> void:
 	hovered = ""
 	if game != null and game.get_instance_id() != _game_id:
 		_game_id = game.get_instance_id()
-		_rebuild_edge_cache()
+		var catalog: String = game.data.catalog_hash() if game.data.has_method("catalog_hash") else ""
+		# Region geometry is immutable and catalog-bound. A network snapshot
+		# changes owners/economy, while every edge remains identical.
+		if catalog.is_empty() or catalog != _edge_catalog_hash:
+			_rebuild_edge_cache()
+			_edge_catalog_hash = catalog
 	if _base != null:
 		_base.queue_redraw()
 	queue_redraw()
@@ -269,7 +275,7 @@ func focus_atlas_location(record: Dictionary) -> void:
 	var kind := str(record.get("kind", "city"))
 	zoom = 4.5 if kind in ["country", "region"] else (12.0 if kind == "district" else (48.0 if kind in ["municipality", "local_admin"] else 24.0))
 	center_on(point)
-	var province_id := str(record.get("province_id", ""))
+	var province_id := _region_for_record(record)
 	if game != null and not game.province(province_id).is_empty():
 		select(province_id)
 		province_selected.emit(province_id)
@@ -277,6 +283,12 @@ func focus_atlas_location(record: Dictionary) -> void:
 		select("")
 		province_selected.emit("")
 	atlas_location_selected.emit(record)
+
+func _region_for_record(record: Dictionary) -> String:
+	if game != null and game.data.has_method("region_at"):
+		var region: Dictionary = game.data.region_at(record.get("point", Vector2(-100, -100)))
+		return str(region.get("id", ""))
+	return str(record.get("province_id", ""))
 
 func _centroid(poly: PackedVector2Array) -> Vector2:
 	var sum := Vector2.ZERO
@@ -341,6 +353,8 @@ func _province_at(pos: Vector2) -> String:
 	var s: float = fit[0]
 	var off: Vector2 = fit[1]
 	var map_point: Vector2 = (pos - off) / s
+	if game.data.has_method("region_at"):
+		return str(game.data.region_at(map_point).get("id", ""))
 	# Kleine Inseln zuerst prüfen, damit sie nicht von großen Nachbarflächen
 	# überdeckt werden; bei sich überlappenden Teilen gewinnt die kleinste Fläche.
 	var candidates: Array = []
@@ -382,7 +396,7 @@ func _pick_at(pos: Vector2) -> void:
 		atlas_location = str(record.get("name", ""))
 	var id: String = _province_at(pos)
 	if anchor_target:
-		var mapped_id := str(record.get("province_id", ""))
+		var mapped_id := _region_for_record(record)
 		id = mapped_id if not game.province(mapped_id).is_empty() else ""
 	if id == "":
 		if selected != "":

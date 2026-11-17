@@ -36,6 +36,10 @@ mkdir -p "$LOGDIR"
 
 # Logik- und UI-Tests ohne Renderpfad.
 HEADLESS=(
+	MapCacheReuseTest
+	LegacyLanMigrationTest
+	RegionMigrationTest
+	RegionsPlayableTest
 	GameRegionDataTest
 	GameRegionCatalogTest
 	LanProtocolTest
@@ -77,6 +81,7 @@ HEADLESS=(
 # Suiten, die einen echten Viewport brauchen.
 # CourtShotTest gehört ebenfalls hierher; es war zuvor nicht registriert.
 WINDOWED=(
+	CompactHudTest
 	LanUiTest
 	AtlasIntegrationTest
 	EventChoiceTest

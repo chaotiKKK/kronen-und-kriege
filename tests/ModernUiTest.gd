@@ -14,7 +14,7 @@ func _ready() -> void:
 	var nav: Control = mode_row.get_parent()
 	_check(not nav.get_global_rect().intersects(main.side_panel.get_global_rect()), "Kartenmodi überlappen das Seitenpanel.")
 	for button in main.map_mode_buttons.values():
-		_check(button.size.y >= 44, "Kartenmodus besitzt keine ausreichend große Touchfläche.")
+		_check(button.size.y >= (44 if OS.has_feature("android") else 28), "Kartenmodus besitzt keine passende Bedienfläche.")
 	if not main.has_meta("modern_interface"):
 		_check(false, "Hauptansicht hat keine geordneten Navigationsbereiche.")
 		_finish()

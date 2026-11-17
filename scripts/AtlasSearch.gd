@@ -16,6 +16,23 @@ var _sources_layout: VBoxContainer
 var _sources_title: Label
 var _sources_close: Button
 var _sources_action: Button
+var _reference: Label
+
+func set_compact(enabled: bool) -> void:
+	search_field.custom_minimum_size.y = 28 if enabled else 44
+	_sources_action.custom_minimum_size = Vector2(70, 28 if enabled else 44)
+	_reference.visible = not enabled
+	for control in [search_field, _sources_action]:
+		control.set_meta("atlas_font_size", 12)
+		control.set_meta("atlas_applied_scale", -1.0)
+		control.add_theme_font_size_override("font_size", int(round(12 * _main.ModernInterfaceScript.text_scale)))
+		for role in ["normal", "hover", "pressed", "disabled", "focus"]:
+			var style = control.get_theme_stylebox(role)
+			if style is StyleBoxFlat:
+				var copy = style.duplicate()
+				copy.content_margin_top = 3
+				copy.content_margin_bottom = 3
+				control.add_theme_stylebox_override(role, copy)
 
 func configure(map_view, main) -> void:
 	_map = map_view
@@ -41,6 +58,7 @@ func configure(map_view, main) -> void:
 	sources.accessibility_name = "Quellen und Lizenzen des Referenzatlas anzeigen"
 	row.add_child(sources)
 	var reference: Label = main._label("Referenzatlas · heutige Orts- und Verwaltungsnamen", 13)
+	_reference = reference
 	reference.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(reference)
 	results_box = VBoxContainer.new()

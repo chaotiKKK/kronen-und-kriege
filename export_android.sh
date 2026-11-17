@@ -20,7 +20,7 @@ if command -v cygpath >/dev/null; then TARGET=$(cygpath -u "$TARGET"); fi
 
 [ -f "$GODOT" ] || fail "Godot fehlt: $GODOT"
 [ -f "$JDK/bin/java.exe" ] || fail "JDK 17 fehlt: $JDK"
-[ -d "$TOOLS/appdata/Godot/export_templates/4.5.stable" ] || fail "Godot-4.5-Exportvorlagen fehlen"
+[ -d "$TOOLS/appdata/Godot/export_templates/4.5.1.stable" ] || fail "Godot-4.5.1-Exportvorlagen fehlen"
 [ -d "$HERE/android/build" ] || fail "Android-Buildvorlage fehlt: $HERE/android/build"
 
 mkdir -p "$(dirname "$TARGET")"

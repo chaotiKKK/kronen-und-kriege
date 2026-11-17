@@ -34,8 +34,8 @@ func _ready() -> void:
 	var oversized := PackedByteArray()
 	oversized.resize(protocol.MAX_PACKET_BYTES + 1)
 	check(not protocol.decode_packet(oversized).ok, "Übergroßes Paket zugelassen.")
-	check(protocol.handshake_error({"v":1,"app":"1.7.0","fingerprint":"a"},"1.7.0","a").is_empty(), "Gleiche Kennung abgelehnt.")
-	check(not protocol.handshake_error({"v":2,"app":"1.7.0","fingerprint":"a"},"1.7.0","a").is_empty(), "Falsches Protokoll zugelassen.")
+	check(protocol.handshake_error({"v":2,"app":"1.8.0","fingerprint":"a"},"1.8.0","a").is_empty(), "Aktuelle Regionskennung abgelehnt.")
+	check(not protocol.handshake_error({"v":1,"app":"1.8.0","fingerprint":"a"},"1.8.0","a").is_empty(), "Altes Protokoll zugelassen.")
 	check(not protocol.handshake_error({"v":1,"app":"1.6.1","fingerprint":"a"},"1.7.0","a").is_empty(), "Falsche Appversion zugelassen.")
 	check(not protocol.handshake_error({"v":1,"app":"1.7.0","fingerprint":"b"},"1.7.0","a").is_empty(), "Abweichende Daten zugelassen.")
 	var world := {"year":-2000,"month":1,"houses":[{"gold":50}],"player":0,"opinion":[1],"history":[],"lan_contexts":{"0":{"scandal":2}}}
@@ -46,6 +46,16 @@ func _ready() -> void:
 	check(protocol.world_hash(world) == protocol.world_hash(other), "Hash hängt von der Perspektive ab.")
 	other.houses[0].gold = 51
 	check(protocol.world_hash(world) != protocol.world_hash(other), "Weltänderung fehlt im Hash.")
+	var regional_game = load("res://scripts/Game.gd").new(load("res://scripts/GameRegionData.gd"), 0)
+	var state: Dictionary = regional_game.snapshot()
+	var snapshot := {"v":2,"type":"snapshot","state":state,"revision":1,"hash":protocol.world_hash(state),"missing_peer":false,"all_over":false}
+	var wire: PackedByteArray = protocol.encode_packet(snapshot)
+	check(wire.size() < 16384, "108-Regionen-Zustand bleibt unter 16 KiB Übertragungsgröße.")
+	var roundtrip: Dictionary = protocol.decode_packet(wire)
+	check(roundtrip.ok and protocol.world_hash(roundtrip.message.state) == protocol.world_hash(state), "Komprimierter Zustand erhält die gesamte Welt nach JSON-Normalisierung.")
+	var bad_frame := PackedByteArray([66,81,90,50,0,0,0,0,1])
+	bad_frame.encode_u32(4, protocol.MAX_PACKET_BYTES + 1)
+	check(not protocol.decode_packet(bad_frame).ok, "Unzulässige Entpackgröße wird vor Entpacken abgewiesen.")
 	finish()
 
 func check(ok: bool, message: String) -> void:

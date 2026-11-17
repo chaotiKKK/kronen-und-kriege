@@ -1,7 +1,7 @@
 extends RefCounted
 ## Kleines, ausdrücklich typisiertes LAN-Protokoll. Keine Objektdekodierung.
 
-const VERSION := 1
+const VERSION := 2
 const GAME_PORT := 28741
 const DISCOVERY_PORT := 28740
 const MAX_PLAYERS := 4
@@ -68,13 +68,35 @@ static func encode_packet(message: Dictionary) -> PackedByteArray:
 	if not _json_safe(message, 0):
 		return PackedByteArray()
 	var raw := JSON.stringify(message).to_utf8_buffer()
-	return raw if raw.size() <= MAX_PACKET_BYTES else PackedByteArray()
+	if raw.size() > MAX_PACKET_BYTES:
+		return PackedByteArray()
+	# Große Regionszustände vermeiden unnötige ENet-Fragmentierung. Dateien
+	# und kurze Befehle bleiben normales JSON; beide Grenzen gelten weiterhin.
+	if message.get("type", "") == "snapshot" and raw.size() > 16384:
+		var compressed := raw.compress(FileAccess.COMPRESSION_ZSTD)
+		if compressed.size() + 8 < raw.size():
+			var framed := "BQZ2".to_utf8_buffer()
+			framed.resize(8)
+			framed.encode_u32(4, raw.size())
+			framed.append_array(compressed)
+			return framed
+	return raw
 
 static func decode_packet(raw: PackedByteArray) -> Dictionary:
 	if raw.is_empty() or raw.size() > MAX_PACKET_BYTES:
 		return failure("Ungültige Paketgröße.")
+	var payload := raw
+	if raw.size() >= 4 and raw.slice(0, 4) == "BQZ2".to_utf8_buffer():
+		if raw.size() <= 8:
+			return failure("Unvollständige komprimierte Nachricht.")
+		var declared := raw.decode_u32(4)
+		if declared < 2 or declared > MAX_PACKET_BYTES:
+			return failure("Ungültige Entpackgröße.")
+		payload = raw.slice(8).decompress(declared, FileAccess.COMPRESSION_ZSTD)
+		if payload.size() != declared:
+			return failure("Die komprimierte Nachricht ist beschädigt.")
 	var json := JSON.new()
-	if json.parse(raw.get_string_from_utf8()) != OK:
+	if json.parse(payload.get_string_from_utf8()) != OK:
 		return failure("Die Netzwerknachricht ist beschädigt.")
 	var value = json.data
 	if not value is Dictionary or value.size() > 16 or not _json_safe(value, 0):

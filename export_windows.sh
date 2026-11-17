@@ -7,7 +7,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TOOLS="$HERE/.tools"
 GODOT="$TOOLS/godot.exe"
 RCEDIT="$TOOLS/rcedit-x64.exe"
-TEMPLATES="$TOOLS/appdata/Godot/export_templates/4.5.stable"
+TEMPLATES="$TOOLS/appdata/Godot/export_templates/4.5.1.stable"
 PYTHON_EXE="${BQ_PYTHON:-python}"
 
 fail() { echo "FEHLER: $*" >&2; exit 1; }

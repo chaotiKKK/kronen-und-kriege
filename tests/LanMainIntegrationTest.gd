@@ -47,8 +47,19 @@ func _ready() -> void:
 	var local_zoom: float = guest.map_view.zoom
 	var local_selection: String = guest.selected
 	var before := Protocol.world_hash(host.game.snapshot())
+	var host_packets: Array = []
+	var guest_packets: Array = []
+	h._transport.peer_packet.connect(func(_id, raw):
+		var packet = Protocol.decode_packet(raw).message
+		host_packets.append([packet.get("type", ""), packet.get("sequence", 0)]))
+	g._transport.peer_packet.connect(func(_id, raw):
+		var packet = Protocol.decode_packet(raw).message
+		guest_packets.append([packet.get("type", ""), packet.get("sequence", 0)]))
 	guest._dispatch({"id":"develop"})
-	check(await until(func(): return not g.pending_command), "Gastantwort trifft ein")
+	var answered: bool = await until(func(): return not g.pending_command)
+	if not answered:
+		print("LANMAIN_DIAGNOSTIC host_packets=", host_packets, " guest_packets=", guest_packets, " host_revision=", h.revision, " guest_revision=", g.revision, " phase=", g.phase, " status=", g.status, " pending_sequence=", g._pending_sequence)
+	check(answered, "Gastantwort trifft ein")
 	check(not g.status.contains("gesendet") and guest.hint_label.text.contains(g.status), "Hostablehnung fehlt im Gast-Hinweis")
 	check(Protocol.world_hash(host.game.snapshot()) == before, "Abgewiesener Gastbefehl veränderte Welt")
 	check(guest.kernel.game == guest.game and guest.map_view.game == guest.game, "Kernel/Karte halten veraltete Gastwelt")

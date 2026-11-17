@@ -2,7 +2,8 @@ extends Control
 ## Baut die Bronzezeit-Oberfläche: Startmenü, Herrscher-/Land-Erstellung, Karte,
 ## Hofpanel mit Familie und Intrigen, Ereignisse, Spielende.
 
-const DataScript = preload("res://scripts/Data.gd")
+const DataScript = preload("res://scripts/GameRegionData.gd")
+const SaveStoreScript = preload("res://scripts/SaveStore.gd")
 const GameScript = preload("res://scripts/Game.gd")
 const MapViewScript = preload("res://scripts/MapView.gd")
 const WorldMiniMapScript = preload("res://scripts/WorldMiniMap.gd")
@@ -743,7 +744,7 @@ func _build() -> void:
 	map_header_title = _label("WELTKARTE · POLITIK", 15, CREAM)
 	map_header_title.clip_text = true
 	mh_box.add_child(map_header_title)
-	map_header_meta = _label("49 Grafschaften · 9 Königreiche · 3 Reiche", 10, Color(0.88, 0.80, 0.64))
+	map_header_meta = _label("%d Spielregionen · 9 Königreiche · 3 Reiche" % DataScript.provinces().size(), 10, Color(0.88, 0.80, 0.64))
 	map_header_meta.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	mh_box.add_child(map_header_meta)
 
@@ -1149,7 +1150,7 @@ func _build() -> void:
 	head_new.add_child(_label("Wähle dein Haus", 30, INK))
 	head_new.add_child(_spacer())
 	head_new.add_child(_button("Zurück", _hide_newgame, ""))
-	var sub_new := _label("2000 v. Chr. · 49 Grafschaften · neun Königreiche · drei Reiche", 14, INK_SOFT)
+	var sub_new := _label("2000 v. Chr. · %d Spielregionen · neun Königreiche · drei Reiche" % DataScript.provinces().size(), 14, INK_SOFT)
 	sub_new.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box_new.add_child(sub_new)
 	box_new.add_child(_button("Eigenes Haus gründen", _show_create, "crown"))
@@ -1529,6 +1530,9 @@ func _refresh_province_page() -> void:
 	province_neighbors.text = "Nachbarn: " + ", ".join(neighbours)
 	province_action_buttons["develop"].disabled = not game.can_develop(selected)
 	province_action_buttons["recruit"].disabled = not game.can_recruit(selected)
+	var capacity: Dictionary = game.region_capacity(p)
+	province_action_buttons["develop"].text = "Ausbauen · %d Gold" % int(capacity.develop_cost)
+	province_action_buttons["recruit"].text = "Werben · %d Gold · +%d" % [int(capacity.recruit_cost), int(capacity.recruit)]
 	province_action_buttons["attack"].disabled = not game.can_attack(selected)
 
 func _province_action(key: String) -> void:
@@ -2721,12 +2725,7 @@ func _write_save() -> bool:
 		return bool(lan_session.save_host().get("ok", false)) if lan_session.is_host else true
 	if game == null:
 		return false
-	var f := FileAccess.open("user://spielstand.json", FileAccess.WRITE)
-	if f == null:
-		return false
-	f.store_string(JSON.stringify(game.snapshot()))
-	f.close()
-	return true
+	return SaveStoreScript.write_snapshot("user://spielstand.json", game.snapshot())
 
 func _save() -> Dictionary:
 	if _lan_active():
@@ -2752,19 +2751,12 @@ func _load() -> bool:
 		game.note("Kein Spielstand gefunden.")
 		refresh()
 		return false
-	var f := FileAccess.open("user://spielstand.json", FileAccess.READ)
-	if f == null:
-		game.note("Laden fehlgeschlagen.")
+	var loaded: Dictionary = SaveStoreScript.load_snapshot("user://spielstand.json")
+	if not bool(loaded.ok):
+		game.note(str(loaded.message))
 		refresh()
 		return false
-	var text := f.get_as_text()
-	f.close()
-	var parsed = JSON.parse_string(text)
-	if not (parsed is Dictionary):
-		game.note("Spielstand ist beschädigt.")
-		refresh()
-		return false
-	if not game.restore(parsed):
+	if not game.restore(loaded.data):
 		refresh()
 		return false
 	kernel.bind_game(game)
@@ -2843,6 +2835,11 @@ func refresh() -> void:
 	var buttons: Dictionary = vm["buttons"]
 	develop_btn.disabled = not bool(buttons["develop"])
 	recruit_btn.disabled = not bool(buttons["recruit"])
+	var selected_region: Dictionary = game.province(selected)
+	if not selected_region.is_empty():
+		var capacity: Dictionary = game.region_capacity(selected_region)
+		develop_btn.text = "Ausbauen · %d Gold" % int(capacity.develop_cost)
+		recruit_btn.text = "Werben · %d Gold · +%d" % [int(capacity.recruit_cost), int(capacity.recruit)]
 	attack_btn.disabled = not bool(buttons["attack"])
 	court_btn.disabled = not bool(buttons["court"])
 	marry_btn.disabled = not bool(buttons["marry"])
@@ -4037,7 +4034,7 @@ func _fill_chronicle() -> void:
 	econ.add_theme_constant_override("separation", 6)
 	econ.add_child(_button("Steuersatz", _toggle_tax, ""))
 	econ.add_child(_button("Erbfolge", _toggle_succession, ""))
-	econ.add_child(_button("Ausbauen (50)", func(): _dispatch({"id": "develop"}), ""))
+	econ.add_child(_button("Ausbauen", func(): _dispatch({"id": "develop"}), ""))
 	chronicle_body.add_child(econ)
 	chronicle_body.add_child(HSeparator.new())
 	chronicle_body.add_child(_label("Armee & Krieg", 17, INK))
@@ -4051,7 +4048,7 @@ func _fill_chronicle() -> void:
 			chronicle_body.add_child(_army_tokens(strength))
 	var war := HBoxContainer.new()
 	war.add_theme_constant_override("separation", 6)
-	war.add_child(_button("Truppen werben (30)", func(): _dispatch({"id": "recruit"}), ""))
+	war.add_child(_button("Truppen werben", func(): _dispatch({"id": "recruit"}), ""))
 	war.add_child(_button("Armee aufstellen (50)", _raise_army, ""))
 	war.add_child(_button("Hof halten (40)", func(): _dispatch({"id": "court"}), ""))
 	chronicle_body.add_child(war)

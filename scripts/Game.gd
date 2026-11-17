@@ -1367,12 +1367,9 @@ func court_expected_grandeur(house_index: int = -1) -> int:
 	var hi: int = player if house_index < 0 else house_index
 	if hi < 0 or hi >= houses.size():
 		return 0
-	var owned_count := 0
-	for p in provinces:
-		if int(p.get("owner", -1)) == hi:
-			owned_count += 1
+	var owned_count := owned_capacity(hi)
 	var legitimacy: int = clampi(int(houses[hi].get("legitimacy", 50)), 0, 100)
-	return clampi(COURT_EXPECTATION_BASE + owned_count * COURT_EXPECTATION_PROVINCE + int(legitimacy / COURT_EXPECTATION_LEGITIMACY_DIV), 0, 100)
+	return clampi(COURT_EXPECTATION_BASE + roundi(owned_count * COURT_EXPECTATION_PROVINCE) + int(legitimacy / COURT_EXPECTATION_LEGITIMACY_DIV), 0, 100)
 
 func court_expectation_delta(house_index: int = -1) -> int:
 	return court_grandeur(house_index) - court_expected_grandeur(house_index)
@@ -2890,11 +2887,8 @@ func renown_gain(house_index: int = -1) -> int:
 	if hi < 0 or hi >= houses.size():
 		return 0
 	var h: Dictionary = houses[hi]
-	var owned_count: int = 0
-	for p in provinces:
-		if int(p["owner"]) == hi:
-			owned_count += 1
-	var gain: int = 2 + int(int(h["prestige"]) / 80) + int(owned_count / 6) + int(int(h["ruler"]["diplomacy"]) / 12)
+	var owned_count := owned_capacity(hi)
+	var gain: int = 2 + int(int(h["prestige"]) / 80) + int((owned_count + 0.000001) / 6) + int(int(h["ruler"]["diplomacy"]) / 12)
 	return clampi(gain, 1, 12)
 
 func _tick_dynasty() -> void:
@@ -2909,14 +2903,28 @@ func _tick_dynasty() -> void:
 func legacy_track_info(track: String) -> Dictionary:
 	return LEGACY_TRACKS.get(track, {})
 
-func building_cost(key: String) -> int:
-	if key == "barracks":
-		return 70
-	if key == "walls":
-		return 80
-	if key == "market":
-		return 60
-	return 0
+func building_cost(key: String, id: String = "") -> int:
+	var base := int({"barracks":70,"walls":80,"market":60}.get(key, 0))
+	if base == 0:
+		return 0
+	var p := province(id)
+	return maxi(1, roundi(base * float(p.get("economic_share", 1.0))))
+
+func owned_capacity(hi: int) -> float:
+	var total := 0.0
+	for p in provinces:
+		if int(p.get("owner", -1)) == hi:
+			total += float(p.get("economic_share", 1.0))
+	return total
+
+func building_effect_units(p: Dictionary, key: String) -> float:
+	var level := int(p.get("buildings", {}).get(key, 0))
+	var weight := float(p.get("economic_share", 1.0))
+	if not p.has("building_effects"):
+		return level * weight
+	var original := float(p.building_effects.get(key, 0.0))
+	var initial := int(p.get("initial_buildings", {}).get(key, 0))
+	return maxf(0.0, original + (level - initial) * weight)
 
 func can_build(id: String, key: String, house_index: int = -1) -> bool:
 	var hi: int = player if house_index < 0 else house_index
@@ -2929,7 +2937,7 @@ func can_build(id: String, key: String, house_index: int = -1) -> bool:
 		return false
 	if int((p.get("buildings", {}) as Dictionary).get(key, 0)) >= 3:
 		return false
-	return int(houses[hi]["gold"]) >= building_cost(key)
+	return int(houses[hi]["gold"]) >= building_cost(key, id)
 
 func build(id: String, key: String, house_index: int = -1) -> Dictionary:
 	var hi: int = player if house_index < 0 else house_index
@@ -2937,7 +2945,7 @@ func build(id: String, key: String, house_index: int = -1) -> Dictionary:
 		return _res(false, "Bau nicht möglich (eigenes Land, freie Stufe, genug Gold).")
 	var h: Dictionary = houses[hi]
 	var p := province(id)
-	var cost: int = building_cost(key)
+	var cost: int = building_cost(key, id)
 	var level: int = int((p.get("buildings", {}) as Dictionary).get(key, 0))
 	var effects: Array = [
 		{"source": "Herrschaft", "target": "Herrschaft", "state": "houses[%d].gold" % hi,
@@ -2949,7 +2957,7 @@ func build(id: String, key: String, house_index: int = -1) -> Dictionary:
 	if key == "barracks":
 		effects.append({"edge": "H5", "source": "Herrschaft", "target": "Krieg",
 			"state": "provinces[%s].levy" % id, "kind": "levy", "house": hi,
-			"province": id, "amount": 60 + level * 35, "reason": "Kaserne"})
+			"province": id, "amount": maxi(1, roundi((60 + level * 35) * float(p.get("economic_share", 1.0)))), "reason": "Kaserne"})
 	elif key == "walls":
 		effects.append({"edge": "H5", "source": "Herrschaft", "target": "Krieg",
 			"state": "provinces[%s].defense" % id, "kind": "defense", "house": hi,
@@ -3094,11 +3102,12 @@ func _apply_tax_income(i: int, base: int) -> void:
 	}])
 
 func _apply_market_income(i: int) -> void:
-	var amount: int = 0
+	var units := 0.0
 	for p in provinces:
 		if int(p["owner"]) != i:
 			continue
-		amount += int((p.get("buildings", {}) as Dictionary).get("market", 0)) * 4
+		units += building_effect_units(p, "market")
+	var amount := roundi(units * 4.0)
 	if amount <= 0:
 		return
 	_resolve([{
@@ -3653,14 +3662,19 @@ func _is_border_province(house_index: int, province_id: String) -> bool:
 	return false
 
 func _ai_claim_target(house_index: int) -> String:
+	var best := ""
+	var best_score := -INF
 	for p in provinces:
-		if int(p["owner"]) != house_index or not _is_border_province(house_index, str(p["id"])):
+		if int(p["owner"]) != house_index:
 			continue
 		for n in neighbours(str(p["id"])):
 			var q := province(str(n))
 			if not q.is_empty() and int(q["owner"]) != house_index and not has_claim(str(n), house_index):
-				return str(n)
-	return ""
+				var score := float(region_income(q) * 4) - float(q.get("levy", 0)) / 100.0 - float(q.get("defense", 0))
+				if score > best_score or (score == best_score and str(n) < best):
+					best_score = score
+					best = str(n)
+	return best
 
 # --- Familie -------------------------------------------------------------
 
@@ -3963,6 +3977,9 @@ func snapshot() -> Dictionary:
 			"blockade": int(p.get("blockade", 0)),
 			"blockade_owner": int(p.get("blockade_owner", -1)),
 		})
+		for key in ["base_income", "initial_dev", "economic_share", "building_effects", "initial_buildings"]:
+			if p.has(key):
+				ps[-1][key] = p[key].duplicate(true) if p[key] is Dictionary else p[key]
 	var data_state: Dictionary = extra_state.duplicate(true)
 	data_state["year"] = year
 	data_state["month"] = month
@@ -3981,6 +3998,9 @@ func snapshot() -> Dictionary:
 	data_state["pending"] = pending_event["id"] if pending_event != null else ""
 	data_state["houses"] = hs
 	data_state["provinces"] = ps
+	if data.has_method("catalog_hash"):
+		data_state["world_layout"] = "regions108"
+		data_state["region_catalog_hash"] = data.catalog_hash()
 	data_state["opinion"] = opinion.duplicate()
 	data_state["cooldowns"] = cooldowns.duplicate()
 	data_state["captive"] = captive.duplicate(true)
@@ -4105,6 +4125,14 @@ func restore(d: Dictionary) -> bool:
 		note("Spielstand nicht ladbar: " + "; ".join(migration.get("errors", [])))
 		return false
 	var state: Dictionary = migration["data"]
+	if data.has_method("catalog_hash"):
+		var regional: Dictionary = load("res://scripts/RegionMigration.gd").migrate_state(state)
+		if not bool(regional.ok):
+			note("Spielstand nicht ladbar: " + "; ".join(regional.errors))
+			return false
+		state = regional.data
+	elif str(state.get("world_layout", "")) == "regions108":
+		return false
 	if not _valid_lan_state(state):
 		return false
 	var saved_houses: Array = state.get("houses", [])

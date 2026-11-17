@@ -47,7 +47,8 @@ static func validate(data: Dictionary) -> Array:
 		errors.append("Straßennetz fehlt oder ist ungültig.")
 		return errors
 	var edges := {}
-	var adjacency: Dictionary = DataScript.adjacency()
+	var regional := str(data.get("world_layout", "")) == "regions108"
+	var adjacency: Dictionary = load("res://scripts/GameRegionData.gd").adjacency() if regional else DataScript.adjacency()
 	for road in roads:
 		if not (road is Dictionary):
 			errors.append("Ungültiger Straßeneintrag.")
@@ -58,9 +59,16 @@ static func validate(data: Dictionary) -> Array:
 		var owner := int(road.get("builder", -1))
 		var months := int(road.get("months", -1))
 		var state := str(road.get("state", ""))
-		if a == b or not provinces.has(a) or not provinces.has(b) or owner < 0 or owner >= houses.size() or edges.has(key):
+		var inherited := false
+		if regional and bool(road.get("legacy_connection", false)):
+			var originals: Array = data.get("migration_legacy", {}).get("roads", [])
+			var origin := int(road.get("migration_origin", -1))
+			if origin >= 0 and origin < originals.size():
+				var old: Dictionary = originals[origin]
+				inherited = (DataScript.adjacency().get(str(old.get("from", "")), []) as Array).has(str(old.get("to", "")))
+		if (a == b and not inherited) or not provinces.has(a) or not provinces.has(b) or owner < 0 or owner >= houses.size() or (edges.has(key) and not inherited):
 			errors.append("Ungültige oder doppelte Straßenverbindung.")
-		if not (adjacency.get(a, []) as Array).has(b):
+		if not inherited and not (adjacency.get(a, []) as Array).has(b):
 			errors.append("Straßenendpunkte sind nicht benachbart.")
 		if not ((state == "building" and months >= 1 and months <= 3) or (state == "complete" and months == 0)):
 			errors.append("Ungültiger Straßenbauzustand.")

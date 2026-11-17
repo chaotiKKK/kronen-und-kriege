@@ -227,7 +227,7 @@ static func rule(game, selected: String) -> Dictionary:
 				"key": key,
 				"name": str(entry[1]),
 				"level": level,
-				"text": "%s: Stufe %d/3 · %d Gold" % [entry[1], level, game.building_cost(key)],
+				"text": "%s: Stufe %d/3 · %d Gold" % [entry[1], level, game.building_cost(key, selected)],
 				"disabled": not game.can_build(selected, key),
 			})
 	var legacies: Array = []

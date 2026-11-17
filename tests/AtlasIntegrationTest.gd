@@ -1,4 +1,11 @@
 extends Node
+
+func _expected_game_region(point: Vector2) -> String:
+	for province in main.game.provinces:
+		for part in province.parts:
+			if Geometry2D.is_point_in_polygon(point, part):
+				return str(province.id)
+	return ""
 ## Reale Geografie, lesbare Kartenschilder und sichtbereichsgebundene Darstellung.
 var checks := 0
 var failures := 0
@@ -458,7 +465,7 @@ func _check_label_tap(wiesbaden: Dictionary) -> void:
 		await _settle_ui()
 		_check(str(map.atlas_layer.selected_id) == str(candidate.id), "Der Tipp auf ein sichtbares Stadtschild wählt die Gemeinde unter dem Text statt der beschrifteten Stadt.")
 		_check(str(map.atlas_location) == str(candidate.name), "Der Tipp auf den Ortsnamen übernimmt nicht den Namen der sichtbaren Stadt.")
-		var expected_province := str(candidate.get("province_id", ""))
+		var expected_province := _expected_game_region(_point(candidate))
 		_check(str(main.selected) == expected_province and str(map.selected) == expected_province, "Der Tipp auf ein Stadtschild übernimmt das Spielgebiet unter der Textposition statt das Gebiet des beschrifteten Ortes.")
 	map.focus_atlas_location(wiesbaden)
 	await _settle_ui()
@@ -482,11 +489,12 @@ func _check_background_area_tap(wiesbaden: Dictionary) -> void:
 		label_hit = label_hit or (label.rect as Rect2).has_point(tap)
 	_check(not label_hit, "Der Flächentest bei Lüchow trifft versehentlich ein Ortsnamensschild.")
 	_check(map.atlas_data.nearest_city(point, 12.0 / float(fit[0])).is_empty(), "Der Flächentest bei Lüchow trifft versehentlich einen Ortsmarker.")
-	_check(str(map._province_at(tap)) == "vandalia", "Die tatsächlich angetippte Spielgebietsfläche bei Lüchow ist nicht Vandalia.")
+	var expected_region := _expected_game_region(point)
+	_check(not expected_region.is_empty() and str(map._province_at(tap)) == expected_region, "Die tatsächlich angetippte Fläche bei Lüchow passt nicht zur Regionsgeometrie.")
 	map._pick_at(tap)
 	await _settle_ui()
 	_check(str(map.atlas_layer.selected_id) == "region:DE-03", "Der Hintergrundtipp bei Lüchow verliert die echte Region Niedersachsen.")
-	_check(str(main.selected) == "vandalia" and str(map.selected) == "vandalia", "Ein Hintergrundtipp übernimmt das Spielgebiet des Regionsmittelpunkts statt der angetippten Fläche.")
+	_check(str(main.selected) == expected_region and str(map.selected) == expected_region, "Ein Hintergrundtipp übernimmt das Spielgebiet des Regionsmittelpunkts statt der angetippten Fläche.")
 	ui._toggle_map_focus()
 	await _settle_ui()
 	map.focus_atlas_location(wiesbaden)

@@ -18,7 +18,8 @@ extends RefCounted
 ## erhält alle vorhandenen Felder und ergänzt nur neue Pflichtfelder mit
 ## deterministischen Defaults. Sie überschreibt keine unbekannten Felder.
 
-const CURRENT_VERSION := 12
+const CURRENT_VERSION := 13
+const RegionMigrationScript = preload("res://scripts/RegionMigration.gd")
 const CalendarScript = preload("res://scripts/CampaignCalendar.gd")
 const InfrastructureScript = preload("res://scripts/Infrastructure.gd")
 const RELIC_IDS := ["crown", "blade", "seal"]
@@ -117,6 +118,8 @@ static func migrate(data: Dictionary) -> Dictionary:
 			h["research"] = InfrastructureScript.initial_research()
 	if not out.has("roads"):
 		out["roads"] = []
+	if str(out.get("world_layout", "")) == "regions108":
+		errors.append_array(RegionMigrationScript.validate_current(out))
 	errors.append_array(InfrastructureScript.validate(out))
 
 	return {

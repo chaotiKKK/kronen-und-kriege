@@ -21,7 +21,7 @@ import tempfile
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_TEMPLATE = ROOT / '.tools/appdata/Godot/export_templates/4.5.stable/windows_release_x86_64.exe'
+DEFAULT_TEMPLATE = ROOT / '.tools/appdata/Godot/export_templates/4.5.1.stable/windows_release_x86_64.exe'
 DEFAULT_RCEDIT = ROOT / '.tools/rcedit-x64.exe'
 DEFAULT_OUTPUT = ROOT / '.tools/windows-export-template/banger-queens-windows-release-x86_64.exe'
 STRING_KEYS = {'company_name': 'CompanyName', 'product_name': 'ProductName',

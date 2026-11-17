@@ -2,6 +2,8 @@
 
 ## Aktive Fortsetzung am 17. November 2026
 
+Aktueller Auftrag: Restbalance und Migration selbstständig bis zu regulär spielbaren108 Regionen fertigstellen; anschließend EXE/APK bauen und prüfen. Abnahmepfad: alte vollständige Partie→Migration mit unverändertem Eingabestand/Backup→108-Regionen-Partie→Charakter erstellen→Monate spielen→Speichern/Laden; zusätzlich Katalog-/Protokollkonflikte abweisen. Neue Version1.8.0/Androidcode12. Neue Features außerhalb dieses Abnahmepfades werden nicht eingeschoben.
+
 Der Quellstand wurde aus GitHub 7e127e4 unter F:\Crusader Kings III v1.18.3\banger-queens-recovery-20261117 wiederhergestellt. Der frühere C:-Checkout und sein nicht gepushter Branch sind nicht mehr vorhanden. Nutzer nennt F: als Projektort und die EXE 1.6.1 als vorhandenes Paket. Das Paket bleibt erhalten. Die nachfolgenden historischen Atlasabschnitte bleiben als Belege stehen.
 
 Aktueller freigegebener Auftrag: Option 2 vollständig, inline ohne Subagenten. Rund 108 ausgewogene Spielregionen, vollständiger passiver Detailatlas, deutsche Touchoberfläche, keine zusätzlichen Inhaltsimporte. Startwirtschaft 762 und Aufgebot 24.240 erhalten. Schema 13 und WLAN-Protokoll 2 folgen erst mit geprüfter Migration. Version 1.7.0 bleibt Rückfallstand.
@@ -74,3 +76,15 @@ Geprüfter Zwischenstand1.7.0 ist veröffentlicht: https://github.com/chaotiKKK/
 ## Neue Fortsetzung: acht Quellenfälle und WLAN
 
 Auftrag vom10.November2026: neue belastbare Quellen für die acht offenen Gebiete und echter WLAN-Mehrspielermodus. Architektur/Plan unter docs/superpowers/specs/2026-11-10-lan-multiplayer-design.md und docs/superpowers/plans/2026-11-10-lan-multiplayer.md. Userautonomie gilt. Root besitzt Netz/UI/Main/Integration, Game-Worker isoliert persönliche Zustände; zwei getrennte Quellenworker suchen andere Primärwege. Nur koordinierte einzelne Godot-/Build-/Exportslots.
+
+## Stand 17. November 2026: 108 Regionen und kompakte Oberfläche
+
+Aktiver Checkout: `F:\Crusader Kings III v1.18.3\banger-queens-recovery-20261117`, Branch `codex/balanced-game-regions`. Die ältere C:-Pfadangabe oben ist historisch. Inline ohne Subagenten weitergearbeitet.
+
+1. Regionskatalog und gewichtete Ökonomie: abgeschlossen, Kataloghash `6112a370a9c26d1186059519e26742db7b63a10b4082c41e2fb2623b30f5f629`.
+2. Reguläre Menüs, eigener Charakter, Save-Schema 13, bytegleiche Altstand-Sicherungen und lokale WLAN-Dateimigration: abgeschlossen und geprüft.
+3. Kompakte Hauptansicht nach Brainstorming/Frontend-Design: abgeschlossen. Größere Touchflächen, sechs Themes und 200-Prozent-Schrift bleiben erhalten.
+4. Quellenregression: 54 Godot-Suiten / 35.193 Prüfungen nach dokumentierten gezielten Nachläufen grün, Regionsgenerator 14 Tests grün. Vollständiger alter Python-Quellenaudit wegen fünf fehlender privater Cachebelege und vier übersprungener Cachefälle ausdrücklich offen.
+5. Finale EXE und APK 1.8.0 gebaut und statisch geprüft. Exportierte EXE: 368 Runtime-Prüfungen plus 66 Prüfungen mit zwei ENet-Prozessen. Android-Emulator: eigener Charakter und Speichern per Geräteeingabe, Datei mit 108 Regionen und korrektem Schema/Hash bestätigt.
+
+Abnahmegrenzen: physisches Poco und echtes Smartphone-WLAN offen; etwa 11,7 FPS beim 4×-Kartenschwenk im PC-Benchmark; Android-Emulator rund 3 GiB PSS einschließlich Swap. Signaturschlüssel der vorhandenen APK 1.6.1 fehlt; dadurch ist die neue APK kein direktes Update über diese Fassung. Bericht: `docs/releases/1.8.0.md`, endgültige Belege: `build/verify/release-180-final/`.

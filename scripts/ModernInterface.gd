@@ -27,6 +27,21 @@ var map_focus := false
 var _header_panel: Control
 var _focus_button: Button
 var _focus_restore: Dictionary = {}
+var touch_layout := OS.has_feature("android") or OS.has_feature("ios")
+var _hud_buttons: Array[Button] = []
+
+func _font(control: Control, pixels: int) -> void:
+	control.set_meta("atlas_font_size", pixels)
+	control.set_meta("atlas_applied_scale", -1.0)
+	control.add_theme_font_size_override("font_size", int(round(pixels * text_scale)))
+
+func set_touch_layout(enabled: bool) -> void:
+	touch_layout = enabled
+	for button in _hud_buttons:
+		button.custom_minimum_size.y = 44 if enabled else 28
+	main.get_meta("atlas_search").set_compact(not enabled)
+	last_width = -1
+	fit_layout()
 
 static func surface(color: Color = PANEL, margin: int = 16) -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()
@@ -34,7 +49,7 @@ static func surface(color: Color = PANEL, margin: int = 16) -> StyleBoxFlat:
 	box.bg_color = _surface_color(color)
 	box.border_color = Color("365064")
 	box.set_border_width_all(1)
-	box.set_corner_radius_all(7)
+	box.set_corner_radius_all(4)
 	box.content_margin_left = margin
 	box.content_margin_right = margin
 	box.content_margin_top = margin
@@ -66,7 +81,7 @@ static func _surface_color(color: Color) -> Color:
 	if appearance == 2:
 		return Color(0.92, 0.95, 0.96, color.a)
 	if appearance >= 3:
-		var base := Color("36251c")
+		var base := Color("241a14")
 		if appearance == 4:
 			base = Color("e5c99b")
 		elif appearance == 5:
@@ -118,12 +133,15 @@ func install(host) -> void:
 	fit_layout()
 	set_appearance(int(main.settings.get("ui_theme", DEFAULT_APPEARANCE)))
 	set_text_scale(float(main.settings.get("text_scale", 1.0)))
+	set_touch_layout(touch_layout)
 
 func set_text_scale(value: float) -> void:
 	text_scale = clampf(value, 1.0, 2.0)
 	main.settings["text_scale"] = text_scale
 	_scale_text(main)
 	_fit_dialogs()
+	last_width = -1
+	fit_layout()
 
 func _scale_text(node: Node) -> void:
 	if node is Label or node is Button or node is LineEdit:
@@ -225,6 +243,8 @@ func _recolor(node: Node) -> void:
 					copy.border_color = Color("708897")
 				elif appearance >= 3:
 					copy.border_color = Color("a58050") if appearance == 3 else Color("927348")
+				if appearance != 1:
+					copy.border_color.a = original_border.a
 				if control is Button and not copy.get_meta("atlas_fixed_color", false):
 					if style_name == "focus":
 						copy.bg_color = Color.TRANSPARENT
@@ -256,53 +276,46 @@ func _rebuild_header() -> void:
 	var old_row: HBoxContainer = main.top_crest.get_parent().get_parent()
 	var panel: PanelContainer = old_row.get_parent()
 	_header_panel = panel
-	var rows := VBoxContainer.new()
-	rows.add_theme_constant_override("separation", 6)
+	var rows := HBoxContainer.new()
 	panel.remove_child(old_row)
 	panel.add_child(rows)
-	panel.add_theme_stylebox_override("panel", surface(BG, 12))
-	panel.custom_minimum_size.y = 116
+	panel.add_theme_stylebox_override("panel", surface(Color(0.04, 0.06, 0.06, 0.94), 6))
+	panel.custom_minimum_size.y = 46
 	var identity := HBoxContainer.new()
-	identity.add_theme_constant_override("separation", 16)
+	identity.add_theme_constant_override("separation", 12)
 	var identity_scroll := ScrollContainer.new()
 	identity_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	identity_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	rows.add_child(identity_scroll)
+	identity_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	identity_scroll.add_child(identity)
 	identity.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var name_block: Control = main.top_crest.get_parent()
 	name_block.reparent(identity)
+	main.top_crest.custom_minimum_size = Vector2(25, 30)
 	var date: Control = main.date_label.get_parent()
 	date.reparent(identity)
-	main.date_label.add_theme_font_size_override("font_size", 18)
-	identity.add_child(main._spacer())
-	for node in old_row.get_children():
-		if node is Button and not main.speed_buttons.has(node):
-			node.reparent(identity)
-			_style_tool(node)
-	var economy := HBoxContainer.new()
-	economy.add_theme_constant_override("separation", 12)
-	var economy_scroll := ScrollContainer.new()
-	economy_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	economy_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	rows.add_child(economy_scroll)
-	economy_scroll.add_child(economy)
-	economy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	date.add_theme_stylebox_override("panel", surface(Color(0.08, 0.10, 0.10, 0.4), 6))
+	_font(main.date_label, 13)
 	var resources: Control = main.gold_label.get_parent()
-	resources.reparent(economy)
-	economy.add_child(main._spacer())
+	resources.reparent(identity)
+	identity.add_child(main._spacer())
 	for button in main.speed_buttons:
-		button.reparent(economy)
+		button.reparent(identity)
 		button.toggle_mode = true
 		_style_tool(button)
-		button.custom_minimum_size = Vector2(54, 44)
+		button.custom_minimum_size.x = 32
+	for node in old_row.get_children():
+		if node is Button:
+			node.reparent(identity)
+			_style_tool(node)
 	old_row.queue_free()
-	main.top_world_label.add_theme_font_size_override("font_size", 11)
-	main.top_realm_label.add_theme_font_size_override("font_size", 21)
+	_font(main.top_world_label, 9)
+	_font(main.top_realm_label, 15)
 	main.top_world_label.add_theme_color_override("font_color", SEA)
-	main.gold_label.add_theme_font_size_override("font_size", 16)
-	main.prestige_label.add_theme_font_size_override("font_size", 16)
-	main.renown_label.add_theme_font_size_override("font_size", 16)
+	_font(main.gold_label, 12)
+	_font(main.prestige_label, 12)
+	_font(main.renown_label, 12)
 
 func _rebuild_map_tools() -> void:
 	map_wrap = main.map_view.get_parent()
@@ -313,7 +326,7 @@ func _rebuild_map_tools() -> void:
 	var old_panel: Control = modes.get_parent()
 	navigation = ScrollContainer.new()
 	navigation.name = "Kartennavigation"
-	navigation.custom_minimum_size.y = 62
+	navigation.custom_minimum_size.y = 32
 	navigation.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	navigation.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	navigation.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
@@ -321,7 +334,7 @@ func _rebuild_map_tools() -> void:
 	column.move_child(navigation, 0)
 	modes.reparent(navigation)
 	modes.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	modes.add_theme_constant_override("separation", 6)
+	modes.add_theme_constant_override("separation", 3)
 	_focus_button = main._button("Karte groß", _toggle_map_focus)
 	_focus_button.toggle_mode = true
 	_focus_button.accessibility_name = "Kartenfläche vergrößern oder normale Ansicht wiederherstellen"
@@ -329,35 +342,39 @@ func _rebuild_map_tools() -> void:
 	for child in modes.get_children():
 		if child is Button:
 			_style_tool(child)
-			child.custom_minimum_size = Vector2(78, 48)
-			child.add_theme_font_size_override("font_size", 13)
+			child.custom_minimum_size.x = 0
 		elif child is Label:
-			child.text = "KARTE  "
-			child.add_theme_font_size_override("font_size", 11)
+			child.hide()
 	old_panel.queue_free()
 	# Informations-/Zoomzeile wird ebenfalls reserviert, statt die Karte zu verdecken.
 	var tools := HBoxContainer.new()
-	tools.add_theme_constant_override("separation", 8)
+	tools.add_theme_constant_override("separation", 4)
 	column.add_child(tools)
 	column.move_child(tools, 1)
 	var header: Control = main.map_header_title.get_parent().get_parent()
 	header.reparent(tools)
 	header.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
 	header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.custom_minimum_size = Vector2(0, 64)
-	main.map_header_meta.add_theme_font_size_override("font_size", 12)
+	header.custom_minimum_size = Vector2(0, 38)
+	header.add_theme_stylebox_override("panel", surface(Color(0.04, 0.07, 0.07, 0.72), 4))
+	_font(main.map_header_title, 12)
+	_font(main.map_header_meta, 10)
+	main.map_header_meta.max_lines_visible = 1
+	main.map_header_meta.clip_text = true
+	main.map_header_meta.tooltip_text = "Referenzatlas mit heutigen Verwaltungsnamen. Spielkarte: 108 Regionen, 9 Königreiche, 3 Reiche."
 	var zoom: HBoxContainer = main.side_toggle_btn.get_parent()
 	zoom.reparent(tools)
 	zoom.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
 	for button in zoom.get_children():
 		if button is Button:
 			_style_tool(button)
-			button.custom_minimum_size = Vector2(44, 48)
+			button.custom_minimum_size.x = 28
 	var ticker: Control = main.log_label.get_parent()
 	ticker.reparent(column)
 	ticker.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	ticker.custom_minimum_size = Vector2(0, 38)
-	main.log_label.add_theme_font_size_override("font_size", 12)
+	ticker.custom_minimum_size = Vector2(0, 22)
+	ticker.add_theme_stylebox_override("panel", surface(Color(0.04, 0.07, 0.07, 0.75), 4))
+	_font(main.log_label, 10)
 	main.minimap.custom_minimum_size = Vector2.ZERO
 	main.minimap.offset_left = -176
 	main.minimap.offset_top = -116
@@ -391,30 +408,43 @@ func set_map_focus(enabled: bool) -> void:
 	main.map_view.call_deferred("_sync_base_transform")
 
 func _style_tool(button: Button) -> void:
-	button.custom_minimum_size.y = 48
+	if not _hud_buttons.has(button):
+		_hud_buttons.append(button)
+	button.custom_minimum_size.y = 44 if touch_layout else 28
+	_font(button, 12)
 	button.add_theme_color_override("font_color", TEXT)
 	button.add_theme_color_override("font_disabled_color", disabled_text())
-	button.add_theme_stylebox_override("normal", surface(Color("182d3c"), 9))
-	button.add_theme_stylebox_override("hover", surface(Color("294856"), 9))
-	var selected := surface(Color("26565a"), 9)
+	var normal := surface(Color(0.08, 0.12, 0.13, 0.38), 6)
+	normal.content_margin_top = 3
+	normal.content_margin_bottom = 3
+	normal.border_color = Color(0.72, 0.61, 0.38, 0.24)
+	button.add_theme_stylebox_override("normal", normal)
+	var hover := normal.duplicate()
+	hover.set_meta("atlas_bg", Color(0.16, 0.23, 0.23, 0.85))
+	button.add_theme_stylebox_override("hover", hover)
+	var selected := normal.duplicate()
+	selected.set_meta("atlas_bg", Color(0.15, 0.28, 0.26, 0.95))
 	selected.border_color = SEA
 	button.add_theme_stylebox_override("pressed", selected)
-	button.add_theme_stylebox_override("focus", focus_surface(9))
+	var disabled := normal.duplicate()
+	disabled.set_meta("atlas_bg", Color(0.08, 0.12, 0.13, 0.20))
+	button.add_theme_stylebox_override("disabled", disabled)
+	button.add_theme_stylebox_override("focus", focus_surface(6))
 
 func _rebuild_sidebar() -> void:
 	var scroll: ScrollContainer = main.side_panel.get_child(0)
 	var old_box: VBoxContainer = scroll.get_child(0)
 	var children := old_box.get_children()
 	var outer := VBoxContainer.new()
-	outer.add_theme_constant_override("separation", 14)
+	outer.add_theme_constant_override("separation", 8)
 	main.side_panel.remove_child(scroll)
 	main.side_panel.add_child(outer)
 	var portrait_header: Control = main.crest_rect.get_parent()
 	portrait_header.reparent(outer)
-	main.portrait_rect.custom_minimum_size = Vector2(68, 84)
-	main.crest_rect.custom_minimum_size = Vector2(40, 48)
-	main.title_label.add_theme_font_size_override("font_size", 22)
-	main.info_label.add_theme_font_size_override("font_size", 13)
+	main.portrait_rect.custom_minimum_size = Vector2(42, 54)
+	main.crest_rect.custom_minimum_size = Vector2(24, 30)
+	_font(main.title_label, 16)
+	_font(main.info_label, 11)
 	sidebar_tabs = GridContainer.new()
 	sidebar_tabs.columns = 4
 	sidebar_tabs.add_theme_constant_override("h_separation", 4)
@@ -433,7 +463,7 @@ func _rebuild_sidebar() -> void:
 		sidebar_tabs.add_child(button)
 		var page := VBoxContainer.new()
 		page.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		page.add_theme_constant_override("separation", 10)
+		page.add_theme_constant_override("separation", 6)
 		old_box.add_child(page)
 		pages[id] = page
 	outer.add_child(scroll)
@@ -457,8 +487,20 @@ func _rebuild_sidebar() -> void:
 			child.queue_free()
 			continue
 		child.reparent(pages[section])
-	main.side_panel.add_theme_stylebox_override("panel", surface(PANEL, 16))
+		_compact_sidebar(child)
+	var side_style := surface(Color(0.06, 0.10, 0.11, 0.90), 10)
+	side_style.shadow_color = Color(0, 0, 0, 0.18)
+	side_style.shadow_size = 5
+	main.side_panel.add_theme_stylebox_override("panel", side_style)
 	show_section("overview")
+
+func _compact_sidebar(node: Node) -> void:
+	if node is Button:
+		_style_tool(node)
+	elif node is Label:
+		_font(node, 12)
+	for child in node.get_children():
+		_compact_sidebar(child)
 
 func show_section(id: String) -> void:
 	if not pages.has(id):
@@ -548,6 +590,6 @@ func fit_layout() -> void:
 	if is_equal_approx(width, last_width):
 		return
 	last_width = width
-	main.side_panel.custom_minimum_size.x = clampf(width * 0.29, 300.0, 400.0)
-	sidebar_tabs.columns = 4 if width >= 1100 else 2
+	main.side_panel.custom_minimum_size.x = clampf(width * 0.22, 248.0, 310.0)
+	sidebar_tabs.columns = 4 if width >= 1400 and text_scale <= 1.1 else 2
 	navigation.custom_minimum_size.x = 0

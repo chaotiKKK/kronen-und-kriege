@@ -86,18 +86,20 @@ func _host_case() -> void:
 	var guest_gold := int(main.game.houses[1].gold)
 	var host_dev := int(main.game.province(host_capital).dev)
 	var guest_dev := int(main.game.province(guest_capital).dev)
+	var host_cost: int = main.game.region_capacity(main.game.province(host_capital)).develop_cost
+	var guest_cost: int = main.game.region_capacity(main.game.province(guest_capital)).develop_cost
 	main._on_province_selected(host_capital)
 	var result: Dictionary = main._dispatch({"id":"develop"})
 	_check(bool(result.get("ok", false)), "Eigener Hostausbau wurde im Main-Pfad abgewiesen.")
-	_check(int(main.game.houses[0].gold) == host_gold - 50 and int(main.game.province(host_capital).dev) == host_dev + 1, "Hostausbau wurde nicht genau einmal berechnet.")
+	_check(int(main.game.houses[0].gold) == host_gold - host_cost and int(main.game.province(host_capital).dev) == host_dev + 1, "Hostausbau wurde nicht genau einmal berechnet.")
 	_check(int(main.game.houses[1].gold) == guest_gold, "Hostausbau belastete das Gasthaus.")
 	_write_marker("built")
-	if not await _until(func(): return int(main.game.houses[1].gold) == guest_gold - 50 and int(main.game.province(guest_capital).dev) == guest_dev + 1, "Echter Gastausbau beim Host"):
+	if not await _until(func(): return int(main.game.houses[1].gold) == guest_gold - guest_cost and int(main.game.province(guest_capital).dev) == guest_dev + 1, "Echter Gastausbau beim Host"):
 		return
 	if not await _until(func(): return _marker_exists("guest", "actions-complete"), "Gast hat echte Bestätigungen und Ablehnung beobachtet"):
 		return
 	_check_references(0)
-	_check(int(main.game.houses[0].gold) == host_gold - 50 and int(main.game.province(host_capital).dev) == host_dev + 1, "Abgewiesener Gastbefehl veränderte das Hosthaus.")
+	_check(int(main.game.houses[0].gold) == host_gold - host_cost and int(main.game.province(host_capital).dev) == host_dev + 1, "Abgewiesener Gastbefehl veränderte das Hosthaus.")
 	_capture_world()
 	_write_marker("world-ready")
 	if not await _until(func(): return _marker_exists("guest", "observed"), "Gast hat denselben endgültigen Paketstand beobachtet"):
@@ -132,7 +134,9 @@ func _guest_case() -> void:
 	for province in base_provinces:
 		if str(province.id) == host_capital:
 			base_host_dev = int(province.dev)
-	if not await _until(func(): return int(main.game.houses[0].gold) == int(base_houses[0].gold) - 50 and int(main.game.province(host_capital).dev) == base_host_dev + 1, "Hostausbau kam als echter Gast-Snapshot an"):
+	var host_cost: int = main.game.region_capacity(main.game.province(host_capital)).develop_cost
+	var guest_cost: int = main.game.region_capacity(main.game.province(guest_capital)).develop_cost
+	if not await _until(func(): return int(main.game.houses[0].gold) == int(base_houses[0].gold) - host_cost and int(main.game.province(host_capital).dev) == base_host_dev + 1, "Hostausbau kam als echter Gast-Snapshot an"):
 		return
 	_check_references(1)
 	var guest_gold := int(main.game.houses[1].gold)
@@ -141,7 +145,7 @@ func _guest_case() -> void:
 	var previous_acks := acknowledgements.size()
 	var result: Dictionary = main._dispatch({"id":"develop"})
 	_check(bool(result.get("ok", false)) and session.pending_command, "Gastausbau wurde nicht als ausstehender echter Befehl versendet.")
-	if not await _until(func(): return acknowledgements.size() > previous_acks and not session.pending_command and int(main.game.houses[1].gold) == guest_gold - 50, "Gast erhielt echte Hostbestätigung und neuen Main-Snapshot"):
+	if not await _until(func(): return acknowledgements.size() > previous_acks and not session.pending_command and int(main.game.houses[1].gold) == guest_gold - guest_cost, "Gast erhielt echte Hostbestätigung und neuen Main-Snapshot"):
 		return
 	var success: Dictionary = acknowledgements[-1]
 	var success_text := str(success.get("message", ""))
@@ -163,7 +167,7 @@ func _guest_case() -> void:
 	_check(not bool(rejection.get("ok", true)) and not rejection_text.is_empty(), "Fremde Hostprovinz wurde akzeptiert oder ohne Begründung abgewiesen.")
 	_check(main.hint_label.text.contains(rejection_text) and not main.hint_label.text.contains("gesendet"), "Die tatsächliche Hostablehnung fehlt im sichtbaren Gasthinweis.")
 	_check(str(protocol.world_hash(main.game.snapshot())) == before_hash, "Abgewiesener fremder Provinzbefehl änderte die Paketwelt.")
-	_check(int(main.game.houses[1].gold) == guest_gold - 50, "Abgewiesener Befehl kostete den Gast weiteres Gold.")
+	_check(int(main.game.houses[1].gold) == guest_gold - guest_cost, "Abgewiesener Befehl kostete den Gast weiteres Gold.")
 	observed["rejected_message"] = rejection_text
 	observed["rejected_hint"] = str(main.hint_label.text)
 	_write_marker("actions-complete")

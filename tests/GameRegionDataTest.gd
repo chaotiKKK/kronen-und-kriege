@@ -86,6 +86,13 @@ func _ready() -> void:
 	growth_game._regenerate_province_levies()
 	if not check(int(growth_game.provinces[0].levy) == 1100, "Geerbter Überhang wird beim Jahreswechsel erhalten"):
 		return
+	if not check(game.has_method("building_effect_units"), "Gewichtete Gebäudewirkung fehlt"):
+		return
+	var inherited := {"economic_share":0.25,"buildings":{"market":2},"initial_buildings":{"market":1},"building_effects":{"market":0.1}}
+	if not check(absf(game.building_effect_units(inherited, "market") - 0.35) < 0.000001, "Geerbte Gebäudewirkung plus lokale Aufwertung"):
+		return
+	if not check(growth_game.building_cost("market", "quarter") == 15, "Gebäudekosten für Viertelregion gewichtet"):
+		return
 	print("GAMEREGIONDATATEST OK: %d Prüfungen" % checks)
 	get_tree().quit(0)
 

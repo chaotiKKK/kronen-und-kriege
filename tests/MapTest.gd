@@ -28,10 +28,10 @@ func _run() -> void:
 	if g == null:
 		_fail("Spiel wurde nicht erzeugt")
 		return
-	if g.provinces.size() != 49:
-		_fail("Karte hat %d statt 49 Grafschaften" % g.provinces.size())
+	if g.provinces.size() != 108:
+		_fail("Karte hat %d statt 108 Spielregionen" % g.provinces.size())
 		return
-	if not _check(g.provinces.size() == 49, "Karte hat nicht 49 Grafschaften."):
+	if not _check(g.provinces.size() == 108, "Karte hat nicht 108 Spielregionen."):
 		return
 	var kingdoms := {}
 	var duchies := {}
@@ -44,7 +44,7 @@ func _run() -> void:
 		kingdoms[p["kingdom"]] = true
 		duchies[p["duchy"]] = true
 		empires[p["empire"]] = true
-		if (g.neighbours(str(p["id"])) as Array).is_empty():
+		if (g.neighbours(str(p["id"])) as Array).is_empty() and not str(p.get("exception_reason", "")) in ["island_group", "small_island"]:
 			_fail("Grafschaft %s hat keine Nachbarn" % p["id"])
 			return
 	if kingdoms.size() != 9 or duchies.size() < 20 or empires.size() != 3:
@@ -54,10 +54,10 @@ func _run() -> void:
 		return
 
 	var owned: Array = g.owned()
-	if owned.size() < 5:
+	if owned.size() < 4:
 		_fail("Haus 2 besitzt nur %d Grafschaften" % owned.size())
 		return
-	if not _check(owned.size() >= 5, "Haus 2 besitzt weniger als fünf Grafschaften."):
+	if not _check(owned.size() >= 4, "Haus 2 besitzt weniger als vier Spielregionen."):
 		return
 	var p0: Dictionary = owned[0]
 	main._on_province_selected(str(p0["id"]))
@@ -160,7 +160,7 @@ func _run() -> void:
 	if not _check(g2 != null and g2.player == 9 and int(cap["owner"]) == 9 and str(cap["name"]) == "Arialand" and str(g2.house().get("capital", "")) == home_id and str(g2.house().get("realm", "")).contains("Arialand"), "Der eigene Grafschaftsstart ist unvollständig."):
 		return
 
-	print("MAPTEST OK: 49 Grafschaften, %d Herzogtümer, 9 Königreiche, 3 Reiche, sechs Kartenmodi; Auswahl und eigener Grafschaftsstart funktionieren; %d Prüfungen." % [duchies.size(), _checks])
+	print("MAPTEST OK: 108 Spielregionen, %d Herzogtümer, 9 Königreiche, 3 Reiche, sechs Kartenmodi; Auswahl und eigener Grafschaftsstart funktionieren; %d Prüfungen." % [duchies.size(), _checks])
 	get_tree().quit(0)
 
 func _check(condition: bool, message: String) -> bool:

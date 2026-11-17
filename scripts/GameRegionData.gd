@@ -5,6 +5,16 @@ const Catalog = preload("res://scripts/GameRegionCatalog.gd")
 static var _provinces: Array = []
 static var _houses: Array = []
 static var _adjacency: Dictionary = {}
+static var _hash := ""
+static var _catalog: RefCounted = null
+
+static func region_at(point: Vector2) -> Dictionary:
+	_ensure()
+	return _catalog.region_at(point) if _catalog != null else {}
+
+static func catalog_hash() -> String:
+	_ensure()
+	return _hash
 
 static func provinces() -> Array:
 	_ensure()
@@ -25,6 +35,8 @@ static func _ensure() -> void:
 	if not catalog.load_data():
 		push_error(catalog.error_message)
 		return
+	_hash = catalog.catalog_hash()
+	_catalog = catalog
 	var old_by_id := {}
 	for old in Legacy.provinces():
 		old_by_id[str(old.id)] = old
@@ -51,6 +63,8 @@ static func _ensure() -> void:
 			p.economic_share += float(share)
 		p.dev = roundi(development)
 		p.initial_dev = p.dev
+		p.initial_buildings = {"market":0, "barracks":0, "walls":0}
+		p.building_effects = {"market":0.0, "barracks":0.0, "walls":0.0}
 		p.coastal = _coastal(p.parts)
 		by_id[str(p.id)] = p
 		_provinces.append(p)

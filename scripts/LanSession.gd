@@ -10,11 +10,11 @@ signal command_finished(result: Dictionary)
 const Protocol = preload("res://scripts/LanProtocol.gd")
 const Authority = preload("res://scripts/LanAuthority.gd")
 const GameScript = preload("res://scripts/Game.gd")
-const DataScript = preload("res://scripts/Data.gd")
+const DataScript = preload("res://scripts/GameRegionData.gd")
 const Save = preload("res://scripts/SaveGame.gd")
 const Discovery = preload("res://scripts/LanDiscovery.gd")
 const TIMEOUT_MS := 8000
-static var _cached_fingerprint := ""
+static var _cached_fingerprints: Dictionary = {}
 
 var phase := "idle"
 var is_host := false
@@ -58,8 +58,9 @@ func _init(data_script = null, fingerprint_override: String = "") -> void:
 	_fingerprint = fingerprint_override if fingerprint_override != "" else _content_fingerprint()
 
 func _content_fingerprint() -> String:
-	if _cached_fingerprint != "":
-		return _cached_fingerprint
+	var cache_key := str(_data.resource_path)
+	if _cached_fingerprints.has(cache_key):
+		return str(_cached_fingerprints[cache_key])
 	var content := {"schema":Save.CURRENT_VERSION, "protocol":Protocol.VERSION,
 		"houses":_data.houses(), "provinces":_data.provinces(), "adjacency":_data.adjacency()}
 	for path in ["res://data/atlas.json", "res://data/atlas_geometry.bin", "res://data/europe_geometry.json"]:
@@ -67,8 +68,10 @@ func _content_fingerprint() -> String:
 		if digest == "":
 			return ""
 		content[path] = digest
-	_cached_fingerprint = JSON.stringify(Save.canonical(content)).sha256_text()
-	return _cached_fingerprint
+	if _data.has_method("catalog_hash"):
+		content["regions"] = _data.catalog_hash()
+	_cached_fingerprints[cache_key] = JSON.stringify(Save.canonical(content)).sha256_text()
+	return str(_cached_fingerprints[cache_key])
 
 func _new_transport() -> void:
 	_transport = SceneMultiplayer.new()
@@ -246,11 +249,17 @@ func save_host(path: String = "user://lan_partie.json") -> Dictionary:
 	var raw := Protocol.encode_packet(envelope)
 	if raw.is_empty():
 		return _failure("Der WLAN-Spielstand ist zu groß.")
-	var file := FileAccess.open(path, FileAccess.WRITE)
+	var file := FileAccess.open(path + ".tmp", FileAccess.WRITE)
 	if file == null:
 		return _failure("WLAN-Spielstand konnte nicht gespeichert werden.")
 	file.store_buffer(raw)
+	file.flush()
+	var write_error := file.get_error()
 	file.close()
+	if write_error != OK:
+		return _failure("WLAN-Spielstand konnte nicht vollständig geschrieben werden.")
+	if DirAccess.rename_absolute(ProjectSettings.globalize_path(path + ".tmp"), ProjectSettings.globalize_path(path)) != OK:
+		return _failure("WLAN-Spielstand konnte nicht vollständig gespeichert werden.")
 	_set_status("WLAN-Partie gespeichert.")
 	return _success("WLAN-Partie gespeichert.")
 
@@ -260,16 +269,35 @@ func load_host_lobby(path: String = "user://lan_partie.json") -> Dictionary:
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null or file.get_length() > Protocol.MAX_PACKET_BYTES:
 		return _failure("WLAN-Spielstand fehlt oder ist zu groß.")
-	var envelope = JSON.parse_string(file.get_as_text())
+	var original_bytes := file.get_buffer(file.get_length())
+	var envelope = JSON.parse_string(original_bytes.get_string_from_utf8())
 	file.close()
 	if not envelope is Dictionary or envelope.get("kind") != "BQ-LAN-SAVE" or not envelope.get("state") is Dictionary:
 		return _failure("Der WLAN-Spielstand ist beschädigt.")
 	var error := Protocol.handshake_error(envelope, _app, _fingerprint)
-	if error != "":
+	# Local file migration only. Old network peers still fail the handshake.
+	var legacy_file: bool = _data.has_method("catalog_hash") and Protocol.integer(envelope.get("v"), 1, 1) and str(envelope.get("app", "")).begins_with("1.7.") and str(envelope.state.get("world_layout", "")) != "regions108"
+	if error != "" and not legacy_file:
 		return _failure(error)
 	var restored = GameScript.new(_data, 0)
 	if not restored.restore(envelope.state) or restored.human_houses.size() < 2:
 		return _failure("Der WLAN-Spielstand enthält keine gültige gemeinsame Partie.")
+	if legacy_file:
+		var backup := path + ".pre-regions-v1.bak"
+		if FileAccess.file_exists(backup) and FileAccess.get_file_as_bytes(backup) != original_bytes:
+			var context := HashingContext.new()
+			context.start(HashingContext.HASH_SHA256)
+			context.update(original_bytes)
+			backup = path + ".pre-regions-" + context.finish().hex_encode().substr(0,16) + ".bak"
+		if not FileAccess.file_exists(backup):
+			var backup_file := FileAccess.open(backup, FileAccess.WRITE)
+			if backup_file == null:
+				return _failure("Die alte WLAN-Partie konnte nicht gesichert werden.")
+			backup_file.store_buffer(original_bytes)
+			backup_file.flush()
+			backup_file.close()
+		if FileAccess.get_file_as_bytes(backup) != original_bytes:
+			return _failure("Die Sicherung der alten WLAN-Partie ist unvollständig.")
 	game = restored
 	game.speed = 0
 	_resume_state = game.snapshot()
