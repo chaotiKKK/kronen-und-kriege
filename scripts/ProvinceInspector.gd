@@ -21,13 +21,25 @@ var focus_box: VBoxContainer
 var _focus_province := ""
 var disband_box: VBoxContainer
 var _pending_disband: Dictionary = {}
+var _details_expanded := false
 
 func configure(host) -> void:
 	main = host
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_theme_constant_override("separation", 6)
-	title = _text("Wähle eine Spielregion", 16)
+	var title_row := HBoxContainer.new()
+	add_child(title_row)
+	title = _text("Wähle eine Spielregion", 16, title_row)
+	var details: Button = main._button("Details", _toggle_details)
+	main.get_meta("modern_interface")._style_tool(details)
+	details.toggle_mode = true
+	details.tooltip_text = "Provinzdetails ein- oder ausblenden"
+	details.accessibility_name = "Provinzdetails ein- oder ausblenden"
+	title_row.add_child(details)
+	action_buttons.details = details
 	summary = _text("Wähle eine Provinz auf der Karte.")
+	fields.details = _text("",11)
+	fields.details.hide()
 	var tabs := GridContainer.new()
 	section_tabs = tabs
 	tabs.columns = 2
@@ -162,6 +174,12 @@ func _owns_selection() -> bool:
 	var province: Dictionary = main.game.province(selected_id)
 	return not province.is_empty() and int(province.owner)==main.game.player
 
+func _toggle_details() -> void:
+	if main.game == null or main.game.province(selected_id).is_empty(): return
+	_details_expanded = not _details_expanded
+	fields.details.visible = _details_expanded
+	action_buttons.details.set_pressed_no_signal(_details_expanded)
+
 func _open_research_plan() -> void:
 	if _owns_selection(): main._show_infrastructure()
 
@@ -215,8 +233,13 @@ func _preview_focus() -> void:
 	if preview.is_empty(): return
 	var pending: bool = main._lan_active() and main.lan_session.pending_command
 	var reason := str(preview.get("reason",""))
-	fields.focus_preview.text = "Ertrag %s → %s Gold/Jahr\nVersorgung %d → %d Mann\nZwölf Monate Bindung nach einem Wechsel." % [_gold(preview.current_income),_gold(preview.projected_income),int(preview.current_supply),int(preview.projected_supply)]
-	fields.focus_preview.text += "\n" + (reason if not reason.is_empty() else "Bereit · Änderung gilt nach Bestätigung.")
+	var changing := focus_id != str(main.game.province(selected_id).get("economic_focus","balanced"))
+	action_buttons.province_focus.visible = changing
+	if changing:
+		fields.focus_preview.text = "Ertrag %s → %s Gold/Jahr\nVersorgung %d → %d Mann\nZwölf Monate Bindung nach einem Wechsel." % [_gold(preview.current_income),_gold(preview.projected_income),int(preview.current_supply),int(preview.projected_supply)]
+		fields.focus_preview.text += "\n" + (reason if not reason.is_empty() else "Bereit · Änderung gilt nach Bestätigung.")
+	else:
+		fields.focus_preview.text = "%s Gold/Jahr · Versorgung %d Mann" % [_gold(preview.current_income),int(preview.current_supply)]
 	fields.focus_preview.tooltip_text = "Örtlicher Grund- und Marktbeitrag vor Haussteuern. Die endgültigen Markteinnahmen werden für das Haus gemeinsam gerundet."
 	action_buttons.province_focus.text = "Wechseln · %d Gold" % int(preview.cost)
 	action_buttons.province_focus.disabled = pending or main.game.game_over or not reason.is_empty()
@@ -254,16 +277,24 @@ func _refresh_supply(game, id: String) -> void:
 
 func show_section(id: String) -> void:
 	if not sections.has(id) or not section_buttons[id].visible or section_buttons[id].disabled: return
+	var changed := current_section != id
 	current_section = id
 	if _context_known and _own_context: _own_section = id
 	for key in sections:
 		sections[key].visible = key == id
 		section_buttons[key].set_pressed_no_signal(key == id)
+	if changed: _scroll_to_top()
+
+func _scroll_to_top() -> void:
+	var parent := get_parent()
+	while parent != null and not parent is ScrollContainer: parent = parent.get_parent()
+	if parent is ScrollContainer: parent.set_deferred("scroll_vertical",0)
 
 func fit_tabs() -> void:
 	var visible_tabs := 0
 	for button in section_buttons.values():
 		if button.visible: visible_tabs+=1
+	section_tabs.visible = visible_tabs > 1
 	section_tabs.columns = 1 if main.get_meta("modern_interface").text_scale > 1.3 else maxi(1,visible_tabs)
 
 func _refresh_administration(own: bool) -> void:
@@ -284,6 +315,7 @@ func _refresh_administration(own: bool) -> void:
 
 func refresh(game, id: String) -> void:
 	var selection_changed := selected_id != id
+	var previous_section := current_section
 	if selection_changed:
 		status.text = ""
 		_clear_disband()
@@ -296,6 +328,9 @@ func refresh(game, id: String) -> void:
 		section_buttons[key].visible = not vm.is_empty() and (key != "achievements" if vm.own else key in ["army","achievements"])
 	if vm.is_empty():
 		_clear_disband()
+		_details_expanded = false
+		fields.details.hide()
+		action_buttons.details.set_pressed_no_signal(false)
 		_context_known = false
 		title.text = "Provinz auswählen"
 		summary.text = "Eigenes Land: Ausbau, Heer und Wissen.\nFremdes Land: Diplomatie und passende Kriegsaktionen."
@@ -335,12 +370,16 @@ func refresh(game, id: String) -> void:
 	_own_context = bool(vm.own)
 	_context_known = true
 	fit_tabs()
+	action_buttons.details.show()
+	action_buttons.details.disabled = false
+	fields.details.text = str(vm.details)
+	fields.details.visible = _details_expanded
 	section_buttons.army.text = "Militär" if vm.own else "Krieg"
 	section_buttons.achievements.text = "Diplomatie"
 	title.text = str(vm.name)
 	summary.text = "%s · %s\n%d Gold/Jahr" % [vm.terrain,vm.owner,vm.income]
 	if vm.own: summary.text += " · Aufgebot %d · Verteidigung %+d%%" % [vm.levy,int(vm.defense)+int(vm.terrain_defense)]
-	summary.tooltip_text = "%s · %s\nEntwicklung %d/10 · Versorgung %d" % [vm.kingdom,vm.empire,vm.development,vm.supply]
+	summary.tooltip_text = str(vm.details)
 	var pending: bool = main._lan_active() and main.lan_session.pending_command
 	_refresh_focus(game,vm)
 	_refresh_supply(game,id)
@@ -348,9 +387,12 @@ func refresh(game, id: String) -> void:
 		fields.buildings.text = "Entwicklung %d/10 · Örtliche Gebäude mit höchstens drei Stufen" % int(vm.development)
 		for building in vm.buildings:
 			var key := "build:"+str(building.key)
-			action_buttons[key].text = "%s %d/3 · %d Gold" % [building.name,building.level,building.cost]
+			var complete := int(building.level) >= 3
+			action_buttons[key].text = "%s 3/3 · Voll ausgebaut" % building.name if complete else "%s %d/3 · %d Gold" % [building.name,building.level,building.cost]
 			action_buttons[key].disabled = not building.enabled or pending or game.game_over
-			fields[key].text = str(building.effect) + ("\n"+str(building.reason) if not str(building.reason).is_empty() else "")
+			action_buttons[key].tooltip_text = str(building.effect)
+			fields[key].visible = not complete
+			fields[key].text = "" if complete else str(building.effect) + ("\n"+str(building.reason) if not str(building.reason).is_empty() else "")
 	_refresh_local_forces(game,vm,army)
 	action_buttons.army.disabled = not vm.own or int(game.house().gold) < 50 or pending or game.game_over
 	var armies: Array = game.house().get("armies",[])
@@ -419,6 +461,7 @@ func refresh(game, id: String) -> void:
 		status.text = "Gastgeber bestätigt die Aktion …" if pending else str(main.lan_session.status)
 	status.visible = not status.text.is_empty()
 	show_section(current_section)
+	if selection_changed or previous_section != current_section: _scroll_to_top()
 
 func _refresh_local_forces(game, vm: Dictionary, selected_army: Dictionary) -> void:
 	var rows: Array[String] = []

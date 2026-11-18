@@ -66,8 +66,10 @@ func _ready() -> void:
 	check(is_instance_valid(designer) and main.kernel.top_modal() == "house_designer", "Einzelspieler öffnet denselben gemeinsamen Hausdesigner")
 	main._unhandled_input(_escape())
 	check(main.kernel.top_modal() != "house_designer", "Escape bricht den Entwurf ohne Spielmutation ab")
-	for child in ui.pages.world.find_children("*", "Button", true, false):
-		check(not child.text.contains("speichern") and not child.text.contains("laden") and not child.text.contains("WLAN"), "Welt enthält keine Datei-/Lobbyverwaltung")
+	check(ui.pages.size() == 3 and not ui.pages.has("world"), "Die Sidebar bündelt Provinz, Politik und Familie ohne doppelte Weltseite")
+	for page in ui.pages.values():
+		for child in page.find_children("*", "Button", true, false):
+			check(not child.text.contains("speichern") and not child.text.contains("laden") and not child.text.contains("WLAN"), "Die drei Seiten enthalten keine zusätzliche Datei-/Lobbyverwaltung")
 	await _network_designers()
 	finish()
 

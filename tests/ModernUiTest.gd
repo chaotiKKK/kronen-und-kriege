@@ -53,8 +53,8 @@ func _ready() -> void:
 		get_viewport().get_texture().get_image().save_png("res://build/verify/bq-modern-200.png")
 	main._hide_options()
 	ui.set_text_scale(1.0)
-	_check(ui.section_buttons.size() == 4, "Vier eindeutig getrennte Seitenbereiche fehlen.")
-	for section in ["overview", "politics", "family", "world"]:
+	_check(ui.section_buttons.size() == 3 and not ui.pages.has("world"), "Provinz, Politik und Familie bilden drei eindeutige Seitenbereiche ohne doppelte Weltseite.")
+	for section in ["overview", "politics", "family"]:
 		ui.show_section(section)
 		var visible_count := 0
 		for page in ui.pages.values():

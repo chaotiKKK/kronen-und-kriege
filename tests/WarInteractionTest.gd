@@ -116,8 +116,7 @@ func exercise_army(inspector, home: String) -> void:
 		check(not inspector.action_buttons.march.visible, "Befehle folgen dem Standort der ausdrücklich gewählten Armee")
 	main._show_province()
 	await settle()
-	check(not _has_button(main.province_layer,"Ausbauen") and not _has_button(main.province_layer,"Truppen werben"), "Provinzdetail zeigt Informationen und führt zur einen Verwaltung")
-	main._hide_province()
+	check(inspector.is_visible_in_tree() and inspector.selected_id == main.selected and not main.kernel.modal_stack.has("provinz"), "Auch der alte Detailaufruf führt direkt zur einen rechten Provinzverwaltung")
 
 func _has_button(node: Node, prefix: String) -> bool:
 	for button in node.find_children("*","Button",true,false):

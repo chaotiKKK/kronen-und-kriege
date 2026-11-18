@@ -83,11 +83,11 @@ static func _info(game, selected: String) -> String:
 			var capital_txt := "ja" if bool(p.get("capital", false)) else "nein"
 			var terrain_name: String = str(p.get("terrain_name", "Ebenen"))
 			var terrain_def: int = int(p.get("terrain_defense", 0))
-			var supply: int = int(p.get("terrain_supply", 6))
+			var supply: int = game.army_supply_capacity(selected,int(p.owner))
 			info = "Provinz %s\nLand: %s · %s\nHerzogtum: %s\nBesitzer: %s · Haltung %+d\nGelände: %s · Verteidigung %+d%% · Versorgung %d\nHauptstadt: %s · Entwicklung: %d / 10 · Truppen: %d\nNachbarn: %s" % [
 				p["name"], p["kingdom_name"], p["empire_name"], p["duchy_name"],
 				owner_house["name"], int(game.opinion[int(p["owner"])]),
-				terrain_name, terrain_def, supply * 100,
+				terrain_name, terrain_def, supply,
 				capital_txt, int(p["dev"]), int(p["levy"]), ", ".join(nb),
 			]
 	return info
@@ -141,6 +141,7 @@ static func province(game, id: String) -> Dictionary:
 	var capacity: Dictionary = game.region_capacity(p)
 	var buildings: Array = []
 	for entry in [["market","Markt","Zusätzlicher jährlicher Ertrag entsprechend der Regionskapazität."], ["barracks","Kaserne","Verstärkt das örtliche Aufgebot entsprechend der Regionskapazität."], ["walls","Mauern","Zusätzliche örtliche Verteidigung; höhere Stufen verstärken sie."]]:
+		if not own: break
 		var key := str(entry[0])
 		var level := int(p.get("buildings", {}).get(key, 0))
 		var cost: int = game.building_cost(key, id)
@@ -159,10 +160,10 @@ static func province(game, id: String) -> Dictionary:
 	for track in ["war", "crown", "guile"]:
 		var info: Dictionary = game.legacy_track_info(track)
 		legacies.append({"id":track,"name":info.get("name",track),"effect":info.get("effect",""),"level":game.legacy_level(track,owner)})
-	return {"id":id,"name":str(p.name),"owner":str(game.houses[owner].name),"owner_index":owner,"own":own,
+	return {"id":id,"name":str(p.name),"owner":str(game.houses[owner].name),"owner_index":owner,"own":own,"details":_info(game,id),
 		"terrain":p.get("terrain_name","Ebenen"),"defense":p.get("defense",0),"terrain_defense":p.get("terrain_defense",0),"supply":game.army_supply_capacity(id,owner),
 		"income":game.region_income(p),"development":p.dev,"levy":p.levy,"capacity":capacity,"buildings":buildings,"armies":armies,"fleets":fleets,"army_upkeep_total":game.army_upkeep(owner),"coastal":game.is_coastal(id),
-		"research":game.research_choices(owner,id),"legacies":legacies,"siege":p.get("siege",0),"blockade":p.get("blockade",0),"kingdom":p.get("kingdom_name",""),"empire":p.get("empire_name",""),
+		"research":game.research_choices(owner,id) if own else [],"legacies":legacies,"siege":p.get("siege",0),"blockade":p.get("blockade",0),"kingdom":p.get("kingdom_name",""),"empire":p.get("empire_name",""),
 		"military":_province_military(game,p,own)}
 
 static func _province_military(game, province: Dictionary, own: bool) -> Dictionary:

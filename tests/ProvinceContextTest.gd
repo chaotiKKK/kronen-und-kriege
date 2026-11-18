@@ -72,7 +72,7 @@ func _ready() -> void:
 	check(inspector.current_section == "research" and inspector.sections.research.visible, "Eigener Wissensbereich kehrt nach fremder Inspektion zurück")
 	main._on_province_activated(home)
 	await settle()
-	check(main.side_panel.visible and not main.province_layer.visible and main.kernel.top_modal() != "provinz", "Aktivierung nutzt dieselbe rechte Provinzseite statt eines zweiten großen Dialogs")
+	check(main.side_panel.visible and inspector.is_visible_in_tree() and inspector.selected_id == home and not main.kernel.modal_stack.has("provinz"), "Aktivierung nutzt dieselbe rechte Provinzseite statt eines zweiten großen Dialogs")
 	check(main.LanSessionScript.Protocol.world_hash(game.snapshot()) == world_before, "Auswahl, Ansicht und Aktivierung verändern keine Spielwelt")
 	main._on_province_selected(border)
 	await settle()

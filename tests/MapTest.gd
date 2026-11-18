@@ -1,5 +1,5 @@
 extends Node
-## Prüft die Europakarte in der Oberfläche: 49 Grafschaften, 9 Königreiche,
+## Prüft die Europakarte in der Oberfläche: 108 Spielregionen, 9 Königreiche,
 ## 3 Reiche, Hierarchie in der Auswahl und eigener Grafschaftsstart.
 
 var main
@@ -61,12 +61,12 @@ func _run() -> void:
 		return
 	var p0: Dictionary = owned[0]
 	main._on_province_selected(str(p0["id"]))
-	# Die aufgeräumte Hofübersicht bleibt beim Herrscher; Details stehen in der Provinzseite.
+	# Auch alte Detailaufrufe öffnen ausschließlich die rechte Provinzansicht.
+	var inspector = main.get_meta("modern_interface").province_inspector
 	main._show_province()
-	var detail_text := ""
-	for label in main.province_info.get_children():
-		if label is Label:
-			detail_text += label.text + "\n"
+	if not _check(inspector.is_visible_in_tree() and inspector.selected_id == str(p0.id) and not main.kernel.modal_stack.has("provinz"), "Detailaufruf öffnet die gemeinsame rechte Provinzansicht."):
+		return
+	var detail_text: String = inspector.summary.text + "\n" + inspector.summary.tooltip_text
 	if not detail_text.contains(str(p0["kingdom_name"])):
 		_fail("Auswahl zeigt das Königreich nicht")
 		return
@@ -82,7 +82,6 @@ func _run() -> void:
 	if not detail_text.contains("Versorgung"):
 		_fail("Auswahl zeigt die Versorgung nicht")
 		return
-	main._hide_province()
 	if not _check(main.map_header_meta.text.contains(str(p0["name"])), "Kartenkopf zeigt die Auswahl nicht."):
 		return
 	if not _check(main.top_crest.texture != null, "Weltkartenkopf ohne Wappen."):
@@ -98,7 +97,7 @@ func _run() -> void:
 	right_click.button_index = MOUSE_BUTTON_RIGHT
 	right_click.pressed = true
 	main.map_view._gui_input(right_click)
-	if not _check(main.selected == "" and not main.province_side_panel.visible, "Rechtsklick hebt die Auswahl nicht auf."):
+	if not _check(main.selected == "" and inspector.selected_id == "" and not inspector.section_tabs.visible, "Rechtsklick hebt die Auswahl nicht auf."):
 		return
 	main._on_province_selected(str(p0["id"]))
 	var double_click := InputEventMouseButton.new()
@@ -107,9 +106,8 @@ func _run() -> void:
 	double_click.double_click = true
 	double_click.position = hover_pos
 	main.map_view._gui_input(double_click)
-	if not _check(not main.province_layer.visible and main.side_panel.visible and main.get_meta("modern_interface").province_inspector.selected_id == str(p0.id), "Doppelklick muss dieselbe rechte Provinzansicht öffnen."):
+	if not _check(main.side_panel.visible and inspector.is_visible_in_tree() and inspector.selected_id == str(p0.id) and not main.kernel.modal_stack.has("provinz"), "Doppelklick muss dieselbe rechte Provinzansicht öffnen."):
 		return
-	main._hide_province()
 	main._toggle_map_legend()
 	if not _check(main.map_view.legend_visible and main.legend_button.button_pressed, "Legende lässt sich nicht einblenden."):
 		return

@@ -195,22 +195,6 @@ var opt_pause_events: CheckButton
 var opt_start_speed: OptionButton
 var opt_save_btn: Button
 var opt_save_quit_btn: Button
-var province_layer: Control
-var province_title: Label
-var province_art: TextureRect
-var province_crest: TextureRect
-var province_portrait: TextureRect
-var province_info: VBoxContainer
-var province_owner_name: Label
-var province_buildings: HBoxContainer
-var province_troops: HBoxContainer
-var province_neighbors: Label
-var province_action_buttons: Dictionary = {}
-var province_side_panel: VBoxContainer
-var province_side_icon: TextureRect
-var province_side_crest: TextureRect
-var province_side_title: Label
-var province_side_meta: Label
 var quit_layer: Control
 var quit_status: Label
 var _cli_resolution_locked := false
@@ -901,42 +885,6 @@ func _build() -> void:
 	sandbox_button = _button("Als Sandbox fortsetzen", func(): _dispatch({"id": "continue_sandbox"}), "crown")
 	sandbox_button.visible = false
 	infrastructure_body.add_child(sandbox_button)
-	side_box.add_child(_button("Forschung & Verkehrswege", _show_infrastructure, "scroll"))
-
-	# Provinz-Kurzansicht mit Gelände-Token und Besitzerwappen.
-	province_side_panel = VBoxContainer.new()
-	province_side_panel.add_theme_constant_override("separation", 4)
-	province_side_panel.visible = false
-	side_box.add_child(province_side_panel)
-	var province_side_row := HBoxContainer.new()
-	province_side_row.add_theme_constant_override("separation", 8)
-	province_side_panel.add_child(province_side_row)
-	province_side_icon = TextureRect.new()
-	province_side_icon.custom_minimum_size = Vector2(46, 46)
-	province_side_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	province_side_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	province_side_row.add_child(province_side_icon)
-	province_side_crest = TextureRect.new()
-	province_side_crest.custom_minimum_size = Vector2(36, 44)
-	province_side_crest.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	province_side_crest.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	province_side_row.add_child(province_side_crest)
-	var province_side_text := VBoxContainer.new()
-	province_side_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	province_side_text.add_theme_constant_override("separation", 1)
-	province_side_row.add_child(province_side_text)
-	province_side_title = _label("", 15, INK)
-	province_side_text.add_child(province_side_title)
-	province_side_meta = _label("", 11, INK_SOFT)
-	province_side_meta.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	province_side_text.add_child(province_side_meta)
-	var province_open := _button("Provinzseite öffnen", _show_province, "scroll")
-	province_open.custom_minimum_size = Vector2(0, 36)
-	province_open.add_theme_font_size_override("font_size", 13)
-	province_side_panel.add_child(province_open)
-	# Die Auswahl steht direkt unter dem Hofkopf und nicht mehr am Ende des
-	# langen Rollbereichs. So bleibt sie beim Kartenklick sofort sichtbar.
-	side_box.move_child(province_side_panel, 1)
 
 	develop_btn = _button("Ausbauen  (50 Gold)", func(): _dispatch({"id": "develop"}), "gold")
 	recruit_btn = _button("Truppen werben  (30 Gold)", func(): _dispatch({"id": "recruit"}), "sword")
@@ -1327,7 +1275,6 @@ func _build() -> void:
 
 	_build_customizer()
 	_build_banner_generator()
-	_build_province_layer()
 	_build_options_layer()
 	_build_quit_layer()
 
@@ -1339,223 +1286,12 @@ func _build_banner_generator() -> void:
 
 # --- Herrscher-Werkstatt -------------------------------------------------
 
-func _build_province_layer() -> void:
-	province_layer = Control.new()
-	province_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	province_layer.visible = false
-	province_layer.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(province_layer)
-	var dim := ColorRect.new()
-	dim.color = Color(0.04, 0.03, 0.02, 0.74)
-	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	province_layer.add_child(dim)
-	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	province_layer.add_child(center)
-	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(900, 0)
-	card.add_theme_stylebox_override("panel", _card_style(18))
-	center.add_child(card)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 8)
-	card.add_child(box)
-	var head := HBoxContainer.new()
-	head.add_theme_constant_override("separation", 10)
-	box.add_child(head)
-	province_title = _label("Provinz", 24, INK)
-	province_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	head.add_child(province_title)
-	head.add_child(_button("Schließen", _hide_province, ""))
-
-	var hero := HBoxContainer.new()
-	hero.add_theme_constant_override("separation", 12)
-	box.add_child(hero)
-	province_art = TextureRect.new()
-	province_art.custom_minimum_size = Vector2(150, 150)
-	province_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	province_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	hero.add_child(province_art)
-	province_info = VBoxContainer.new()
-	province_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	province_info.add_theme_constant_override("separation", 2)
-	hero.add_child(province_info)
-	var owner_box := VBoxContainer.new()
-	owner_box.custom_minimum_size = Vector2(132, 0)
-	owner_box.add_theme_constant_override("separation", 2)
-	hero.add_child(owner_box)
-	province_crest = TextureRect.new()
-	province_crest.custom_minimum_size = Vector2(46, 56)
-	province_crest.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	province_crest.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	owner_box.add_child(province_crest)
-	province_portrait = TextureRect.new()
-	province_portrait.custom_minimum_size = Vector2(64, 78)
-	province_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	province_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	owner_box.add_child(province_portrait)
-	province_owner_name = _label("", 10, INK_SOFT)
-	province_owner_name.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	owner_box.add_child(province_owner_name)
-
-	box.add_child(_label("Gebäude", 16, INK))
-	province_buildings = HBoxContainer.new()
-	province_buildings.add_theme_constant_override("separation", 16)
-	box.add_child(province_buildings)
-	box.add_child(_label("Aufgebot", 16, INK))
-	province_troops = HBoxContainer.new()
-	province_troops.add_theme_constant_override("separation", 10)
-	box.add_child(province_troops)
-	province_neighbors = _label("", 12, INK_SOFT)
-	province_neighbors.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	box.add_child(province_neighbors)
-	var actions := HBoxContainer.new()
-	actions.add_theme_constant_override("separation", 6)
-	for entry in [["develop", "Ausbauen (50)"], ["recruit", "Truppen werben (30)"], ["attack", "Angreifen (25)"], ["rule", "Herrschaft"]]:
-		var key: String = str(entry[0])
-		var b := _button(str(entry[1]), Callable(self, "_province_action").bind(key), "")
-		b.custom_minimum_size = Vector2(0, 40)
-		b.add_theme_font_size_override("font_size", 13)
-		actions.add_child(b)
-		province_action_buttons[key] = b
-		# Detailseite ist ein Nachschlageblatt; nur die Provinzseite führt Aktionen aus.
-		b.visible = key == "rule"
-	province_action_buttons.rule.text = "Provinzverwaltung öffnen"
-	box.add_child(actions)
-
-func _refresh_province_side() -> void:
-	if province_side_panel == null:
-		return
-	if game == null or selected == "":
-		province_side_panel.visible = false
-		return
-	var p: Dictionary = game.province(selected)
-	if p.is_empty():
-		province_side_panel.visible = false
-		return
-	province_side_panel.visible = true
-	province_side_icon.texture = TOKENS.get("terrain_%s" % str(p.get("terrain", "plains")))
-	province_side_crest.texture = _crest_for_house(int(p["owner"]))
-	province_side_title.text = str(p["name"])
-	var side_meta := "%s · %s\nAufgebot %d · Entwicklung %d/10" % [
-		str(p.get("terrain_name", "Ebenen")), str(game.houses[int(p["owner"])]["name"]),
-		int(p.get("levy", 0)), int(p.get("dev", 1)),
-	]
-	if int(p.get("blockade", 0)) > 0:
-		side_meta += "\nBlockade: %d Monate" % int(p["blockade"])
-	province_side_meta.text = side_meta
-
-func _crest_for_house(index: int) -> Texture2D:
-	if game == null or index < 0 or index >= game.houses.size():
-		return null
-	var h: Dictionary = game.houses[index]
-	var custom := _house_crest_texture(h)
-	if custom != null:
-		return custom
-	if not CRESTS.is_empty():
-		return CRESTS[posmod(int(h.get("crest", index)), CRESTS.size())]
-	return null
-
-func _refresh_province_page() -> void:
-	if province_layer == null:
-		return
-	if game == null or selected == "":
-		if province_layer.visible:
-			_hide_province()
-		return
-	var p: Dictionary = game.province(selected)
-	if p.is_empty():
-		if province_layer.visible:
-			_hide_province()
-		return
-	var owner_i: int = int(p["owner"])
-	var owner: Dictionary = game.houses[owner_i]
-	var terrain_key: String = str(p.get("terrain", "plains"))
-	province_title.text = "Provinz %s" % str(p["name"])
-	province_art.texture = TOKENS.get("terrain_%s" % terrain_key)
-	province_crest.texture = _crest_for_house(owner_i)
-	if not PORTRAITS.is_empty():
-		province_portrait.texture = PORTRAITS[int(owner["ruler"].get("portrait", 0)) % PORTRAITS.size()]
-	else:
-		province_portrait.texture = null
-	province_owner_name.text = "%s\n%s" % [str(owner["name"]), str(owner["ruler"]["name"])]
-	for c in province_info.get_children():
-		province_info.remove_child(c)
-		c.queue_free()
-	province_info.add_child(_label("%s · %s" % [str(p["kingdom_name"]), str(p["empire_name"])], 12, INK_SOFT))
-	province_info.add_child(_label("Herzogtum: %s" % str(p["duchy_name"]), 12, INK_SOFT))
-	province_info.add_child(_label("Gelände: %s · Verteidigung %+d%% · Versorgung %d" % [
-		str(p.get("terrain_name", "Ebenen")), int(p.get("terrain_defense", 0)), int(p.get("terrain_supply", 6)) * 100
-	], 12, INK_SOFT))
-	province_info.add_child(_label("Entwicklung %d/10 · Aufgebot %d · Hauptstadt: %s" % [
-		int(p.get("dev", 1)), int(p.get("levy", 0)), "ja" if bool(p.get("capital", false)) else "nein"
-	], 12, INK_SOFT))
-	province_info.add_child(_label("Besitzer: %s · Haltung %+d" % [str(owner["name"]), int(game.opinion[owner_i])], 12, INK_SOFT))
-	if int(p.get("blockade", 0)) > 0:
-		var blockader: int = int(p.get("blockade_owner", -1))
-		var blockader_name := "unbekannt"
-		if blockader >= 0 and blockader < game.houses.size():
-			blockader_name = str(game.houses[blockader]["name"])
-		province_info.add_child(_label("Blockade durch %s · noch %d Monate" % [blockader_name, int(p["blockade"])], 12, INK_SOFT))
-	if is_coastal_province(selected):
-		province_info.add_child(_label("Küstenprovinz · Flotten können hier anlegen und blockieren", 11, INK_SOFT))
-	for c in province_buildings.get_children():
-		province_buildings.remove_child(c)
-		c.queue_free()
-	var buildings: Dictionary = p.get("buildings", {})
-	for entry in [["market", "Markt"], ["barracks", "Kaserne"], ["walls", "Mauern"]]:
-		var key: String = str(entry[0])
-		var cell := VBoxContainer.new()
-		cell.add_theme_constant_override("separation", 1)
-		var icon := TextureRect.new()
-		icon.custom_minimum_size = Vector2(44, 44)
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.texture = TOKENS.get("building_%s" % key)
-		cell.add_child(icon)
-		cell.add_child(_label("%s %d/3" % [str(entry[1]), int(buildings.get(key, 0))], 10, INK_SOFT))
-		province_buildings.add_child(cell)
-	for c in province_troops.get_children():
-		province_troops.remove_child(c)
-		c.queue_free()
-	province_troops.add_child(_army_tokens(int(p.get("levy", 0)),owner_i))
-	var station_fleet := _fleet_at(selected)
-	if not station_fleet.is_empty():
-		province_troops.add_child(_fleet_tokens(station_fleet))
-	var neighbours: Array = []
-	for nid in game.neighbours(selected):
-		var q: Dictionary = game.province(str(nid))
-		if not q.is_empty():
-			neighbours.append("%s (%s)" % [q["name"], game.houses[int(q["owner"])]["name"]])
-	province_neighbors.text = "Nachbarn: " + ", ".join(neighbours)
-	province_action_buttons["develop"].disabled = not game.can_develop(selected)
-	province_action_buttons["recruit"].disabled = not game.can_recruit(selected)
-	var capacity: Dictionary = game.region_capacity(p)
-	province_action_buttons["develop"].text = "Ausbauen · %d Gold" % int(capacity.develop_cost)
-	province_action_buttons["recruit"].text = "Werben · %d Gold · +%d" % [int(capacity.recruit_cost), int(capacity.recruit)]
-	province_action_buttons["attack"].disabled = not game.can_attack(selected)
-
-func _province_action(key: String) -> void:
-	if key == "rule":
-		_hide_province()
-		_open_province_management("army" if int(game.province(selected).get("owner",-1)) != game.player else "buildings")
-		return
-	_dispatch({"id": key})
-
 func _show_province() -> void:
-	if game == null or selected == "":
+	# Alte Einstiege verwenden dieselbe rechte Ansicht und bewahren ihren Bereich.
+	if game == null or selected.is_empty() or game.province(selected).is_empty():
 		return
-	if province_layer == null:
-		_build_province_layer()
-	_refresh_province_page()
-	province_layer.visible = true
-	province_layer.move_to_front()
-	kernel.push_modal("provinz")
-	_play_open()
-
-func _hide_province() -> void:
-	kernel.pop_modal("provinz")
-	if province_layer != null:
-		province_layer.visible = false
+	var section: String = get_meta("modern_interface").province_inspector.current_section if has_meta("modern_interface") else ""
+	_open_province_management(section)
 
 func _option_row(text: String, control: Control) -> HBoxContainer:
 	var row := HBoxContainer.new()
@@ -2599,7 +2335,7 @@ func _open_province_management(section: String = "buildings") -> void:
 	if id.is_empty(): id = str(game.house().capital)
 	_on_province_selected(id)
 	if has_meta("modern_interface"):
-		get_meta("modern_interface").province_inspector.show_section("army" if int(game.province(id).get("owner",-1)) != game.player else section)
+		get_meta("modern_interface").province_inspector.show_section(section)
 
 func _focus_field_army() -> void:
 	if game == null: return
@@ -2828,8 +2564,6 @@ func _load() -> bool:
 	start_layer.visible = false
 	if newgame_layer != null:
 		newgame_layer.visible = false
-	if province_layer != null:
-		province_layer.visible = false
 	if options_layer != null:
 		options_layer.visible = false
 	if quit_layer != null:
@@ -2933,8 +2667,6 @@ func refresh() -> void:
 		over_layer.visible = lan_session.all_houses_over
 	if lan_game_menu_button != null:
 		lan_game_menu_button.visible = _lan_active()
-	_refresh_province_side()
-	_refresh_province_page()
 	_refresh_infrastructure()
 	if has_meta("modern_interface"):
 		get_meta("modern_interface").refresh_summary()
@@ -3637,7 +3369,8 @@ func _show_chronicle() -> void:
 
 func _hide_chronicle() -> void:
 	kernel.pop_modal("chronik")
-	chronicle_layer.visible = false
+	if chronicle_layer != null:
+		chronicle_layer.visible = false
 
 func _build_chronicle_layer() -> void:
 	chronicle_layer = Control.new()
@@ -3988,10 +3721,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 		if top == "quit_confirm":
 			_hide_quit()
-			get_viewport().set_input_as_handled()
-			return
-		if top == "provinz":
-			_hide_province()
 			get_viewport().set_input_as_handled()
 			return
 		if top == "hof":

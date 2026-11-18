@@ -35,7 +35,7 @@ func _ready() -> void:
 	main._on_province_selected(remote)
 	await settle()
 	check(inspector.current_section=="achievements" and not inspector.section_buttons.army.visible,"Fremdes Ferngebiet bietet nur sinnvolle Diplomatie statt eines leeren Kriegsreiters")
-	check(inspector.section_tabs.columns==1,"Ein verbleibender Kontext nutzt die volle verfügbare Reiterbreite")
+	check(not inspector.section_tabs.visible and inspector.sections.achievements.is_visible_in_tree(),"Ein einzelner Diplomatiebereich bleibt ohne zusätzliche Reiterleiste sichtbar")
 	inspector.show_section("army")
 	check(inspector.current_section=="achievements","Ein alter Kriegsaufruf öffnet im strukturell unerreichbaren Ferngebiet keinen leeren Bereich")
 	check_admin_closed("Fremdbesitz")
@@ -139,7 +139,7 @@ func _ready() -> void:
 		ui.set_touch_layout(true)
 		ui.set_text_scale(scale)
 		await settle()
-		check(inspector.section_tabs.columns==1 and inspector.section_buttons.achievements.custom_minimum_size.y>=44,"Einfacher Fremdkontext bleibt bei 100/200 Prozent vollständig touchbedienbar")
+		check(not inspector.section_tabs.visible and inspector.sections.achievements.is_visible_in_tree() and inspector.action_buttons.secret_discover.custom_minimum_size.y>=44,"Einfacher Fremdkontext bleibt ohne Reiter bei 100/200 Prozent touchbedienbar")
 		await shot("foreign-touch-%d" % int(scale*100))
 	finish()
 

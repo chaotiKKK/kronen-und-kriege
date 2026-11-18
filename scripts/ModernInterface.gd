@@ -31,7 +31,6 @@ var touch_layout := OS.has_feature("android") or OS.has_feature("ios")
 var _hud_buttons: Array[Button] = []
 var province_inspector
 var title_tier: OptionButton
-var world_summary: Label
 var _title_menu: VBoxContainer
 var _title_actions: GridContainer
 var _title_buttons: Array[Button] = []
@@ -475,11 +474,11 @@ func _rebuild_sidebar() -> void:
 	_font(main.title_label, 16)
 	_font(main.info_label, 11)
 	sidebar_tabs = GridContainer.new()
-	sidebar_tabs.columns = 4
+	sidebar_tabs.columns = 3
 	sidebar_tabs.add_theme_constant_override("h_separation", 4)
 	outer.add_child(sidebar_tabs)
 	var group := ButtonGroup.new()
-	for entry in [["overview", "Übersicht"], ["politics", "Politik"], ["family", "Familie"], ["world", "Welt"]]:
+	for entry in [["overview", "Übersicht"], ["politics", "Politik"], ["family", "Familie"]]:
 		var id := str(entry[0])
 		var button: Button = main._button(str(entry[1]), show_section.bind(id))
 		button.add_theme_font_size_override("font_size", 12)
@@ -500,10 +499,6 @@ func _rebuild_sidebar() -> void:
 	for child in children:
 		if child == portrait_header:
 			continue
-		if child == main.province_side_panel:
-			child.reparent(pages.overview)
-			child.hide()
-			continue
 		var section := "overview"
 		if child == main.family_label or child in [main.marry_btn, main.bed_btn, main.seduce_btn, main.murder_btn, main.kidnap_btn, main.ransom_btn, main.force_btn]:
 			section = "family"
@@ -516,8 +511,6 @@ func _rebuild_sidebar() -> void:
 			elif text.contains("speichern") or text.contains("laden") or text.contains("WLAN"):
 				child.reparent(main.options_sections["spiel"])
 				continue
-			elif text.contains("Forschung"):
-				section = "world"
 		elif child is HSeparator or (child is Label and child != main.hint_label):
 			old_box.remove_child(child)
 			child.queue_free()
@@ -529,10 +522,6 @@ func _rebuild_sidebar() -> void:
 	pages.overview.add_child(province_inspector)
 	pages.overview.move_child(province_inspector, 0)
 	province_inspector.configure(main)
-	world_summary = main._label("",12)
-	world_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	pages.world.add_child(world_summary)
-	pages.world.move_child(world_summary,0)
 	var side_style := surface(Color(0.06, 0.10, 0.11, 0.90), 10)
 	side_style.shadow_color = Color(0, 0, 0, 0.18)
 	side_style.shadow_size = 5
@@ -655,10 +644,7 @@ func refresh_summary() -> void:
 	main.family_label.text = "Familie & Nachfolge\nGemahl/in: %s\nErbe: %s · Kinder: %d" % [h.spouse.get("name", "unvermählt"), str(h.heir) if str(h.heir) != "" else "keiner", h.children.size()]
 	if province_inspector != null:
 		province_inspector.refresh(main.game,main.selected)
-		main.province_side_panel.hide()
 		section_buttons.overview.text = "Provinz" if main.selected != "" else "Übersicht"
-	if world_summary != null:
-		world_summary.text = "Welt & Wissen\n%d Spielregionen · %d Häuser\nDein Haus besitzt %d Regionen.\nForschung gilt für das Haus; Gebäude und Heere verwaltest du direkt in der Provinz." % [main.game.provinces.size(), main.game.houses.size(), main.game.owned().size()]
 	_scale_text(main)
 	_fit_dialogs()
 	fit_layout()
@@ -675,5 +661,5 @@ func fit_layout() -> void:
 		return
 	last_width = width
 	main.side_panel.custom_minimum_size.x = clampf(width * 0.22, 248.0, 310.0)
-	sidebar_tabs.columns = 4 if width >= 1400 and text_scale <= 1.1 else 2
+	sidebar_tabs.columns = 3 if text_scale <= 1.3 else 2
 	navigation.custom_minimum_size.x = 0
