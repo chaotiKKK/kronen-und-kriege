@@ -8,6 +8,12 @@ const Production = preload("res://scripts/RegionalProduction.gd")
 const Planner = preload("res://scripts/EconomyPlanner.gd")
 const Naval = preload("res://scripts/NavalCampaign.gd")
 const MAX_MONTHS := 120
+# Trade legitimately changes paid construction and military targets. An exact
+# ordinary month95 A/B restore preserved the original real depot deliveries.
+# This second predeclared seed broadens coverage of their timing overlap;
+# retain every seed/house outcome, including the first group's zero fronts.
+const PROBE_SEEDS := [20261118,20261119]
+const PROBE_HUMANS := [0,2]
 var checks := 0
 var failures := 0
 var probes: Array = []
@@ -18,32 +24,36 @@ func _ready() -> void:
 	if output.is_empty(): output=ProjectSettings.globalize_path("user://production-npc")
 	DirAccess.make_dir_recursive_absolute(output)
 	var probe_files: Array=[]
-	for human in [0,2]:
-		var result := run_probe(20261118,human)
-		probes.append(result)
-		write_json("probe-human%d.json" % human,result)
-		probe_files.append("probe-human%d.json" % human)
-		if int(result.completed_chains)>0 and not result.frontier_effects.is_empty(): break
+	for seed_value in PROBE_SEEDS:
+		for human in PROBE_HUMANS:
+			var result := run_probe(int(seed_value),int(human))
+			probes.append(result)
+			var name: String="probe-seed%d-human%d.json" % [seed_value,human]
+			write_json(name,result)
+			probe_files.append(name)
 	var chains := 0
 	var orders := 0
 	var frontier := 0
 	var frontier_effects := 0
+	var probe_rows: Array=[]
 	for result in probes:
 		chains+=int(result.completed_chains)
 		orders+=result.orders.size()
 		frontier+=result.frontier_deliveries.size()
 		frontier_effects+=result.frontier_effects.size()
+		probe_rows.append({"id":result.probe_id,"seed":result.seed,"human_house":result.human_house,"months":result.month,"stop_reason":result.stop_reason,"npc_orders":result.orders.size(),"completed_chains":result.completed_chains,"frontier_deliveries":result.frontier_deliveries.size(),"natural_frontier_effects":result.frontier_effects.size()})
+	check(probes.size()==4,"All four predeclared seed/house worlds remain in the ordinary-campaign coverage")
 	check(orders>0,"Actual NPCs make paid economic decisions in ordinary campaigns")
 	check(chains>0,"An actual NPC workshop, paid road, export and completed destination form one financed chain")
 	check(frontier>0,"An actual normally financed NPC depot supplies a real foreign-positioned army and reduces its measured shortfall")
-	write_json("npc-campaign-result.json",{"passed":failures==0,"checks":checks,"failures":failures,"maximum_months_per_probe":MAX_MONTHS,"probe_count":probes.size(),"completed_chains":chains,"npc_orders":orders,"frontier_delivery_records":frontier,"natural_frontier_effect_records":frontier_effects,"probe_files":probe_files,"scope":"No resource/research/unit/ownership/road injection; normal constructors, monthly NPCs and legal human event responses only."})
+	write_json("npc-campaign-result.json",{"passed":failures==0,"checks":checks,"failures":failures,"maximum_months_per_probe":MAX_MONTHS,"predeclared_seeds":PROBE_SEEDS,"predeclared_human_houses":PROBE_HUMANS,"probe_count":probes.size(),"probe_rows":probe_rows,"completed_chains":chains,"npc_orders":orders,"frontier_delivery_records":frontier,"natural_frontier_effect_records":frontier_effects,"probe_files":probe_files,"scope":"No resource/research/unit/ownership/road injection; all four predeclared seed/house worlds, normal constructors, monthly NPCs and legal human event responses only."})
 	print("PRODUCTIONNPCCAMPAIGNTEST %s: %d Prüfungen, %d Fehler, %d bezahlteNPC-Aufträge, %d vollständigeKetten, %d Frontlieferungsbelege" % ["OK" if failures==0 else "FAIL",checks,failures,orders,chains,frontier])
 	get_tree().quit(0 if failures==0 else 1)
 
 func run_probe(seed_value: int, human: int) -> Dictionary:
 	seed(seed_value)
 	var game = Game.new(Data,human)
-	var proof := {"seed":seed_value,"human_house":human,"limit":MAX_MONTHS,"month":0,"stop_reason":"month_limit","orders":[],"workshops":{},"road_starts":{},"road_completions":[],"project_completions":[],"flows":[],"chains":{},"completed_chains":0,"frontier_deliveries":[],"frontier_effects":[],"last_military":{},"foreign_deficit_months":{},"events":[],"months":[],"initial_gold":[],"final_houses":[]}
+	var proof := {"probe_id":"seed%d-human%d" % [seed_value,human],"seed":seed_value,"human_house":human,"limit":MAX_MONTHS,"month":0,"stop_reason":"month_limit","orders":[],"workshops":{},"road_starts":{},"road_completions":[],"project_completions":[],"flows":[],"chains":{},"completed_chains":0,"frontier_deliveries":[],"frontier_effects":[],"last_military":{},"foreign_deficit_months":{},"events":[],"months":[],"initial_gold":[],"final_houses":[]}
 	check(game.provinces.size()==108 and game.houses.size()==9 and game.roads.is_empty(),"Ordinary108region/ninehouse world starts without constructed roads for human"+str(human))
 	var empty_start := true
 	for p in game.provinces:
@@ -66,16 +76,16 @@ func run_probe(seed_value: int, human: int) -> Dictionary:
 		if game.calendar_index()%12==0:
 			var state: Dictionary=game.snapshot()
 			check(not state.is_empty() and Save.validate(state).is_empty(),"Actual NPC year remains a nonempty valid save at month"+str(game.calendar_index()))
-			write_json("progress-human%d.json" % human,{"month":game.calendar_index(),"orders":proof.orders.size(),"workshops":proof.workshops.size(),"roads_started":proof.road_starts.size(),"roads_complete":proof.road_completions.size(),"flows":proof.flows.size(),"completed_chains":proof.completed_chains,"frontier_deliveries":proof.frontier_deliveries.size()})
-			print("NPC_PROBE_PROGRESS human=",human," month=",game.calendar_index()," orders=",proof.orders.size()," workshops=",proof.workshops.size()," roads=",proof.road_completions.size()," flows=",proof.flows.size()," chains=",proof.completed_chains)
+			write_json("progress-seed%d-human%d.json" % [seed_value,human],{"seed":seed_value,"human_house":human,"month":game.calendar_index(),"orders":proof.orders.size(),"workshops":proof.workshops.size(),"roads_started":proof.road_starts.size(),"roads_complete":proof.road_completions.size(),"flows":proof.flows.size(),"completed_chains":proof.completed_chains,"frontier_deliveries":proof.frontier_deliveries.size()})
+			print("NPC_PROBE_PROGRESS seed=",seed_value," human=",human," month=",game.calendar_index()," orders=",proof.orders.size()," workshops=",proof.workshops.size()," roads=",proof.road_completions.size()," flows=",proof.flows.size()," chains=",proof.completed_chains)
 		if int(proof.completed_chains)>0 and not proof.frontier_effects.is_empty():
 			proof.stop_reason="chain_and_frontier_observed"
 			break
 	for hi in game.houses.size():
 		if hi!=human: proof.final_houses.append(house_diagnostic(game,hi))
-	write_json("final-save-human%d.json" % human,game.snapshot())
+	write_json("final-save-seed%d-human%d.json" % [seed_value,human],game.snapshot())
 	check(int(game.calendar_index())<=MAX_MONTHS,"Probe never exceeds120ordinary months")
-	print("NPC_PROBE_RESULT human=",human," month=",game.calendar_index()," reason=",proof.stop_reason," orders=",proof.orders.size()," workshops=",proof.workshops.size()," roadstarts=",proof.road_starts.size()," exports=",proof.flows.size()," chains=",proof.completed_chains)
+	print("NPC_PROBE_RESULT seed=",seed_value," human=",human," month=",game.calendar_index()," reason=",proof.stop_reason," orders=",proof.orders.size()," workshops=",proof.workshops.size()," roadstarts=",proof.road_starts.size()," exports=",proof.flows.size()," chains=",proof.completed_chains)
 	return proof
 
 func province_state(game) -> Dictionary:

@@ -37,6 +37,10 @@ const LOCAL_NAVAL_191_FINGERPRINT := "d1d986d4adf5714ae629f351b377f3f159d58b126f
 # Genuine published campaign/code18 and UI/code19 save family, copied before
 # production changes. Exact package/bytes evidence accompanies the fixture.
 const LOCAL_CAMPAIGN_191_FINGERPRINT := "dc8f13abb2f9b93c1aabfcf115f592df02c8af9ceb2b445127bdcefd22fd3903"
+# Synthetic two-peer save created through the unchanged published production
+# PCK, exact bytes/provenance in tests/fixtures/lan-191-production-schema17-*.
+# Recognized for local migration only; old peers still fail strict handshakes.
+const LOCAL_PRODUCTION_191_FINGERPRINT := "5a1269fa4d99c6482fcdbaec1782ddba755240dde46caf462310f28753594c4d"
 static var _cached_fingerprints: Dictionary = {}
 
 var phase := "idle"
@@ -88,9 +92,10 @@ func _content_fingerprint() -> String:
 		return ""
 	var campaign_rules := _field_campaign_rules()
 	var production_rules := _production_rules()
+	var trade_rules := _material_trade_rules()
 	var identity := {"schema":Save.CURRENT_VERSION,"protocol":Protocol.VERSION,
 		"commands":Protocol.FIELDS,"naval":Naval.RULES,"campaign":campaign_rules,
-		"production":production_rules,"innovations":Infrastructure.INNOVATIONS,
+		"production":production_rules,"material_trade":trade_rules,"innovations":Infrastructure.INNOVATIONS,
 		"province_economy":{"foci":Economy.FOCI,"lock_months":Economy.LOCK_MONTHS}}
 	var cache_key := str(_data.resource_path)+"|"+route_fingerprint+"|"+JSON.stringify(Save.canonical(identity))
 	if _cached_fingerprints.has(cache_key):
@@ -100,7 +105,7 @@ func _content_fingerprint() -> String:
 		"events":_data.events(), "innovations":Infrastructure.INNOVATIONS, "commands":Protocol.FIELDS,
 		"province_economy":{"foci":Economy.FOCI,"lock_months":Economy.LOCK_MONTHS},
 		"naval_transport":{"rules":Naval.RULES,"route_fingerprint":route_fingerprint},
-		"field_campaign":campaign_rules,"production":production_rules}
+		"field_campaign":campaign_rules,"production":production_rules,"material_trade":trade_rules}
 	for path in ["res://data/atlas.json", "res://data/atlas_geometry.bin", "res://data/europe_geometry.json"]:
 		var digest := FileAccess.get_sha256(path)
 		if digest == "":
@@ -129,6 +134,10 @@ func _production_rules() -> Dictionary:
 		"snapshot_fields":Protocol.SNAPSHOT_FIELDS,
 		"legacy_research_durations":Infrastructure.LEGACY_RESEARCH_DURATIONS,
 		"game":GameScript.PRODUCTION_RULES}
+
+func _material_trade_rules() -> Dictionary:
+	return {"contract":load("res://scripts/MaterialTrade.gd").RULES,
+		"state_fields":Protocol.TRADE_STATE_FIELDS,"game":GameScript.MATERIAL_TRADE_RULES}
 
 func _new_transport() -> void:
 	_transport = SceneMultiplayer.new()
@@ -464,6 +473,8 @@ func _local_legacy_backup_suffix(envelope: Dictionary, matching_catalog: bool) -
 		return ".pre-campaign-schema15.bak"
 	if _app == "1.9.1" and Save.CURRENT_VERSION >= 17 and file_app == "1.9.1" and matching_catalog and Protocol.integer(envelope.get("v"),3,3) and Protocol.integer(envelope.state.get("schema_version"),16,16) and envelope.get("fingerprint") == LOCAL_CAMPAIGN_191_FINGERPRINT:
 		return ".pre-production-schema16.bak"
+	if _app == "1.9.1" and Save.CURRENT_VERSION >= 18 and file_app == "1.9.1" and matching_catalog and Protocol.integer(envelope.get("v"),3,3) and Protocol.integer(envelope.state.get("schema_version"),17,17) and envelope.get("fingerprint") == LOCAL_PRODUCTION_191_FINGERPRINT:
+		return ".pre-trade-schema17.bak"
 	# 13/14 are source versions actually supported by the earlier regional
 	# family; increasing our target schema must not extend this source range.
 	if matching_catalog and file_app.begins_with("1.8.") and Protocol.integer(envelope.get("v"),2,Protocol.VERSION) and Protocol.integer(envelope.state.get("schema_version"),13,14):

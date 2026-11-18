@@ -249,6 +249,125 @@ class ExportPresetCodeContract(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Android code"):
             self.inspect(android_code=21)
 
+    def trade_sources(self):
+        # Literal expected names, independent of the verifier's required set.
+        for source in ("scripts/MaterialTrade.gd", "scripts/MaterialTradePanel.gd"):
+            (self.root / source).write_text("", encoding="utf-8")
+            self.files[source] = {}
+
+    def source_schema(self, schema):
+        (self.root / "scripts/SaveGame.gd").write_text(f"const CURRENT_VERSION := {schema}\n", encoding="utf-8")
+
+    def test_schema18_requires_explicit_source_expectation_and_both_trade_modules(self):
+        self.preset(22)
+        self.source_schema(18)
+        self.trade_sources()
+        scripts, data = self.inspect(android_code=22, schema=18)
+        self.assertEqual((len(scripts), len(data)), (57, 24))
+        with self.assertRaisesRegex(ValueError, "source schema"):
+            self.inspect(android_code=22)
+
+    def test_schema17_source_cannot_satisfy_explicit18(self):
+        self.preset(22)
+        self.trade_sources()
+        with self.assertRaisesRegex(ValueError, "source schema"):
+            self.inspect(android_code=22, schema=18)
+
+    def test_each_trade_module_is_required_for18(self):
+        self.preset(22)
+        self.source_schema(18)
+        self.trade_sources()
+        for source in ("scripts/MaterialTrade.gd", "scripts/MaterialTradePanel.gd"):
+            with self.subTest(missing=source):
+                info = self.files.pop(source)
+                (self.root / source).unlink()
+                try:
+                    with self.assertRaisesRegex(ValueError, "material.trade"):
+                        self.inspect(android_code=22, schema=18)
+                finally:
+                    self.files[source] = info
+                    (self.root / source).write_text("", encoding="utf-8")
+
+    def test_schema18_still_requires_original_production_module(self):
+        self.preset(22)
+        self.source_schema(18)
+        self.trade_sources()
+        self.files.pop("scripts/RegionalProduction.gd")
+        (self.root / "scripts/RegionalProduction.gd").unlink()
+        with self.assertRaisesRegex(ValueError, "original.*production"):
+            self.inspect(android_code=22, schema=18)
+
+    def test_legacy17_does_not_require_future_trade_files(self):
+        self.preset(20)
+        scripts, _ = self.inspect(schema=17)
+        self.assertEqual(len(scripts), 55)
+
+
+class ExplicitSaveSchema(unittest.TestCase):
+    def call(self, name, *args, **kwargs):
+        function = getattr(verifier, name, None)
+        self.assertTrue(callable(function), f"Missing explicit save-schema behavior: {name}")
+        try:
+            return function(*args, **kwargs)
+        except TypeError as exc:
+            self.fail(f"Explicit expected schema must be supported by {name}: {exc}")
+
+    def test_cli_defaults_to_previous_schema17(self):
+        args = self.call("parse_args", ["freeze", "--output", "unused"])
+        self.assertEqual(getattr(args, "schema", None), 17)
+
+    def test_cli_accepts_explicit18_with_code22(self):
+        try:
+            args = self.call("parse_args", ["inspect", "--output", "unused", "--android-code", "22", "--schema", "18"])
+        except SystemExit as exc:
+            self.fail(f"Explicit schema18 must be accepted independently of artifacts: {exc}")
+        self.assertEqual((args.schema, args.android_code), (18, 22))
+
+    def test_cli_rejects_invalid_schemas_before_evidence(self):
+        for invalid in ("0", "-1", "18.0", "1.5", "true", "NaN", "inf", "", "2147483648", "19"):
+            with self.subTest(schema=invalid), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / "must-not-exist"
+                with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as failure:
+                    self.call("parse_args", ["freeze", "--output", str(output), "--schema", invalid])
+                self.assertEqual(failure.exception.code, 2)
+                self.assertFalse(output.exists())
+
+    def test_expected_schema_rejects_boolean_float_nan_and_unknown(self):
+        for invalid in (True, False, 18.0, 18.5, float("nan"), float("inf"), "18", None, 0, -1, 2147483648, 19):
+            with self.subTest(schema=invalid), self.assertRaisesRegex(ValueError, "schema"):
+                self.call("require_schema", invalid)
+
+    def test_frozen18_matches_only_explicit18(self):
+        frozen = {"version": "1.9.1", "schema": 18, "code": 22}
+        self.call("frozen_contract", frozen, android_code=22, schema=18)
+        with self.assertRaisesRegex(ValueError, "Frozen.*schema"):
+            self.call("frozen_contract", frozen, android_code=22)
+
+    def test_frozen17_cannot_be_relabelled18(self):
+        frozen = {"version": "1.9.1", "schema": 17, "code": 22}
+        self.call("frozen_contract", frozen, android_code=22)
+        with self.assertRaisesRegex(ValueError, "Frozen.*schema"):
+            self.call("frozen_contract", frozen, android_code=22, schema=18)
+
+    def test_frozen_schema_is_an_actual_integer(self):
+        for invalid in (True, 18.0, "18", float("nan"), None):
+            with self.subTest(schema=invalid), self.assertRaisesRegex(ValueError, "Frozen.*schema"):
+                self.call("frozen_contract", {"version": "1.9.1", "schema": invalid, "code": 22}, android_code=22, schema=18)
+
+    def test_static_schema_receipt_must_match_explicit_expectation(self):
+        receipt = {"source_schema": 18, "schema_runtime_observed": False}
+        self.call("source_schema_contract", receipt, schema=18)
+        with self.assertRaisesRegex(ValueError, "receipt.*schema"):
+            self.call("source_schema_contract", receipt)
+        self.call("source_schema_contract", {"source_schema": 17, "schema_runtime_observed": False})
+
+    def test_static_receipt_cannot_claim_unobserved_runtime_schema(self):
+        for receipt in ({"source_schema": 18.0, "schema_runtime_observed": False},
+                        {"source_schema": 18, "schema_runtime_observed": True},
+                        {"source_schema": 18}):
+            with self.subTest(receipt=receipt), self.assertRaisesRegex(ValueError, "schema"):
+                self.call("source_schema_contract", receipt, schema=18)
+
 
 if __name__ == "__main__":
     unittest.main()

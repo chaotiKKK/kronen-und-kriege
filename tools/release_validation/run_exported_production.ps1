@@ -1,5 +1,5 @@
 param(
-    [Parameter(Mandatory=$true)][ValidateSet('ProductionUiTest','ConstructionMapTest','ProductionCampaignTest','ProductionCommandTest','ProvinceUiSimplificationTest')][string]$Suite,
+    [Parameter(Mandatory=$true)][ValidateSet('ProductionUiTest','ConstructionMapTest','ProductionCampaignTest','ProductionCommandTest','ProvinceUiSimplificationTest','MaterialTradeUiTest','MaterialTradeRegularUiTest','MaterialTradeGameTest','MaterialTradeCampaignTest','MaterialTradeCommandTest','AtlasIntegrationTest')][string]$Suite,
     [Parameter(Mandatory=$true)][string]$Output,
     [string]$Exe,
     [switch]$Headless

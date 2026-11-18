@@ -139,7 +139,8 @@ func _clear_query() -> void:
 func _clear_results() -> void:
 	_results = []
 	for child in results_box.get_children():
-		results_box.remove_child(child)
+		child.hide()
+		child.process_mode = Node.PROCESS_MODE_DISABLED
 		child.queue_free()
 	results_box.visible = false
 	_results_panel.visible = false

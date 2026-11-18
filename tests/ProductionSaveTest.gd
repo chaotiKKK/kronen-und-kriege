@@ -12,6 +12,8 @@ const PATH := "res://tests/fixtures/lan-191-campaign-schema16-original.json"
 const HASH := "2e2b8befa58ef22ec3547221af2b4a059d4b09df6264a028a012eb9aac563e40"
 const FINGERPRINT := "dc8f13abb2f9b93c1aabfcf115f592df02c8af9ceb2b445127bdcefd22fd3903"
 const SUFFIX := ".pre-production-schema16.bak"
+const PRODUCTION17_PATH := "res://tests/fixtures/lan-191-production-schema17-original.json"
+const PRODUCTION17_HASH := "3c4185cd09c17bb4098698aba3ea1cb23e06c3393d4f081d31a6a8f9be7a1596"
 class ProductionIdentityVariant extends Session:
 	func _production_rules() -> Dictionary:
 		var rules: Dictionary = super._production_rules().duplicate(true)
@@ -48,6 +50,7 @@ func _ready() -> void:
 	var original: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(PATH))
 	check(original.state.schema_version==16 and original.app=="1.9.1" and original.v==3 and original.fingerprint==FINGERPRINT,"Actual source bytes identify the supported16family")
 	_test_legacy_defaults(original.state)
+	_test_previous_production_defaults(original.state)
 	_test_current_roundtrip(original.state)
 	_test_develop_event_roundtrip()
 	_test_project_kinds(original.state)
@@ -64,6 +67,13 @@ func _ready() -> void:
 	get_tree().quit(0 if failures==0 else 1)
 
 func _current(source: Dictionary) -> Dictionary:
+	var state := _production17(source)
+	state.schema_version = 18
+	state["material_trades"] = []
+	state["trade_serial"] = 0
+	return state
+
+func _production17(source: Dictionary) -> Dictionary:
 	var state := source.duplicate(true)
 	state.schema_version = 17
 	state["project_serial"] = 0
@@ -92,7 +102,7 @@ func _active(source: Dictionary) -> Dictionary:
 	return state
 
 func _without_production(state: Dictionary) -> Dictionary:
-	var out := state.duplicate(true)
+	var out := _without_trade(state)
 	out.schema_version = 16
 	out.erase("project_serial")
 	for p in out.provinces:
@@ -102,12 +112,20 @@ func _without_production(state: Dictionary) -> Dictionary:
 		road.erase("legacy_construction")
 	return out
 
+func _without_trade(state: Dictionary) -> Dictionary:
+	var out := state.duplicate(true)
+	out.schema_version = 17
+	out.erase("material_trades")
+	out.erase("trade_serial")
+	return out
+
 func _test_legacy_defaults(source: Dictionary) -> void:
 	var before := source.duplicate(true)
 	var result: Dictionary = Save.migrate(source)
 	check(result.ok and source==before,"Migration reads genuine16source without mutation")
 	if not result.ok: return
-	check(result.data.schema_version==17,"Genuine16migration advances to17")
+	check(result.data.schema_version==18,"Genuine16migration advances to current18")
+	check(result.data.get("material_trades")==[] and result.data.get("trade_serial")==0,"Genuine16migration creates no trade contract, payment or consumed trade ID")
 	check(result.data.get("project_serial",-1)==0,"No historical job IDs are invented")
 	var defaults := true
 	for p in result.data.provinces:
@@ -128,6 +146,29 @@ func _test_legacy_defaults(source: Dictionary) -> void:
 		malformed.provinces[0][key] = null
 		check(not Save.migrate(malformed).ok,"Malformed present legacy field cannot become a default: "+key)
 
+func _test_previous_production_defaults(source: Dictionary) -> void:
+	check(FileAccess.get_sha256(PRODUCTION17_PATH)==PRODUCTION17_HASH,"Unchanged released-PCK synthetic17 reference retains its exact original bytes")
+	var envelope: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(PRODUCTION17_PATH))
+	var previous: Dictionary=envelope.state
+	var original: Dictionary=previous.duplicate(true)
+	var migrated: Dictionary=Save.migrate(previous)
+	check(int(previous.schema_version)==17 and not previous.has("material_trades") and not previous.has("trade_serial"),"Actual published production17 source has no invented trade state")
+	check(migrated.ok and previous==original,"Actual production17 migration reads the original state without mutation")
+	if migrated.ok:
+		check(int(migrated.data.schema_version)==18 and migrated.data.material_trades==[] and int(migrated.data.trade_serial)==0,"Actual17 receives exclusively an empty trade list and unused serial")
+		check(Save.state_equal(_without_trade(migrated.data),previous),"Every actual17 production, research, road, personal and monetary field remains unchanged")
+	var active := _production17(source)
+	active.project_serial = 9
+	active.provinces[0].production = {"materials_u":1234567,"rate_carry":31}
+	active.provinces[0].regional_project = _project()
+	active.provinces[1].logistics_sites.depot = 1
+	var expected: Dictionary=active.duplicate(true)
+	var restored: Dictionary=Save.migrate(active)
+	check(restored.ok and active==expected,"Controlled partially paid17 project migrates without mutating its source")
+	if restored.ok:
+		check(restored.data.material_trades==[] and int(restored.data.trade_serial)==0 and Save.state_equal(_without_trade(restored.data),expected),"Active17 stock/carry/recipe/work/paid gold and depot survive exactly, with no trade-created goods")
+	check(FileAccess.get_sha256(PRODUCTION17_PATH)==PRODUCTION17_HASH,"Production migration tests leave the archived17 envelope untouched")
+
 func _test_current_roundtrip(source: Dictionary) -> void:
 	var state := _active(source)
 	var before := state.duplicate(true)
@@ -135,7 +176,7 @@ func _test_current_roundtrip(source: Dictionary) -> void:
 	check(result.ok and state==before,"Current partially paid project accepts pure normalization")
 	check(Save.validate(state).is_empty(),"Current stock/depot/project structure validates")
 	if not result.ok: return
-	check(Save.state_equal(result.data,state),"Valid17stock, carry and frozen project accounting survive unchanged")
+	check(Save.state_equal(result.data,state),"Valid18stock, carry, frozen project accounting and empty trade state survive unchanged")
 	var json_state: Dictionary = JSON.parse_string(JSON.stringify(state))
 	var normalized: Dictionary = Save.migrate(json_state)
 	if normalized.ok:
@@ -264,7 +305,7 @@ func _test_raw_rejections(source: Dictionary) -> void:
 		var bad := _current(source)
 		bad.provinces[0].logistics_sites.depot = value
 		_reject(bad,"Invalid separate depot: "+str(value))
-	for value in [true,"17",17.5,INF]:
+	for value in [true,"17",17.5,"18",18.5,INF]:
 		var bad := _current(source)
 		bad.schema_version = value
 		_reject(bad,"Schema type cannot evade raw current checks: "+str(value))
@@ -316,7 +357,6 @@ func _test_layout() -> void:
 		all_zero = all_zero and p.get("production")=={"materials_u":0,"rate_carry":0} and p.get("regional_project")=={} and p.get("logistics_sites")=={"depot":0}
 	check(all_zero and Save.validate(regional.data).is_empty(),"Final108regions receive zero additions after layout conversion")
 	var active49: Dictionary = Game.new(Legacy,0).snapshot()
-	active49.schema_version = 17
 	active49.project_serial = 1
 	for p in active49.provinces:
 		p.production = {"materials_u":1,"rate_carry":0}
@@ -324,8 +364,12 @@ func _test_layout() -> void:
 		p.logistics_sites = {"depot":0}
 	active49.provinces[0].regional_project = {"id":1,"builder":int(active49.provinces[0].owner),"kind":"market","target_level":1,"paid_gold":60,
 		"material_total_u":6000000,"material_spent_u":0,"work_total_u":4000000,"work_done_u":0,"priority":0,"started_month":0}
-	check(Save.migrate(active49).ok,"Controlled current49production is valid before unsupported layout conversion")
-	check(not Migration.migrate_state(active49).ok,"Active17production cannot silently disappear during49to108conversion")
+	for schema in [17,18]:
+		var historical_or_current: Dictionary=active49.duplicate(true)
+		if schema==17: historical_or_current=_without_trade(historical_or_current)
+		historical_or_current.schema_version=schema
+		check(Save.migrate(historical_or_current).ok,"Controlled49production remains valid before unsupported layout conversion in schema"+str(schema))
+		check(not Migration.migrate_state(historical_or_current).ok,"Active production cannot silently disappear during49to108conversion in schema"+str(schema))
 
 func _test_legacy_road_graph() -> void:
 	var old: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/legacy_v1.json"))
@@ -389,7 +433,7 @@ func _test_serialization(source: Dictionary) -> void:
 	var state := _active(source)
 	var envelope := {"kind":"BQ-LAN-SAVE","v":3,"app":"1.9.1","fingerprint":"controlled-current","state":state}
 	var raw: PackedByteArray = Protocol.encode_packet(envelope)
-	check(not raw.is_empty() and raw.size()<2097152,"Actual bounded17envelope remains below2MiB")
+	check(not raw.is_empty() and raw.size()<2097152,"Actual bounded18envelope remains below2MiB")
 	var large := envelope.duplicate(true)
 	large.state["oversized"] = "x".repeat(2097152)
 	check(Protocol.encode_packet(large).is_empty(),"Compression cannot bypass raw2MiB/field limits")

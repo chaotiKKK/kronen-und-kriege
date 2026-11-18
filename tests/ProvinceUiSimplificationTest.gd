@@ -44,6 +44,7 @@ func _ready() -> void:
 	var before := world_hash()
 	await test_canonical_entries()
 	await test_sidebar()
+	await test_single_options_save()
 	await test_foreign_contexts()
 	await test_global_research()
 	await test_metadata()
@@ -51,6 +52,8 @@ func _ready() -> void:
 	await test_touch_and_scroll()
 	check(world_hash() == before, "Auswahl, Reiter, Forschungsplan und Touchlayout verändern keine Spielwelt")
 	await test_construction_actions()
+	await test_recruit_capacity()
+	await test_dynamic_light_theme_controls()
 	await test_road_inventory()
 	await test_maximum_buildings()
 	finish()
@@ -133,6 +136,22 @@ func test_sidebar() -> void:
 			button.pressed.emit()
 			await settle()
 			check(ui.pages[id].is_visible_in_tree(), "Sidebar-Button %s öffnet seine echte Seite" % id)
+
+func test_single_options_save() -> void:
+	main._show_options()
+	main._select_options_tab("spiel")
+	await settle()
+	var save_buttons: Array = []
+	var load_buttons: Array = []
+	for button in main.options_layer.find_children("*","Button",true,false):
+		if not button.is_visible_in_tree(): continue
+		if button.text == "Spiel speichern": save_buttons.append(button)
+		if button.text == "Spielstand laden": load_buttons.append(button)
+	check(save_buttons.size() == 1 and save_buttons[0] == main.opt_save_btn, "Optionen > Spiel bietet genau den einen Speicherbutton im Footer; sichtbar: %d" % save_buttons.size())
+	check(main.opt_save_btn.is_visible_in_tree() and not main.opt_save_btn.disabled and buttons_calling(main,"_options_save").has(main.opt_save_btn), "Der gemeinsame Speicherbutton bleibt mit dem bestehenden Speicherablauf verbunden und bedienbar")
+	check(load_buttons.size() == 1, "Der bestehende Spielstand-Ladezugang bleibt in den Spieloptionen erhalten")
+	main._hide_options()
+	await settle()
 
 func test_foreign_contexts() -> void:
 	main._on_province_selected(remote)
@@ -356,6 +375,114 @@ func test_construction_actions() -> void:
 		check(inspector.action_buttons[key].is_visible_in_tree(), "Nach Bauende kehrt die freie passende Kaufaktion %s wieder" % key)
 	check(main.develop_btn.is_visible_in_tree(), "Entwicklung ist nach Bauende wieder erreichbar")
 
+func test_recruit_capacity() -> void:
+	# Kontrollierte UI-Grenzwerte, kein Nachweis einer regulären Kampagnenfinanzierung.
+	var p: Dictionary = game.province(home)
+	var original_levy: int = p.levy
+	var original_gold: int = game.house().gold
+	var capacity: Dictionary = game.region_capacity(p)
+	main._on_province_selected(home)
+	inspector.show_section("army")
+	for amount in [int(capacity.maximum),int(capacity.maximum)+1]:
+		p.levy = amount
+		main.refresh()
+		await settle()
+		check(not main.recruit_btn.is_visible_in_tree(), "Volles oder übervolles eigenes Aufgebot %d/%d bietet keine nutzlose Werbeaktion" % [amount,int(capacity.maximum)])
+	p.levy = int(capacity.maximum)-1
+	main.refresh()
+	await settle()
+	check(main.recruit_btn.is_visible_in_tree() and not main.recruit_btn.disabled, "Nach tatsächlich verringertem örtlichem Aufgebot kehrt die freie Werbeaktion zurück")
+	game.house().gold = 0
+	main.refresh()
+	await settle()
+	check(main.recruit_btn.is_visible_in_tree() and main.recruit_btn.disabled, "Freie Aufgebotskapazität mit Geldmangel behält die passende gesperrte Werbeaktion")
+	game.house().gold = original_gold
+	main.refresh()
+	main.recruit_btn.pressed.emit()
+	await settle()
+	check(int(p.levy) == int(capacity.maximum) and int(game.house().gold) == original_gold-int(capacity.recruit_cost) and not main.recruit_btn.is_visible_in_tree(), "Der zurückgekehrte echte Werbebutton bezahlt die bestehende Werbung und verschwindet bei voller Kapazität")
+	p.levy = original_levy
+	game.house().gold = original_gold
+	main.refresh()
+	await settle()
+
+func test_dynamic_light_theme_controls() -> void:
+	# Kontrollierte UI-Projekte; neue Controls entstehen erst nach dem Themewechsel.
+	var previous_world: Dictionary = game.snapshot()
+	var previous_selection: String = main.selected
+	var previous_section: String = inspector.current_section
+	var previous_sidebar: String = ui.current_section
+	var previous_roads: bool = inspector._roads_expanded
+	var previous_scale: float = ui.text_scale
+	var previous_theme: int = ui.appearance
+	var previous_touch: bool = ui.touch_layout
+	var target := ""
+	for id in game.neighbours(home):
+		if int(game.province(str(id)).owner) == game.player:
+			target = str(id)
+			break
+	check(not target.is_empty(), "Dynamische Themeprüfung besitzt einen echten eigenen Straßennachbarn")
+	if target.is_empty(): return
+	ui.set_touch_layout(true)
+	for scale in [1.0, 2.0]:
+		ui.set_text_scale(scale)
+		for theme in [2, 4, 5]:
+			ui.set_appearance(theme)
+			main._on_province_selected(remote)
+			main._on_province_selected(home)
+			inspector.show_section("buildings")
+			game.house().gold = 1000
+			main.refresh()
+			await settle()
+			inspector.action_buttons["build:market"].pressed.emit()
+			await settle()
+			var project: Dictionary = game.province(home).regional_project
+			var has_project: bool = not project.is_empty() and inspector.project_controls.has(int(project.id))
+			check(has_project, "Nach Wahl von Theme%d entstehen echte neue Projektcontrols bei%dProzent" % [theme,int(scale*100)])
+			if not has_project: return
+			check(inspector._road_controls.has(target), "Nach Theme%d und Ortswechsel entsteht die tatsächliche Straßenaktion" % theme)
+			if not inspector._road_controls.has(target): return
+			inspector._toggle_roads()
+			await settle()
+			var controls: Dictionary = inspector.project_controls[int(project.id)]
+			var buttons: Array = [controls.priority, controls.cancel, inspector._road_controls[target].button]
+			var expected := Color("152b39") if theme == 2 else Color("302319")
+			for button in buttons:
+				await check_scroll_reachable(button, button.text, scale)
+				check_dynamic_palette(button, expected, "Theme%d/%dProzent" % [theme,int(scale*100)])
+			await capture_proof("dynamic-light-%d-%d" % [theme,int(scale*100)])
+			ui.set_appearance(3)
+			await settle()
+			for button in buttons: check_dynamic_palette(button, Color("fff1d6"), "Rückkehr zu Walnuss")
+			ui.set_appearance(theme)
+			await settle()
+			for button in buttons: check_dynamic_palette(button, expected, "Erneut helles Theme%d" % theme)
+			inspector._request_construction_cancel(int(project.id))
+			inspector.action_buttons.construction_confirm.pressed.emit()
+			await settle()
+			check(game.province(home).regional_project.is_empty(), "Themeprüfung beendet ihren echten bezahlten Auftrag ohne vorzeitigen Gebäudeeffekt")
+	ui.set_appearance(previous_theme)
+	ui.set_text_scale(previous_scale)
+	ui.set_touch_layout(previous_touch)
+	check(game.restore(previous_world), "Themeprobe stellt ihre vorherige echte Welt vollständig wieder her")
+	check(load("res://scripts/SaveGame.gd").state_equal(previous_world,game.snapshot()), "Themeprobe lässt vor bestehenden Folgetests weder Kasse noch Aufträge oder History zurück")
+	main._on_province_selected(previous_selection)
+	if inspector._roads_expanded != previous_roads: inspector._toggle_roads()
+	inspector.show_section(previous_section)
+	ui.show_section(previous_sidebar)
+	await settle()
+
+func check_dynamic_palette(button: Button, expected: Color, context: String) -> void:
+	for role in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		check(button.get_theme_color(role).is_equal_approx(expected), "%s: neuer Button %s verwendet die lesbare tatsächliche Rolle %s" % [context,button.text,role])
+	var normal: StyleBoxFlat = button.get_theme_stylebox("normal")
+	var panel: StyleBoxFlat = main.side_panel.get_theme_stylebox("panel")
+	var surface: Color = panel.bg_color.blend(normal.bg_color)
+	var text_luminance: float = button.get_theme_color("font_color").srgb_to_linear().get_luminance()
+	var surface_luminance: float = surface.srgb_to_linear().get_luminance()
+	var ratio: float = (maxf(text_luminance,surface_luminance)+0.05)/(minf(text_luminance,surface_luminance)+0.05)
+	check(ratio >= 4.5, "%s: neuer Button %s erreicht lesbaren Kontrast zur echten Panel-/Buttonfläche (%.2f)" % [context,button.text,ratio])
+
 func test_road_inventory() -> void:
 	var neighbors: Array = game.neighbours(home)
 	check(not neighbors.is_empty(), "Straßentest verwendet eine echte benachbarte Spielregion")
@@ -458,7 +585,7 @@ func finish() -> void:
 	if file == null:
 		check(false,"Ergebnisdatei kann im Belegordner nicht geschrieben werden: "+proof_dir)
 	else:
-		file.store_string(JSON.stringify({"checks":checks,"failures":failures,"results":results,"fixture":"Real Main scene, fresh house0 paused; controlled max-building fixture only at end","proof_dir":proof_dir,"display_server":DisplayServer.get_name(),"headless":DisplayServer.get_name()=="headless","screenshots_skipped":DisplayServer.get_name()=="headless","screenshots":proof_images},"\t",true))
+		file.store_string(JSON.stringify({"checks":checks,"failures":failures,"results":results,"fixture":"Real Main scene, fresh house0 paused; controlled construction, recruitment-capacity, road and max-building UI fixtures after navigation checks","proof_dir":proof_dir,"display_server":DisplayServer.get_name(),"headless":DisplayServer.get_name()=="headless","screenshots_skipped":DisplayServer.get_name()=="headless","screenshots":proof_images},"\t",true))
 		file.close()
 	main._stop_audio()
 	print("PROVINCEUISIMPLIFICATIONTEST %s: %d Prüfungen, %d Fehler" % ["OK" if failures == 0 else "FAIL",checks,failures])

@@ -146,6 +146,19 @@ const ProductionScript = preload("res://scripts/RegionalProduction.gd")
 const MaterialTransportScript = preload("res://scripts/MaterialTransport.gd")
 const DepotSupplyScript = preload("res://scripts/DepotSupply.gd")
 const EconomyPlannerScript = preload("res://scripts/EconomyPlanner.gd")
+const MaterialTradeScript = preload("res://scripts/MaterialTrade.gd")
+const MATERIAL_TRADE_RULES := {
+	"algorithm_version":1,"source_reserve_weights":2,"protected_local_work_months":1,"own_demand_months":2,
+	"scheduled_own_transport_precedes_sale":true,"phase":"after-yearly-before-local-production",
+	"npc_budget":"gold-minus-max(economy-military-reserve,naval-reserve)",
+	"npc_requires_current_project_gap":true,"automatic_parties":"NPC-only",
+	"max_new_offers_per_npc_month":1,"offer_books_no_goods_or_money":true,
+	"first_delivery":"month-after-acceptance","received_goods_work_in_same_month":true,
+	"acceptance_requires_future_delivery_month":true,
+	"trade_phase_once_per_month":true,"restore_current_month_already_settled":true,
+	"shared_original_npc_target_need_budget":true,
+	"failed_commands_leave_log_unchanged":true,
+}
 const PRODUCTION_RULES := {
 	"algorithm_version":1,"project_kinds":["market","barracks","walls","develop","depot"],
 	"one_regional_project":true,"depot_gold_per_weight":50,"depot_requires":"logistics",
@@ -173,6 +186,10 @@ var year: int = START_YEAR
 var campaign_sandbox := false
 var roads: Array = []
 var project_serial := 0
+var material_trades: Array = []
+var trade_serial := 0
+var _last_material_trade: Dictionary = {}
+var _material_trade_settled_month := -1
 var _last_production: Dictionary = {}
 var _last_economy_month: Dictionary = {}
 var _last_economy_orders: Dictionary = {}
@@ -802,10 +819,12 @@ func advance_month() -> void:
 	_tick_dynasty()
 	var transport_roads: Array = roads.duplicate(true)
 	_tick_infrastructure()
+	_tick_material_trade()
 	_tick_regional_economy(transport_roads)
 	_run_ai_military()
 	_last_economy_orders={}
 	_run_ai_economy()
+	_run_ai_trade()
 	if human_houses.is_empty():
 		_tick_personal_event()
 	else:
@@ -1528,6 +1547,254 @@ func _material_horizon(p: Dictionary, tasks: Array, months: int) -> int:
 					task.material_spent_u=int(update.material_spent_u)
 		shadow.production={"materials_u":ProductionScript.stock_capacity_u(p),"rate_carry":0}
 	return used
+
+func _material_trade_live() -> Array:
+	var result: Array = []
+	for trade in material_trades:
+		if calendar_index()>int(trade.expires_month): continue
+		var source := province(str(trade.from))
+		var target := province(str(trade.to))
+		if source.is_empty() or target.is_empty(): continue
+		if int(source.owner)!=int(trade.seller) or int(target.owner)!=int(trade.buyer): continue
+		result.append(trade)
+	return result
+
+func _material_trade_active_count(hi: int, contracts: Array) -> int:
+	var count := 0
+	for trade in contracts:
+		if str(trade.status)=="active" and hi in [int(trade.seller),int(trade.buyer)]: count+=1
+	return count
+
+func _material_trade_hostilities() -> Dictionary:
+	var result := {}
+	for hi in houses.size():
+		for army in houses[hi].get("armies",[]):
+			var p := province(str(army.get("province","")))
+			if p.is_empty() or int(p.owner)==hi or int(army.get("strength",0))<=0 or int(army.get("morale",0))<=0: continue
+			result["%d|%d" % [mini(hi,int(p.owner)),maxi(hi,int(p.owner))]]=true
+	for p in provinces:
+		for pair in [["siege","siege_owner"],["blockade","blockade_owner"]]:
+			var enemy := int(p.get(str(pair[1]),-1))
+			if int(p.get(str(pair[0]),0))>0 and enemy>=0 and enemy!=int(p.owner):
+				result["%d|%d" % [mini(enemy,int(p.owner)),maxi(enemy,int(p.owner))]]=true
+	return result
+
+func _material_trade_context() -> Dictionary:
+	# Protect original reserves, next local work and already useful own transport.
+	# This is a read-only plan; quotes must never advance production or funding.
+	var catalog := _construction_catalog()
+	var offers := {}
+	var needs := {}
+	var npc_needs := {}
+	var demands: Array = []
+	var blocked := _production_blocked()
+	for p in provinces:
+		var id := str(p.id)
+		var tasks: Array = catalog.tasks[id]
+		var next_need := 0 if tasks.is_empty() else _material_horizon(p,tasks,int(MATERIAL_TRADE_RULES.protected_local_work_months))
+		var two_need := 0 if tasks.is_empty() else _material_horizon(p,tasks,int(MATERIAL_TRADE_RULES.own_demand_months))
+		var stock := int(p.production.materials_u)
+		offers[id]=maxi(0,stock-int(MATERIAL_TRADE_RULES.source_reserve_weights)*ProductionScript.weight_u(p)-next_need)
+		needs[id]=maxi(0,two_need-stock)
+		if not is_human_house(int(p.owner)): npc_needs[id]=int(needs[id])
+		if int(needs[id])>0:
+			var priority := 0
+			var project_id := ProductionScript.MAX_SERIAL
+			for task in tasks:
+				priority=maxi(priority,int(task.priority))
+				project_id=mini(project_id,int(task.id))
+			demands.append({"province":id,"house":int(p.owner),"amount_u":int(needs[id]),"priority":priority,"project_id":project_id})
+	var own_plan: Dictionary = MaterialTransportScript.plan(provinces,roads,demands,offers,calendar_index(),blocked)
+	for flow in own_plan.flows:
+		var source := str(flow.from)
+		offers[source]=maxi(0,int(offers[source])-int(flow.amount_u))
+	var funds := {}
+	for hi in houses.size():
+		var reserve := 0 if is_human_house(hi) else maxi(int(EconomyPlannerScript.RULES.minimum_military_reserve),NavalCampaignScript.military_reserve(self,hi))
+		funds[str(hi)]=maxi(0,int(houses[hi].gold)-reserve)
+	return {"offers":offers,"needs":needs,"npc_needs":npc_needs,"funds":funds,"blocked":blocked,"hostile_pairs":_material_trade_hostilities()}
+
+func material_trade_preview(from_id: String, to_id: String, house_index: int = -1) -> Dictionary:
+	var hi := player if house_index<0 else house_index
+	return _material_trade_preview(from_id,to_id,hi,_material_trade_context())
+
+func _material_trade_preview(from_id: String, to_id: String, hi: int, context: Dictionary, ignore_id: int = -1) -> Dictionary:
+	var result := {"ok":false,"reason":"","from":from_id,"to":to_id,"seller":-1,"buyer":-1,"counterparty":-1,"lot_u":0,"lot_gold":0,"expires_month":calendar_index()+int(MaterialTradeScript.RULES.expiry_months),"counterparty_is_human":false}
+	if hi<0 or hi>=houses.size() or game_over:
+		result.reason="Kein handlungsfähiges Haus."; return result
+	var source := province(from_id)
+	var target := province(to_id)
+	if source.is_empty() or target.is_empty() or from_id==to_id or not neighbours(from_id).has(to_id):
+		result.reason="Handel benötigt zwei direkt landbenachbarte Regionen."; return result
+	var seller := int(source.owner)
+	var buyer := int(target.owner)
+	result.seller=seller; result.buyer=buyer
+	if seller==buyer or not hi in [seller,buyer]:
+		result.reason="Eine eigene und eine fremde Grenzregion auswählen."; return result
+	result.counterparty=buyer if hi==seller else seller
+	result.counterparty_is_human=is_human_house(int(result.counterparty))
+	var quote: Dictionary = MaterialTradeScript.quote(source,target)
+	if quote.is_empty(): result.reason="Ungültiges Wirtschaftsgewicht."; return result
+	result.lot_u=int(quote.lot_u); result.lot_gold=int(quote.lot_gold)
+	var live := _material_trade_live()
+	if ignore_id<0 and (trade_serial>=int(MaterialTradeScript.RULES.max_serial) or live.size()>=int(MaterialTradeScript.RULES.max_contracts)):
+		result.reason="Die Handelsverwaltung ist ausgelastet."; return result
+	for trade in live:
+		if int(trade.id)==ignore_id: continue
+		if str(trade.from)==from_id and str(trade.to)==to_id:
+			result.reason="Für diese Richtung besteht bereits ein Vertrag oder Angebot."; return result
+		if ignore_id<0 and str(trade.status)=="offered" and int(trade.proposer)==hi:
+			result.reason="Zuerst das eigene offene Angebot klären."; return result
+	for party in [seller,buyer]:
+		if _material_trade_active_count(int(party),live)>=int(MaterialTradeScript.RULES.max_active_per_house):
+			result.reason="Ein beteiligtes Haus hat bereits zwei aktive Verträge."; return result
+	var pair := "%d|%d" % [mini(seller,buyer),maxi(seller,buyer)]
+	if bool(context.hostile_pairs.get(pair,false)):
+		result.reason="Feindliche Heere, Belagerung oder Blockade verhindern diesen Handel."; return result
+	for id in [from_id,to_id]:
+		if context.blocked.has(id): result.reason=str(context.blocked[id]); return result
+	if int(context.offers.get(from_id,0))<int(result.lot_u):
+		result.reason="Der Verkäufer benötigt seinen Vorrat noch für Reserve, eigene Bauten oder Lieferungen."; return result
+	if ProductionScript.stock_capacity_u(target)-int(target.production.materials_u)<int(result.lot_u):
+		result.reason="Im Ziellager ist keine vollständige Charge frei."; return result
+	if int(context.funds.get(str(buyer),0))<int(result.lot_gold):
+		result.reason="Dem Käufer fehlt verfügbares Gold; NPCs behalten ihre Militärreserve."; return result
+	if not is_human_house(buyer) and int(context.needs.get(to_id,0))<int(result.lot_u):
+		result.reason="Der NPC-Käufer benötigt diese Charge derzeit nicht für eine Baustelle."; return result
+	result.ok=true
+	return result
+
+func offer_material_trade(from_id: String, to_id: String, house_index: int = -1) -> Dictionary:
+	var hi := player if house_index<0 else house_index
+	var preview := material_trade_preview(from_id,to_id,hi)
+	if not bool(preview.ok): return _res(false,str(preview.reason))
+	var accepted := not bool(preview.counterparty_is_human)
+	trade_serial+=1
+	material_trades=_material_trade_live().duplicate(true)
+	material_trades.append({"id":trade_serial,"seller":int(preview.seller),"buyer":int(preview.buyer),"from":from_id,"to":to_id,"proposer":hi,
+		"lot_u":int(preview.lot_u),"lot_gold":int(preview.lot_gold),"created_month":calendar_index(),"expires_month":int(preview.expires_month),
+		"accepted_month":calendar_index() if accepted else -1,"last_delivery_month":-1,"delivered_lots":0,"status":"active" if accepted else "offered"})
+	var message := "Baustoffvertrag geschlossen; bis zu drei bezahlte Chargen in sechs Monaten." if accepted else "Baustoffangebot gesendet; die Gegenseite muss zustimmen."
+	_note_for_houses([int(preview.seller),int(preview.buyer)],message)
+	return _res(true,message)
+
+func _material_trade_find(id: int) -> Dictionary:
+	for trade in material_trades:
+		if int(trade.id)==id: return trade
+	return {}
+
+func accept_material_trade(id: int, house_index: int = -1) -> Dictionary:
+	var hi := player if house_index<0 else house_index
+	var trade := _material_trade_find(id)
+	if trade.is_empty() or str(trade.status)!="offered" or hi==int(trade.proposer) or not hi in [int(trade.seller),int(trade.buyer)]:
+		return _res(false,"Dieses Angebot kann nur die Gegenseite annehmen.")
+	if calendar_index()>int(trade.expires_month): return _res(false,"Das Angebot ist abgelaufen.")
+	if calendar_index()==int(trade.expires_month): return _res(false,"Es bleibt kein künftiger Liefermonat; bitte ein neues Angebot erstellen.")
+	if int(province(str(trade.from)).get("owner",-1))!=int(trade.seller) or int(province(str(trade.to)).get("owner",-1))!=int(trade.buyer):
+		return _res(false,"Ein beteiligter Ort hat inzwischen den Besitzer gewechselt.")
+	var preview := _material_trade_preview(str(trade.from),str(trade.to),hi,_material_trade_context(),id)
+	if not bool(preview.ok): return _res(false,str(preview.reason))
+	# Historic expired contracts are valid on load, but must not turn the newly
+	# accepted state into three persisted active contracts for one participant.
+	material_trades=_material_trade_live().duplicate(true)
+	trade=_material_trade_find(id)
+	trade.status="active"
+	trade.accepted_month=calendar_index()
+	_note_for_houses([int(trade.seller),int(trade.buyer)],"Baustoffangebot angenommen; Lieferung frühestens im nächsten Monat.")
+	return _res(true,"Baustoffangebot angenommen.")
+
+func cancel_material_trade(id: int, house_index: int = -1) -> Dictionary:
+	var hi := player if house_index<0 else house_index
+	var trade := _material_trade_find(id)
+	if game_over or trade.is_empty() or not hi in [int(trade.seller),int(trade.buyer)]:
+		return _res(false,"Nur eine Vertragspartei darf diesen Handel beenden.")
+	material_trades=material_trades.filter(func(item):return int(item.id)!=id)
+	_note_for_houses([int(trade.seller),int(trade.buyer)],"Baustoffhandel beendet; bereits bezahlte Ware bleibt übergeben.")
+	return _res(true,"Künftige Lieferungen beendet.")
+
+func material_trade_options(region_id: String, house_index: int = -1) -> Array:
+	var hi := player if house_index<0 else house_index
+	if hi<0 or hi>=houses.size() or province(region_id).is_empty(): return []
+	var context := _material_trade_context()
+	var forecast: Dictionary = MaterialTradeScript.plan(provinces,material_trades,context.offers,context.funds,calendar_index()+1,_material_trade_blocks(context),context.hostile_pairs,adjacency,context.npc_needs)
+	var rows: Array = []
+	for trade in _material_trade_live():
+		if not hi in [int(trade.seller),int(trade.buyer)] or not region_id in [str(trade.from),str(trade.to)]: continue
+		var can_accept := str(trade.status)=="offered" and hi!=int(trade.proposer)
+		var reason := ""
+		if can_accept:
+			if calendar_index()>=int(trade.expires_month):
+				can_accept=false; reason="Es bleibt kein künftiger Liefermonat; bitte ein neues Angebot erstellen."
+			else:
+				var preview := _material_trade_preview(str(trade.from),str(trade.to),hi,context,int(trade.id))
+				can_accept=bool(preview.ok); reason=str(preview.reason)
+		elif str(trade.status)=="active":
+			var ready: bool=forecast.deliveries.any(func(delivery):return int(delivery.trade_id)==int(trade.id))
+			reason="Nach heutigem Stand lieferbar; erneute Prüfung am Monatswechsel." if ready else str(forecast.statuses.get(str(trade.id),"Die nächste Lieferung wird am Monatswechsel geprüft."))
+		rows.append({"kind":"contract","contract":trade.duplicate(true),"can_accept":can_accept,"can_cancel":not game_over,"reason":reason})
+	var region := province(region_id)
+	for neighbor in neighbours(region_id):
+		var other := province(str(neighbor))
+		if other.is_empty() or int(other.owner)==int(region.owner) or not hi in [int(region.owner),int(other.owner)]: continue
+		for ends in [[region_id,str(neighbor)],[str(neighbor),region_id]]:
+			var duplicate := false
+			for row in rows:
+				if row.kind=="contract" and str(row.contract.from)==str(ends[0]) and str(row.contract.to)==str(ends[1]): duplicate=true
+			if duplicate: continue
+			var preview := _material_trade_preview(str(ends[0]),str(ends[1]),hi,context)
+			rows.append({"kind":"offer","from":str(ends[0]),"to":str(ends[1]),"preview":preview})
+	return rows
+
+func _material_trade_blocks(context: Dictionary) -> Dictionary:
+	var trade_blocks: Dictionary = context.blocked.duplicate(true)
+	for trade in material_trades:
+		if not is_human_house(int(trade.buyer)) and int(context.needs.get(str(trade.to),0))<int(trade.lot_u):
+			trade_blocks["trade:%d" % int(trade.id)]="Die NPC-Baustelle benötigt derzeit keine vollständige Charge."
+	return trade_blocks
+
+func _tick_material_trade() -> void:
+	if _material_trade_settled_month==calendar_index(): return
+	_material_trade_settled_month=calendar_index()
+	_last_material_trade={}
+	if material_trades.is_empty(): return
+	var context := _material_trade_context()
+	var trade_blocks := _material_trade_blocks(context)
+	var plan: Dictionary = MaterialTradeScript.plan(provinces,material_trades,context.offers,context.funds,calendar_index(),trade_blocks,context.hostile_pairs,adjacency,context.npc_needs)
+	for id in plan.stock_deltas:
+		var p := province(str(id))
+		p.production.materials_u=int(p.production.materials_u)+int(plan.stock_deltas[id])
+	for hi in plan.gold_deltas:
+		houses[int(hi)].gold=int(houses[int(hi)].gold)+int(plan.gold_deltas[hi])
+	var old: Array = material_trades
+	material_trades=plan.contracts
+	_last_material_trade=plan.duplicate(true)
+	for delivery in plan.deliveries:
+		var amount := str(float(delivery.amount_u)/ProductionScript.UNIT).replace(".",",")
+		_note_for_houses([int(delivery.seller),int(delivery.buyer)],"Baustoffhandel: %s → %s · %s Baustoffe gegen %d Gold." % [str(province(str(delivery.from)).name),str(province(str(delivery.to)).name),amount,int(delivery.gold)])
+	for trade in old:
+		var exists := material_trades.any(func(item):return int(item.id)==int(trade.id))
+		if not exists:
+			_note_for_houses([int(trade.seller),int(trade.buyer)],"Baustoffvertrag abgeschlossen oder abgelaufen.")
+
+func _run_ai_trade() -> void:
+	var context := _material_trade_context()
+	for buyer in houses.size():
+		if is_human_house(buyer) or bool(houses[buyer].get("defeated",false)): continue
+		if _material_trade_active_count(buyer,_material_trade_live())>=int(MaterialTradeScript.RULES.max_active_per_house): continue
+		var best := {}
+		var score := -INF
+		for target in provinces:
+			if int(target.owner)!=buyer or int(context.needs.get(str(target.id),0))<=0: continue
+			for source_id in neighbours(str(target.id)):
+				var source := province(str(source_id))
+				if source.is_empty() or int(source.owner)==buyer or is_human_house(int(source.owner)): continue
+				var preview := _material_trade_preview(str(source.id),str(target.id),buyer,context)
+				if not bool(preview.ok): continue
+				var value := float(context.needs[str(target.id)])/maxf(1.0,float(preview.lot_u))-float(preview.lot_gold)/1000.0
+				var key := str(source.id)+"|"+str(target.id)
+				if value>score or (is_equal_approx(value,score) and key<str(best.get("key","~"))):
+					score=value; best={"from":str(source.id),"to":str(target.id),"key":key}
+		if not best.is_empty(): offer_material_trade(str(best.from),str(best.to),buyer)
 
 func _tick_regional_economy(transport_roads: Array) -> void:
 	var blocked := _production_blocked()
@@ -4395,6 +4662,10 @@ func _capture_province(province_id: String, new_owner: int, announce: bool = tru
 		return
 	if int(p.owner)!=new_owner:
 		p.regional_project={}
+		for trade in material_trades.duplicate(true):
+			if province_id in [str(trade.from),str(trade.to)]:
+				material_trades=material_trades.filter(func(item):return int(item.id)!=int(trade.id))
+				_note_for_houses([int(trade.seller),int(trade.buyer)],"Baustoffvertrag durch Besitzerwechsel beendet.")
 		for index in range(roads.size()-1,-1,-1):
 			var road: Dictionary=roads[index]
 			if not road.get("construction",{}).is_empty() and province_id in [str(road.from),str(road.to)]:
@@ -4883,6 +5154,8 @@ func snapshot() -> Dictionary:
 	data_state["campaign_sandbox"] = campaign_sandbox
 	data_state["roads"] = roads.duplicate(true)
 	data_state["project_serial"] = project_serial
+	data_state["material_trades"] = material_trades.duplicate(true)
+	data_state["trade_serial"] = trade_serial
 	data_state["player"] = player
 	data_state["speed"] = speed
 	data_state["event_timer"] = event_timer
@@ -5051,9 +5324,14 @@ func restore(d: Dictionary) -> bool:
 
 	year = int(state.get("year", START_YEAR))
 	month = int(state.get("month", 1))
+	# Saves represent a completed month, never a suspended half-booked trade phase.
+	_material_trade_settled_month=calendar_index()
+	_last_material_trade={}
 	campaign_sandbox = bool(state.get("campaign_sandbox", false))
 	roads = (state.get("roads", []) as Array).duplicate(true)
 	project_serial = int(state.get("project_serial",0))
+	material_trades = (state.get("material_trades",[]) as Array).duplicate(true)
+	trade_serial = int(state.get("trade_serial",0))
 	_last_production={}
 	_last_economy_month={}
 	_last_economy_orders={}

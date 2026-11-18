@@ -16,6 +16,8 @@ Die feste Chargenmenge ist `max(1, RegionalProduction.edge_weight_u(source,targe
 
 Ein Vertrag erlaubt höchstens drei vollständige Chargen, höchstens eine je Monatswechsel. Angebotsmonat C, Ablaufmonat C+6 einschließlich: erste Lieferung frühestens nach dem Annahmemonat, letzte spätestens im Ablaufmonat. Ohne vollständige Menge, Lagerraum oder Bezahlung gibt es in diesem Monat keine Teilbuchung. Nach drei Lieferungen oder Ablauf endet der Vertrag. Beide Parteien können zukünftige Lieferungen jederzeit beenden; bereits bezahlte Ware wird nicht zurückgebucht. Keine Schulden oder Rückerstattungsfiktion.
 
+Eine neue Gegenannahme benötigt noch mindestens einen künftigen Liefermonat. Am Ablaufmonat selbst ist eine bisher nicht erfolgte Annahme daher gesperrt und begründet; ein bereits aktiver Vertrag darf seine letzte Charge weiterhin in diesem Monat liefern.
+
 Maximal zwei aktive Verträge je Haus; höchstens ein offenes selbst vorgeschlagenes Angebot je Haus und ein Vertrag für dieselbe gerichtete Regionsbeziehung. Weltweit höchstens64 gespeicherte Verträge. Diese Grenze schützt auch konkurrierende LAN-Befehle. Offene Angebote verbrauchen keinen aktiven Platz des Empfängers. Annahme prüft alle Grenzen erneut.
 
 Der Vorschlagende ist eine Vertragspartei; die andere Partei nimmt an. Gegen NPCs wird die Zustimmung nur bei einer aktuell lieferbaren ersten Charge, finanzierbarem Käufer und realem Baustoffbedarf des NPC-Käufers erteilt. NPCs behalten mindestens ihre vorhandene militärische/Marine-Geldreserve. Menschen dürfen eigene Mittel bewusst einsetzen. NPCs schließen automatisch ausschließlich untereinander Verträge; menschliche Güter oder Kassen werden niemals automatisch verplant.
@@ -31,6 +33,8 @@ Jede Quelle schützt `2*weight_u` Reserve plus den bestehenden gemeinsam berechn
 `source_stock -= lot_u; target_stock += lot_u; buyer_gold -= lot_gold; seller_gold += lot_gold`.
 
 Neben Regions-IDs unterstützt die ausschließlich für Handel übergebene Blockademap den Schlüssel `trade:<id>` mit konkretem Grund. Damit pausiert ein NPC-Vertrag bei entfallener aktueller Baustellennachfrage, ohne einen anderen Vertrag desselben Hauses zu sperren. Historisch korrekte abgelaufene oder inzwischen anders besessene Verträge bleiben roh validierbar. Die reine Planung entfernt sie ohne Buchung; eine erfolgreiche Annahme bereinigt solche Altverträge vor der neuen Aktivierung. Abgewiesene Annahmen bleiben vollständig unverändert.
+
+Mehrere Verträge teilen außerdem ein einziges ursprüngliches Bedarfsbudget je NPC-Zielregion. Bereits verplante Ware verringert dieses Budget vor der nächsten vollständigen Charge. Menschen dürfen bewusst auf Vorrat kaufen; ihre Ziele erhalten diese zusätzliche Begrenzung nicht. Die Game-Handelsphase ist innerhalb eines Monats idempotent. Wiederhergestellte Zustände repräsentieren einen abgeschlossenen Monat; ein transienter Phasenwächter verhindert seine erneute Buchung, ohne neue gespeicherte Güter, Gelder oder Pflichtfelder.
 
 Jede Übertragung erhält Quelle, Ziel, Vertrag, Menge und Preis als Beleg. Über alle Parteien bleiben Gold und Material exakt erhalten; keine negativen Bestände, keine Lagerüberschreitung. Eigene Produktionsledger starten nach dieser ausdrücklich vorgelagerten Handelsphase. Handels- und Produktionsphasen dürfen nicht als eine einzige unbelegte Ledgergleichung ausgegeben werden.
 
@@ -56,7 +60,7 @@ Strikte rohe Validierung vor Normalisierung: keine Booleschen Zahlen, NaN, Bruch
 
 - `quote(source: Dictionary, target: Dictionary) -> Dictionary` liefert `{lot_u,lot_gold}`.
 - `validate(contracts: Variant, serial: Variant, provinces: Array, houses: Array, adjacency: Dictionary, now: int) -> Array` liefert Fehler, ohne Änderung.
-- `plan(provinces: Array, contracts: Array, offers: Dictionary, funds: Dictionary, month_index: int, blocked: Dictionary, hostile_pairs: Dictionary, adjacency: Dictionary) -> Dictionary` liefert `{stock_deltas,gold_deltas,deliveries,contracts,statuses}`. `contracts` enthält die neuen verbleibenden Vertragskopien; `statuses` ordnet IDs deutschen Gründen zu. Parteischlüssel für Feindschaft sind `minHouse|maxHouse`. Fundsschlüssel sind Hausindizes als Strings; Angebotsmengen Regions-IDs als Strings.
+- `plan(provinces: Array, contracts: Array, offers: Dictionary, funds: Dictionary, month_index: int, blocked: Dictionary, hostile_pairs: Dictionary, adjacency: Dictionary, npc_needs: Dictionary={}) -> Dictionary` liefert `{stock_deltas,gold_deltas,deliveries,contracts,statuses}`. `contracts` enthält die neuen verbleibenden Vertragskopien; `statuses` ordnet IDs deutschen Gründen zu. Parteischlüssel für Feindschaft sind `minHouse|maxHouse`. Fundsschlüssel sind Hausindizes als Strings; Angebotsmengen und NPC-Bedarfsgrenzen verwenden Regions-IDs als Strings. Fehlende Bedarfsschlüssel begrenzen menschliche Vorratskäufe nicht; vorhandene Nullwerte beziehungsweise ungültige Budgets erlauben keine Lieferung.
 
 Game besitzt allein die Mutation und integriert:
 

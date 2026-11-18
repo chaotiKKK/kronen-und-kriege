@@ -313,6 +313,12 @@ func _without_naval(protocol, state: Dictionary) -> String:
 
 func _project_unused_naval_fields(state: Dictionary) -> Dictionary:
 	var old := state.duplicate(true)
+	if old.has("material_trades"):
+		if not check(old.material_trades is Array and old.material_trades.is_empty(),"Historical migration adds only an empty material-trade list"): return old
+		old.erase("material_trades")
+	if old.has("trade_serial"):
+		if not check((old.trade_serial is int or old.trade_serial is float) and old.trade_serial==0,"Historical migration adds only a zero material-trade serial"): return old
+		old.erase("trade_serial")
 	old.erase("project_serial")
 	for province in old.provinces:
 		for field in ["production","regional_project","logistics_sites"]:

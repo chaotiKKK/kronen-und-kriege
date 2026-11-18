@@ -1,6 +1,7 @@
 extends VBoxContainer
 ## Stabile örtliche Verwaltung. Keine Spielregeln und keine direkte Mutation.
 const ViewModel = preload("res://scripts/ViewModelBuilder.gd")
+const TradePanel = preload("res://scripts/MaterialTradePanel.gd")
 var main
 var selected_id := ""
 var section_buttons: Dictionary = {}
@@ -30,6 +31,7 @@ var _pending_construction_cancel: Dictionary = {}
 var _roads_expanded := false
 var _road_context := ""
 var _road_controls: Dictionary = {}
+var trade_panel
 
 func configure(host) -> void:
 	main = host
@@ -167,6 +169,9 @@ func configure(host) -> void:
 	# Erst die nächste Entscheidung, darunter die ausführlichen Bestandszahlen.
 	var war_order: Array = [fields.war,action_buttons.claim,army_picker,fields.field_army,fields.transport,action_buttons.transport_army,fields.battle,action_buttons.march,action_buttons.siege,main.attack_btn,action_buttons.relieve,action_buttons.recover_army,fields.orders,action_buttons.army,action_buttons.focus_army,fields.supply,action_buttons.fleet,action_buttons.blockade,main.recruit_btn,fields.army,action_buttons.disband_army,disband_box]
 	for index in war_order.size(): sections.army.move_child(war_order[index],index)
+	trade_panel=TradePanel.new()
+	sections.buildings.add_child(trade_panel)
+	trade_panel.configure(main,self)
 	status = _text("",11)
 	show_section(current_section)
 
@@ -582,7 +587,15 @@ func show_section(id: String) -> void:
 	for key in sections:
 		sections[key].visible = key == id
 		section_buttons[key].set_pressed_no_signal(key == id)
+	if changed and trade_panel!=null: _refresh_trade_panel(main.game,selected_id)
 	if changed: _scroll_to_top()
+
+func _refresh_trade_panel(game, id: String) -> void:
+	if trade_panel==null: return
+	var province: Dictionary=game.province(id) if game!=null else {}
+	var parent: Node=sections.buildings if not province.is_empty() and int(province.owner)==game.player else sections.achievements
+	if trade_panel.get_parent()!=parent: trade_panel.reparent(parent)
+	trade_panel.refresh(game,id)
 
 func _scroll_to_top() -> void:
 	var parent := get_parent()
@@ -629,6 +642,7 @@ func refresh(game, id: String) -> void:
 		action_buttons.roads_toggle.text="Straßen ▸"
 		_road_context=""
 	selected_id = id
+	_refresh_trade_panel(game,id)
 	var vm: Dictionary = ViewModel.province(game,id,main.production_report)
 	_refresh_administration(not vm.is_empty() and bool(vm.own))
 	section_tabs.visible = not vm.is_empty()
@@ -736,7 +750,7 @@ func refresh(game, id: String) -> void:
 		fields.field_army.text = "Deine Feldarmee · %d Mann · Moral %d\nStation: %s · Grundunterhalt %d Gold/Jahr" % [int(army.strength),int(army.morale),str(station.get("name","?")),int(army.get("upkeep",0))]
 	action_buttons.fleet.disabled = not game.can_raise_fleet(id) or pending
 	action_buttons.fleet.text = "Flotte aufstellen · 60 Gold"
-	main.recruit_btn.visible = vm.own
+	main.recruit_btn.visible = vm.own and int(vm.levy) < int(vm.capacity.maximum)
 	action_buttons.fleet.visible = vm.own and vm.coastal and game.fleet_for().is_empty()
 	action_buttons.blockade.visible = not vm.own and vm.coastal and not game.fleet_for().is_empty() and game._maritime_reachable(str(game.fleet_for().get("province","")),id)
 	action_buttons.blockade.disabled = pending or game.game_over or not game.can_blockade(id)

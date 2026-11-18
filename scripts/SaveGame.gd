@@ -17,9 +17,13 @@ extends RefCounted
 ## Schema 1 (Altstand) hat keinen schema_version-Schlüssel. Die Migration
 ## erhält alle vorhandenen Felder und ergänzt nur neue Pflichtfelder mit
 ## deterministischen Defaults. Sie überschreibt keine unbekannten Felder.
+## Schema18 ergänzt rohe geprüfte Handelsverträge und deren globale Seriennummer.
+## Vor18 entstehen ausschließlich leere Handelsfelder; bestehende Güter bleiben erhalten.
 
-const CURRENT_VERSION := 17
+const CURRENT_VERSION := 18
 const Production = preload("res://scripts/RegionalProduction.gd")
+const MaterialTrade = preload("res://scripts/MaterialTrade.gd")
+const TRADE_INTEGER_FIELDS := ["id","seller","buyer","proposer","lot_u","lot_gold","created_month","expires_month","accepted_month","last_delivery_month","delivered_lots"]
 const MAX_PRODUCTION_UNITS := Production.MAX_UNITS
 const MAX_PROJECT_SERIAL := Production.MAX_SERIAL
 const REGIONAL_PROJECT_FIELDS := ["id","builder","kind","target_level","paid_gold","material_total_u","material_spent_u","work_total_u","work_done_u","priority","started_month"]
@@ -64,7 +68,7 @@ const REQUIRED_TOP_LEVEL := [
 	"game_over", "log", "pending", "houses", "provinces", "opinion",
 	"cooldowns", "captive", "scandal", "custom", "victory",
 	"calendar_version", "month_index", "campaign_sandbox",
-	"roads", "project_serial",
+	"roads", "project_serial", "material_trades", "trade_serial",
 ]
 const REQUIRED_PROVINCE := ["id", "name", "owner", "dev", "levy", "buildings", "defense", "siege", "siege_owner", "blockade", "blockade_owner", "economic_focus", "focus_changed_month", "production", "regional_project", "logistics_sites"]
 const REQUIRED_HOUSE := [
@@ -88,6 +92,7 @@ static func migrate(data: Dictionary) -> Dictionary:
 	errors.append_array(_naval_dates(out,from_version >= 15))
 	errors.append_array(_army_bounds(out,from_version >= 16))
 	errors.append_array(_production_fields(out,from_version >= 17))
+	errors.append_array(_trade_fields(out,from_version >= 18))
 	if not errors.is_empty():
 		return {"ok":false,"data":out,"from_version":from_version,"to_version":CURRENT_VERSION,"errors":errors}
 	if from_version < 1:
@@ -132,6 +137,13 @@ static func migrate(data: Dictionary) -> Dictionary:
 	if not out.has("project_serial"):
 		out["project_serial"] = 0
 	out["project_serial"] = int(out["project_serial"])
+	# The pure trade contract has already validated every raw numeric value.
+	# Historical worlds acquire empty bookkeeping, never invented deliveries.
+	if not out.has("material_trades"): out["material_trades"] = []
+	if not out.has("trade_serial"): out["trade_serial"] = 0
+	out["trade_serial"] = int(out["trade_serial"])
+	for contract in out["material_trades"]:
+		for field in TRADE_INTEGER_FIELDS: contract[field] = int(contract[field])
 	out["houses"] = _migrate_houses(out.get("houses", []), errors)
 	out["provinces"] = _migrate_provinces(out.get("provinces", []), errors)
 	for h in out["houses"]:
@@ -175,6 +187,7 @@ static func validate(data: Dictionary) -> Array:
 	errors.append_array(_naval_dates(data,true))
 	errors.append_array(_army_bounds(data,true))
 	errors.append_array(_production_fields(data,true))
+	errors.append_array(_trade_fields(data,true))
 	# Pflichtfelder am Rohstand prüfen, bevor migrate() Defaults ergänzt.
 	# Sonst würde validate() einen Feldverlust nie bemerken.
 	if int(data.get("schema_version", 0)) != CURRENT_VERSION:
@@ -704,6 +717,34 @@ static func _construction_progress(value: Dictionary, allow_complete: bool) -> A
 	var expected: int = Production.material_at_work(material,work,done)
 	if int(value.material_spent_u)!=expected:
 		errors.append("Materialverbrauch und kumulativer Arbeitsfortschritt widersprechen sich.")
+	return errors
+
+static func _trade_fields(data: Dictionary, required: bool) -> Array:
+	var errors: Array = []
+	if required:
+		for field in ["material_trades","trade_serial"]:
+			if not data.has(field): errors.append("Aktuelles Handelsfeld fehlt: "+field)
+	var contracts = data.get("material_trades",[])
+	var serial = data.get("trade_serial",0)
+	if not contracts is Array:
+		errors.append("Handelsverträge müssen als Liste gespeichert sein.")
+	if not _bounded_integer(serial,0,MAX_PROJECT_SERIAL):
+		errors.append("Ungültige globale Handelsnummer.")
+	if not errors.is_empty(): return errors
+	if int(data.get("schema_version",1))<18 and (not contracts.is_empty() or int(serial)!=0):
+		return ["Historische Spielstände vor Schema18 können keine vergebenen Handelsnummern oder Verträge enthalten."]
+	var provinces = data.get("provinces",[])
+	var houses = data.get("houses",[])
+	if not provinces is Array or not houses is Array:
+		return ["Handelsregionen und Häuser müssen als Listen gespeichert sein."]
+	var year := int(data.get("year",-2000))
+	if int(data.get("calendar_version",0))==0 and year>=0: year+=1
+	var now := CalendarScript.to_index(year,int(data.get("month",1)))
+	var adjacency: Dictionary = {}
+	if not contracts.is_empty():
+		# Adjacency belongs to the immutable world catalog, never to saved input.
+		adjacency = RegionMigrationScript.Regions.adjacency() if str(data.get("world_layout",""))=="regions108" else RegionMigrationScript.Legacy.adjacency()
+	errors.append_array(MaterialTrade.validate(contracts,serial,provinces,houses,adjacency,now))
 	return errors
 
 static func _production_fields(data: Dictionary, required: bool) -> Array:

@@ -440,6 +440,7 @@ func _style_tool(button: Button) -> void:
 		_hud_buttons.append(button)
 	button.custom_minimum_size.y = 44 if touch_layout else 28
 	_font(button, 12)
+	button.set_meta("atlas_color", TEXT)
 	button.add_theme_color_override("font_color", TEXT)
 	button.add_theme_color_override("font_disabled_color", disabled_text())
 	var normal := surface(Color(0.08, 0.12, 0.13, 0.38), 6)
@@ -458,6 +459,7 @@ func _style_tool(button: Button) -> void:
 	disabled.set_meta("atlas_bg", Color(0.08, 0.12, 0.13, 0.20))
 	button.add_theme_stylebox_override("disabled", disabled)
 	button.add_theme_stylebox_override("focus", focus_surface(6))
+	_recolor(button)
 
 func _rebuild_sidebar() -> void:
 	var scroll: ScrollContainer = main.side_panel.get_child(0)
@@ -508,6 +510,10 @@ func _rebuild_sidebar() -> void:
 				section = "family"
 			elif text.contains("Hof") or text.contains("Glaube") or text == "Herrschaft":
 				section = "politics"
+			elif text == "Spiel speichern":
+				old_box.remove_child(child)
+				child.queue_free()
+				continue
 			elif text.contains("speichern") or text.contains("laden") or text.contains("WLAN"):
 				child.reparent(main.options_sections["spiel"])
 				continue

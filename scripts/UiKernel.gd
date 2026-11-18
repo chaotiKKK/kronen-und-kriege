@@ -92,7 +92,7 @@ func _route(id: String, command: Dictionary) -> Dictionary:
 	var refresh: Array = FULL_REFRESH.duplicate()
 	# Modellaktionen melden aufgelöste Militärbefehle selbst. Navigation und
 	# reine Vorbedingungsfehler dürfen keine zweite dauerhafte Notiz erzeugen.
-	var log_result := id not in ["attack","siege","march","claim","army","fleet","blockade","select_army","transport_army","relieve","recover_army","disband_army","build","develop","road","province_focus","construction_cancel","construction_priority"]
+	var log_result := id not in ["attack","siege","march","claim","army","fleet","blockade","select_army","transport_army","relieve","recover_army","disband_army","build","develop","road","province_focus","construction_cancel","construction_priority","material_trade_offer","material_trade_accept","material_trade_cancel"]
 	match id:
 		"continue_sandbox":
 			raw = game.continue_sandbox()
@@ -165,6 +165,24 @@ func _route(id: String, command: Dictionary) -> Dictionary:
 		"construction_priority":
 			if selection == "": return _blocked("invalid", "Keine Provinz gewählt.")
 			raw=game.prioritize_construction(selection,int(command.get("project",-1)),int(command.get("priority",-1)))
+		"material_trade_offer", "material_trade_accept", "material_trade_cancel":
+			# The same strict wire contract also protects direct/stale local callbacks.
+			# Resolve the protocol at call time rather than adding a preload cycle.
+			var checked: Dictionary=load("res://scripts/LanProtocol.gd").validate_command(command)
+			if not bool(checked.ok): return checked
+			var clean: Dictionary=checked.command
+			if selection.is_empty() or game.province(selection).is_empty(): return _blocked("invalid","Keine gültige Handelsregion gewählt.")
+			if command.has("selection") and str(clean.selection)!=selection: return _blocked("invalid","Die Handelsauswahl ist nicht mehr aktuell.")
+			if id=="material_trade_offer":
+				if selection not in [str(clean.from),str(clean.to)]: return _blocked("invalid","Das Handelsangebot gehört nicht zur gewählten Region.")
+				raw=game.offer_material_trade(str(clean.from),str(clean.to))
+			else:
+				var contract: Dictionary={}
+				for candidate in game.material_trades:
+					if int(candidate.id)==int(clean.trade): contract=candidate; break
+				if contract.is_empty() or selection not in [str(contract.from),str(contract.to)]: return _blocked("invalid","Dieser Handel gehört nicht mehr zur gewählten Region.")
+				if id=="material_trade_accept": raw=game.accept_material_trade(int(clean.trade))
+				else: raw=game.cancel_material_trade(int(clean.trade))
 		"set_tax":
 			var current_tax := int(game.house()["laws"]["tax"])
 			raw = game.set_law("tax", str((current_tax + 1) % 3))

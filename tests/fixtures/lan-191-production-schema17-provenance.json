@@ -1,0 +1,53 @@
+{
+  "stage": "synthetic-save-created-now-by-unchanged-published-production-runtime",
+  "created_utc": "2026-11-18T05:19:22.183016+00:00",
+  "scope": "Two real local ENet peers and save_host from the unchanged published embedded PCK. Synthetic room/peer names and default houses only. Not a historical user save, not backdated, no envelope/state/fingerprint rewriting. Current source project was not mounted.",
+  "source": {
+    "path": "build/verify/material-trade-20261118/lan/lan-191-production-schema17-original.json",
+    "bytes": 81161,
+    "sha256": "3c4185cd09c17bb4098698aba3ea1cb23e06c3393d4f081d31a6a8f9be7a1596"
+  },
+  "fixture": {
+    "path": "tests/fixtures/lan-191-production-schema17-original.json",
+    "bytes": 81161,
+    "sha256": "3c4185cd09c17bb4098698aba3ea1cb23e06c3393d4f081d31a6a8f9be7a1596"
+  },
+  "executable": {
+    "path": "build/exports/banger-queens-1.9.1-production.exe",
+    "bytes": 321517080,
+    "sha256": "27701c1ccca344ff2cb4c25986d5da61bdeb550710ee2f1ae9e58e8ee6081948"
+  },
+  "driver": {
+    "path": "build/verify/material-trade-20261118/lan/capture-production17.gd",
+    "bytes": 2644,
+    "sha256": "1a56516b8b10af0e9febfc7b4562c383713cb38651c451584d6ebde61a1a1239"
+  },
+  "bootstrap": {
+    "path": "build/verify/material-trade-20261118/lan/capture-bootstrap.gd",
+    "bytes": 439,
+    "sha256": "5c38b437ed392fa7399c2ae4bcb5108e805d52ed22df49e6f47f3b5deb167a77"
+  },
+  "runtime_log": {
+    "path": "build/verify/material-trade-20261118/lan/capture-production17-success.log",
+    "bytes": 293,
+    "sha256": "5f15983d2a13c9b194d3a05f748fb8101488b4d1519cf6e921d7c3cbeaaefae4"
+  },
+  "metadata": {
+    "app": "1.9.1",
+    "wire": 3,
+    "schema": 17,
+    "fingerprint": "5a1269fa4d99c6482fcdbaec1782ddba755240dde46caf462310f28753594c4d",
+    "catalog": "6112a370a9c26d1186059519e26742db7b63a10b4082c41e2fb2623b30f5f629",
+    "human_houses": [
+      0,
+      1
+    ]
+  },
+  "original_bytes_unchanged": true,
+  "headless": true,
+  "private_port": 24590,
+  "device_or_adb_used": false,
+  "runtime_checks": 9,
+  "runtime_exit_code": 0,
+  "capture_harness_note": "The first diagnostic only failed its final JSON-float-vs-integer array assertion. The corrected independent integer check passed; first output is retained in private evidence and is not the admitted fixture."
+}

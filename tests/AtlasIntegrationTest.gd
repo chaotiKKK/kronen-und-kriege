@@ -10,6 +10,8 @@ func _expected_game_region(point: Vector2) -> String:
 var checks := 0
 var failures := 0
 var main
+var search_touch_inputs := 0
+var search_headless_callbacks := 0
 
 class IsolatedLabelAtlas extends RefCounted:
 	var original
@@ -39,6 +41,7 @@ func _ready() -> void:
 	main._start(0)
 	main.game.speed = 0
 	await get_tree().process_frame
+	if DisplayServer.get_name() != "headless": print("ATLAS_WINDOW position=", DisplayServer.window_get_position(), " size=", DisplayServer.window_get_size())
 	var map = main.map_view
 	_check(main.has_meta("atlas_search"), "Die deutsche Orts- und Regionensuche fehlt in der Kartenansicht.")
 	_check(map.clip_contents, "Die Hauptkarte muss ihren sichtbaren Ausschnitt clippen.")
@@ -398,13 +401,23 @@ func _check_search_widget(city_point: Vector2) -> void:
 		if label.text.contains("Referenzatlas"):
 			reference_labeled = true
 	_check(reference_labeled, "Die heutigen geografischen Daten sind nicht als Referenzatlas gekennzeichnet.")
+	search_field.grab_focus()
+	search_field.text = "Lviv"
+	search_field.text_changed.emit("Lviv")
+	await _settle_ui()
+	var lviv_buttons: Array = results_box.find_children("*", "Button", true, false)
+	_check(not lviv_buttons.is_empty() and lviv_buttons[0].text == "Lviv · Ort", "Die reale Suche liefert Lviv als ersten antippbaren Ortstreffer.")
+	if not lviv_buttons.is_empty():
+		await _touch_search_result(lviv_buttons[0])
+		_check(str(main.map_view.atlas_location) == "Lviv", "Der echte Lviv-Touch übernimmt den gewählten Ort.")
+		_check(search_field.text.is_empty() and not search_field.has_focus() and not results_box.visible and results_box.get_child_count() == 0, "Die Trefferwahl schließt Suche und Trefferliste einschließlich Texteingabefokus vollständig.")
 	search_field.text = "Wiesbaden"
 	search_field.text_changed.emit("Wiesbaden")
 	await get_tree().process_frame
 	var buttons: Array = results_box.find_children("*", "Button", true, false)
 	_check(results_box.visible and not buttons.is_empty(), "Die Eingabe Wiesbaden erzeugt keinen sichtbaren, antippbaren Treffer.")
 	if not buttons.is_empty():
-		buttons[0].pressed.emit()
+		await _touch_search_result(buttons[0])
 		await get_tree().process_frame
 		_check(str(main.map_view.atlas_location).contains("Wiesbaden"), "Der Suchtreffer übernimmt Wiesbaden nicht als ausgewählten Ort.")
 		_check(main.map_view.zoom >= 10.0, "Der Suchtreffer zoomt nicht bis zur lesbaren Ortsansicht.")
@@ -416,6 +429,37 @@ func _check_search_widget(city_point: Vector2) -> void:
 	await get_tree().process_frame
 	_check(not results_box.visible, "Die gelöschte Suchanfrage lässt die alte Trefferliste sichtbar.")
 	_check(results_box.find_children("*", "Button", true, false).is_empty(), "Nach dem Löschen der Suchanfrage bleiben alte Suchtreffer anklickbar.")
+
+func _touch_search_result(button: Button) -> void:
+	var ready: bool = button.is_visible_in_tree() and not button.disabled
+	_check(ready, "Der Suchtreffer ist vor dem Eingabeversuch sichtbar und bedienbar.")
+	if not ready: return
+	if DisplayServer.get_name() == "headless":
+		search_headless_callbacks += 1
+		button.pressed.emit()
+		await _settle_ui()
+		return
+	var point: Vector2 = button.get_viewport().get_screen_transform() * button.get_global_transform_with_canvas() * (button.size * 0.5)
+	var motion := InputEventMouseMotion.new()
+	motion.position = point
+	motion.global_position = point
+	Input.parse_input_event(motion)
+	await get_tree().process_frame
+	var hit: bool = get_viewport().gui_get_hovered_control() == button
+	_check(hit, "Die echte transformierte Eingabeposition trifft den vorgesehenen Suchtreffer.")
+	if not hit: return
+	await _draw_frame()
+	await _shot("atlas-search-touch-%d" % search_touch_inputs)
+	for down in [true, false]:
+		print("ATLAS_SEARCH_TOUCH down=", down, " target=", button.text, " point=", point)
+		var event := InputEventScreenTouch.new()
+		event.index = 0
+		event.position = point
+		event.pressed = down
+		Input.parse_input_event(event)
+		await get_tree().process_frame
+	search_touch_inputs += 1
+	await _settle_ui()
 
 func _check_unassigned_atlas_location(wiesbaden: Dictionary) -> void:
 	var map = main.map_view
@@ -721,7 +765,10 @@ func _draw_frame() -> void:
 
 func _shot(name: String) -> void:
 	if DisplayServer.get_name() != "headless":
-		_check(get_viewport().get_texture().get_image().save_png("res://build/verify/%s.png" % name) == OK, "Atlasaufnahme konnte nicht gespeichert werden: %s." % name)
+		var proof_dir := OS.get_environment("BQ_ATLAS_PROOF")
+		if proof_dir.is_empty(): proof_dir = ProjectSettings.globalize_path("res://build/verify")
+		DirAccess.make_dir_recursive_absolute(proof_dir)
+		_check(get_viewport().get_texture().get_image().save_png(proof_dir.path_join(name+".png")) == OK, "Atlasaufnahme konnte nicht gespeichert werden: %s." % name)
 
 func _check(ok: bool, message: String) -> void:
 	checks += 1
@@ -730,5 +777,6 @@ func _check(ok: bool, message: String) -> void:
 		print("ATLASINTEGRATIONTEST FAIL: " + message)
 
 func _finish() -> void:
+	print("ATLAS_SEARCH_INPUT touch=", search_touch_inputs, " headless_callbacks=", search_headless_callbacks, " display=", DisplayServer.get_name())
 	print("ATLASINTEGRATIONTEST %s; %d Prüfungen." % ["OK" if failures == 0 else "FAIL", checks])
 	get_tree().quit(0 if failures == 0 else 1)

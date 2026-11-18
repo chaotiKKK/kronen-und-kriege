@@ -27,6 +27,9 @@ func test_original_store_and_time(original: Dictionary) -> void:
 	check(result.data.houses[9].research=={"active":"surveying","known":[],"months":6,"legacy_duration":6},"Migration retains six remaining months and records the historical total")
 	var projected: Dictionary=result.data.duplicate(true)
 	projected.schema_version=16
+	check(projected.get("material_trades")==[] and projected.get("trade_serial")==0,"Ari16 migration adds only empty trade bookkeeping without goods or contract")
+	projected.erase("material_trades")
+	projected.erase("trade_serial")
 	projected.erase("project_serial")
 	for p in projected.provinces:
 		for key in ["production","regional_project","logistics_sites"]: p.erase(key)
@@ -82,7 +85,9 @@ func test_historical_totals(original: Dictionary) -> void:
 
 func current(original: Dictionary) -> Dictionary:
 	var state:=original.duplicate(true)
-	state.schema_version=17
+	state.schema_version=Save.CURRENT_VERSION
+	state["material_trades"]=[]
+	state["trade_serial"]=0
 	state["project_serial"]=0
 	for p in state.provinces:
 		p["production"]={"materials_u":0,"rate_carry":0}

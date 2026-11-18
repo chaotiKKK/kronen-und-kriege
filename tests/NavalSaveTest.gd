@@ -227,6 +227,9 @@ func _test_fingerprint_closed() -> void:
 func _as_schema14(state: Dictionary) -> Dictionary:
 	var old := state.duplicate(true)
 	old.schema_version = 14
+	check(old.get("material_trades")==[] and old.get("trade_serial")==0,"Historical naval projection removes only proven empty trade defaults")
+	old.erase("material_trades")
+	old.erase("trade_serial")
 	check(int(old.project_serial)==0,"Migration does not invent production project identities")
 	old.erase("project_serial")
 	for province in old.provinces:

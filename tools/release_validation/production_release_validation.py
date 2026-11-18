@@ -21,6 +21,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 VERSION, CODE, SCHEMA = "1.9.1", 20, 17
+SUPPORTED_SCHEMAS = frozenset((17, 18))
 CERT = "298739811808ab3c59ef84fd3a0db8bf44f574840c0166b35585079b1c3f6677"
 LOGO = "assets/ui/chaotiKKK_logo.png"
 LOGO_HASH = "980c3f40982e4872ed77d5dee3e068f2abae677d31020a901fddb04691db352c"
@@ -38,6 +39,7 @@ BASE_MODULES = {f"scripts/{name}.gd" for name in (
     "ProvinceEconomy", "ProvinceInspector", "RegionMigration", "ResearchPanel",
     "SaveGame", "SaveStore", "SiegeRules", "SupplyNetwork", "SystemicResolver",
     "UiKernel", "ViewModelBuilder", "WoodGrain", "WorldMiniMap")}
+TRADE_MODULES = {"scripts/MaterialTrade.gd", "scripts/MaterialTradePanel.gd"}
 
 
 def require(value, message):
@@ -59,6 +61,23 @@ def android_code_argument(value):
     except ValueError as exc:
         raise argparse.ArgumentTypeError(str(exc)) from exc
     return code
+
+
+def require_schema(schema):
+    require(type(schema) is int and 0 < schema <= 2147483647,
+            "Expected save schema must be a positive 32-bit integer")
+    require(schema in SUPPORTED_SCHEMAS, "Expected save schema must be explicitly supported (17 or18)")
+
+
+def schema_argument(value):
+    if not re.fullmatch(r"[0-9]+", value):
+        raise argparse.ArgumentTypeError("Save schema must be a positive supported integer (17 or18)")
+    schema = int(value)
+    try:
+        require_schema(schema)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from exc
+    return schema
 
 
 def record(path):
@@ -102,17 +121,20 @@ def inventory():
     return {name: record(ROOT / name) for name in sorted(files)}
 
 
-def contract(files, android_code=CODE):
+def contract(files, android_code=CODE, schema=SCHEMA):
     require_android_code(android_code)
+    require_schema(schema)
     scripts = sorted(name for name in files if name.startswith("scripts/") and name.endswith(".gd"))
     require(set(scripts) >= BASE_MODULES | NEW_MODULES, "Frozen source must include the original modules and every required production module")
+    if schema == 18:
+        require(set(scripts) >= TRADE_MODULES, "Frozen source must include every required material-trade module for schema18")
     require(scripts == sorted(path.relative_to(ROOT).as_posix() for path in (ROOT / "scripts").rglob("*.gd")), "Frozen runtime source inventory is incomplete")
     data = sorted(name for name in files if name.startswith("data/") and Path(name).suffix in (".json", ".bin"))
     require(len(data) == 24, "Expected the complete twenty-four shipping data files")
     presets = (ROOT / "export_presets.cfg").read_text(encoding="utf-8-sig")
     require(re.findall(r"^version/code=(\d+)$", presets, re.M) == [str(android_code)], f"Android code differs from expected {android_code}")
     require(re.findall(r'^version/name="([^"\r\n]+)"$', presets, re.M) == [VERSION], "Version differs from1.9.1")
-    require(re.findall(r"^const CURRENT_VERSION\s*:=\s*(\d+)\s*$", (ROOT / "scripts/SaveGame.gd").read_text(encoding="utf-8-sig"), re.M) == [str(SCHEMA)], "Save source schema differs from17")
+    require(re.findall(r"^const CURRENT_VERSION\s*:=\s*(\d+)\s*$", (ROOT / "scripts/SaveGame.gd").read_text(encoding="utf-8-sig"), re.M) == [str(schema)], f"Save source schema differs from expected {schema}")
     require(files[LOGO]["sha256"] == LOGO_HASH, "Original studio logo changed")
     return scripts, data
 
@@ -182,11 +204,20 @@ def data_contract(metadata, files, android_code=CODE):
     require(len(expected) == 24 and metadata.get("files") == expected, "Canonical data manifest differs from all frozen data inputs")
 
 
-def frozen_contract(frozen, android_code=CODE):
+def frozen_contract(frozen, android_code=CODE, schema=SCHEMA):
     require_android_code(android_code)
-    require(frozen.get("version") == VERSION and frozen.get("schema") == SCHEMA
+    require_schema(schema)
+    require(frozen.get("version") == VERSION and type(frozen.get("schema")) is int and frozen.get("schema") == schema
             and type(frozen.get("code")) is int and frozen.get("code") == android_code,
             "Frozen source manifest contradicts expected version/code/schema contract")
+
+
+def source_schema_contract(receipt, schema=SCHEMA):
+    require_schema(schema)
+    require(type(receipt.get("source_schema")) is int and receipt.get("source_schema") == schema,
+            "Static receipt source schema contradicts explicit expected schema")
+    require(receipt.get("schema_runtime_observed") is False,
+            "Static source schema receipt cannot claim observed runtime schema")
 
 
 def package_contract(actual, android_code=CODE):
@@ -218,6 +249,8 @@ def parse_args(argv=None):
     parser.add_argument("--frozen", type=Path)
     parser.add_argument("--android-code", type=android_code_argument, default=CODE,
                         help="Explicit expected Android version code (default: 20); never inferred from a package")
+    parser.add_argument("--schema", type=schema_argument, default=SCHEMA,
+                        help="Explicit expected save source schema (default: 17; supported:17/18); never inferred from a package")
     parser.add_argument("--exe", type=Path, default=ROOT / "build/exports/banger-queens-1.9.1-production.exe",
                         help="Windows artifact to inspect (default: previous production EXE)")
     parser.add_argument("--apk", type=Path, default=ROOT / "build/exports/banger-queens-1.9.1-production.apk",
@@ -231,24 +264,24 @@ def main():
     api = validator()
     if args.stage == "freeze":
         files = inventory()
-        scripts, data = contract(files, args.android_code)
+        scripts, data = contract(files, args.android_code, args.schema)
         with redirect_stdout(io.StringIO()):
             api.prepare(SimpleNamespace(project=ROOT, output=out / "data", version=VERSION, android_code=args.android_code, with_lan=True))
         data_path = out / "data/frozen-data.json"
         data_contract(read(data_path), files, args.android_code)
         require(files == inventory(), "Build inputs changed while freezing")
-        write(out / "source-manifest.json", {"files": files, "runtime_scripts": scripts, "data": data, "version": VERSION, "code": args.android_code, "schema": SCHEMA, "canonical_data_manifest": record(data_path)})
-        print(json.dumps({"files": len(files), "scripts": len(scripts), "data": len(data), "manifest": str(out / "source-manifest.json")}))
+        write(out / "source-manifest.json", {"files": files, "runtime_scripts": scripts, "data": data, "version": VERSION, "code": args.android_code, "schema": args.schema, "canonical_data_manifest": record(data_path)})
+        print(json.dumps({"files": len(files), "scripts": len(scripts), "data": len(data), "schema": args.schema, "manifest": str(out / "source-manifest.json")}))
         return
     require(args.frozen is not None, "Inspection requires an explicit frozen manifest")
     manifest_record = record(args.frozen)
     frozen = read(args.frozen)
-    frozen_contract(frozen, args.android_code)
+    frozen_contract(frozen, args.android_code, args.schema)
     require(frozen["files"] == inventory(), "Sources changed since freeze")
     data_path = args.frozen.parent / "data/frozen-data.json"
     require(record(data_path) == frozen["canonical_data_manifest"], "Canonical data manifest changed since freeze")
     data_contract(read(data_path), frozen["files"], args.android_code)
-    scripts, _ = contract(frozen["files"], args.android_code)
+    scripts, _ = contract(frozen["files"], args.android_code, args.schema)
     exe, apk = args.exe.resolve(), args.apk.resolve()
     artifacts = {str(path): record(path) for path in (exe, apk)}
     capture = io.StringIO()
@@ -271,9 +304,10 @@ def main():
     finally:
         pack.close()
     require(manifest_record == record(args.frozen) and record(data_path) == frozen["canonical_data_manifest"] and frozen["files"] == inventory() and artifacts == {str(path): record(path) for path in (exe, apk)}, "Inputs changed during inspection")
-    result.update({"passed": True, "artifacts": artifacts, "source_manifest": record(args.frozen), "files_verified": len(frozen["files"]), "data_count": 24, "code": args.android_code, "source_schema": SCHEMA, "schema_runtime_observed": False, "runtime_test": False})
+    result.update({"passed": True, "artifacts": artifacts, "source_manifest": record(args.frozen), "files_verified": len(frozen["files"]), "data_count": 24, "code": args.android_code, "source_schema": args.schema, "schema_runtime_observed": False, "runtime_test": False})
+    source_schema_contract(result, args.schema)
     write(out / "production-static-review.json", result)
-    print(json.dumps({key: result[key] for key in ("passed", "script_count", "files_verified", "code")}))
+    print(json.dumps({key: result[key] for key in ("passed", "script_count", "files_verified", "code", "source_schema")}))
 
 
 if __name__ == "__main__":

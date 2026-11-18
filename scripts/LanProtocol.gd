@@ -8,6 +8,7 @@ const MAX_PLAYERS := 4
 const MAX_PACKET_BYTES := 2097152
 const MAX_COMMAND_BYTES := 4096
 const SNAPSHOT_FIELDS := ["v","type","revision","hash","state","missing_peer","all_over","production_report"]
+const TRADE_STATE_FIELDS := ["material_trades","trade_serial"]
 const Save = preload("res://scripts/SaveGame.gd")
 const PERSONAL_FIELDS := ["player", "opinion", "cooldowns", "captive", "scandal", "event_timer",
 	"event_instance", "pending", "game_over", "victory", "history", "log", "lan_contexts", "lan_projection"]
@@ -22,6 +23,9 @@ const FIELDS := {
 	"province_focus":{"focus":"text"},
 	"construction_cancel":{"project":"sequence"},
 	"construction_priority":{"project":"sequence","priority":"priority"},
+	"material_trade_offer":{"from":"text","to":"text"},
+	"material_trade_accept":{"trade":"trade_id"},
+	"material_trade_cancel":{"trade":"trade_id"},
 	"marry":{"target":"house"}, "seduce":{"target":"house"}, "murder":{"target":"house"},
 	"kidnap":{"target":"house"}, "declare_holy_war":{"target":"house"},
 	"apply_event":{"option":"option", "event_instance":"sequence"},
@@ -65,7 +69,7 @@ static func validate_command(command: Dictionary) -> Dictionary:
 			clean[key] = value
 		else:
 			var bounds: Array = {"house":[0,255], "index":[0,127], "optional_index":[-1,127], "army_id":[1,2147483647],
-				"option":[0,31], "sequence":[0,2147483647], "speed":[0,3], "level":[0,2], "priority":[0,1]}[kind]
+				"option":[0,31], "sequence":[0,2147483647], "trade_id":[1,1000000000], "speed":[0,3], "level":[0,2], "priority":[0,1]}[kind]
 			if not integer(value, bounds[0], bounds[1]):
 				return failure("Ungültiger Zahlenwert: %s." % key)
 			clean[key] = int(value)
