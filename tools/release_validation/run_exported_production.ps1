@@ -1,6 +1,7 @@
 param(
-    [Parameter(Mandatory=$true)][ValidateSet('ProductionUiTest','ConstructionMapTest','ProductionCampaignTest','ProductionCommandTest')][string]$Suite,
+    [Parameter(Mandatory=$true)][ValidateSet('ProductionUiTest','ConstructionMapTest','ProductionCampaignTest','ProductionCommandTest','ProvinceUiSimplificationTest')][string]$Suite,
     [Parameter(Mandatory=$true)][string]$Output,
+    [string]$Exe,
     [switch]$Headless
 )
 $ErrorActionPreference='Stop'
@@ -11,7 +12,7 @@ if (-not $outRoot.StartsWith($evidenceRoot,[StringComparison]::OrdinalIgnoreCase
 $work=Join-Path $outRoot 'empty-work'
 $profile=Join-Path $outRoot 'profile'
 New-Item -ItemType Directory -Path $work,$profile | Out-Null
-$exe=Join-Path $projectRoot 'build/exports/banger-queens-1.9.1-production.exe'
+$exePath=if ($Exe) { [IO.Path]::GetFullPath($Exe) } else { Join-Path $projectRoot 'build/exports/banger-queens-1.9.1-production.exe' }
 $source=Join-Path $projectRoot ('tests/'+$Suite+'.gd')
 $driver=Join-Path $outRoot ($Suite+'.gd')
 $bootstrapSource=Join-Path $PSScriptRoot 'exported-campaign.gd.in'
@@ -19,12 +20,12 @@ $bootstrap=Join-Path $outRoot 'bootstrap.gd'
 Copy-Item -LiteralPath $source -Destination $driver
 Copy-Item -LiteralPath $bootstrapSource -Destination $bootstrap
 function Hash([string]$Path) { (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant() }
-$exeHash=Hash $exe
+$exeHash=Hash $exePath
 $driverHash=Hash $source
 $bootstrapHash=Hash $bootstrapSource
-$report=[ordered]@{passed=$false;suite=$Suite;exe=$exe;exe_sha256=$exeHash;source_driver_sha256=$driverHash;bootstrap_sha256=$bootstrapHash;headless=[bool]$Headless;started_utc=[DateTime]::UtcNow.ToString('o');scope='Actual exported embedded PCK, unchanged external driver, empty work directory, private profile; no source project mounted.'}
+$report=[ordered]@{passed=$false;suite=$Suite;exe=$exePath;exe_sha256=$exeHash;source_driver_sha256=$driverHash;bootstrap_sha256=$bootstrapHash;headless=[bool]$Headless;started_utc=[DateTime]::UtcNow.ToString('o');scope='Actual exported embedded PCK, unchanged external driver, empty work directory, private profile; no source project mounted.'}
 $start=[Diagnostics.ProcessStartInfo]::new()
-$start.FileName=$exe
+$start.FileName=$exePath
 $start.WorkingDirectory=$work
 $start.UseShellExecute=$false
 $start.CreateNoWindow=$true
@@ -33,6 +34,7 @@ $start.RedirectStandardOutput=$true
 $start.RedirectStandardError=$true
 $start.Environment['APPDATA']=$profile
 $start.Environment['BQ_PRODUCTION_CAMPAIGN_PROOF']=$outRoot
+$start.Environment['BQ_PRODUCTION_PROOF']=$outRoot
 $arguments=@('--path',$work,'--script',$bootstrap,'--resolution','1600x900','--position','1960,40','--log-file',(Join-Path $outRoot 'engine.log'))
 if ($Headless) { $arguments+= '--headless' }
 $arguments+=@('--',$driver,('--proof-dir='+$outRoot))
@@ -56,7 +58,7 @@ try {
     if ($process.ExitCode -ne 0 -or $assertions.Count -eq 0 -or $combined -match 'SCRIPT ERROR|ERROR:|TEST FAIL') { throw 'Actual exported test failed; inspect preserved logs.' }
     $report['checks']=[int]$assertions[$assertions.Count-1].Groups[1].Value
     if ($report.checks -le 0) { throw 'Empty exported diagnostic.' }
-    if ((Hash $exe) -ne $exeHash -or (Hash $source) -ne $driverHash -or (Hash $driver) -ne $driverHash -or (Hash $bootstrapSource) -ne $bootstrapHash -or (Hash $bootstrap) -ne $bootstrapHash) { throw 'Input bytes changed during exported diagnostic.' }
+    if ((Hash $exePath) -ne $exeHash -or (Hash $source) -ne $driverHash -or (Hash $driver) -ne $driverHash -or (Hash $bootstrapSource) -ne $bootstrapHash -or (Hash $bootstrap) -ne $bootstrapHash) { throw 'Input bytes changed during exported diagnostic.' }
     $report['exit_code']=$process.ExitCode
     $report.passed=$true
     Write-Output ($Suite+' EXPORTED PASS '+$report.checks+' checks')

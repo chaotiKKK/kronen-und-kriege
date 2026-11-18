@@ -50,6 +50,8 @@ func _ready() -> void:
 	await test_touch_details()
 	await test_touch_and_scroll()
 	check(world_hash() == before, "Auswahl, Reiter, Forschungsplan und Touchlayout verändern keine Spielwelt")
+	await test_construction_actions()
+	await test_road_inventory()
 	await test_maximum_buildings()
 	finish()
 
@@ -157,6 +159,7 @@ func test_foreign_contexts() -> void:
 
 func check_foreign_administration(context: String) -> void:
 	var vm: Dictionary = load("res://scripts/ViewModelBuilder.gd").province(game,inspector.selected_id)
+	check(inspector.fields.achievements.text == "Beziehung %+d" % int(game.opinion[int(vm.owner_index)]), context+": Diplomatie wiederholt weder den Besitzer noch allgemeine Nicht-Kriegs-Erklärungen")
 	check(vm.buildings.is_empty() and vm.research.is_empty(), context+": ViewModel enthält keinen fremden Bau-/Forschungsaktionskatalog")
 	check(not inspector.section_buttons.buildings.is_visible_in_tree() and not inspector.section_buttons.research.is_visible_in_tree(), context+": keine fremden Ausbau-/Wissensreiter")
 	for key in ["build:market","build:barracks","build:walls","province_focus","research_plan"]:
@@ -293,6 +296,8 @@ func test_maximum_buildings() -> void:
 	# Kein Nachweis einer regulär finanzierten Aufbauspielpartie.
 	var p: Dictionary = game.province(home)
 	for key in ["market","barracks","walls"]: p.buildings[key] = 3
+	p.dev = 10
+	p.logistics_sites.depot = 1
 	game.house().gold = 1000
 	main._on_province_selected(home)
 	inspector.show_section("buildings")
@@ -301,11 +306,91 @@ func test_maximum_buildings() -> void:
 	for key in ["market","barracks","walls"]:
 		var button: Button = inspector.action_buttons["build:"+key]
 		var detail: Label = inspector.fields["build:"+key]
-		check(button.is_visible_in_tree() and button.disabled and button.text.contains("3/3"), "Maximales Gebäude %s zeigt seinen nicht kaufbaren Bestand" % key)
+		check(not button.is_visible_in_tree() and button.disabled, "Maximales Gebäude %s beansprucht keinen inaktiven Aktionsbutton" % key)
+		check(not button.get_parent().is_visible_in_tree(), "Maximales Gebäude %s hinterlässt keinen leeren Aktionsabstand" % key)
 		check(not button.text.contains("Gold"), "Maximales Gebäude %s zeigt keinen nutzlosen Kaufpreis" % key)
 		check(not detail.is_visible_in_tree() or not detail.text.contains("Höchste Stufe"), "Maximales Gebäude %s vermeidet zusätzlichen Höchste-Stufe-Text" % key)
+	check(not main.develop_btn.is_visible_in_tree() and not inspector.action_buttons["build:depot"].is_visible_in_tree(), "Volle Entwicklung und fertiges Depot belegen keine Kaufbuttons")
+	var inventory: Label = inspector.fields.get("completed_buildings")
+	check(inventory != null and inventory.is_visible_in_tree(), "Vollständiger örtlicher Bestand bleibt als kompakte Statuszeile sichtbar")
+	if inventory != null:
+		for expected in ["Markt 3/3","Kaserne 3/3","Mauern 3/3","Entwicklung 10/10","Versorgungsdepot"]:
+			check(inventory.text.contains(expected), "Kompakter Bestand bewahrt %s" % expected)
 	check(world_hash() == before, "Anzeigen maximaler Gebäude verändert keine Spielwelt")
 	await capture_proof("max-buildings")
+	main._on_province_selected(remote)
+	await settle()
+	check(inventory == null or not inventory.is_visible_in_tree() and inventory.text.is_empty(), "Fremdwechsel entfernt auch die kompakte eigene Bestandszeile")
+
+func test_construction_actions() -> void:
+	# Kontrollierte Kasse und Forschung nur für UI-Lebenszyklus, keine Kampagnenbalance.
+	game.house().gold = 1000
+	game.house().research.known = ["surveying","road_building","logistics"]
+	main._on_province_selected(home)
+	inspector.show_section("buildings")
+	await settle()
+	var price: int = game.regional_project_preview(home,"market").gold
+	var gold: int = game.house().gold
+	inspector.action_buttons["build:market"].pressed.emit()
+	await settle()
+	var p: Dictionary = game.province(home)
+	check(not p.regional_project.is_empty() and int(game.house().gold) == gold-price, "Tatsächlicher Baubutton startet und bezahlt genau einen Marktauftrag")
+	if p.regional_project.is_empty(): return
+	for key in ["build:market","build:barracks","build:walls","build:depot"]:
+		check(not inspector.action_buttons[key].is_visible_in_tree(), "Laufender örtlicher Auftrag entfernt aktuell unmögliche weitere Kaufaktion %s" % key)
+	for key in ["build:market","build:barracks","build:walls"]:
+		check(not inspector.action_buttons[key].get_parent().is_visible_in_tree(), "Laufender Auftrag räumt auch den leeren Aktionscontainer %s weg" % key)
+	check(not main.develop_btn.is_visible_in_tree() and not inspector.project_controls.is_empty(), "Aktiver Bau zeigt seinen Fortschritt statt eines zusätzlichen Entwicklungskaufs")
+	for entry in [["market","Markt"],["barracks","Kaserne"],["walls","Mauern"]]:
+		check(inspector.fields.details.text.contains("%s %d/3" % [entry[1],int(p.buildings[entry[0]])]), "Details bewahren die genaue vorhandene Gebäudestufe von %s bei ausgeblendeten Kaufaktionen" % entry[1])
+	var paid := world_hash()
+	inspector.action_buttons["build:market"].pressed.emit()
+	check(world_hash() == paid, "Ein alter Aufruf des jetzt versteckten Baubuttons verändert weder Auftrag noch Gold noch History")
+	await capture_proof("active-construction")
+	var id: int = p.regional_project.id
+	inspector._request_construction_cancel(id)
+	inspector.action_buttons.construction_confirm.pressed.emit()
+	await settle()
+	check(p.regional_project.is_empty(), "Tatsächliche bestätigte Abbruchaktion beendet nur den gewählten Auftrag")
+	for key in ["build:market","build:barracks","build:walls","build:depot"]:
+		check(inspector.action_buttons[key].is_visible_in_tree(), "Nach Bauende kehrt die freie passende Kaufaktion %s wieder" % key)
+	check(main.develop_btn.is_visible_in_tree(), "Entwicklung ist nach Bauende wieder erreichbar")
+
+func test_road_inventory() -> void:
+	var neighbors: Array = game.neighbours(home)
+	check(not neighbors.is_empty(), "Straßentest verwendet eine echte benachbarte Spielregion")
+	if neighbors.is_empty(): return
+	var target := str(neighbors[0])
+	game.province(target).owner = game.player # Kontrollierter eigener Nachbar.
+	main._on_province_selected(home)
+	inspector.show_section("buildings")
+	await settle()
+	inspector.action_buttons.roads_toggle.pressed.emit()
+	await settle()
+	var controls: Dictionary = inspector._road_controls[target]
+	var name: String = game.province(target).name
+	check(controls.button.is_visible_in_tree() and not controls.detail.text.contains(name) and not controls.detail.text.contains("Gold"), "Straßenoption nennt Ziel und Kaufpreis nur einmal im Button")
+	game.roads.append({"from":home,"to":target,"builder":game.player,"months":0,"state":"complete","construction":{}})
+	main.refresh()
+	await settle()
+	check(not controls.button.is_visible_in_tree() and not controls.detail.is_visible_in_tree(), "Fertige Straßen sind keine großen deaktivierten Kaufaktionen")
+	var inventory: Label = inspector.fields.get("completed_roads")
+	check(inventory != null and inventory.is_visible_in_tree() and inventory.text.contains(name), "Fertige Verbindung bleibt als kompakter Bestand auffindbar")
+	await capture_proof("road-inventory")
+	main._on_province_selected(remote)
+	await settle()
+	check(inventory == null or not inventory.is_visible_in_tree() and inventory.text.is_empty(), "Fremdauswahl entfernt den eigenen Straßenbestand vollständig")
+	main._on_province_selected(home)
+	await settle()
+	inspector.action_buttons.roads_toggle.pressed.emit()
+	await settle()
+	inventory = inspector.fields.get("completed_roads")
+	check(inventory != null and inventory.is_visible_in_tree() and inventory.text.contains(name), "Rückkehr stellt den echten eigenen Straßenbestand wieder her")
+	# Ein regulär möglicher isolierter Besitz darf keinen leeren Straßenbereich anbieten.
+	for id in neighbors: game.province(str(id)).owner = int(game.province(remote).owner)
+	main._on_province_selected(home)
+	await settle()
+	check(not inspector.action_buttons.roads_toggle.is_visible_in_tree() and not main.road_buttons.is_visible_in_tree(), "Isolierte Region ohne eigene Straßenoption, Verbindung oder Fracht zeigt keinen leeren Straßenbereich")
 
 func buttons_calling(target: Object, method: String) -> Array:
 	var found: Array = []

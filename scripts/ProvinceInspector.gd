@@ -68,6 +68,8 @@ func configure(host) -> void:
 		sections[id] = content
 		add_child(content)
 	fields.buildings = _text("", 12, sections.buildings)
+	fields.completed_buildings = _text("", 11, sections.buildings)
+	fields.completed_buildings.hide()
 	_configure_production()
 	focus_box = VBoxContainer.new()
 	focus_box.add_theme_constant_override("separation",4)
@@ -313,6 +315,8 @@ func _refresh_construction(vm: Dictionary, pending: bool) -> void:
 		return
 	var data: Dictionary=vm.construction
 	if data.is_empty(): return
+	var has_roads: bool=not data.road_choices.is_empty() or not data.roads.is_empty() or not data.flows.is_empty()
+	action_buttons.roads_toggle.visible=has_roads
 	var capacity:=maxi(1,int(data.storage_capacity_u))
 	var ledger: Dictionary=data.ledger
 	var output:="frei +%s/Monat" % ViewModel.material_text(int(data.production_per_month_u)) if ledger.is_empty() else "+%s zuletzt" % ViewModel.material_text(int(ledger.produced_u))
@@ -338,6 +342,7 @@ func _refresh_construction(vm: Dictionary, pending: bool) -> void:
 		_road_context=road_key
 		for child in main.road_buttons.get_children(): _retire_control(child)
 		_road_controls.clear()
+		fields.completed_roads=_text("",11,main.road_buttons)
 		fields.delivery_details=_text("",11,main.road_buttons)
 		for choice in data.road_choices:
 			var target:=str(choice.to)
@@ -350,13 +355,20 @@ func _refresh_construction(vm: Dictionary, pending: bool) -> void:
 			_road_controls[target]={"button":button,"detail":_text("",11,main.road_buttons)}
 	fields.delivery_details.text="Letzter Monat · automatische Fracht:\n"+"\n".join(delivery) if not delivery.is_empty() else "Noch keine Straßenlieferung im letzten Monat. Quellen behalten ihre Reserve und Baustellenbedarf; freie Wegkapazität begrenzt die Fracht."
 	fields.delivery_details.hide()
+	var completed_roads: Array[String]=[]
+	for road in data.roads:
+		if str(road.state)=="complete":
+			var other: String=str(road.to) if str(road.from)==selected_id else str(road.from)
+			completed_roads.append(str(main.game.province(other).get("name","?")))
+	fields.completed_roads.text="Verbindungen: "+", ".join(completed_roads) if not completed_roads.is_empty() else ""
+	fields.completed_roads.visible=not completed_roads.is_empty()
 	for choice in data.road_choices:
 		var controls: Dictionary=_road_controls[str(choice.to)]
 		controls.button.show()
 		controls.detail.show()
 		controls.button.text="Straße nach %s · %d Gold" % [choice.name,int(choice.gold)]
 		controls.button.disabled=not bool(choice.ok) or pending or main.game.game_over
-		controls.detail.text="%s · %d Gold\n" % [str(choice.name),int(choice.gold)]+(str(choice.reason) if not bool(choice.ok) else "%s Baustoffe · %s Arbeit\nBeide Enden bauen mit örtlicher Arbeit. Transport beginnt nach Fertigstellung." % [ViewModel.material_text(int(choice.material_total_u)),ViewModel.material_text(int(choice.work_total_u))])
+		controls.detail.text=str(choice.reason) if not bool(choice.ok) else "%s Baustoffe · %s Arbeit\nBeide Enden bauen mit örtlicher Arbeit. Transport beginnt nach Fertigstellung." % [ViewModel.material_text(int(choice.material_total_u)),ViewModel.material_text(int(choice.work_total_u))]
 		controls.button.tooltip_text=controls.detail.text
 		for road in data.roads:
 			if not str(choice.to) in [str(road.from),str(road.to)]: continue
@@ -365,8 +377,9 @@ func _refresh_construction(vm: Dictionary, pending: bool) -> void:
 				continue
 			controls.button.text="Nach %s · %s" % [str(choice.name),"Fertig" if str(road.state)=="complete" else "Im Bau"]
 			controls.detail.text="Fertige Verbindung; transportiert bei unbestrittenem eigenem Besitz." if str(road.state)=="complete" else ("Historischer Bau: noch %d Arbeitsmonate; ruht bei Besitzverlust." % int(road.months) if road.get("construction",{}).is_empty() else "Beide Enden teilen ihre örtliche Arbeit mit anderen Vorhaben.")
-			if str(road.state)=="complete": controls.detail.hide()
-	main.road_buttons.visible=_roads_expanded
+			if str(road.state)=="complete":
+				controls.button.hide(); controls.detail.hide()
+	main.road_buttons.visible=_roads_expanded and has_roads
 	var projects: Array=[]
 	if not data.project.is_empty():
 		var regional: Dictionary=data.project.duplicate(true)
@@ -400,22 +413,31 @@ func _refresh_construction(vm: Dictionary, pending: bool) -> void:
 	for key in ["construction_confirm","construction_keep"]: action_buttons[key].disabled=pending or main.game.game_over
 	action_buttons.roads_toggle.disabled=pending or main.game.game_over
 	var develop: Dictionary=data.options.develop
+	var can_choose_local: bool=data.project.is_empty()
+	main.develop_btn.visible=int(vm.development)<10 and can_choose_local
 	main.develop_btn.text="Entwicklung +1 · %d Gold" % int(develop.gold) if int(vm.development)<10 else "Entwicklung 10/10 · Voll ausgebaut"
 	main.develop_btn.disabled=not bool(develop.ok) or pending or main.game.game_over
 	fields.develop.text=_construction_option_text(develop)
 	fields.develop.visible=int(vm.development)<10 and data.project.is_empty()
 	var depot: Dictionary=data.options.depot
 	var show_depot: bool=data.depot_visible
-	action_buttons["build:depot"].visible=show_depot
+	action_buttons["build:depot"].visible=show_depot and int(data.depot)==0 and can_choose_local
 	fields["build:depot"].visible=show_depot and int(data.depot)==0 and data.project.is_empty()
 	action_buttons["build:depot"].text="Versorgungsdepot · %d Gold" % int(depot.gold) if int(data.depot)==0 else "Versorgungsdepot · Fertig"
 	action_buttons["build:depot"].disabled=not bool(depot.ok) or pending or main.game.game_over
 	var depot_effect:="Bis zu %d Mann Durchsatz aus vorhandenem Kornkammerüberschuss über das eigene Netz an landbenachbarte eigene Frontheere." % int(data.depot_throughput)
 	fields["build:depot"].text=_construction_option_text(depot)
 	action_buttons["build:depot"].tooltip_text=depot_effect
+	var completed: Array[String]=[]
+	for building in vm.buildings:
+		if int(building.level)>=3: completed.append("%s 3/3" % str(building.name))
+	if int(vm.development)>=10: completed.append("Entwicklung 10/10")
+	if int(data.depot)>0: completed.append("Versorgungsdepot")
+	fields.completed_buildings.text="Bestand: "+" · ".join(completed) if not completed.is_empty() else ""
+	fields.completed_buildings.visible=not completed.is_empty()
 	var audit: Array[String]=["Produktion und Bau", "Baustoffe %s / %s · frei +%s pro Monat\nGemeinsame Monatsarbeit %s" % [ViewModel.material_text(int(data.materials_u)),ViewModel.material_text(capacity),ViewModel.material_text(int(data.production_per_month_u)),ViewModel.material_text(int(data.labor_capacity_u))],fields.production_last.text,fields.delivery_details.text]
 	for project in projects: audit.append(str(project.name)+"\n"+str(project_controls[int(project.id)].detail.text))
-	for building in vm.buildings: audit.append(str(building.name)+" · "+str(building.effect)+"\n"+_construction_option_audit(building.preview))
+	for building in vm.buildings: audit.append("%s %d/3 · %s\n%s" % [str(building.name),int(building.level),str(building.effect),_construction_option_audit(building.preview)])
 	audit.append("Entwicklung +1\n"+_construction_option_audit(develop))
 	if show_depot: audit.append("Versorgungsdepot\n"+depot_effect+"\n"+_construction_option_audit(depot))
 	audit.append("Produktion und alle Baustellen teilen die örtliche Arbeit. Fehlende Baustoffe werden örtlich erzeugt oder aus wirklichen Überschüssen über fertige eigene Straßen geliefert.")
@@ -584,7 +606,8 @@ func _refresh_administration(own: bool) -> void:
 	_clear_construction_cancel()
 	_clear_project_controls()
 	main.road_buttons.hide()
-	for key in ["production","production_last","production_delivery","construction_state","develop","build:depot"]:
+	for key in ["production","production_last","production_delivery","construction_state","develop","build:depot","completed_buildings","completed_roads"]:
+		if not fields.has(key): continue
 		fields[key].text=""; fields[key].hide()
 	_focus_province = ""
 	focus_picker.clear()
@@ -671,10 +694,12 @@ func refresh(game, id: String) -> void:
 	_refresh_supply(game,id)
 	_refresh_construction(vm,pending)
 	if vm.own:
-		fields.buildings.text = "Entwicklung %d/10 · Örtliche Gebäude mit höchstens drei Stufen" % int(vm.development)
+		fields.buildings.text = "Entwicklung %d/10" % int(vm.development) if int(vm.development)<10 else "Örtlicher Ausbau"
 		for building in vm.buildings:
 			var key := "build:"+str(building.key)
 			var complete := int(building.level) >= 3
+			action_buttons[key].visible = not complete and vm.construction.project.is_empty()
+			action_buttons[key].get_parent().visible = action_buttons[key].visible
 			action_buttons[key].text = "%s 3/3 · Voll ausgebaut" % building.name if complete else "%s %d/3 · %d Gold" % [building.name,building.level,building.cost]
 			action_buttons[key].disabled = not building.enabled or pending or game.game_over
 			action_buttons[key].tooltip_text = str(building.effect)
@@ -742,8 +767,7 @@ func refresh(game, id: String) -> void:
 	if vm.own: _refresh_knowledge(game,vm)
 	fields.achievements.text = ""
 	if not vm.own:
-		fields.achievements.text = "%s · Beziehung %+d" % [vm.owner,int(game.opinion[int(vm.owner_index)])]
-		if not military_context: fields.achievements.text += "\nKein unmittelbares Kriegsziel. Diplomatie betrifft das besitzende Haus."
+		fields.achievements.text = "Beziehung %+d" % int(game.opinion[int(vm.owner_index)])
 	if main._lan_active():
 		status.text = "Gastgeber bestätigt die Aktion …" if pending else str(main.lan_session.status)
 	status.visible = not status.text.is_empty()

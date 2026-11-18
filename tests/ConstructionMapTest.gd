@@ -93,11 +93,143 @@ func _ready() -> void:
 		await tap_map(map,(target.hit_rect as Rect2).get_center())
 		check(main.selected==home and ui.province_inspector.current_section=="buildings", "Actual marker input opens the existing region Ausbau without a province modal")
 		check(game.snapshot()==world_before,"Marker selection changes view only, never the project or supply state")
+	await construction_cue_acceptance()
 	game.cancel_construction(home,project)
 	main.refresh()
 	await settle()
 	check(not map.construction_markers().any(func(item):return int(item.id)==project),"Cancelled project has neither a visible nor a targetable cached marker after refresh")
 	finish()
+
+func construction_cue_acceptance() -> void:
+	# Catches an invisible/misanchored leader, an endpoint hidden inside the badge,
+	# and accidental expansion of its hit area into the decorative cue.
+	var map=main.map_view
+	var original_game=main.game
+	var original_selected: String=main.selected
+	var presentation: Dictionary={"zoom":map.zoom,"pan":map.pan,"mode":map.map_mode,"text_scale":preload("res://scripts/ModernInterface.gd").text_scale,"appearance":preload("res://scripts/ModernInterface.gd").appearance}
+	# Reproduce the actual reported Wien market with a regular starting budget;
+	# the broader original test above intentionally uses a Wessex walls fixture.
+	var game=CountingGame.new(load("res://scripts/GameRegionData.gd"),0)
+	game.speed=0
+	var home: String="germanien__05"
+	check(str(game.province(home).name)=="Wien" and int(game.province(home).owner)==game.player,"Reported cue fixture is the real owned Wien region")
+	var starting_gold: int=game.house().gold
+	check(game.start_regional_project(home,"market").ok and int(game.house().gold)==starting_gold-13,"Cue fixture starts the actual Wien market for 13 gold without extra funding")
+	var project: int=game.province(home).regional_project.id
+	check(game.raise_army(home).ok and int(game.house().gold)==starting_gold-63,"Cue fixture raises its overlapping actual army for 50 gold within the same regular budget")
+	main.game=game
+	main.kernel.bind_game(game)
+	main.refresh()
+	map.hovered="" # A comparison screenshot must not retain the prior fixture's tooltip.
+	map.queue_redraw()
+	var ui=main.get_meta("modern_interface")
+	var before: Dictionary=game.snapshot()
+	main._set_map_mode("political")
+	ui.set_appearance(1)
+	ui.set_touch_layout(true)
+	for scale in [1.0,2.0]:
+		ui.set_text_scale(scale)
+		main._on_province_selected(home)
+		map.zoom=1.0
+		map.center_on(map._label_point(game.province(home)))
+		await settle()
+		await shot("construction-cue-overview-%d" % int(scale*100))
+		if DisplayServer.get_name()!="headless" and map.has_method("_construction_cue"):
+			for marker in map.construction_markers():
+				if int(marker.id)==project: await assert_cue_raster(map,marker,"overview %d%%" % int(scale*100))
+	if not check(map.has_method("_construction_cue"),"Displaced construction exposes its actual anchor-to-badge-edge cue geometry"):
+		restore_marker_game(original_game,original_selected,presentation)
+		return
+	# Independently hand-derived diagonal intersection: rect centre (140,120),
+	# ray towards (40,20) reaches top edge y=100 at (120,100), not (100,100).
+	for sample in [
+		{"anchor":Vector2(40,20),"end":Vector2(120,100)},
+		{"anchor":Vector2(20,120),"end":Vector2(100,120)},
+		{"anchor":Vector2(260,120),"end":Vector2(180,120)},
+		{"anchor":Vector2(140,200),"end":Vector2(140,140)}]:
+		var cue: Dictionary=map._construction_cue({"anchor":sample.anchor,"rect":Rect2(100,100,80,40),"blocked":false})
+		check(not cue.is_empty() and (cue.get("anchor",Vector2.INF) as Vector2).is_equal_approx(sample.anchor) and (cue.get("end",Vector2.INF) as Vector2).is_equal_approx(sample.end),"Cue terminates at the true ray/rectangle intersection, including diagonal and axis-aligned cases")
+	check(map._construction_cue({"anchor":Vector2(140,120),"rect":Rect2(100,100,80,40),"blocked":false}).is_empty(),"An anchor covered by its own badge emits no misleading external leader")
+	var foreign: String=""
+	for province in game.provinces:
+		if int(province.owner)!=game.player: foreign=str(province.id); break
+	main._on_province_selected(foreign)
+	ui.province_inspector.show_section("research")
+	ui.set_text_scale(2.0)
+	main._set_map_mode("war")
+	var displaced: Dictionary={}
+	for candidate_zoom in [1.0,1.1,1.2,1.3,1.4,1.6,1.8,2.0,2.49,2.51,3.0,4.0]:
+		map.zoom=candidate_zoom
+		map.center_on(map._label_point(game.province(home)))
+		await settle()
+		for marker in map.construction_markers():
+			if int(marker.id)!=project: continue
+			var under: Dictionary=game.province(map._province_at((marker.hit_rect as Rect2).get_center()))
+			print("CONSTRUCTION_CUE_FIXTURE home=%s zoom=%.2f badge=%s anchor=%s under=%s distance=%.2f" % [home,candidate_zoom,marker.rect,marker.anchor,str(under.get("id","water")),(marker.rect as Rect2).get_center().distance_to(marker.anchor)])
+			if not under.is_empty() and int(under.owner)!=game.player and (marker.rect as Rect2).get_center().distance_to(marker.anchor)>70:
+				displaced=marker; break
+		if not displaced.is_empty(): break
+	if check(not displaced.is_empty(),"Real Wien construction at 200% has a displaced badge above a foreign land region for input acceptance"):
+		check(main.selected==foreign and foreign!=home,"Displaced-marker input begins with a different province selected")
+		check(displaced.hit_rect==displaced.rect,"Anchor point and leader never expand the actual construction hit rectangle")
+		var cue: Dictionary=displaced.get("cue",{})
+		check(not cue.is_empty(),"The real displaced construction marker carries the geometry used by its visible cue")
+		if not cue.is_empty():
+			var fit: Array=map._fit()
+			var actual_anchor: Vector2=map._label_point(game.province(home))*float(fit[0])+Vector2(fit[1])
+			check((cue.anchor as Vector2).is_equal_approx(actual_anchor),"Cue anchor is the real province position under the current camera, not the displaced badge position")
+			if DisplayServer.get_name()!="headless":
+				await assert_cue_raster(map,displaced,"displaced foreign target 200%")
+			await shot("construction-cue-200-foreign-target")
+			var decorative: Vector2=(cue.anchor as Vector2).lerp(cue.end,0.45)
+			var signals: Array=[]
+			var observe:=func(province_id,project_id):signals.append([province_id,project_id])
+			map.construction_selected.connect(observe)
+			check(not (displaced.hit_rect as Rect2).has_point(decorative),"Decorative leader point is outside the badge target")
+			await tap_map(map,decorative)
+			check(signals.is_empty(),"Actual input on a decorative leader alone emits no construction selection")
+			map.construction_selected.disconnect(observe)
+		# Re-select another region, because the preceding normal map click may select Wien.
+		main._on_province_selected(foreign)
+		ui.province_inspector.show_section("research")
+		await settle()
+		for marker in map.construction_markers():
+			if int(marker.id)==project: displaced=marker; break
+		await tap_map(map,(displaced.hit_rect as Rect2).get_center())
+		check(main.selected==home and ui.province_inspector.current_section=="buildings","Actual input on the displaced badge above foreign land selects Wien and opens its existing Ausbau")
+		await shot("construction-cue-200-wien-selected")
+	check(game.snapshot()==before,"Cue geometry, raster and actual decorative/badge input never mutate the simulation")
+	restore_marker_game(original_game,original_selected,presentation)
+
+func restore_marker_game(game,selected_id: String,presentation: Dictionary) -> void:
+	main.game=game
+	main.kernel.bind_game(game)
+	main._on_province_selected(selected_id)
+	main.refresh()
+	var ui=main.get_meta("modern_interface")
+	ui.set_text_scale(float(presentation.text_scale))
+	ui.set_appearance(int(presentation.appearance))
+	main._set_map_mode(str(presentation.mode))
+	main.map_view.zoom=float(presentation.zoom)
+	main.map_view.pan=Vector2(presentation.pan)
+	main.map_view._sync_base_transform()
+	main.map_view.queue_redraw()
+
+func assert_cue_raster(map,marker: Dictionary,context: String) -> void:
+	var cue: Dictionary=marker.get("cue",{})
+	if not check(not cue.is_empty(),"Actual construction has a visible external cue in "+context): return
+	await RenderingServer.frame_post_draw
+	var pixels: Image=get_viewport().get_texture().get_image()
+	var ratio:=Vector2(pixels.get_size())/get_viewport().get_visible_rect().size
+	var transform: Transform2D=map.get_global_transform_with_canvas()
+	var anchor: Vector2=cue.anchor
+	var ink:=Color("dfb765")
+	for point in [anchor,anchor.lerp(cue.end,0.45)]:
+		var pixel: Color=pixels.get_pixelv(Vector2i(((transform*point)*ratio).round()))
+		check(maxf(absf(pixel.r-ink.r),maxf(absf(pixel.g-ink.g),absf(pixel.b-ink.b)))<0.14,"Actual anchor and leader remain opaque gold above map labels in "+context)
+	var halo_point: Vector2=anchor+Vector2(float(cue.radius)+1.0,0)
+	var halo: Color=pixels.get_pixelv(Vector2i(((transform*halo_point)*ratio).round()))
+	check(maxf(halo.r,maxf(halo.g,halo.b))<0.22,"Actual anchor has a contrasting dark halo on the rendered map in "+context)
 
 func tap_map(map,point: Vector2) -> void:
 	if DisplayServer.get_name()=="headless":

@@ -118,6 +118,7 @@ func project_actions(home: String) -> void:
 	main.refresh()
 	await settle()
 	check(province.regional_project.is_empty() and int(province.buildings.market)==level+1,"Actual monthly production/work eventually completes exactly one paid market level")
+	check(inspector.action_buttons["build:market"].is_visible_in_tree() and inspector.action_buttons["build:barracks"].is_visible_in_tree() and main.develop_btn.is_visible_in_tree(),"Natural completion restores actual available next construction decisions")
 	check(not inspector.fields.production.text.is_empty() and not inspector.fields.details.visible,"Compact local production remains visible with Details collapsed")
 
 func roads_and_context(home: String) -> void:

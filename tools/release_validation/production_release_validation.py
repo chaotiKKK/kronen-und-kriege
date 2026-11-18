@@ -45,6 +45,22 @@ def require(value, message):
         raise ValueError(message)
 
 
+def require_android_code(code):
+    require(type(code) is int and 0 < code <= 2147483647,
+            "Expected Android code must be a positive 32-bit integer")
+
+
+def android_code_argument(value):
+    if not re.fullmatch(r"[0-9]+", value):
+        raise argparse.ArgumentTypeError("Android code must be a positive 32-bit integer")
+    code = int(value)
+    try:
+        require_android_code(code)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from exc
+    return code
+
+
 def record(path):
     with path.open("rb") as stream:
         digest = hashlib.file_digest(stream, "sha256").hexdigest()
@@ -86,14 +102,15 @@ def inventory():
     return {name: record(ROOT / name) for name in sorted(files)}
 
 
-def contract(files):
+def contract(files, android_code=CODE):
+    require_android_code(android_code)
     scripts = sorted(name for name in files if name.startswith("scripts/") and name.endswith(".gd"))
     require(set(scripts) >= BASE_MODULES | NEW_MODULES, "Frozen source must include the original modules and every required production module")
     require(scripts == sorted(path.relative_to(ROOT).as_posix() for path in (ROOT / "scripts").rglob("*.gd")), "Frozen runtime source inventory is incomplete")
     data = sorted(name for name in files if name.startswith("data/") and Path(name).suffix in (".json", ".bin"))
     require(len(data) == 24, "Expected the complete twenty-four shipping data files")
     presets = (ROOT / "export_presets.cfg").read_text(encoding="utf-8-sig")
-    require(re.findall(r"^version/code=(\d+)$", presets, re.M) == [str(CODE)], "Android code differs from20")
+    require(re.findall(r"^version/code=(\d+)$", presets, re.M) == [str(android_code)], f"Android code differs from expected {android_code}")
     require(re.findall(r'^version/name="([^"\r\n]+)"$', presets, re.M) == [VERSION], "Version differs from1.9.1")
     require(re.findall(r"^const CURRENT_VERSION\s*:=\s*(\d+)\s*$", (ROOT / "scripts/SaveGame.gd").read_text(encoding="utf-8-sig"), re.M) == [str(SCHEMA)], "Save source schema differs from17")
     require(files[LOGO]["sha256"] == LOGO_HASH, "Original studio logo changed")
@@ -158,10 +175,26 @@ def resource_parity(pack, apk, files):
     return result
 
 
-def data_contract(metadata, files):
+def data_contract(metadata, files, android_code=CODE):
+    require_android_code(android_code)
     expected = {"res://" + name: info for name, info in files.items() if name.startswith("data/") and Path(name).suffix in (".json", ".bin")}
-    require(metadata.get("version") == VERSION and metadata.get("android_version_code") == CODE and metadata.get("lan_enabled") is True, "Canonical data manifest contradicts production version/code/LAN contract")
+    require(metadata.get("version") == VERSION and type(metadata.get("android_version_code")) is int and metadata.get("android_version_code") == android_code and metadata.get("lan_enabled") is True, "Canonical data manifest contradicts production version/code/LAN contract")
     require(len(expected) == 24 and metadata.get("files") == expected, "Canonical data manifest differs from all frozen data inputs")
+
+
+def frozen_contract(frozen, android_code=CODE):
+    require_android_code(android_code)
+    require(frozen.get("version") == VERSION and frozen.get("schema") == SCHEMA
+            and type(frozen.get("code")) is int and frozen.get("code") == android_code,
+            "Frozen source manifest contradicts expected version/code/schema contract")
+
+
+def package_contract(actual, android_code=CODE):
+    require_android_code(android_code)
+    sdk = actual.get("android_sdk", {})
+    require(actual.get("version") == VERSION and sdk.get("version_name") == VERSION
+            and type(sdk.get("version_code")) is int and sdk.get("version_code") == android_code,
+            "Actual package version/code contradicts production contract")
 
 
 def native_libraries(apk):
@@ -178,34 +211,45 @@ def native_libraries(apk):
     return result
 
 
-def main():
+def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("stage", choices=("freeze", "inspect"))
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--frozen", type=Path)
-    args = parser.parse_args()
+    parser.add_argument("--android-code", type=android_code_argument, default=CODE,
+                        help="Explicit expected Android version code (default: 20); never inferred from a package")
+    parser.add_argument("--exe", type=Path, default=ROOT / "build/exports/banger-queens-1.9.1-production.exe",
+                        help="Windows artifact to inspect (default: previous production EXE)")
+    parser.add_argument("--apk", type=Path, default=ROOT / "build/exports/banger-queens-1.9.1-production.apk",
+                        help="Android artifact to inspect (default: previous production APK)")
+    return parser.parse_args(argv)
+
+
+def main():
+    args = parse_args()
     out = fresh(args.output)
     api = validator()
     if args.stage == "freeze":
         files = inventory()
-        scripts, data = contract(files)
+        scripts, data = contract(files, args.android_code)
         with redirect_stdout(io.StringIO()):
-            api.prepare(SimpleNamespace(project=ROOT, output=out / "data", version=VERSION, android_code=CODE, with_lan=True))
+            api.prepare(SimpleNamespace(project=ROOT, output=out / "data", version=VERSION, android_code=args.android_code, with_lan=True))
         data_path = out / "data/frozen-data.json"
-        data_contract(read(data_path), files)
+        data_contract(read(data_path), files, args.android_code)
         require(files == inventory(), "Build inputs changed while freezing")
-        write(out / "source-manifest.json", {"files": files, "runtime_scripts": scripts, "data": data, "version": VERSION, "code": CODE, "schema": SCHEMA, "canonical_data_manifest": record(data_path)})
+        write(out / "source-manifest.json", {"files": files, "runtime_scripts": scripts, "data": data, "version": VERSION, "code": args.android_code, "schema": SCHEMA, "canonical_data_manifest": record(data_path)})
         print(json.dumps({"files": len(files), "scripts": len(scripts), "data": len(data), "manifest": str(out / "source-manifest.json")}))
         return
     require(args.frozen is not None, "Inspection requires an explicit frozen manifest")
     manifest_record = record(args.frozen)
     frozen = read(args.frozen)
+    frozen_contract(frozen, args.android_code)
     require(frozen["files"] == inventory(), "Sources changed since freeze")
     data_path = args.frozen.parent / "data/frozen-data.json"
     require(record(data_path) == frozen["canonical_data_manifest"], "Canonical data manifest changed since freeze")
-    data_contract(read(data_path), frozen["files"])
-    scripts, _ = contract(frozen["files"])
-    exe, apk = [ROOT / ("build/exports/banger-queens-1.9.1-production." + ext) for ext in ("exe", "apk")]
+    data_contract(read(data_path), frozen["files"], args.android_code)
+    scripts, _ = contract(frozen["files"], args.android_code)
+    exe, apk = args.exe.resolve(), args.apk.resolve()
     artifacts = {str(path): record(path) for path in (exe, apk)}
     capture = io.StringIO()
     with redirect_stdout(capture):
@@ -213,7 +257,7 @@ def main():
     (out / "static-stdout.log").write_text(capture.getvalue(), encoding="utf-8")
     static = read(out / "static-package-receipt.json")
     require(static["android_sdk"]["signer_certificate_sha256"] == CERT, "APK signer changed")
-    require(static["version"] == VERSION and static["android_sdk"]["version_name"] == VERSION and static["android_sdk"]["version_code"] == CODE, "Actual package version/code contradicts production contract")
+    package_contract(static, args.android_code)
     require(static["files"] == read(data_path)["files"], "Actual canonical resource receipts differ from frozen data")
     require(set(static.get("android_lan_permissions", [])) == {"android.permission." + name for name in ("INTERNET", "ACCESS_NETWORK_STATE", "ACCESS_WIFI_STATE", "CHANGE_WIFI_MULTICAST_STATE")}, "Actual APK lacks required LAN permissions")
     pack = api.EmbeddedPack(exe)
@@ -227,7 +271,7 @@ def main():
     finally:
         pack.close()
     require(manifest_record == record(args.frozen) and record(data_path) == frozen["canonical_data_manifest"] and frozen["files"] == inventory() and artifacts == {str(path): record(path) for path in (exe, apk)}, "Inputs changed during inspection")
-    result.update({"passed": True, "artifacts": artifacts, "source_manifest": record(args.frozen), "files_verified": len(frozen["files"]), "data_count": 24, "code": CODE, "source_schema": SCHEMA, "schema_runtime_observed": False, "runtime_test": False})
+    result.update({"passed": True, "artifacts": artifacts, "source_manifest": record(args.frozen), "files_verified": len(frozen["files"]), "data_count": 24, "code": args.android_code, "source_schema": SCHEMA, "schema_runtime_observed": False, "runtime_test": False})
     write(out / "production-static-review.json", result)
     print(json.dumps({key: result[key] for key in ("passed", "script_count", "files_verified", "code")}))
 

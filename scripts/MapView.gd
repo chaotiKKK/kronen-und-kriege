@@ -577,6 +577,7 @@ func _draw_labels(s: float, off: Vector2) -> void:
 		elif map_mode == "economy":
 			_draw_economic_markers(font)
 		_draw_construction_markers(font)
+		_draw_construction_cues()
 		_draw_hover_tooltip(font)
 		return
 
@@ -737,6 +738,7 @@ func _draw_labels(s: float, off: Vector2) -> void:
 	if legend_visible:
 		_draw_legend(map_rect, font)
 	draw_rect(map_rect, Color(0.72, 0.58, 0.34, 0.5), false, 3.0)
+	_draw_construction_cues()
 	_draw_hover_tooltip(font)
 
 func _military_obstacles() -> Array:
@@ -832,14 +834,30 @@ func construction_markers() -> Array:
 			if chosen.has_area(): break
 		if not chosen.has_area(): continue
 		occupied.append(chosen)
-		markers.append({"id":int(site.id),"province":province_id,"kind":str(site.kind),"name":str(site.name),"anchor":anchor,"rect":chosen,"hit_rect":chosen,"progress":progress,"blocked":bool(site.blocked),"label":label,"font_size":font_size})
+		var marker: Dictionary={"id":int(site.id),"province":province_id,"kind":str(site.kind),"name":str(site.name),"anchor":anchor,"rect":chosen,"hit_rect":chosen,"progress":progress,"blocked":bool(site.blocked),"label":label,"font_size":font_size}
+		marker["cue"]=_construction_cue(marker)
+		markers.append(marker)
 	return markers
+
+func _construction_cue(marker: Dictionary) -> Dictionary:
+	var rect: Rect2=marker.rect
+	var anchor: Vector2=marker.anchor
+	if not rect.has_area() or rect.has_point(anchor): return {}
+	var direction:=anchor-rect.get_center()
+	var fraction:=INF
+	if absf(direction.x)>0.0001: fraction=minf(fraction,rect.size.x*0.5/absf(direction.x))
+	if absf(direction.y)>0.0001: fraction=minf(fraction,rect.size.y*0.5/absf(direction.y))
+	# Stop at the first actual rectangle edge along the anchor ray. Clamping
+	# coordinates separately would send diagonal leaders to the wrong corner.
+	var endpoint:=rect.get_center()+direction*fraction
+	if anchor.distance_to(endpoint)<=1.0: return {}
+	var scale: float=clampf(preload("res://scripts/ModernInterface.gd").text_scale,1.0,1.5)
+	return {"anchor":anchor,"end":endpoint,"width":2.0*scale,"radius":3.0*scale,"ink":Color("dfb765") if not bool(marker.blocked) else Color("e69b7a")}
 
 func _draw_construction_markers(font: Font) -> void:
 	for marker in construction_markers():
 		var rect: Rect2=marker.rect
 		var ink:=Color("dfb765") if not marker.blocked else Color("e69b7a")
-		if rect.get_center().distance_to(marker.anchor)>70: draw_line(marker.anchor,rect.get_center(),Color(ink,0.65),1,true)
 		draw_rect(rect,Color(0.035,0.06,0.07,0.94))
 		draw_rect(rect,ink,false,1.5)
 		draw_string(font,rect.position+Vector2(8,font.get_ascent(int(marker.font_size))+5),marker.label,HORIZONTAL_ALIGNMENT_LEFT,rect.size.x-16,int(marker.font_size),ink)
@@ -849,6 +867,18 @@ func _draw_construction_markers(font: Font) -> void:
 		draw_rect(bar,ink)
 		construction_markers_drawn.append(marker)
 		atlas_obstacles.append(marker.hit_rect)
+
+func _draw_construction_cues() -> void:
+	# Use precisely the badges drawn in this frame. The final pass keeps the
+	# real anchor visible above map labels without extending any input target.
+	var halo:=Color(0.015,0.02,0.025,1.0)
+	for marker in construction_markers_drawn:
+		var cue: Dictionary=marker.cue
+		if cue.is_empty(): continue
+		draw_line(cue.anchor,cue.end,halo,float(cue.width)+3.0,true)
+		draw_line(cue.anchor,cue.end,cue.ink,float(cue.width),true)
+		draw_circle(cue.anchor,float(cue.radius)+2.0,halo,true,-1,true)
+		draw_circle(cue.anchor,float(cue.radius),cue.ink,true,-1,true)
 
 func marker_textures_loaded() -> bool:
 	return MARKER_CASTLE != null and MARKER_BANNER != null
