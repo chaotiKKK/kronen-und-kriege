@@ -67,8 +67,13 @@ func _ready() -> void:
 	var gold_before_dev: int = int(game.house()["gold"])
 	var develop: Dictionary = kernel.dispatch({"id": "develop"})
 	_check(bool(develop["ok"]), "Entwickeln wurde abgelehnt.")
-	_check(int(game.province(dev_id)["dev"]) > dev_before, "Entwickeln veränderte die Provinz nicht.")
+	_check(int(game.province(dev_id)["dev"]) == dev_before and not game.province(dev_id).regional_project.is_empty(), "Entwickeln startet einen echten Auftrag und erhöht Entwicklung erst nach Fertigstellung.")
 	_check(int(game.house()["gold"]) < gold_before_dev, "Entwickeln kostete kein Gold.")
+	var paid_gold:=int(game.house().gold)
+	for construction_month in 48:
+		game._tick_regional_economy([])
+		if game.province(dev_id).regional_project.is_empty(): break
+	_check(game.province(dev_id).regional_project.is_empty() and int(game.province(dev_id).dev)==dev_before+1 and int(game.house().gold)==paid_gold,"Örtliche Baustoffe und Arbeit vollenden die Entwicklung genau einmal ohne zweite Zahlung.")
 
 	# Unbekanntes Kommando und Save-Grenze.
 	var unknown: Dictionary = kernel.dispatch({"id": "gibt_es_nicht"})

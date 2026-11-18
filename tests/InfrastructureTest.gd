@@ -29,15 +29,15 @@ func _ready() -> void:
 	_check(kernel.dispatch({"id": "research", "innovation": "surveying"}).ok, "Forschung nicht über UI-Kernel startbar.")
 	_check(int(g.house().gold) == 480, "Vermessung muss 20 Gold kosten.")
 	_check(not g.start_research("surveying").ok, "Aktive Forschung darf nicht doppelt bezahlt werden.")
-	for i in 5:
+	for i in 3:
 		g.advance_month()
 	_check(not g.house().research.known.has("surveying"), "Forschung schließt vor ihrer Dauer ab.")
 	g.advance_month()
-	_check(g.house().research.known.has("surveying"), "Vermessung fehlt nach sechs Monaten.")
+	_check(g.house().research.known.has("surveying"), "Vermessung fehlt nach vier Monaten.")
 	_check(g.start_research("road_building").ok, "Straßenbau nach Vermessung gesperrt.")
-	for i in 12:
+	for i in 6:
 		g.advance_month()
-	_check(g.house().research.known.has("road_building"), "Straßenbau fehlt nach zwölf Monaten.")
+	_check(g.house().research.known.has("road_building"), "Straßenbau fehlt nach sechs Monaten.")
 	g.house().gold = 0
 	before = g.snapshot()
 	_check(not g.build_road(a, b).ok, "Bau ohne Gold muss scheitern.")
@@ -51,13 +51,16 @@ func _ready() -> void:
 	_check(not g.build_road(b, a).ok, "Umgekehrte Kante erzeugt doppelten Bau.")
 	_check(g.road_segments().size() == 1 and g.road_segments()[0].state == "building", "Baustelle muss sichtbar abfragbar sein.")
 	g.advance_month()
-	_check(int(g.roads[0].months) == 2, "Baustelle tickt nicht.")
-	g.province(b).owner = 1
-	g.advance_month()
-	_check(int(g.roads[0].months) == 2, "Besitzverlust muss Bau pausieren.")
-	g.province(b).owner = 0
-	g.advance_month()
-	g.advance_month()
+	_check(int(g.roads[0].construction.legs[0].work_done_u)>0 and int(g.roads[0].construction.legs[1].work_done_u)>0 and g.roads[0].state=="building", "Beide Straßenenden leisten messbare örtliche Arbeit ohne Sofortabschluss.")
+	var capture_gold:=int(g.house().gold)
+	var capture_stock: Dictionary=g.province(b).production.duplicate(true)
+	g._capture_province(b,1)
+	_check(g.roads.is_empty() and int(g.house().gold)==capture_gold and g.province(b).production==capture_stock,"Echte Eroberung verwirft einen neuen Straßenauftrag ohne Gelderstattung oder Verlust des örtlichen Restbestands.")
+	g._capture_province(b,0)
+	_check(g.build_road(a,b).ok and int(g.house().gold)==capture_gold-30,"Nach Rückeroberung beginnt ein neuer Straßenauftrag mit einer neuen tatsächlichen Zahlung.")
+	for i in 24:
+		g.advance_month()
+		if g.roads[0].state=="complete": break
 	_check(g.roads[0].state == "complete" and int(g.roads[0].months) == 0, "Straße wird nicht fertig.")
 	_check(g.road_income(0) == 2, "Fertige Verbindung muss wirtschaftlich wirken.")
 	g.province(b).owner = 1
@@ -87,6 +90,18 @@ func _ready() -> void:
 			broken.roads[0]["to"] = str(p.id)
 			break
 	_check(not SaveScript.validate(broken).is_empty(), "Nicht benachbarte Save-Verbindung wird nicht abgewiesen.")
+	# Legacy prepaid roads retain their old pause/timer contract independently.
+	var legacy=GameScript.new(DataScript,0)
+	legacy.province(a).owner=0
+	legacy.province(b).owner=0
+	legacy.roads=[{"from":a,"to":b,"builder":0,"state":"building","months":2,"construction":{},"legacy_construction":true}]
+	legacy.province(b).owner=1
+	legacy._tick_infrastructure()
+	_check(int(legacy.roads[0].months)==2,"Vorausbezahlter historischer Straßenbau pausiert weiterhin bei fremder Kontrolle.")
+	legacy.province(b).owner=0
+	legacy._tick_infrastructure()
+	legacy._tick_infrastructure()
+	_check(legacy.roads[0].state=="complete" and int(legacy.roads[0].months)==0,"Historischer Straßenbau schließt nach Rückkehr der Kontrolle mit seinem ursprünglichen Resttimer ab.")
 	_finish()
 
 func _check(ok: bool, message: String) -> void:

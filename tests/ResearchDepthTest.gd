@@ -11,8 +11,8 @@ func _ready() -> void:
 		return
 	var g = Game.new(Data, 0)
 	check(g.region_income_total() == 762, "Ohne Forschung bleibt die gewichtete Startwirtschaft erhalten")
-	check(Infra.INNOVATIONS.surveying.gold == 20 and Infra.INNOVATIONS.surveying.months == 6, "Bestehende Vermessung bleibt kompatibel")
-	check(Infra.INNOVATIONS.road_building.gold == 40 and Infra.INNOVATIONS.road_building.months == 12, "Bestehender Straßenbau bleibt kompatibel")
+	check(Infra.INNOVATIONS.surveying.gold == 20 and Infra.INNOVATIONS.surveying.months == 4, "Vermessung behält ihren Preis und erschließt die Produktionskette nach vier Monaten")
+	check(Infra.INNOVATIONS.road_building.gold == 40 and Infra.INNOVATIONS.road_building.months == 6, "Straßenbau behält seinen Preis und benötigt sechs Monate")
 	for id in Infra.INNOVATIONS:
 		var entry: Dictionary = Infra.INNOVATIONS[id]
 		for field in ["name", "branch", "description", "effect_text", "effects"]:

@@ -7,6 +7,7 @@ signal province_selected(province_id: String)
 signal map_mode_changed(mode: String)
 signal province_activated(province_id: String)
 signal army_selected(house_index: int, province_id: String)
+signal construction_selected(province_id: String, project_id: int)
 signal atlas_location_selected(record: Dictionary)
 
 const MapModesScript = preload("res://scripts/MapModes.gd")
@@ -81,6 +82,11 @@ var empire_banners_drawn: Array = []
 var fleet_markers_drawn: Array = []
 var economic_markers_drawn: Array = []
 var army_markers_drawn: Array = []
+var construction_markers_drawn: Array = []
+var _production_snapshot: Dictionary = {}
+var _supply_snapshot: Dictionary = {}
+var _road_snapshot: Array = []
+var _simulation_reports_set := false
 var _terrain_tex: Dictionary = {}
 var _building_tex: Dictionary = {}
 var _unit_tex: Dictionary = {}
@@ -132,6 +138,7 @@ func set_game(g) -> void:
 	game = g
 	hovered = ""
 	if game != null and game.get_instance_id() != _game_id:
+		_simulation_reports_set=false
 		_game_id = game.get_instance_id()
 		var catalog: String = game.data.catalog_hash() if game.data.has_method("catalog_hash") else ""
 		# Region geometry is immutable and catalog-bound. A network snapshot
@@ -141,6 +148,14 @@ func set_game(g) -> void:
 			_edge_catalog_hash = catalog
 	if _base != null:
 		_base.queue_redraw()
+	queue_redraw()
+
+func set_simulation_reports(production: Dictionary, supply: Dictionary) -> void:
+	# Game reports are calculated by Main once per accepted simulation refresh.
+	_production_snapshot=production.duplicate(true)
+	_supply_snapshot=supply.duplicate(true)
+	_road_snapshot=game.road_segments() if game!=null else []
+	_simulation_reports_set=true
 	queue_redraw()
 
 func set_mode(mode: String) -> void:
@@ -409,6 +424,14 @@ func _pick_at(pos: Vector2) -> void:
 				army_selected.emit(int(marker.house),selected)
 				queue_redraw()
 				return
+	for marker in construction_markers():
+		if (marker.hit_rect as Rect2).has_point(pos):
+			selected=str(marker.province)
+			atlas_location=""
+			province_selected.emit(selected)
+			construction_selected.emit(selected,int(marker.id))
+			queue_redraw()
+			return
 	atlas_location = ""
 	var record: Dictionary = {}
 	var anchor_target := false
@@ -455,6 +478,7 @@ func _draw() -> void:
 	var off: Vector2 = fit[1]
 	fleet_markers_drawn.clear()
 	army_markers_drawn.clear()
+	construction_markers_drawn.clear()
 	capital_markers_drawn.clear()
 	kingdom_banners_drawn.clear()
 	empire_banners_drawn.clear()
@@ -484,9 +508,10 @@ func infrastructure_segments() -> Array:
 		return segments
 	var transport := {}
 	if map_mode in ["economy","war"]:
-		for edge in game.supply_report().get("roads",[]):
+		var supply: Dictionary=_supply_snapshot if _simulation_reports_set else game.supply_report()
+		for edge in supply.get("roads",[]):
 			transport[_road_key(str(edge.from),str(edge.to))] = edge
-	for road in game.road_segments():
+	for road in (_road_snapshot if _simulation_reports_set else game.road_segments()):
 		var a: Dictionary = game.province(str(road.from))
 		var b: Dictionary = game.province(str(road.to))
 		if a.is_empty() or b.is_empty():
@@ -538,6 +563,8 @@ func _draw_labels(s: float, off: Vector2) -> void:
 	if inner.size.x < 80 or inner.size.y < 40:
 		return
 	var occupied: Array = []
+	atlas_obstacles.append_array(_military_obstacles())
+	occupied.append_array(atlas_obstacles)
 	var font_scale: float = preload("res://scripts/ModernInterface.gd").text_scale
 	var fs_title := int(round(19 * font_scale))
 	var fs_owner := int(round(13 * font_scale))
@@ -549,6 +576,7 @@ func _draw_labels(s: float, off: Vector2) -> void:
 			_draw_war_markers(s, off, font)
 		elif map_mode == "economy":
 			_draw_economic_markers(font)
+		_draw_construction_markers(font)
 		_draw_hover_tooltip(font)
 		return
 
@@ -558,6 +586,8 @@ func _draw_labels(s: float, off: Vector2) -> void:
 	if map_mode == "economy":
 		_draw_economic_markers(font)
 		for marker in economic_markers_drawn: occupied.append(marker.rect)
+	_draw_construction_markers(font)
+	for marker in construction_markers_drawn: occupied.append(marker.hit_rect)
 
 	# Neun Königreichstitel; sie bekommen zuerst Platz.
 	var groups: Array = []
@@ -709,6 +739,117 @@ func _draw_labels(s: float, off: Vector2) -> void:
 	draw_rect(map_rect, Color(0.72, 0.58, 0.34, 0.5), false, 3.0)
 	_draw_hover_tooltip(font)
 
+func _military_obstacles() -> Array:
+	var occupied: Array=[]
+	if game==null or map_mode!="war": return occupied
+	var fit:=_fit()
+	var s: float=fit[0]
+	var off: Vector2=fit[1]
+	for army in army_markers(): occupied.append(army.rect)
+	for marker in siege_markers():
+		var pos: Vector2=marker.anchor*s+off
+		occupied.append(Rect2(pos-Vector2(16,16),Vector2(60,34)))
+	for house in game.houses:
+		for fleet in house.get("fleets",[]):
+			var station: Dictionary=game.province(str(fleet.get("station","")))
+			if station.is_empty(): continue
+			var pos: Vector2=_label_point(station)*s+off+Vector2(0,22)
+			if int(station.get("siege",0))>0: pos+=Vector2(20,0)
+			var text_size:=ThemeDB.fallback_font.get_string_size(str(int(fleet.get("ships",0))),HORIZONTAL_ALIGNMENT_LEFT,-1,9)
+			occupied.append(Rect2(pos-Vector2(17,17),Vector2(34,34)).merge(Rect2(pos+Vector2(16,-5),text_size+Vector2(1,3))))
+	return occupied
+
+func _construction_obstacles() -> Array:
+	var occupied: Array=_military_obstacles()
+	if get_parent()!=null:
+		for sibling in get_parent().get_children():
+			if sibling is Control and sibling.get_script()==preload("res://scripts/WorldMiniMap.gd") and sibling.visible:
+				occupied.append(Rect2(sibling.global_position-global_position,sibling.size))
+	if map_mode=="economy":
+		for marker in focus_markers(): occupied.append(marker.rect)
+	if atlas_layer!=null and zoom>=2.5: return occupied
+	var fit:=_fit()
+	var s: float=fit[0]
+	var off: Vector2=fit[1]
+	var inner:=Rect2(off,MAP_SIZE*s).intersection(Rect2(Vector2.ZERO,size)).grow(-3)
+	var ms:=marker_scale_for(s)
+	for spec in marker_specs():
+		var pos: Vector2=spec.pos*s+off
+		var castle_size:=Vector2(27,27)*ms
+		var banner_size:=Vector2(22,32)*ms
+		occupied.append(_clamp_marker_rect(Rect2(pos+Vector2(-castle_size.x*0.5,18*ms-castle_size.y),castle_size),inner).grow(2))
+		occupied.append(_clamp_marker_rect(Rect2(pos+Vector2(11*ms,18*ms-banner_size.y),banner_size),inner).grow(2))
+		# Existing crest and completed-building tokens sit above/below the same seat.
+		var crest_size:=Vector2(19,23) if s<0.9 else Vector2(23,28)
+		var crest:=_clamp_marker_rect(Rect2(pos+Vector2(-crest_size.x*0.5,-crest_size.y-3),crest_size),inner)
+		occupied.append(crest.grow(2))
+		occupied.append(Rect2(crest.position+Vector2(0,crest_size.y+2),Vector2(42,13)).grow(2))
+	return occupied
+
+func construction_markers() -> Array:
+	var markers: Array=[]
+	if game==null or not _simulation_reports_set or size.x<100 or size.y<60: return markers
+	var fit:=_fit()
+	var scale: float=preload("res://scripts/ModernInterface.gd").text_scale
+	var font:=ThemeDB.fallback_font
+	var viewport:=Rect2(Vector2(3,3),size-Vector2(6,6))
+	var occupied:=_construction_obstacles()
+	var sites: Array=_production_snapshot.get("sites",[]).duplicate()
+	sites.sort_custom(func(a,b):
+		if (str(a.province)==selected)!=(str(b.province)==selected): return str(a.province)==selected
+		return int(a.id)<int(b.id))
+	for site in sites:
+		if int(site.owner)!=game.player: continue
+		var province_id:=str(site.province)
+		var province: Dictionary=game.province(province_id)
+		if province.is_empty() or int(province.owner)!=game.player: continue
+		var point: Vector2=_label_point(province)
+		if str(site.kind)=="road":
+			var a: Dictionary=game.province(str(site.from))
+			var b: Dictionary=game.province(str(site.to))
+			if a.is_empty() or b.is_empty(): continue
+			if selected in [str(site.from),str(site.to)]:
+				province_id=selected; point=_label_point(game.province(selected))
+			else: point=(_label_point(a)+_label_point(b))*0.5
+		var anchor: Vector2=point*float(fit[0])+Vector2(fit[1])
+		if not viewport.has_point(anchor): continue
+		var progress:=clampf(float(site.progress),0,1)
+		var label:=("Straße" if str(site.kind)=="road" else "Bau")+" %d %%" % int(progress*100)
+		if bool(site.blocked): label="Bau pausiert"
+		var font_size:=int(round(11*scale))
+		var measured:=font.get_string_size(label,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size)
+		var box_size:=Vector2(maxf(44,measured.x+16),maxf(44,measured.y+18))
+		var chosen:=Rect2()
+		var offsets: Array=[Vector2(18,-box_size.y*0.5),Vector2(-box_size.x-18,-box_size.y*0.5),Vector2(-box_size.x*0.5,-box_size.y-20),Vector2(-box_size.x*0.5,24),Vector2(36,-box_size.y-28),Vector2(-box_size.x-36,-box_size.y-28),Vector2(36,34),Vector2(-box_size.x-36,34)]
+		for step in [1,2]:
+			for offset in offsets:
+				var candidate:=Rect2(anchor+Vector2(offset)*step,box_size)
+				candidate.position.x=clampf(candidate.position.x,viewport.position.x,maxf(viewport.position.x,viewport.end.x-box_size.x))
+				candidate.position.y=clampf(candidate.position.y,viewport.position.y,maxf(viewport.position.y,viewport.end.y-box_size.y))
+				if not viewport.encloses(candidate): continue
+				if occupied.any(func(rect):return (rect as Rect2).grow(2).intersects(candidate)): continue
+				chosen=candidate; break
+			if chosen.has_area(): break
+		if not chosen.has_area(): continue
+		occupied.append(chosen)
+		markers.append({"id":int(site.id),"province":province_id,"kind":str(site.kind),"name":str(site.name),"anchor":anchor,"rect":chosen,"hit_rect":chosen,"progress":progress,"blocked":bool(site.blocked),"label":label,"font_size":font_size})
+	return markers
+
+func _draw_construction_markers(font: Font) -> void:
+	for marker in construction_markers():
+		var rect: Rect2=marker.rect
+		var ink:=Color("dfb765") if not marker.blocked else Color("e69b7a")
+		if rect.get_center().distance_to(marker.anchor)>70: draw_line(marker.anchor,rect.get_center(),Color(ink,0.65),1,true)
+		draw_rect(rect,Color(0.035,0.06,0.07,0.94))
+		draw_rect(rect,ink,false,1.5)
+		draw_string(font,rect.position+Vector2(8,font.get_ascent(int(marker.font_size))+5),marker.label,HORIZONTAL_ALIGNMENT_LEFT,rect.size.x-16,int(marker.font_size),ink)
+		var bar:=Rect2(rect.position+Vector2(7,rect.size.y-10),Vector2(rect.size.x-14,4))
+		draw_rect(bar,Color(0.15,0.2,0.2))
+		bar.size.x*=float(marker.progress)
+		draw_rect(bar,ink)
+		construction_markers_drawn.append(marker)
+		atlas_obstacles.append(marker.hit_rect)
+
 func marker_textures_loaded() -> bool:
 	return MARKER_CASTLE != null and MARKER_BANNER != null
 
@@ -846,11 +987,11 @@ func focus_markers() -> Array:
 	var font := ThemeDB.fallback_font
 	for p in game.provinces:
 		var focus := str(p.get("economic_focus","balanced"))
-		if not focus in ["agriculture","trade"]: continue
+		if not focus in ["agriculture","trade","workshops"]: continue
 		if zoom < 1.6 and int(p.owner) != game.player and str(p.id) != selected: continue
 		var anchor: Vector2 = _label_point(p)*float(fit[0])+Vector2(fit[1])
 		if not Rect2(Vector2.ZERO,size).has_point(anchor): continue
-		var label := "Kornkammer" if focus == "agriculture" else "Handelsort"
+		var label := str({"agriculture":"Kornkammer","trade":"Handelsort","workshops":"Werkstätten"}[focus])
 		var width := font.get_string_size(label,HORIZONTAL_ALIGNMENT_LEFT,-1,int(11*scale)).x+12
 		var rect := Rect2(anchor+Vector2(12,14),Vector2(width,20*scale))
 		rect.position.x = clampf(rect.position.x,0,maxf(0,size.x-rect.size.x))

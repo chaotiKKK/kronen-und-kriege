@@ -44,14 +44,15 @@ func _test_old_fleet(old: Dictionary) -> void:
 	check(old == before,"Pure save migration does not alter its input")
 	if not result.ok: return
 	check(int(result.data.houses[2].fleets[0].get("last_naval_month",-99)) == -1,"An old fleet with no offensive action gets explicit−1")
-	check(Save.state_equal(_as_schema14(result.data),old),"Old fleet migration changes only version and new−1markers")
+	check(Save.state_equal(_as_schema14(result.data),old),"Old fleet migration adds only the current schema, unused naval markers and empty production defaults")
 	var restored = Game.new(Regions,2)
 	check(restored.restore(old),"Actual old fleet save restores in real regional Game")
 	check(int(restored.fleet_for().get("last_naval_month",-99)) == -1,"Runtime normalizer keeps the migrated unused fleet marker")
 
 func _current(old: Dictionary, value = -1) -> Dictionary:
-	var state := old.duplicate(true)
-	state.schema_version = Save.CURRENT_VERSION
+	var migration: Dictionary=Save.migrate(old)
+	check(migration.ok,"Controlled current naval cases start from an actually migrated complete old world")
+	var state: Dictionary=migration.get("data",{}).duplicate(true)
 	for house in state.houses:
 		for fleet in house.fleets: fleet["last_naval_month"] = value
 	return state
@@ -226,6 +227,15 @@ func _test_fingerprint_closed() -> void:
 func _as_schema14(state: Dictionary) -> Dictionary:
 	var old := state.duplicate(true)
 	old.schema_version = 14
+	check(int(old.project_serial)==0,"Migration does not invent production project identities")
+	old.erase("project_serial")
+	for province in old.provinces:
+		check(province.production=={"materials_u":0,"rate_carry":0} and province.regional_project.is_empty() and province.logistics_sites=={"depot":0},"Only exact empty production defaults may be projected out of the historical world")
+		for field in ["production","regional_project","logistics_sites"]: province.erase(field)
+	for road in old.roads:
+		check(road.get("construction",{}).is_empty(),"Migration does not create paid construction on an old road")
+		road.erase("construction")
+		road.erase("legacy_construction")
 	for house in old.houses:
 		for fleet in house.fleets:
 			if fleet.has("last_naval_month"):

@@ -132,7 +132,7 @@ static func event(game) -> Dictionary:
 		options.append({"label": str(opt["label"]), "chips": _effect_chips(opt.get("effects", {})), "enabled":reason.is_empty(), "reason":reason})
 	return {"id": str(ev.get("id", "")), "art":str(ev.get("art", "")), "title": str(ev["title"]), "text": str(ev["text"]), "options": options, "decline_enabled":game.event_decline_reason().is_empty()}
 
-static func province(game, id: String) -> Dictionary:
+static func province(game, id: String, production_report: Dictionary = {}) -> Dictionary:
 	var p: Dictionary = game.province(id)
 	if p.is_empty():
 		return {}
@@ -144,9 +144,8 @@ static func province(game, id: String) -> Dictionary:
 		if not own: break
 		var key := str(entry[0])
 		var level := int(p.get("buildings", {}).get(key, 0))
-		var cost: int = game.building_cost(key, id)
-		var reason := "" if game.can_build(id, key) else ("Fremdes Eigentum" if not own else ("Höchste Stufe erreicht" if level >= 3 else "Nicht genug Gold"))
-		buildings.append({"key":key,"name":entry[1],"level":level,"cost":cost,"effect":entry[2],"reason":reason,"enabled":reason.is_empty()})
+		var preview: Dictionary = game.regional_project_preview(id,key)
+		buildings.append({"key":key,"name":entry[1],"level":level,"cost":int(preview.gold),"effect":entry[2],"reason":str(preview.reason),"enabled":bool(preview.ok),"preview":preview})
 	var armies: Array = []
 	var fleets: Array = []
 	for h in game.houses:
@@ -164,7 +163,39 @@ static func province(game, id: String) -> Dictionary:
 		"terrain":p.get("terrain_name","Ebenen"),"defense":p.get("defense",0),"terrain_defense":p.get("terrain_defense",0),"supply":game.army_supply_capacity(id,owner),
 		"income":game.region_income(p),"development":p.dev,"levy":p.levy,"capacity":capacity,"buildings":buildings,"armies":armies,"fleets":fleets,"army_upkeep_total":game.army_upkeep(owner),"coastal":game.is_coastal(id),
 		"research":game.research_choices(owner,id) if own else [],"legacies":legacies,"siege":p.get("siege",0),"blockade":p.get("blockade",0),"kingdom":p.get("kingdom_name",""),"empire":p.get("empire_name",""),
-		"military":_province_military(game,p,own)}
+		"military":_province_military(game,p,own),"construction":_construction(game,p,production_report) if own else {}}
+
+static func material_text(amount_u: int) -> String:
+	if amount_u > 0 and amount_u < 10000: return "<0,01"
+	if amount_u == 0: return "0"
+	return ("%.2f" % (float(amount_u)/1000000.0)).replace(".",",")
+
+static func _construction(game, p: Dictionary, report: Dictionary) -> Dictionary:
+	if report.is_empty(): report=game.regional_production_report()
+	var id:=str(p.id)
+	var local: Dictionary=report.get("regions",{}).get(id,{})
+	if local.is_empty(): return {}
+	var result: Dictionary=local.duplicate(true)
+	result["ledger"]=report.get("ledger",{}).get(id,{}).duplicate(true)
+	result["flows"]=[]
+	for flow in report.get("flows",[]):
+		if id in [str(flow.from),str(flow.to)]: result.flows.append(flow.duplicate(true))
+	result["options"]={}
+	for kind in ["develop","depot"]: result.options[kind]=game.regional_project_preview(id,kind)
+	result["depot_throughput"]=int(game.ProductionScript.mul_div_floor(game.ProductionScript.weight_u(p),300,game.ProductionScript.UNIT))
+	result["depot_visible"]=game.house().research.known.has("logistics") and int(result.depot_throughput)>0
+	result["roads"]=[]
+	for road in report.get("roads",[]):
+		if id in [str(road.from),str(road.to)]: result.roads.append(road.duplicate(true))
+	result["road_choices"]=[]
+	for neighbor in game.neighbours(id):
+		var target: Dictionary=game.province(str(neighbor))
+		if target.is_empty() or int(target.owner)!=game.player: continue
+		var choice: Dictionary=game.road_preview(id,str(neighbor))
+		choice["name"]=str(target.name)
+		result.road_choices.append(choice)
+	result.road_choices.sort_custom(func(a,b):return str(a.to)<str(b.to))
+	return result
 
 static func _province_military(game, province: Dictionary, own: bool) -> Dictionary:
 	var id:=str(province.id)

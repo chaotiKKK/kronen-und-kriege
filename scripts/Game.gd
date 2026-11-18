@@ -142,6 +142,20 @@ const SiegeRulesScript = preload("res://scripts/SiegeRules.gd")
 const FieldBattleRulesScript = preload("res://scripts/FieldBattleRules.gd")
 const ArmyRecoveryScript = preload("res://scripts/ArmyRecovery.gd")
 const CampaignLimitsScript = preload("res://scripts/CampaignLimits.gd")
+const ProductionScript = preload("res://scripts/RegionalProduction.gd")
+const MaterialTransportScript = preload("res://scripts/MaterialTransport.gd")
+const DepotSupplyScript = preload("res://scripts/DepotSupply.gd")
+const EconomyPlannerScript = preload("res://scripts/EconomyPlanner.gd")
+const PRODUCTION_RULES := {
+	"algorithm_version":1,"project_kinds":["market","barracks","walls","develop","depot"],
+	"one_regional_project":true,"depot_gold_per_weight":50,"depot_requires":"logistics",
+	"road_gold_per_edge_weight":30,"road_income_per_edge_weight":2,
+	"reserve_weights":2,"demand_work_months":2,"imports_work_next_month":true,
+	"new_roads_transport_next_month":true,"legacy_pending_roads":"prepaid-timer-reserves-local-work",
+	"cancel_refund":false,"capture":"cancel-new-projects-keep-stocks",
+	"depot_keeps_logistics_bonus":true,"construction_month_phase":"after-yearly-and-research",
+	"blocked":"foreign-siege-or-combatworthy-foreign-army"
+}
 const ARMY_DOCTRINES := {
 	"balanced":{"id":"balanced","name":"Ausgewogen","effect_text":"Keine Zu- oder Abschläge; gemischtes Aufgebot.","attack_multiplier":1.0,"defense_multiplier":1.0,"upkeep_multiplier":1.0,"siege_bonus":0,"levy_share":0.55,"archer_share":0.25,"siege_share":0.01},
 	"infantry":{"id":"infantry","name":"Infanterie","effect_text":"+10 % Verteidigung, −5 % Angriff; normaler Unterhalt.","attack_multiplier":0.95,"defense_multiplier":1.10,"upkeep_multiplier":1.0,"siege_bonus":0,"levy_share":0.72,"archer_share":0.20,"siege_share":0.01},
@@ -158,6 +172,10 @@ var player: int = 0
 var year: int = START_YEAR
 var campaign_sandbox := false
 var roads: Array = []
+var project_serial := 0
+var _last_production: Dictionary = {}
+var _last_economy_month: Dictionary = {}
+var _last_economy_orders: Dictionary = {}
 var month: int = 1
 var speed: int = 0
 var log_lines: Array = []
@@ -411,6 +429,9 @@ func _note_for_houses(recipients: Array, msg: String) -> void:
 # --- Aufbau --------------------------------------------------------------
 
 func _normalize_province(p: Dictionary) -> void:
+	if not p.has("production"): p["production"] = {"materials_u":0,"rate_carry":0}
+	if not p.has("regional_project"): p["regional_project"] = {}
+	if not p.has("logistics_sites"): p["logistics_sites"] = {"depot":0}
 	if not p.has("economic_focus"):
 		p["economic_focus"] = "balanced"
 	if not p.has("focus_changed_month"):
@@ -779,8 +800,12 @@ func advance_month() -> void:
 	_tick_family()
 	_tick_naval()
 	_tick_dynasty()
+	var transport_roads: Array = roads.duplicate(true)
 	_tick_infrastructure()
+	_tick_regional_economy(transport_roads)
 	_run_ai_military()
+	_last_economy_orders={}
+	_run_ai_economy()
 	if human_houses.is_empty():
 		_tick_personal_event()
 	else:
@@ -825,6 +850,8 @@ func research_choices(house_index: int = -1, province_id: String = "") -> Array:
 		info["known"] = houses[hi].research.known.has(innovation)
 		info["active"] = str(houses[hi].research.active) == innovation
 		info["remaining"] = int(houses[hi].research.months) if bool(info.active) else 0
+		if bool(info.active): info["months"] = InfrastructureScript.research_duration(houses[hi].research)
+		info["elapsed_months"] = int(info.months)-int(info.remaining) if bool(info.active) else 0
 		info["enabled"] = str(info.reason).is_empty()
 		info["status"] = "known" if bool(info.known) else ("active" if bool(info.active) else ("available" if bool(info.enabled) else "blocked"))
 		info["scope"] = "house"
@@ -864,6 +891,7 @@ func start_research(innovation: String, house_index: int = -1) -> Dictionary:
 	_resolve([{"edge": "", "source": "Forschung", "target": "Herrschaft", "state": "gold", "kind": "gold", "house": hi, "amount": -int(info.gold), "reason": "Forschung: " + str(info.name)}])
 	houses[hi].research.active = innovation
 	houses[hi].research.months = int(info.months)
+	houses[hi].research.erase("legacy_duration")
 	return _res(true, "%s wird erforscht: %d Monate." % [info.name, info.months])
 
 func research_bonus(key: String, house_index: int = -1, region: Dictionary = {}) -> float:
@@ -886,35 +914,46 @@ func _apply_research_health(hi: int) -> void:
 	r.health = clampi(int(r.health) + int(research_bonus("health", hi)), 15, 100)
 
 func road_blocker(from_id: String, to_id: String, house_index: int = -1) -> String:
+	return str(road_preview(from_id,to_id,house_index).reason)
+
+func road_preview(from_id: String, to_id: String, house_index: int = -1) -> Dictionary:
 	var hi := player if house_index < 0 else house_index
-	if game_over or hi < 0 or hi >= houses.size():
-		return "Kein gültiges Haus aktiv."
+	var result := {"ok":false,"reason":"","from":from_id,"to":to_id,"gold":0,"edge_weight_u":0,"material_total_u":0,"work_total_u":0,"legs":[]}
+	if hi < 0 or hi >= houses.size():
+		result.reason="Kein gültiges Haus aktiv."; return result
 	var a := province(from_id)
 	var b := province(to_id)
 	if a.is_empty() or b.is_empty() or from_id == to_id or not neighbours(from_id).has(to_id):
-		return "Zwei benachbarte Provinzen auswählen."
+		result.reason="Zwei benachbarte Provinzen auswählen."; return result
 	if int(a.owner) != hi or int(b.owner) != hi:
-		return "Beide Provinzen müssen dir gehören."
+		result.reason="Beide Provinzen müssen dir gehören."; return result
 	if not houses[hi].research.known.has("road_building"):
-		return "Zuerst Straßenbau erforschen."
+		result.reason="Zuerst Straßenbau erforschen."; return result
 	var key := InfrastructureScript.edge_key(from_id, to_id)
 	for road in roads:
 		if InfrastructureScript.edge_key(str(road.from), str(road.to)) == key:
-			return "Diese Verbindung existiert bereits."
-	if int(houses[hi].gold) < 30:
-		return "30 Gold für den Straßenbau erforderlich."
-	return ""
+			result.reason="Diese Verbindung existiert bereits."; return result
+	result.merge(ProductionScript.road_requirements(a,b),true)
+	result.gold=maxi(1,roundi(30.0*float(result.edge_weight_u)/ProductionScript.UNIT))
+	var blocked := _production_blocked()
+	if blocked.has(from_id) or blocked.has(to_id): result.reason="Beide Baustellen müssen unbestritten sein."; return result
+	if project_serial>=ProductionScript.MAX_SERIAL: result.reason="Die Projektkennungen sind ausgeschöpft."; return result
+	if int(houses[hi].gold)<int(result.gold): result.reason="%d Gold für den Straßenbau erforderlich." % int(result.gold); return result
+	result.ok=true
+	return result
 
 func build_road(from_id: String, to_id: String, house_index: int = -1) -> Dictionary:
 	var hi := player if house_index < 0 else house_index
-	var reason := road_blocker(from_id, to_id, hi)
-	if reason != "":
-		return _res(false, reason)
-	_resolve([{"edge": "", "source": "Infrastruktur", "target": "Herrschaft", "state": "gold", "kind": "gold", "house": hi, "amount": -30, "reason": "Straßenbau"}])
+	var preview := road_preview(from_id,to_id,hi)
+	if not bool(preview.ok): return _res(false,str(preview.reason))
+	houses[hi].gold=int(houses[hi].gold)-int(preview.gold)
+	project_serial+=1
 	var ends := [from_id, to_id]
 	ends.sort()
-	roads.append({"from": ends[0], "to": ends[1], "builder": hi, "months": 3, "state": "building"})
-	return _res(true, "Straßenbau begonnen: 3 Monate, danach +2 Gold im Jahr.")
+	roads.append({"from":ends[0],"to":ends[1],"builder":hi,"months":3,"state":"building",
+		"construction":{"id":project_serial,"paid_gold":int(preview.gold),"priority":0,"started_month":calendar_index(),"legs":preview.legs.duplicate(true)}})
+	_note_for_house(hi,"Straßenbau begonnen · %d Gold. Beide Enden setzen örtliche Arbeit und Baustoffe ein." % int(preview.gold))
+	return _res(true,"Straßenbau begonnen.")
 
 func _tick_infrastructure() -> void:
 	for hi in houses.size():
@@ -925,10 +964,12 @@ func _tick_infrastructure() -> void:
 				var innovation := str(research.active)
 				research.known.append(innovation)
 				research.active = ""
+				research.erase("legacy_duration")
 				_note_for_house(hi, "Forschung abgeschlossen: " + str(InfrastructureScript.INNOVATIONS[innovation].name))
 	for road in roads:
 		if road.state != "building":
 			continue
+		if not road.get("construction",{}).is_empty(): continue
 		if int(province(str(road.from)).get("owner", -1)) != int(road.builder) or int(province(str(road.to)).get("owner", -1)) != int(road.builder):
 			continue
 		road.months = int(road.months) - 1
@@ -941,11 +982,16 @@ func road_segments() -> Array:
 
 func road_income(house_index: int = -1) -> int:
 	var hi := player if house_index < 0 else house_index
-	var income := 0
+	var income_u := 0
+	var counted := {}
 	for road in roads:
-		if road.state == "complete" and int(province(str(road.from)).get("owner", -1)) == hi and int(province(str(road.to)).get("owner", -1)) == hi:
-			income += 2
-	return income
+		var a := province(str(road.from))
+		var b := province(str(road.to))
+		var key := InfrastructureScript.edge_key(str(road.from),str(road.to))
+		if road.state=="complete" and int(a.get("owner",-1))==hi and int(b.get("owner",-1))==hi and not counted.has(key):
+			counted[key]=true
+			income_u+=2*ProductionScript.edge_weight_u(a,b)
+	return roundi(float(income_u)/ProductionScript.UNIT)
 
 func _apply_road_income(hi: int) -> void:
 	_resolve([{"edge": "I1", "source": "Infrastruktur", "target": "Herrschaft", "state": "gold", "kind": "gold", "house": hi, "amount": road_income(hi), "reason": "Straßenhandel"}])
@@ -1341,20 +1387,299 @@ func province_economy_preview(id: String, focus: String = "", hi: int = -1) -> D
 		"cost":0 if focus == current else ProvinceEconomyScript.change_cost(p),
 		"lock_months":_province_focus_lock(p),"reason":province_focus_reason(id,focus,hi)}
 
-func can_develop(id: String) -> bool:
-	var p := province(id)
-	return not p.is_empty() and int(p["owner"]) == player and int(p["dev"]) < 10 and int(house()["gold"]) >= int(region_capacity(p).develop_cost)
+func _production_blocked() -> Dictionary:
+	var result := {}
+	for p in provinces:
+		if int(p.get("siege",0))>0 and int(p.get("siege_owner",-1))>=0 and int(p.siege_owner)!=int(p.owner):
+			result[str(p.id)] = "Feindliche Belagerung: Produktion und Bau ruhen."
+	for hi in houses.size():
+		for army in houses[hi].get("armies",[]):
+			var id := str(army.get("province",""))
+			var p := province(id)
+			if not p.is_empty() and hi!=int(p.owner) and int(army.get("strength",0))>0 and int(army.get("morale",0))>0:
+				result[id] = "Fremdes Feldheer vor Ort: Produktion und Bau ruhen."
+	return result
 
-func develop(id: String) -> Dictionary:
-	if not can_develop(id):
-		return _res(false, "Ausbau nicht möglich: eigenes Land, Entwicklung unter 10 und genügend Gold erforderlich.")
+func _construction_name(kind: String) -> String:
+	return str({"market":"Markt","barracks":"Kaserne","walls":"Mauern","develop":"Entwicklung","depot":"Versorgungsdepot","road":"Straße"}.get(kind,kind))
+
+func _local_project_months(p: Dictionary, requirements: Dictionary) -> int:
+	var shadow: Dictionary = p.duplicate()
+	shadow.production = p.production.duplicate(true)
+	var task := requirements.duplicate(true)
+	task.merge({"token":"forecast","priority":0,"started_month":calendar_index(),"work_done_u":0,"material_spent_u":0})
+	for index in 120:
+		var result: Dictionary = ProductionScript.plan_local(shadow,[task],calendar_index()+index)
+		shadow.production = {"materials_u":int(result.materials_u),"rate_carry":int(result.rate_carry)}
+		if result.task_updates.is_empty(): return -1
+		task.work_done_u = int(result.task_updates[0].work_done_u)
+		task.material_spent_u = int(result.task_updates[0].material_spent_u)
+		if int(task.work_done_u)>=int(task.work_total_u): return index+1
+	return -1
+
+func regional_project_preview(id: String, kind: String, house_index: int = -1) -> Dictionary:
+	var hi: int = player if house_index<0 else house_index
+	var result := {"ok":false,"reason":"","province":id,"kind":kind,"name":_construction_name(kind),"target_level":0,"gold":0,"material_total_u":0,"work_total_u":0,"local_months":-1}
+	if hi<0 or hi>=houses.size(): result.reason="Kein gültiges Haus aktiv."; return result
 	var p := province(id)
-	var capacity := region_capacity(p)
-	house()["gold"] = int(house()["gold"]) - int(capacity.develop_cost)
-	p["dev"] = int(p["dev"]) + 1
-	p["levy"] = maxi(int(p["levy"]), mini(int(capacity.maximum), int(p["levy"]) + int(capacity.develop)))
-	note("%s ausgebaut: Entwicklung %d." % [p["name"], int(p["dev"])])
-	return _res(true, "%s blüht auf." % p["name"])
+	if p.is_empty() or int(p.owner)!=hi: result.reason="Nur im eigenen Land möglich."; return result
+	if not PRODUCTION_RULES.project_kinds.has(kind): result.reason="Unbekanntes Bauvorhaben."; return result
+	var level: int = int(p.buildings.get(kind,0)) if BUILDING_KEYS.has(kind) else (int(p.dev) if kind=="develop" else int(p.logistics_sites.depot))
+	var maximum: int = 3 if BUILDING_KEYS.has(kind) else (10 if kind=="develop" else 1)
+	result.target_level=level+1
+	if level>=maximum: result.reason="Vollständig ausgebaut."; return result
+	if kind=="depot" and not houses[hi].research.known.has("logistics"):
+		result.reason="Zuerst Versorgungswesen erforschen."; return result
+	if kind=="depot" and ProductionScript.mul_div_floor(ProductionScript.weight_u(p),300,ProductionScript.UNIT)==0:
+		result.reason="Region ohne nutzbaren Depotdurchsatz."; return result
+	var requirements: Dictionary = ProductionScript.requirements(p,kind,int(result.target_level))
+	if requirements.is_empty(): result.reason="Keine gültige Zielstufe."; return result
+	result.merge(requirements,true)
+	result.gold = building_cost(kind,id) if BUILDING_KEYS.has(kind) else (int(region_capacity(p).develop_cost) if kind=="develop" else maxi(1,roundi(50.0*float(p.get("economic_share",1.0)))))
+	if not p.regional_project.is_empty(): result.reason="Hier läuft bereits ein Bauvorhaben."; return result
+	var blocked := _production_blocked()
+	if blocked.has(id): result.reason=str(blocked[id]); return result
+	if project_serial>=ProductionScript.MAX_SERIAL: result.reason="Die Projektkennungen sind ausgeschöpft."; return result
+	result.local_months=_local_project_months(p,requirements)
+	if int(houses[hi].gold)<int(result.gold): result.reason="Nicht genug Gold: %d erforderlich." % int(result.gold); return result
+	result.ok=true
+	return result
+
+func start_regional_project(id: String, kind: String, house_index: int = -1) -> Dictionary:
+	var hi: int = player if house_index<0 else house_index
+	var preview := regional_project_preview(id,kind,hi)
+	if not bool(preview.ok): return _res(false,str(preview.reason))
+	var p := province(id)
+	project_serial+=1
+	p.regional_project={"id":project_serial,"builder":hi,"kind":kind,"target_level":int(preview.target_level),"paid_gold":int(preview.gold),
+		"material_total_u":int(preview.material_total_u),"material_spent_u":0,"work_total_u":int(preview.work_total_u),"work_done_u":0,"priority":0,"started_month":calendar_index()}
+	houses[hi].gold=int(houses[hi].gold)-int(preview.gold)
+	_note_for_house(hi,"%s in %s begonnen · %d Gold. Baustoffe und Arbeit werden örtlich eingesetzt." % [_construction_name(kind),p.name,int(preview.gold)])
+	return _res(true,"%s begonnen." % _construction_name(kind))
+
+func _construction_target(id: String, project_id: int, hi: int) -> Dictionary:
+	if hi<0 or hi>=houses.size() or project_id<=0: return {}
+	var p := province(id)
+	if p.is_empty() or int(p.owner)!=hi: return {}
+	if not p.regional_project.is_empty() and int(p.regional_project.id)==project_id and int(p.regional_project.builder)==hi:
+		return {"project":p.regional_project,"province":p,"road_index":-1}
+	for index in roads.size():
+		var road: Dictionary=roads[index]
+		var project: Dictionary=road.get("construction",{})
+		if project.is_empty() or int(project.id)!=project_id or int(road.builder)!=hi or not id in [str(road.from),str(road.to)]: continue
+		if int(province(str(road.from)).owner)==hi and int(province(str(road.to)).owner)==hi:
+			return {"project":project,"road_index":index}
+	return {}
+
+func cancel_construction(id: String, project_id: int, house_index: int = -1) -> Dictionary:
+	var hi: int = player if house_index<0 else house_index
+	var target := _construction_target(id,project_id,hi)
+	if target.is_empty(): return _res(false,"Dieser eigene Auftrag ist nicht mehr vorhanden.")
+	if int(target.road_index)>=0: roads.remove_at(int(target.road_index))
+	else: target.province.regional_project={}
+	_note_for_house(hi,"Bauvorhaben abgebrochen. Gold und verbrauchte Baustoffe werden nicht erstattet; örtlicher Restbestand bleibt.")
+	return _res(true,"Bauvorhaben abgebrochen.")
+
+func prioritize_construction(id: String, project_id: int, priority: int, house_index: int = -1) -> Dictionary:
+	var hi: int = player if house_index<0 else house_index
+	if not priority in [0,1]: return _res(false,"Ungültiger Vorrang.")
+	var target := _construction_target(id,project_id,hi)
+	if target.is_empty(): return _res(false,"Dieser eigene Auftrag ist nicht mehr vorhanden.")
+	if int(target.project.priority)==priority: return _res(false,"Dieser Vorrang ist bereits gewählt.")
+	target.project.priority=priority
+	_note_for_house(hi,"Bauvorhaben erhält " + ("Vorrang." if priority==1 else "normalen Vorrang."))
+	return _res(true,"Vorrang geändert.")
+
+func _construction_catalog() -> Dictionary:
+	var tasks := {}
+	var references := {}
+	for p in provinces:
+		var id := str(p.id)
+		tasks[id]=[]
+		if p.regional_project.is_empty(): continue
+		var task: Dictionary=p.regional_project.duplicate(true)
+		task["token"]="region:%d" % int(task.id)
+		tasks[id].append(task)
+		references[task.token]=p.regional_project
+	for road in roads:
+		var project: Dictionary=road.get("construction",{})
+		if str(road.state)!="building" or project.is_empty(): continue
+		for leg in project.legs:
+			if int(leg.work_done_u)>=int(leg.work_total_u): continue
+			var task: Dictionary=leg.duplicate(true)
+			task.merge({"token":"road:%d:%s" % [int(project.id),str(leg.province)],"id":int(project.id),"priority":int(project.priority),"started_month":int(project.started_month),"kind":"road","from":str(road.from),"to":str(road.to)})
+			tasks[str(leg.province)].append(task)
+			references[task.token]=leg
+	return {"tasks":tasks,"references":references}
+
+func _material_horizon(p: Dictionary, tasks: Array, months: int) -> int:
+	# Materialreicher Schattenzustand misst nur gemeinsam verfügbare Bauarbeit.
+	var shadow: Dictionary=p.duplicate()
+	shadow.production={"materials_u":ProductionScript.stock_capacity_u(p),"rate_carry":0}
+	var working: Array=tasks.duplicate(true)
+	var used := 0
+	for index in months:
+		var plan: Dictionary=ProductionScript.plan_local(shadow,working,calendar_index()+index)
+		used+=int(plan.used_u)
+		for update in plan.task_updates:
+			for task in working:
+				if str(task.token)==str(update.token):
+					task.work_done_u=int(update.work_done_u)
+					task.material_spent_u=int(update.material_spent_u)
+		shadow.production={"materials_u":ProductionScript.stock_capacity_u(p),"rate_carry":0}
+	return used
+
+func _tick_regional_economy(transport_roads: Array) -> void:
+	var blocked := _production_blocked()
+	var catalog := _construction_catalog()
+	var old_stocks := {}
+	var ledger := {}
+	var ids: Array=catalog.tasks.keys()
+	ids.sort()
+	for id in ids:
+		var p := province(str(id))
+		old_stocks[id]=int(p.production.materials_u)
+		var legacy_work := false
+		for road in transport_roads:
+			if str(road.state)=="building" and road.get("construction",{}).is_empty() and id in [str(road.from),str(road.to)] and int(road.builder)==int(p.owner) and int(province(str(road.from)).owner)==int(road.builder) and int(province(str(road.to)).owner)==int(road.builder): legacy_work=true
+		var result: Dictionary=ProductionScript.plan_local(p,catalog.tasks[id],calendar_index(),blocked.has(id) or legacy_work)
+		p.production={"materials_u":int(result.materials_u),"rate_carry":int(result.rate_carry)}
+		for update in result.task_updates:
+			var reference: Dictionary=catalog.references[str(update.token)]
+			reference.work_done_u=int(update.work_done_u)
+			reference.material_spent_u=int(update.material_spent_u)
+		ledger[id]={"owner":int(p.owner),"before_u":int(old_stocks[id]),"produced_u":int(result.produced_u),"used_u":int(result.used_u),"wasted_u":int(result.wasted_u),"work_u":int(result.work_u),"production_work_u":int(result.production_work_u),"legacy_work_u":ProductionScript.labor_capacity_u(p) if legacy_work and not blocked.has(id) else 0,"import_u":0,"export_u":0}
+	# Eingetroffene Mengen werden erst nach sämtlicher örtlicher Arbeit gebucht.
+	var offers := {}
+	var demands: Array=[]
+	catalog=_construction_catalog()
+	for id in ids:
+		var p := province(str(id))
+		var next_need := _material_horizon(p,catalog.tasks[id],1)
+		var two_month_need := _material_horizon(p,catalog.tasks[id],2)
+		var priority := 0
+		var project_id := ProductionScript.MAX_SERIAL
+		for task in catalog.tasks[id]:
+			priority=maxi(priority,int(task.priority))
+			project_id=mini(project_id,int(task.id))
+		var stock: int=p.production.materials_u
+		offers[id]=maxi(0,stock-2*ProductionScript.weight_u(p)-next_need)
+		var demand: int=maxi(0,two_month_need-stock)
+		if demand>0: demands.append({"province":id,"house":int(p.owner),"amount_u":demand,"priority":priority,"project_id":project_id})
+	var transport: Dictionary=MaterialTransportScript.plan(provinces,transport_roads,demands,offers,calendar_index(),blocked)
+	for id in transport.deltas:
+		var delta: int=transport.deltas[id]
+		var p := province(str(id))
+		p.production.materials_u=int(p.production.materials_u)+delta
+	for flow in transport.flows:
+		ledger[str(flow.from)]["export_u"]+=int(flow.amount_u)
+		ledger[str(flow.to)]["import_u"]+=int(flow.amount_u)
+	for id in ids:
+		var p := province(str(id))
+		ledger[id]["after_u"]=int(p.production.materials_u)
+		if not p.regional_project.is_empty() and int(p.regional_project.work_done_u)>=int(p.regional_project.work_total_u):
+			var completed: Dictionary=p.regional_project.duplicate(true)
+			p.regional_project={}
+			_finish_regional_project(p,completed)
+	for road in roads:
+		var project: Dictionary=road.get("construction",{})
+		if str(road.state)!="building" or project.is_empty(): continue
+		var complete := true
+		var months_left := 0
+		for leg in project.legs:
+			var remaining: int=int(leg.work_total_u)-int(leg.work_done_u)
+			if remaining>0: complete=false
+			months_left=maxi(months_left,ceili(float(remaining)/float(ProductionScript.labor_capacity_u(province(str(leg.province))))))
+		road.months=clampi(months_left,1,3) if not complete else 0
+		if complete:
+			road.state="complete"
+			road.construction={}
+			_note_for_house(int(road.builder),"Eine Straßenverbindung ist mit örtlichen Baustoffen und Arbeit fertiggestellt.")
+	_last_production={"month_index":calendar_index(),"regions":ledger,"flows":transport.flows,"edges":transport.edges}
+
+func _finish_regional_project(p: Dictionary, project: Dictionary) -> void:
+	var hi: int=project.builder
+	var kind: String=project.kind
+	if int(p.owner)!=hi: return
+	if kind=="develop":
+		var capacity := region_capacity(p)
+		# Ereignisse dürfen die während des Baus erhaltene Entwicklung nicht verlieren.
+		if int(p.dev)<10: p.dev=int(p.dev)+1
+		p.levy=maxi(int(p.levy),mini(int(capacity.maximum),int(p.levy)+int(capacity.develop)))
+	elif kind=="depot":
+		p.logistics_sites.depot=1
+	else:
+		var level: int=p.buildings.get(kind,0)
+		if level>=int(project.target_level): return
+		var effects: Array=[{"source":"Herrschaft","target":"Herrschaft","state":"provinces[%s].buildings.%s" % [p.id,kind],"kind":"building","house":hi,"province":p.id,"building":kind,"amount":int(project.target_level)-level,"reason":"Bauvorhaben fertig"}]
+		if kind=="barracks": effects.append({"edge":"H5","source":"Herrschaft","target":"Krieg","state":"provinces[%s].levy" % p.id,"kind":"levy","house":hi,"province":p.id,"amount":maxi(1,roundi((60+level*35)*float(p.get("economic_share",1.0)))),"reason":"Kaserne"})
+		elif kind=="walls": effects.append({"edge":"H5","source":"Herrschaft","target":"Krieg","state":"provinces[%s].defense" % p.id,"kind":"defense","house":hi,"province":p.id,"amount":10+level*5,"reason":"Mauern"})
+		_resolve(effects)
+	_note_for_house(hi,"%s in %s fertiggestellt." % [_construction_name(kind),p.name])
+
+func construction_sites() -> Array:
+	var result: Array=[]
+	var blocked := _production_blocked()
+	for p in provinces:
+		var project: Dictionary=p.regional_project
+		if project.is_empty(): continue
+		result.append({"id":int(project.id),"province":str(p.id),"kind":str(project.kind),"name":_construction_name(str(project.kind)),"owner":int(p.owner),"priority":int(project.priority),"progress":float(project.work_done_u)/float(project.work_total_u),"material_progress":float(project.material_spent_u)/float(project.material_total_u),"blocked":blocked.has(str(p.id)),"from":"","to":""})
+	for road in roads:
+		var project: Dictionary=road.get("construction",{})
+		if project.is_empty(): continue
+		var work := 0
+		var done := 0
+		var material := 0
+		var spent := 0
+		for leg in project.legs:
+			work+=int(leg.work_total_u); done+=int(leg.work_done_u); material+=int(leg.material_total_u); spent+=int(leg.material_spent_u)
+		result.append({"id":int(project.id),"province":str(road.from),"kind":"road","name":"Straße","owner":int(road.builder),"priority":int(project.priority),"progress":float(done)/float(work),"material_progress":float(spent)/float(material),"blocked":blocked.has(str(road.from)) or blocked.has(str(road.to)),"from":str(road.from),"to":str(road.to)})
+	result.sort_custom(func(a,b):return int(a.id)<int(b.id))
+	return result
+
+func regional_production_report(house_index: int = -1) -> Dictionary:
+	var hi: int=player if house_index<0 else house_index
+	var result := {"regions":{},"roads":[],"flows":[],"ledger":{},"sites":[]}
+	if hi<0 or hi>=houses.size(): return result
+	var blocked := _production_blocked()
+	var catalog := _construction_catalog()
+	for p in provinces:
+		if int(p.owner)!=hi: continue
+		var id := str(p.id)
+		var rate: int=ProductionScript.mul_div_floor(ProductionScript.labor_capacity_u(p),ProductionScript.yield_numerator(p),32)
+		result.regions[id]={"materials_u":int(p.production.materials_u),"storage_capacity_u":ProductionScript.stock_capacity_u(p),"production_per_month_u":rate,"labor_capacity_u":ProductionScript.labor_capacity_u(p),"project":p.regional_project.duplicate(true),"tasks":catalog.tasks[id].duplicate(true),"blocked_reason":str(blocked.get(id,"")),"depot":int(p.logistics_sites.depot)}
+		if _last_production.get("regions",{}).has(id) and int(_last_production.regions[id].owner)==hi: result.ledger[id]=_last_production.regions[id].duplicate(true)
+	for road in roads:
+		if int(province(str(road.from)).owner)==hi and int(province(str(road.to)).owner)==hi: result.roads.append(road.duplicate(true))
+	for flow in _last_production.get("flows",[]):
+		if int(province(str(flow.from)).get("owner",-1))==hi: result.flows.append(flow.duplicate(true))
+	for site in construction_sites():
+		if int(site.owner)==hi: result.sites.append(site)
+	return result
+
+func _run_ai_economy() -> void:
+	for hi in houses.size():
+		if is_human_house(hi) or int(_last_economy_month.get(hi,-1))==calendar_index(): continue
+		var order: Dictionary=EconomyPlannerScript.next_order(self,hi)
+		if order.is_empty(): continue
+		var before: int=houses[hi].gold
+		var result := {"ok":false}
+		match str(order.get("id","")):
+			"province_focus": result=set_province_focus(str(order.get("province","")),str(order.get("focus","")),hi)
+			"research": result=start_research(str(order.get("innovation","")),hi)
+			"road": result=build_road(str(order.get("province","")),str(order.get("to","")),hi)
+			"build": result=build(str(order.get("province","")),str(order.get("key","")),hi)
+			"develop": result=develop(str(order.get("province","")),hi)
+		if not bool(result.ok): continue
+		_last_economy_month[hi]=calendar_index()
+		_last_economy_orders[hi]={"month_index":calendar_index(),"intent":order.duplicate(true),"gold_before":before,"gold_after":int(houses[hi].gold)}
+		if str(order.id)=="research": _note_for_house(hi,str(result.get("msg","Forschung begonnen.")))
+
+func can_develop(id: String, house_index: int = -1) -> bool:
+	return bool(regional_project_preview(id,"develop",house_index).ok)
+
+func develop(id: String, house_index: int = -1) -> Dictionary:
+	return start_regional_project(id,"develop",house_index)
 
 func can_recruit(id: String) -> bool:
 	var p := province(id)
@@ -3230,51 +3555,10 @@ func building_effect_units(p: Dictionary, key: String) -> float:
 	return maxf(0.0, original + (level - initial) * weight)
 
 func can_build(id: String, key: String, house_index: int = -1) -> bool:
-	var hi: int = player if house_index < 0 else house_index
-	if hi < 0 or hi >= houses.size():
-		return false
-	if not ["barracks", "walls", "market"].has(key):
-		return false
-	var p := province(id)
-	if p.is_empty() or int(p["owner"]) != hi:
-		return false
-	if int((p.get("buildings", {}) as Dictionary).get(key, 0)) >= 3:
-		return false
-	return int(houses[hi]["gold"]) >= building_cost(key, id)
+	return bool(regional_project_preview(id,key,house_index).ok)
 
 func build(id: String, key: String, house_index: int = -1) -> Dictionary:
-	var hi: int = player if house_index < 0 else house_index
-	if not can_build(id, key, hi):
-		return _res(false, "Bau nicht möglich (eigenes Land, freie Stufe, genug Gold).")
-	var h: Dictionary = houses[hi]
-	var p := province(id)
-	var cost: int = building_cost(key, id)
-	var level: int = int((p.get("buildings", {}) as Dictionary).get(key, 0))
-	var effects: Array = [
-		{"source": "Herrschaft", "target": "Herrschaft", "state": "houses[%d].gold" % hi,
-			"kind": "gold", "house": hi, "amount": -cost, "reason": "Baukosten"},
-		{"source": "Herrschaft", "target": "Herrschaft", "state": "provinces[%s].buildings.%s" % [id, key],
-			"kind": "building", "house": hi, "province": id, "building": key, "amount": 1,
-			"reason": "Gebäudestufe"},
-	]
-	if key == "barracks":
-		effects.append({"edge": "H5", "source": "Herrschaft", "target": "Krieg",
-			"state": "provinces[%s].levy" % id, "kind": "levy", "house": hi,
-			"province": id, "amount": maxi(1, roundi((60 + level * 35) * float(p.get("economic_share", 1.0)))), "reason": "Kaserne"})
-	elif key == "walls":
-		effects.append({"edge": "H5", "source": "Herrschaft", "target": "Krieg",
-			"state": "provinces[%s].defense" % id, "kind": "defense", "house": hi,
-			"province": id, "amount": 10 + level * 5, "reason": "Mauern"})
-	var applied := _resolve(effects)
-	if hi == player:
-		var new_level: int = int((p.get("buildings", {}) as Dictionary).get(key, 0))
-		var gain: int = 0
-		for entry in applied:
-			if str(entry.get("edge", "")) == "H5":
-				gain = int(entry.get("delta", 0))
-		var label: String = "Kaserne" if key == "barracks" else ("Mauern" if key == "walls" else "Markt")
-		note("%s in %s auf Stufe %d (+%d)." % [label, p["name"], new_level, gain])
-	return _res(true, "%s ausgebaut." % p["name"])
+	return start_regional_project(id,key,house_index)
 
 func set_law(key: String, value: String, house_index: int = -1) -> Dictionary:
 	var hi: int = player if house_index < 0 else house_index
@@ -3472,7 +3756,23 @@ func supply_report(hi: int = -1) -> Dictionary:
 		var local := _province_local_supply(p,hi)
 		capacities[str(p.id)] = local
 		bonuses[str(p.id)] = maxi(0,local - _province_supply_base(p,hi)) if str(p.get("economic_focus","balanced")) == "agriculture" else 0
-	return SupplyNetworkScript.calculate(provinces,roads,houses[hi].get("armies",[]),hi,capacities,bonuses)
+	var blocked := _supply_blocked(hi)
+	var report: Dictionary=SupplyNetworkScript.calculate(provinces,roads,houses[hi].get("armies",[]),hi,capacities,bonuses,blocked)
+	return DepotSupplyScript.apply(report,provinces,adjacency,houses[hi].get("armies",[]),hi,blocked)
+
+func _supply_blocked(hi: int) -> Dictionary:
+	# Zivile Besetzung und militärische Empfänger sind verschiedene Perspektiven:
+	# das eigene Frontheer sperrt fremde Produktion, aber nicht seinen Nachschub.
+	var result := {}
+	for p in provinces:
+		if int(p.get("siege",0))>0 and int(p.get("siege_owner",-1))>=0 and int(p.siege_owner)!=hi:
+			result[str(p.id)]="Feindliche Belagerung."
+	for other in houses.size():
+		if other==hi: continue
+		for army in houses[other].get("armies",[]):
+			if int(army.get("strength",0))>0 and int(army.get("morale",0))>0:
+				result[str(army.get("province",""))]="Feindliches Feldheer."
+	return result
 
 ## Ein jährliches Verlustbudget je Standort. Kein Mindestverlust je Verband:
 ## kleine und große Heere teilen Deckung, Import und Verluste proportional.
@@ -4093,6 +4393,13 @@ func _capture_province(province_id: String, new_owner: int, announce: bool = tru
 	var p := province(province_id)
 	if p.is_empty():
 		return
+	if int(p.owner)!=new_owner:
+		p.regional_project={}
+		for index in range(roads.size()-1,-1,-1):
+			var road: Dictionary=roads[index]
+			if not road.get("construction",{}).is_empty() and province_id in [str(road.from),str(road.to)]:
+				_note_for_house(int(road.builder),"Straßenbaustelle durch Besitzverlust aufgegeben; örtliche Vorräte bleiben erhalten.")
+				roads.remove_at(index)
 	_capture_reaction(int(p.owner), new_owner)
 	if int(p.get("blockade", 0)) > 0:
 		_release_blockade(p)
@@ -4560,6 +4867,9 @@ func snapshot() -> Dictionary:
 			"blockade_owner": int(p.get("blockade_owner", -1)),
 			"economic_focus":str(p.get("economic_focus","balanced")),
 			"focus_changed_month":int(p.get("focus_changed_month",-1)),
+			"production":p.production.duplicate(true),
+			"regional_project":p.regional_project.duplicate(true),
+			"logistics_sites":p.logistics_sites.duplicate(true),
 		})
 		for key in ["base_income", "initial_dev", "economic_share", "building_effects", "initial_buildings"]:
 			if p.has(key):
@@ -4572,6 +4882,7 @@ func snapshot() -> Dictionary:
 	data_state["month_index"] = calendar_index()
 	data_state["campaign_sandbox"] = campaign_sandbox
 	data_state["roads"] = roads.duplicate(true)
+	data_state["project_serial"] = project_serial
 	data_state["player"] = player
 	data_state["speed"] = speed
 	data_state["event_timer"] = event_timer
@@ -4742,6 +5053,10 @@ func restore(d: Dictionary) -> bool:
 	month = int(state.get("month", 1))
 	campaign_sandbox = bool(state.get("campaign_sandbox", false))
 	roads = (state.get("roads", []) as Array).duplicate(true)
+	project_serial = int(state.get("project_serial",0))
+	_last_production={}
+	_last_economy_month={}
+	_last_economy_orders={}
 	player = int(state.get("player", 0))
 	speed = int(state.get("speed", 0))
 	event_timer = int(state.get("event_timer", 9))

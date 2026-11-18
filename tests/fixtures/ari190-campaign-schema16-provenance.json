@@ -1,0 +1,47 @@
+{
+  "stage": "genuine-code18-ari190-schema16-research-preservation",
+  "created_utc": "2026-11-18T02:43:05.105711+00:00",
+  "source": {
+    "path": "build/verify/fortress-campaign/android/final-ari16.json",
+    "bytes": 71710,
+    "sha256": "8c767fa3e3f157bf8c2fa1f707c77e79a99db419fa78cd643782a302338e7ba8"
+  },
+  "fixture": {
+    "path": "tests/fixtures/ari190-campaign-schema16-original.json",
+    "bytes": 71710,
+    "sha256": "8c767fa3e3f157bf8c2fa1f707c77e79a99db419fa78cd643782a302338e7ba8"
+  },
+  "actual_prior_final_profile_receipt": {
+    "path": "build/verify/fortress-campaign/android/final-profile-receipt.json",
+    "bytes": 497,
+    "sha256": "e1178ef8ce93524b79a56e9efcb57ae94fc6e38e1506e2a79721efbdade6aaa4"
+  },
+  "actual_prior_runtime_receipt": {
+    "path": "build/verify/fortress-campaign/android/runtime-receipt.json",
+    "bytes": 10389,
+    "sha256": "830e6bdaa9b7cd64c02a4cb3186602aa3ff020f7987a7c7f96f94851db201070"
+  },
+  "actual_prior_install_receipt": {
+    "path": "build/verify/fortress-campaign/android/install-receipt.json",
+    "bytes": 633,
+    "sha256": "90457fa2653c61211d3f1b46b21dea6ec85ac4af75bed9f429fc12e6d827adfe"
+  },
+  "metadata": {
+    "app": "1.9.1",
+    "android_code": 18,
+    "schema": 16,
+    "player": 9,
+    "ruler": "Ari190",
+    "gold": 45,
+    "prestige": 24,
+    "month_index": 0,
+    "research": {
+      "active": "surveying",
+      "known": [],
+      "months": 6.0
+    },
+    "provinces": 108,
+    "houses": 10
+  },
+  "scope": "Byte-for-byte existing actual Android Code18 UI-saved Ari16 profile. No recreated current-source fixture, no ADB/emulator execution, no historical bytes changed."
+}

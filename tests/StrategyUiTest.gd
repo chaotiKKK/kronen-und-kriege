@@ -50,8 +50,11 @@ func _ready() -> void:
 		var level := int(main.game.province(str(p.id)).buildings.market)
 		main.game.house().gold = 1000
 		main.refresh()
+		var build_gold: int=main.game.house().gold
+		var build_price: int=main.game.regional_project_preview(str(p.id),"market").gold
 		inspector.action_buttons["build:market"].pressed.emit()
-		check(int(main.game.province(str(p.id)).buildings.market) == level + 1, "Bauen auf der Provinzseite führt echte lokale Aktion aus")
+		var project: Dictionary=main.game.province(str(p.id)).regional_project
+		check(not project.is_empty() and str(project.kind)=="market" and int(project.target_level)==level+1 and int(main.game.province(str(p.id)).buildings.market)==level and int(main.game.house().gold)==build_gold-build_price, "Bauen auf der Provinzseite startet den einmal bezahlten örtlichen Auftrag ohne vorzeitigen Stufenbonus")
 		if DisplayServer.get_name() != "headless":
 			await RenderingServer.frame_post_draw
 			get_viewport().get_texture().get_image().save_png("res://build/verify/strategy-province-buildings.png")

@@ -80,6 +80,10 @@ func _test_h5_walls() -> void:
 	g.effect_log.clear()
 	var result: Dictionary = g.build(str(capital["id"]), "walls")
 	_check(bool(result["ok"]), "H5-Mauern: Bau wurde abgelehnt.")
+	_check(int(capital.defense)==0 and int(capital.buildings.walls)==0,"H5-Mauern: Baubeginn erhöht noch nicht die Verteidigung.")
+	for construction_month in 48:
+		g._tick_regional_economy([])
+		if capital.regional_project.is_empty(): break
 	_need(g, "H5", "defense", 0, "H5-Mauern: Kein Verteidigungsbeleg.")
 	_check(int(capital["defense"]) > 0, "H5-Mauern: Verteidigung blieb 0.")
 	var n = _new_game(0)
@@ -88,6 +92,10 @@ func _test_h5_walls() -> void:
 	n.set_edge_enabled("H5", false)
 	n.effect_log.clear()
 	n.build(str(ncapital["id"]), "walls")
+	for construction_month in 48:
+		n._tick_regional_economy([])
+		if ncapital.regional_project.is_empty(): break
+	_check(int(ncapital.buildings.walls)==1,"H5-Mauern-Negativ: Der kontrollierte Bau wird tatsächlich fertig, auch wenn die Verteidigungskante abgeschaltet ist.")
 	_deny(n, "H5", "H5-Mauern-Negativ: Verteidigungsbeleg trotz deaktivierter Kante.")
 
 func _test_h6() -> void:

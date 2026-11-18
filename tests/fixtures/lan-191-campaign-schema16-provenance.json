@@ -1,0 +1,226 @@
+{
+  "stage": "genuine-published-campaign-schema16-preservation",
+  "created_utc": "2026-11-18T00:44:00.727885+00:00",
+  "source": {
+    "path": "build/verify/lan-release-1.9.1-20261118-000150-628-7a40e32c/host/profile/appdata/Godot/app_userdata/Kronen und Kriege/lan_partie.json",
+    "bytes": 71172,
+    "sha256": "2e2b8befa58ef22ec3547221af2b4a059d4b09df6264a028a012eb9aac563e40"
+  },
+  "fixture": {
+    "path": "tests/fixtures/lan-191-campaign-schema16-original.json",
+    "bytes": 71172,
+    "sha256": "2e2b8befa58ef22ec3547221af2b4a059d4b09df6264a028a012eb9aac563e40"
+  },
+  "preserved_copy": {
+    "path": "build/verify/production-design/compatibility/legacy/lan-191-campaign-schema16-original.json",
+    "bytes": 71172,
+    "sha256": "2e2b8befa58ef22ec3547221af2b4a059d4b09df6264a028a012eb9aac563e40"
+  },
+  "executable": {
+    "path": "build/exports/banger-queens-1.9.1-campaign.exe",
+    "bytes": 321441120,
+    "sha256": "4c73f9e72d3c10acba02d4d294489d6b3a38152ac6a0f78356fe8857ac365b28"
+  },
+  "ui_executable": {
+    "path": "build/exports/banger-queens-1.9.1-ui.exe",
+    "bytes": 321433632,
+    "sha256": "872fd8711b9776c0907c77a71d4c632d3305721f70eaa9ba0f647ef0294c89b4"
+  },
+  "original_bytes_unchanged": true,
+  "metadata": {
+    "app": "1.9.1",
+    "wire": 3,
+    "schema": 16,
+    "fingerprint": "dc8f13abb2f9b93c1aabfcf115f592df02c8af9ceb2b445127bdcefd22fd3903",
+    "catalog": "6112a370a9c26d1186059519e26742db7b63a10b4082c41e2fb2623b30f5f629",
+    "houses": 9,
+    "humans": [
+      0,
+      1
+    ],
+    "provinces": 108,
+    "roads": 0
+  },
+  "actual_packaged_run_summary": {
+    "stage": "packaged-lan-main-smoke",
+    "result": "PASS",
+    "run_id": "7a40e32ca5284b7db435314f3dcbb61e",
+    "version": "1.9.1",
+    "exe": "F:\\Crusader Kings III v1.18.3\\banger-queens-recovery-20261117\\build\\exports\\banger-queens-1.9.1-campaign.exe",
+    "exe_sha256": "4c73f9e72d3c10acba02d4d294489d6b3a38152ac6a0f78356fe8857ac365b28",
+    "host_pid": 39512,
+    "guest_pid": 20576,
+    "checks": 130,
+    "world_hash": "c6ff8b54d3d62a608694e8e42e80ba2ee59ea174e4ae0a01a5794323ea894f25",
+    "isolated_profiles": true,
+    "real_enet_between_processes": true,
+    "real_main_dispatch": true,
+    "province_focus_verified": true,
+    "select_army_and_march_verified": true,
+    "current_schema_save_resume_verified": true,
+    "schema_version": 16,
+    "physical_android_wlan_test": false,
+    "output": "F:\\Crusader Kings III v1.18.3\\banger-queens-recovery-20261117\\build\\verify\\lan-release-1.9.1-20261118-000150-628-7a40e32c"
+  },
+  "actual_pck_comparison": {
+    "method": "Read-only EmbeddedPack parser, no executable launched",
+    "common_script_data_entries": 124,
+    "different_entries": [
+      {
+        "path": "scripts/Main.gdc",
+        "campaign_sha256": "0cc2d90a7c3d5ba541681aedd309eb71667ec87308c4ea76ef7c12fe55b528fb",
+        "ui_sha256": "d7de2d7ec71741df09e5a5d62d6645db0a409960b75f8aa168bd242f01c2e732"
+      },
+      {
+        "path": "scripts/ModernInterface.gdc",
+        "campaign_sha256": "cbafd28678d9fe270ca933dfb10b0527dced5db9a5c0f9d6ba2663dc24f3d8dd",
+        "ui_sha256": "d84177be36daa9083c3aec1e94c730affa372451bae4648069566ddd3bb19985"
+      },
+      {
+        "path": "scripts/ProvinceInspector.gdc",
+        "campaign_sha256": "1675ee36ebe6c4865aa052ea175acedbc8a8e6d0f760809c12e1c598954f8bba",
+        "ui_sha256": "4f39fbe89159dd3d74b48b9ddadf6367391f323a6c5c5645cc95fce4b13ad45e"
+      },
+      {
+        "path": "scripts/ViewModelBuilder.gdc",
+        "campaign_sha256": "484fb3dadbc6d4620ef1296612ce6f53dd0fa8716c3d096a0c7373d4cd2d5d78",
+        "ui_sha256": "b65ae996adb52a30d16dcfb4f68aaf55083c6e6d37d389b1fc1d5be441000e39"
+      }
+    ],
+    "other_shared_script_and_data_payloads_byte_identical": true,
+    "code18_receipt": {
+      "path": "build/verify/fortress-campaign/package/run-02/static-package-receipt.json",
+      "bytes": 6340,
+      "sha256": "0bf03a36ec64e62a927738435dd82ce976a710268e2cfd25a049fca6375ac467"
+    },
+    "code19_receipt": {
+      "path": "build/verify/province-ui-simplification/package/run-01/static-package-receipt.json",
+      "bytes": 6328,
+      "sha256": "0a29180ee911b04f8307562cfafb8f1fb3b64b63c00f582697c9cb1ea303eacd"
+    },
+    "code19_family_inference": "Same save/LAN/gameplay rules and data payloads; no separately emitted UI19 LAN save claimed."
+  },
+  "original_evidence": [
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261118-000150-628-7a40e32c/summary.json",
+        "bytes": 933,
+        "sha256": "5a36c967588b92995d90173a81d108bfa744877adb98ea41f4fb0a7c87e3c997"
+      },
+      "copy": {
+        "path": "build/verify/production-design/compatibility/legacy/run-evidence/summary.json",
+        "bytes": 933,
+        "sha256": "5a36c967588b92995d90173a81d108bfa744877adb98ea41f4fb0a7c87e3c997"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261118-000150-628-7a40e32c/preparation.json",
+        "bytes": 582,
+        "sha256": "f532025db99c30afccbac105ff4832d4c3675bd50ce073adc433f57a40d29c2e"
+      },
+      "copy": {
+        "path": "build/verify/production-design/compatibility/legacy/run-evidence/preparation.json",
+        "bytes": 582,
+        "sha256": "f532025db99c30afccbac105ff4832d4c3675bd50ce073adc433f57a40d29c2e"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261118-000150-628-7a40e32c/host/launch.json",
+        "bytes": 2032,
+        "sha256": "d4c7fa5225cb5f9f1c2661fc0f2dfe8549aa5e2116904611917b1eb2439c27ff"
+      },
+      "copy": {
+        "path": "build/verify/production-design/compatibility/legacy/run-evidence/host/launch.json",
+        "bytes": 2032,
+        "sha256": "d4c7fa5225cb5f9f1c2661fc0f2dfe8549aa5e2116904611917b1eb2439c27ff"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261118-000150-628-7a40e32c/guest/launch.json",
+        "bytes": 2043,
+        "sha256": "4013313d387d624e5a4a012739ede586daeefa4923fa5028303f8b51795e5961"
+      },
+      "copy": {
+        "path": "build/verify/production-design/compatibility/legacy/run-evidence/guest/launch.json",
+        "bytes": 2043,
+        "sha256": "4013313d387d624e5a4a012739ede586daeefa4923fa5028303f8b51795e5961"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261118-000150-628-7a40e32c/host/expectations.json",
+        "bytes": 578,
+        "sha256": "82fd6b594a305db651b6686ddad92721e8ce578372fe25adb7c90c7092b4c316"
+      },
+      "copy": {
+        "path": "build/verify/production-design/compatibility/legacy/run-evidence/host/expectations.json",
+        "bytes": 578,
+        "sha256": "82fd6b594a305db651b6686ddad92721e8ce578372fe25adb7c90c7092b4c316"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261118-000150-628-7a40e32c/guest/expectations.json",
+        "bytes": 580,
+        "sha256": "eabcb6ba864ad19dc6d7c6999140bc19bae47f8f2d9fdaef979ee5cbe0783c0f"
+      },
+      "copy": {
+        "path": "build/verify/production-design/compatibility/legacy/run-evidence/guest/expectations.json",
+        "bytes": 580,
+        "sha256": "eabcb6ba864ad19dc6d7c6999140bc19bae47f8f2d9fdaef979ee5cbe0783c0f"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261118-000150-628-7a40e32c/host-result.json",
+        "bytes": 1263,
+        "sha256": "2eaa341df0e9e8ae56a93b8ee44e15f11355edcf76d6c7007be99ca6e8152132"
+      },
+      "copy": {
+        "path": "build/verify/production-design/compatibility/legacy/run-evidence/host-result.json",
+        "bytes": 1263,
+        "sha256": "2eaa341df0e9e8ae56a93b8ee44e15f11355edcf76d6c7007be99ca6e8152132"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261118-000150-628-7a40e32c/guest-result.json",
+        "bytes": 1550,
+        "sha256": "dd19a35a5b34f41ecf799c12348931951043931047d31cd551281d42de7a5c38"
+      },
+      "copy": {
+        "path": "build/verify/production-design/compatibility/legacy/run-evidence/guest-result.json",
+        "bytes": 1550,
+        "sha256": "dd19a35a5b34f41ecf799c12348931951043931047d31cd551281d42de7a5c38"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261118-000150-628-7a40e32c/host-resumed.json",
+        "bytes": 125,
+        "sha256": "5791d99b4450e4455a0939c193602bc9260cf9f29273065f890273b0aa32c865"
+      },
+      "copy": {
+        "path": "build/verify/production-design/compatibility/legacy/run-evidence/host-resumed.json",
+        "bytes": 125,
+        "sha256": "5791d99b4450e4455a0939c193602bc9260cf9f29273065f890273b0aa32c865"
+      }
+    },
+    {
+      "source": {
+        "path": "build/verify/lan-release-1.9.1-20261118-000150-628-7a40e32c/guest-resume-verified.json",
+        "bytes": 134,
+        "sha256": "a5a8d1e9017184beaf233ccd10823ee6e47ae60e182c522f2465d00a5e245748"
+      },
+      "copy": {
+        "path": "build/verify/production-design/compatibility/legacy/run-evidence/guest-resume-verified.json",
+        "bytes": 134,
+        "sha256": "a5a8d1e9017184beaf233ccd10823ee6e47ae60e182c522f2465d00a5e245748"
+      }
+    }
+  ],
+  "scope": "Existing package-created LAN bytes copied unchanged; no recreated source fixture, no relabelled identity, no EXE or Godot execution."
+}

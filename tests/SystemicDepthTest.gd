@@ -106,6 +106,10 @@ func _test_h5() -> void:
 	var before: int = int(capital["levy"])
 	var result: Dictionary = g.build(str(capital["id"]), "barracks")
 	_check(bool(result["ok"]), "H5: Kaserne konnte nicht gebaut werden.")
+	_check(int(capital.levy)==before and int(capital.buildings.barracks)==0,"H5: Ein bezahlter Baubeginn gewährt noch keinen fertigen Gebäudeeffekt.")
+	for construction_month in 48:
+		g._tick_regional_economy([])
+		if capital.regional_project.is_empty(): break
 	var effect: Dictionary = _find_effect(g, "H5", "levy", 0)
 	_check(not effect.is_empty(), "H5: Kein Effektbeleg für Kaserne.")
 	_check(int(effect.get("delta", 0)) > 0, "H5: Kaserne erhöht Levy nicht.")
@@ -122,6 +126,9 @@ func _test_h5() -> void:
 	control.set_edge_enabled("H5", false)
 	var control_result: Dictionary = control.build(str(control_capital["id"]), "barracks")
 	_check(bool(control_result["ok"]), "H5-Negativ: Bau wurde durch den Testhook blockiert.")
+	for construction_month in 48:
+		control._tick_regional_economy([])
+		if control_capital.regional_project.is_empty(): break
 	_check(_find_effect(control, "H5", "levy", 0).is_empty(), "H5-Negativ: Levy-Effekt lief trotz deaktivierter Kante.")
 	_check(int(control_capital["levy"]) == control_before, "H5-Negativ: Levy änderte sich ohne Verdrahtung.")
 	_check(int(control_capital["buildings"]["barracks"]) == 1, "H5-Negativ: Gebäude sollte trotzdem gebaut sein.")

@@ -21,7 +21,7 @@ func _ready() -> void:
 	var game = main.game
 	var gold: int = game.house().gold
 	var picker: OptionButton = inspector.focus_picker
-	check(picker.item_count == 3,"Drei ausschließende Ausrichtungen ohne zusätzlichen Hauptreiter")
+	check(picker.item_count == 4 and picker.get_item_metadata(3)=="workshops","Vier ausschließende Ausrichtungen einschließlich Werkstätten ohne zusätzlichen Hauptreiter")
 	picker.select(1)
 	picker.item_selected.emit(1)
 	await settle()

@@ -29,7 +29,7 @@ func _test_real_start(g) -> void:
 	check(preview.current_focus == "balanced" and preview.focus == "agriculture" and int(preview.cost) == cost,"Vorschau nennt echte Auswahl und gewichtete Kosten")
 	check(int(preview.projected_supply) == roundi(int(preview.current_supply) * 1.5),"Kornkammer erhöht lokale Versorgung um50Prozent")
 	var choices: Array = g.province_focus_choices(home)
-	check(choices.size() == 3 and not choices[0].enabled and choices[1].enabled,"Ein Wähler enthält drei wohldefinierte Schwerpunkte")
+	check(choices.size() == 4 and not choices[0].enabled and choices[1].enabled and choices[3].id == "workshops","Ein Wähler enthält die vier definierten Schwerpunkte einschließlich Werkstätten")
 	check(g.set_province_focus(home,"agriculture").ok,"Erster legaler Wechsel mit tatsächlicher Startkasse")
 	check(int(g.house().gold) == 140 - cost and p.economic_focus == "agriculture" and int(p.focus_changed_month) == 0,"Gold wird genau einmal gebucht und erster Wechselzeitpunkt gespeichert")
 	check(g.province_economy_preview(home,"trade").lock_months == 12,"Bindung beträgt volle zwölf Monate")

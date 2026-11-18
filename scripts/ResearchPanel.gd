@@ -146,6 +146,7 @@ func refresh(game, province_id: String = "") -> void:
 		_pending_id = ""
 	status_label.text = "Gastgeber bestätigt das Forschungsprojekt …" if pending else _message
 	scope_label.text = "Forschung gilt für das gesamte Haus %s. Geländeabhängige Wirkungen greifen nur in passenden eigenen Regionen." % house.name
+	scope_label.text += " Örtliche Straßen und freigeschaltete Depots baust du im Ausbau-Reiter."
 	if not province.is_empty():
 		scope_label.text += " Ausgewähltes Gebiet: %s." % province.name
 	progress_bar.visible = not active.is_empty()
@@ -154,7 +155,7 @@ func refresh(game, province_id: String = "") -> void:
 		progress_bar.value = 0
 	else:
 		var definition: Dictionary = Definitions.INNOVATIONS[active]
-		var total := int(definition.months)
+		var total := Definitions.research_duration(research)
 		var remaining := int(research.months)
 		_main.research_label.text = "%s · noch %d Monate · %d von %d Monaten abgeschlossen" % [definition.name, remaining, total - remaining, total]
 		progress_bar.value = clampf(float(total - remaining) / float(total) * 100, 0, 100)

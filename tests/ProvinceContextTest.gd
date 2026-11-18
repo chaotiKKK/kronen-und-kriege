@@ -43,7 +43,7 @@ func _ready() -> void:
 		await settle()
 		check(game.house().research.active == "surveying" and int(game.house().gold) == before-20, "Gemeinsamer Forschungsplan startet Vermessung genau einmal für20Gold")
 		main._hide_infrastructure()
-		check(inspector.fields.research.text.contains("Vermessung") and inspector.fields.research.text.contains("6"), "Provinzkurzstatus zeigt tatsächliches Projekt und Restzeit")
+		check(inspector.fields.research.text.contains("Vermessung") and inspector.fields.research.text.contains("noch %d Monate" % int(game.house().research.months)), "Provinzkurzstatus zeigt tatsächliches Projekt und dessen aktuelle Restzeit")
 	var border := ""
 	var remote := ""
 	for province in game.provinces:

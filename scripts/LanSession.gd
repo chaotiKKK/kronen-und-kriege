@@ -17,6 +17,7 @@ const Design = preload("res://scripts/HouseDesign.gd")
 const Infrastructure = preload("res://scripts/Infrastructure.gd")
 const Economy = preload("res://scripts/ProvinceEconomy.gd")
 const Naval = preload("res://scripts/NavalTransport.gd")
+const ProductionReport = preload("res://scripts/ProductionNetworkReport.gd")
 const TIMEOUT_MS := 8000
 # Tatsächlicher Fingerabdruck der veröffentlichten 1.9.0-Definitionen.
 # Der damalige Algorithmus band Ereignisse/Forschung, jedoch noch nicht FIELDS.
@@ -33,6 +34,9 @@ const LOCAL_CONTEXT_191_FINGERPRINT := "49efe0af83dff5e58b98eff1d9e2978a8200f835
 # tests/fixtures/lan-191-naval-schema15-{original,provenance}.json.
 # This identity authorizes local backup/migration only, never a network peer.
 const LOCAL_NAVAL_191_FINGERPRINT := "d1d986d4adf5714ae629f351b377f3f159d58b126f72ba3b62ca3fccbdd84582"
+# Genuine published campaign/code18 and UI/code19 save family, copied before
+# production changes. Exact package/bytes evidence accompanies the fixture.
+const LOCAL_CAMPAIGN_191_FINGERPRINT := "dc8f13abb2f9b93c1aabfcf115f592df02c8af9ceb2b445127bdcefd22fd3903"
 static var _cached_fingerprints: Dictionary = {}
 
 var phase := "idle"
@@ -83,8 +87,11 @@ func _content_fingerprint() -> String:
 	if route_fingerprint.is_empty():
 		return ""
 	var campaign_rules := _field_campaign_rules()
+	var production_rules := _production_rules()
 	var identity := {"schema":Save.CURRENT_VERSION,"protocol":Protocol.VERSION,
-		"commands":Protocol.FIELDS,"naval":Naval.RULES,"campaign":campaign_rules}
+		"commands":Protocol.FIELDS,"naval":Naval.RULES,"campaign":campaign_rules,
+		"production":production_rules,"innovations":Infrastructure.INNOVATIONS,
+		"province_economy":{"foci":Economy.FOCI,"lock_months":Economy.LOCK_MONTHS}}
 	var cache_key := str(_data.resource_path)+"|"+route_fingerprint+"|"+JSON.stringify(Save.canonical(identity))
 	if _cached_fingerprints.has(cache_key):
 		return str(_cached_fingerprints[cache_key])
@@ -93,7 +100,7 @@ func _content_fingerprint() -> String:
 		"events":_data.events(), "innovations":Infrastructure.INNOVATIONS, "commands":Protocol.FIELDS,
 		"province_economy":{"foci":Economy.FOCI,"lock_months":Economy.LOCK_MONTHS},
 		"naval_transport":{"rules":Naval.RULES,"route_fingerprint":route_fingerprint},
-		"field_campaign":campaign_rules}
+		"field_campaign":campaign_rules,"production":production_rules}
 	for path in ["res://data/atlas.json", "res://data/atlas_geometry.bin", "res://data/europe_geometry.json"]:
 		var digest := FileAccess.get_sha256(path)
 		if digest == "":
@@ -112,6 +119,16 @@ func _field_campaign_rules() -> Dictionary:
 		"recovery":load("res://scripts/ArmyRecovery.gd").RULES,
 		"planner":load("res://scripts/NavalCampaign.gd").RULES,
 		"army_limits":{"strength":Save.MAX_ARMY_STRENGTH,"upkeep":Save.MAX_ARMY_UPKEEP}}
+
+func _production_rules() -> Dictionary:
+	return {"regional":load("res://scripts/RegionalProduction.gd").RULES,
+		"transport":load("res://scripts/MaterialTransport.gd").RULES,
+		"depot":load("res://scripts/DepotSupply.gd").RULES,
+		"economy_planner":load("res://scripts/EconomyPlanner.gd").RULES,
+		"network_report":ProductionReport.RULES,
+		"snapshot_fields":Protocol.SNAPSHOT_FIELDS,
+		"legacy_research_durations":Infrastructure.LEGACY_RESEARCH_DURATIONS,
+		"game":GameScript.PRODUCTION_RULES}
 
 func _new_transport() -> void:
 	_transport = SceneMultiplayer.new()
@@ -445,6 +462,8 @@ func _local_legacy_backup_suffix(envelope: Dictionary, matching_catalog: bool) -
 		return ".pre-naval-schema14.bak"
 	if _app == "1.9.1" and Save.CURRENT_VERSION >= 16 and file_app == "1.9.1" and matching_catalog and Protocol.integer(envelope.get("v"),3,3) and Protocol.integer(envelope.state.get("schema_version"),15,15) and envelope.get("fingerprint") == LOCAL_NAVAL_191_FINGERPRINT:
 		return ".pre-campaign-schema15.bak"
+	if _app == "1.9.1" and Save.CURRENT_VERSION >= 17 and file_app == "1.9.1" and matching_catalog and Protocol.integer(envelope.get("v"),3,3) and Protocol.integer(envelope.state.get("schema_version"),16,16) and envelope.get("fingerprint") == LOCAL_CAMPAIGN_191_FINGERPRINT:
+		return ".pre-production-schema16.bak"
 	# 13/14 are source versions actually supported by the earlier regional
 	# family; increasing our target schema must not extend this source range.
 	if matching_catalog and file_app.begins_with("1.8.") and Protocol.integer(envelope.get("v"),2,Protocol.VERSION) and Protocol.integer(envelope.state.get("schema_version"),13,14):
@@ -822,10 +841,17 @@ func _broadcast_snapshot() -> void:
 			continue
 		var state: Dictionary = _authority.snapshot_for_peer(int(id))
 		_sanitize_paths(state)
-		_send(int(id), {"type":"snapshot", "revision":revision, "hash":Protocol.world_hash(state), "state":state, "missing_peer":_missing_peer, "all_over":all_houses_over})
+		var report: Dictionary=ProductionReport.pack(game._last_production,state)
+		if report.is_empty():
+			_set_status("Produktionsbericht konnte nicht vollständig geprüft werden.")
+			return
+		_send(int(id), {"type":"snapshot", "revision":revision, "hash":Protocol.world_hash(state), "state":state, "missing_peer":_missing_peer, "all_over":all_houses_over,"production_report":report})
 	_update_discovery()
 
 func _receive_snapshot(message: Dictionary) -> void:
+	if not Protocol.valid_snapshot_frame(message):
+		_set_status("Ungültiger vollständiger WLAN-Berichtsrahmen.")
+		return
 	if not Protocol.integer(message.get("revision"), 1, 2147483647) or not message.get("state") is Dictionary or not message.get("hash") is String or not message.get("missing_peer") is bool or not message.get("all_over") is bool:
 		_disconnected("Ungültiger WLAN-Spielstand.")
 		return
@@ -841,6 +867,11 @@ func _receive_snapshot(message: Dictionary) -> void:
 	if not next.restore(state) or Protocol.world_hash(next.snapshot()) != str(message.hash):
 		_disconnected("Der WLAN-Spielstand ist beschädigt oder nicht kompatibel.")
 		return
+	var report: Dictionary=ProductionReport.normalize(message.production_report,state)
+	if not bool(report.ok):
+		_set_status("Ungültiger Produktionsbericht: "+str(report.reason))
+		return
+	next._last_production=report.data
 	var starting := phase != "playing"
 	game = next
 	revision = next_revision

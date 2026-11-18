@@ -27,7 +27,7 @@ func _fixture():
 	g.province(a).economic_focus = "agriculture"
 	g.province(b).terrain_supply = 2
 	g.house().armies = [{"id":1,"province":b,"strength":500,"morale":100,"upkeep":2}]
-	g.roads = [{"from":a,"to":b,"builder":0,"months":0,"state":"complete"}]
+	g.roads = [{"from":a,"to":b,"builder":0,"months":0,"state":"complete","construction":{}}]
 	return {"game":g,"a":a,"b":b}
 
 func _test_network() -> void:

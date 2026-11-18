@@ -117,6 +117,25 @@ static func migrate_state(source: Dictionary) -> Dictionary:
 	if str(source.get("world_layout", "")) == "regions108":
 		var errors := validate_current(source)
 		return {"ok":errors.is_empty(), "data":source.duplicate(true), "errors":errors}
+	var source_version := int(source.get("schema_version",1))
+	if source_version>=17:
+		# Save already owns the strict raw contract. Resolve it at call time to
+		# avoid the Save→RegionMigration preload cycle, including direct callers.
+		var current_errors: Array = load("res://scripts/SaveGame.gd").validate(source)
+		if not current_errors.is_empty(): return _failure(source,"Ungültiger aktueller Ausgangsstand: "+"; ".join(current_errors))
+	# Production is native to the final region layout. Historical zero additions
+	# may be rebuilt below; an active modern49-region economy cannot be discarded
+	# or replicated into every successor region.
+	for province in source.get("provinces",[]):
+		if not province is Dictionary: continue
+		var production = province.get("production",{})
+		var project = province.get("regional_project",{})
+		var sites = province.get("logistics_sites",{})
+		if (production is Dictionary and (int(production.get("materials_u",0))!=0 or int(production.get("rate_carry",0))!=0)) or (project is Dictionary and not project.is_empty()) or (sites is Dictionary and int(sites.get("depot",0))!=0):
+			return _failure(source,"Aktive Produktion kann nicht verlustfrei vom alten Provinzlayout konvertiert werden.")
+	for road in source.get("roads",[]):
+		if road is Dictionary and road.get("construction",{}) is Dictionary and not road.get("construction",{}).is_empty():
+			return _failure(source,"Aktive Straßenbaurechnungen können nicht vom alten Provinzlayout konvertiert werden.")
 	var geometry := {}
 	for old in Legacy.provinces():
 		geometry[str(old.id)] = old
@@ -162,6 +181,9 @@ static func migrate_state(source: Dictionary) -> Dictionary:
 		region.buildings = {}
 		region.initial_buildings = {}
 		region.building_effects = {"market":0.0,"barracks":0.0,"walls":0.0}
+		region.production = {"materials_u":0,"rate_carry":0}
+		region.regional_project = {}
+		region.logistics_sites = {"depot":0}
 		var development := 0.0
 		var defense := 0.0
 		var owner_set := {}
@@ -200,6 +222,7 @@ static func migrate_state(source: Dictionary) -> Dictionary:
 		if int(old.get("siege", 0)) > 0 or int(old.get("blockade", 0)) > 0:
 			report.reset_sieges.append(id)
 	var out: Dictionary = source.duplicate(true)
+	if not out.has("project_serial"): out["project_serial"] = 0
 	out.provinces = []
 	for region in regions:
 		var saved: Dictionary = region.duplicate(true)
@@ -265,6 +288,10 @@ static func migrate_state(source: Dictionary) -> Dictionary:
 		road.to = successors[b]
 		road["legacy_connection"] = true
 		road["migration_origin"] = index
+		if source_version<17 and not road.has("construction"):
+			road["construction"] = {}
+		if source_version<17 and str(road.get("state",""))=="building" and road.get("construction",{}).is_empty():
+			road["legacy_construction"] = true
 		report.roads.append({"from":a,"to":b,"new_from":road.from,"new_to":road.to})
 	# SaveGame preloads this converter. Resolve its version at call time to
 	# avoid a preload cycle and a stale hardcoded schema after future upgrades.

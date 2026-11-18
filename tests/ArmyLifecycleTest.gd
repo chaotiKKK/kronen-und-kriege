@@ -88,15 +88,25 @@ func _test_monthly_ai() -> void:
 	var gold := int(g.houses[1].gold)
 	var prestige := int(g.houses[1].prestige)
 	g.advance_month()
+	var civilian_spending := _civilian_spending(g,1)
 	check(g.army_for(1).province == f.step,"Echter Monatswechsel bewegt KI zur Front")
 	check(int(g.province(f.target).siege) == 0,"Marschmonat enthält keine zweite Belagerungsaktion")
 	g.advance_month()
+	civilian_spending += _civilian_spending(g,1)
 	check(int(g.province(f.target).siege) > 0,"Nächster echter Monatswechsel setzt KI-Belagerung fort")
-	for index in 4: g.advance_month()
+	for index in 4:
+		g.advance_month()
+		civilian_spending += _civilian_spending(g,1)
 	check(int(g.province(f.target).owner) == 1,"KI erobert über mehrere echte Monate ohne Jahreswechsel")
-	check(int(g.houses[1].gold) == gold,"Monatlicher Militärzug wiederholt keine jährlichen Goldausgaben")
+	check(int(g.houses[1].gold) == gold-civilian_spending,"Monatlicher Militärzug wiederholt keine jährlichen Goldausgaben; nur belegte zivile Aufträge werden bezahlt")
 	check(int(g.houses[1].prestige) == prestige,"Hof und jährliche Prestigeaktionen laufen nicht monatlich")
 	check(g.houses[1].armies.size() == 1 and g.houses[1].claims.is_empty(),"Monats-KI stellt keine zusätzlichen Armeen auf und kauft keine Folgeansprüche")
+
+func _civilian_spending(g, hi: int) -> int:
+	var receipt: Dictionary=g._last_economy_orders.get(hi,{})
+	if receipt.is_empty(): return 0
+	check(int(receipt.month_index)==g.calendar_index() and ["province_focus","research","road","build","develop"].has(str(receipt.intent.id)),"Monatlicher ziviler Abzug hat eine aktuelle erlaubte bezahlte Absicht")
+	return int(receipt.gold_before)-int(receipt.gold_after)
 
 func _test_ai_year_boundary() -> void:
 	var f = _route_fixture()

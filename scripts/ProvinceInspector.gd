@@ -22,6 +22,14 @@ var _focus_province := ""
 var disband_box: VBoxContainer
 var _pending_disband: Dictionary = {}
 var _details_expanded := false
+var project_controls: Dictionary = {}
+var _project_data: Dictionary = {}
+var project_box: VBoxContainer
+var construction_cancel_box: VBoxContainer
+var _pending_construction_cancel: Dictionary = {}
+var _roads_expanded := false
+var _road_context := ""
+var _road_controls: Dictionary = {}
 
 func configure(host) -> void:
 	main = host
@@ -60,6 +68,7 @@ func configure(host) -> void:
 		sections[id] = content
 		add_child(content)
 	fields.buildings = _text("", 12, sections.buildings)
+	_configure_production()
 	focus_box = VBoxContainer.new()
 	focus_box.add_theme_constant_override("separation",4)
 	sections.buildings.add_child(focus_box)
@@ -83,6 +92,19 @@ func configure(host) -> void:
 		fields["build:"+key] = _text("", 11, box)
 	# Die bestehenden Test-/Shortcut-Referenzen bleiben dieselben Buttons.
 	main.develop_btn.reparent(sections.buildings)
+	fields.develop = _text("",11,sections.buildings)
+	_action("build:depot","",{"id":"build","key":"depot"},sections.buildings)
+	fields["build:depot"] = _text("",11,sections.buildings)
+	var roads_toggle: Button=main._button("Straßen ▸",_toggle_roads)
+	main.get_meta("modern_interface")._style_tool(roads_toggle)
+	roads_toggle.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	roads_toggle.clip_text=true
+	roads_toggle.tooltip_text="Örtliche Straßen und vollständige automatische Lieferübersicht"
+	roads_toggle.accessibility_name="Straßen und automatische Lieferübersicht ein- oder ausblenden"
+	sections.buildings.add_child(roads_toggle)
+	action_buttons.roads_toggle=roads_toggle
+	main.road_buttons.reparent(sections.buildings)
+	main.road_buttons.hide()
 	main.recruit_btn.reparent(sections.army)
 	main.attack_btn.reparent(sections.army)
 	fields.army = _text("",12,sections.army)
@@ -164,10 +186,265 @@ func _action(key: String, label: String, command: Dictionary, parent: Node) -> B
 
 func _command(command: Dictionary) -> void:
 	if main.game==null or main.game.province(selected_id).is_empty(): return
-	if str(command.get("id","")) in ["build","province_focus","army","fleet","relieve","recover_army","disband_army"] and not _owns_selection(): return
+	if main._lan_active() and main.lan_session.pending_command: return
+	if str(command.get("id","")) in ["build","develop","road","construction_cancel","construction_priority","province_focus","army","fleet","relieve","recover_army","disband_army"] and not _owns_selection(): return
 	var result: Dictionary = main._dispatch(command)
 	status.text = str(result.get("message", ""))
 	status.visible = not status.text.is_empty()
+
+func _configure_production() -> void:
+	fields.production=_text("",12,sections.buildings)
+	fields.construction_state=_text("",11,sections.buildings)
+	fields.construction_state.hide()
+	fields.production_last=_text("",11,sections.buildings)
+	fields.production_last.hide()
+	project_box=VBoxContainer.new()
+	project_box.add_theme_constant_override("separation",6)
+	sections.buildings.add_child(project_box)
+	construction_cancel_box=VBoxContainer.new()
+	construction_cancel_box.add_theme_constant_override("separation",4)
+	sections.buildings.add_child(construction_cancel_box)
+	fields.construction_confirmation=_text("",11,construction_cancel_box)
+	for entry in [["construction_confirm","Bau abbrechen",_confirm_construction_cancel],["construction_keep","Weiterbauen",_clear_construction_cancel.bind(true)]]:
+		var button: Button=main._button(str(entry[1]),entry[2])
+		main.get_meta("modern_interface")._style_tool(button)
+		button.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+		button.clip_text=true
+		construction_cancel_box.add_child(button)
+		action_buttons[str(entry[0])]=button
+	construction_cancel_box.hide()
+	fields.production_delivery=_text("",11,sections.buildings)
+
+func _toggle_roads() -> void:
+	if not _owns_selection(): return
+	_roads_expanded=not _roads_expanded
+	main.road_buttons.visible=_roads_expanded
+	action_buttons.roads_toggle.text="Straßen " + ("▾" if _roads_expanded else "▸")
+
+func _request_construction_cancel(project_id: int) -> void:
+	_clear_construction_cancel()
+	if not _owns_selection() or not _project_data.has(project_id): return
+	if main._lan_active() and main.lan_session.pending_command: return
+	var project: Dictionary=_project_data[project_id]
+	_pending_construction_cancel={"province":selected_id,"project":project_id,"started_month":int(project.started_month)}
+	fields.construction_confirmation.text="%s wirklich abbrechen?\nGold und verbrauchte Baustoffe werden nicht erstattet. Unbenutzter örtlicher Bestand bleibt." % str(project.name)
+	construction_cancel_box.reparent(project_controls[project_id].box)
+	construction_cancel_box.show()
+	for key in ["construction_confirm","construction_keep"]:
+		action_buttons[key].show(); action_buttons[key].disabled=false
+	action_buttons.construction_keep.grab_focus()
+	_reveal_construction_cancel.call_deferred()
+
+func _reveal_construction_cancel() -> void:
+	await get_tree().process_frame
+	if _pending_construction_cancel.is_empty() or not construction_cancel_box.is_visible_in_tree(): return
+	var scroll: Node=construction_cancel_box.get_parent()
+	while scroll!=null and not scroll is ScrollContainer: scroll=scroll.get_parent()
+	if scroll is ScrollContainer:
+		if construction_cancel_box.size.y<=scroll.size.y: scroll.ensure_control_visible(construction_cancel_box)
+		else: scroll.ensure_control_visible(action_buttons.construction_keep)
+
+func _clear_construction_cancel(focus_back: bool=false) -> void:
+	var id:=int(_pending_construction_cancel.get("project",0))
+	_pending_construction_cancel.clear()
+	if construction_cancel_box!=null:
+		construction_cancel_box.hide()
+		if construction_cancel_box.get_parent()!=sections.buildings: construction_cancel_box.reparent(sections.buildings)
+	if focus_back and project_controls.has(id) and project_controls[id].cancel.is_visible_in_tree(): project_controls[id].cancel.grab_focus()
+
+func _confirm_construction_cancel() -> void:
+	if not _construction_confirmation_matches():
+		_clear_construction_cancel(); return
+	var id:=int(_pending_construction_cancel.project)
+	_clear_construction_cancel()
+	_command({"id":"construction_cancel","project":id})
+
+func _construction_confirmation_matches() -> bool:
+	if _pending_construction_cancel.is_empty() or not _owns_selection() or selected_id!=str(_pending_construction_cancel.province): return false
+	var p: Dictionary=main.game.province(selected_id)
+	var id:=int(_pending_construction_cancel.project)
+	var current: Dictionary=p.get("regional_project",{})
+	if int(current.get("id",0))==id: return int(current.started_month)==int(_pending_construction_cancel.started_month)
+	for road in main.game.roads:
+		current=road.get("construction",{})
+		if int(current.get("id",0))==id and selected_id in [str(road.from),str(road.to)] and int(road.builder)==main.game.player:
+			return int(current.started_month)==int(_pending_construction_cancel.started_month)
+	return false
+
+func _prioritize_project(id: int) -> void:
+	if not _project_data.has(id): return
+	_command({"id":"construction_priority","project":id,"priority":1-int(_project_data[id].priority)})
+
+func _new_project_controls(id: int, parent: Node) -> Dictionary:
+	var box:=VBoxContainer.new()
+	box.add_theme_constant_override("separation",3)
+	parent.add_child(box)
+	var label:=_text("",12,box)
+	var bars: Array=[]
+	for name in ["Arbeitsfortschritt","Materialfortschritt"]:
+		var bar:=ProgressBar.new()
+		bar.name=str(name)+str(id)
+		bar.custom_minimum_size=Vector2(0,7)
+		bar.show_percentage=false
+		bar.mouse_filter=Control.MOUSE_FILTER_IGNORE
+		box.add_child(bar); bars.append(bar)
+	bars[1].hide()
+	var detail:=_text("",11,box)
+	detail.hide()
+	var priority: Button=main._button("Vorrang geben",_prioritize_project.bind(id))
+	var cancel: Button=main._button("Bau abbrechen …",_request_construction_cancel.bind(id))
+	for button in [priority,cancel]:
+		main.get_meta("modern_interface")._style_tool(button)
+		button.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+		button.clip_text=true
+		box.add_child(button)
+	return {"box":box,"text":label,"detail":detail,"progress":bars[0],"materials":bars[1],"priority":priority,"cancel":cancel}
+
+func _refresh_construction(vm: Dictionary, pending: bool) -> void:
+	var own: bool=vm.own
+	for key in ["production","production_delivery","develop"]: fields[key].visible=own
+	fields.production_last.hide()
+	action_buttons.roads_toggle.visible=own
+	if not own:
+		_clear_construction_cancel()
+		_clear_project_controls()
+		main.road_buttons.hide()
+		fields.construction_state.hide()
+		return
+	var data: Dictionary=vm.construction
+	if data.is_empty(): return
+	var capacity:=maxi(1,int(data.storage_capacity_u))
+	var ledger: Dictionary=data.ledger
+	var output:="frei +%s/Monat" % ViewModel.material_text(int(data.production_per_month_u)) if ledger.is_empty() else "+%s zuletzt" % ViewModel.material_text(int(ledger.produced_u))
+	fields.production.text="Baustoffe %s · %.0f %% Lager · %s" % [ViewModel.material_text(int(data.materials_u)),100.0*float(data.materials_u)/capacity,output]
+	fields.production.tooltip_text="Örtlicher Bestand und letzte Monatsproduktion. Lagerkapazität, freie Produktionsleistung und Arbeitsbilanz stehen unter Details."
+	fields.production_last.text="Noch keine Monatsabrechnung. Produktion und Bau teilen die Arbeit." if ledger.is_empty() else "Letzter Monat: +%s erzeugt · %s verbaut\nArbeit: %s Bau · %s Produktion" % [ViewModel.material_text(int(ledger.produced_u)),ViewModel.material_text(int(ledger.used_u)),ViewModel.material_text(int(ledger.work_u)),ViewModel.material_text(int(ledger.production_work_u))]
+	if not ledger.is_empty() and int(ledger.wasted_u)>0: fields.production_last.text+="\nLagerüberlauf: %s Baustoffe" % ViewModel.material_text(int(ledger.wasted_u))
+	if not str(data.blocked_reason).is_empty(): fields.production_last.text=str(data.blocked_reason)+"\n"+fields.production_last.text
+	if pending: fields.production_last.text="Gastgeber bestätigt den Auftrag …\n"+fields.production_last.text
+	fields.construction_state.text="Gastgeber bestätigt den Auftrag …" if pending else str(data.blocked_reason)
+	fields.construction_state.visible=not fields.construction_state.text.is_empty()
+	var delivery: Array[String]=[]
+	for flow in data.flows:
+		var incoming:=str(flow.to)==selected_id
+		var other: String=str(main.game.province(str(flow.from) if incoming else str(flow.to)).get("name","?"))
+		delivery.append(("Aus %s: %s" if incoming else "Nach %s: %s") % [other,ViewModel.material_text(int(flow.amount_u))])
+	fields.production_delivery.text="Lieferung: "+" · ".join(delivery.slice(0,2)) if not delivery.is_empty() else ""
+	fields.production_delivery.visible=not delivery.is_empty()
+	if delivery.size()>2: fields.production_delivery.text+=" · %d weitere unter Details" % (delivery.size()-2)
+	var road_key:=selected_id+"|"+"|".join(data.road_choices.map(func(choice):return str(choice.to)))
+	if _road_context!=road_key:
+		_clear_project_controls()
+		_road_context=road_key
+		for child in main.road_buttons.get_children(): _retire_control(child)
+		_road_controls.clear()
+		fields.delivery_details=_text("",11,main.road_buttons)
+		for choice in data.road_choices:
+			var target:=str(choice.to)
+			var button: Button=main._button("",_command.bind({"id":"road","to":target}))
+			button.set_meta("to",target)
+			button.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+			button.clip_text=true
+			main.get_meta("modern_interface")._style_tool(button)
+			main.road_buttons.add_child(button)
+			_road_controls[target]={"button":button,"detail":_text("",11,main.road_buttons)}
+	fields.delivery_details.text="Letzter Monat · automatische Fracht:\n"+"\n".join(delivery) if not delivery.is_empty() else "Noch keine Straßenlieferung im letzten Monat. Quellen behalten ihre Reserve und Baustellenbedarf; freie Wegkapazität begrenzt die Fracht."
+	fields.delivery_details.hide()
+	for choice in data.road_choices:
+		var controls: Dictionary=_road_controls[str(choice.to)]
+		controls.button.show()
+		controls.detail.show()
+		controls.button.text="Straße nach %s · %d Gold" % [choice.name,int(choice.gold)]
+		controls.button.disabled=not bool(choice.ok) or pending or main.game.game_over
+		controls.detail.text="%s · %d Gold\n" % [str(choice.name),int(choice.gold)]+(str(choice.reason) if not bool(choice.ok) else "%s Baustoffe · %s Arbeit\nBeide Enden bauen mit örtlicher Arbeit. Transport beginnt nach Fertigstellung." % [ViewModel.material_text(int(choice.material_total_u)),ViewModel.material_text(int(choice.work_total_u))])
+		controls.button.tooltip_text=controls.detail.text
+		for road in data.roads:
+			if not str(choice.to) in [str(road.from),str(road.to)]: continue
+			if not road.get("construction",{}).is_empty():
+				controls.button.hide(); controls.detail.hide()
+				continue
+			controls.button.text="Nach %s · %s" % [str(choice.name),"Fertig" if str(road.state)=="complete" else "Im Bau"]
+			controls.detail.text="Fertige Verbindung; transportiert bei unbestrittenem eigenem Besitz." if str(road.state)=="complete" else ("Historischer Bau: noch %d Arbeitsmonate; ruht bei Besitzverlust." % int(road.months) if road.get("construction",{}).is_empty() else "Beide Enden teilen ihre örtliche Arbeit mit anderen Vorhaben.")
+			if str(road.state)=="complete": controls.detail.hide()
+	main.road_buttons.visible=_roads_expanded
+	var projects: Array=[]
+	if not data.project.is_empty():
+		var regional: Dictionary=data.project.duplicate(true)
+		regional["name"]=main.game._construction_name(str(regional.kind))
+		projects.append(regional)
+	for road in data.roads:
+		if road.get("construction",{}).is_empty(): continue
+		var project: Dictionary=road.construction.duplicate(true)
+		project.merge({"kind":"road","name":"Straße nach "+str(main.game.province(str(road.to) if str(road.from)==selected_id else str(road.from)).get("name","?")),"work_done_u":0,"work_total_u":0,"material_spent_u":0,"material_total_u":0})
+		for leg in project.legs:
+			for key in ["work_done_u","work_total_u","material_spent_u","material_total_u"]: project[key]=int(project[key])+int(leg[key])
+		projects.append(project)
+	_project_data.clear()
+	for project in projects:
+		var id:=int(project.id)
+		_project_data[id]=project
+		if not project_controls.has(id): project_controls[id]=_new_project_controls(id,main.road_buttons if str(project.kind)=="road" else project_box)
+		var controls: Dictionary=project_controls[id]
+		controls.progress.value=100.0*float(project.work_done_u)/maxf(1,float(project.work_total_u))
+		controls.materials.value=100.0*float(project.material_spent_u)/maxf(1,float(project.material_total_u))
+		controls.text.text="%s · Arbeit %.0f %%" % [str(project.name),float(controls.progress.value)]+(" · Vorrang" if int(project.priority)==1 else "")
+		controls.progress.accessibility_name="Arbeit %.1f Prozent" % float(controls.progress.value)
+		controls.materials.accessibility_name="Baustoffe %.1f Prozent" % float(controls.materials.value)
+		controls.detail.text="Arbeit %s / %s · %.0f %%\nBaustoffe %s / %s · %.0f %%" % [ViewModel.material_text(int(project.work_done_u)),ViewModel.material_text(int(project.work_total_u)),float(controls.progress.value),ViewModel.material_text(int(project.material_spent_u)),ViewModel.material_text(int(project.material_total_u)),float(controls.materials.value)]
+		controls.priority.text="Normalen Vorrang" if int(project.priority)==1 else "Vorrang geben"
+		controls.priority.disabled=pending or main.game.game_over
+		controls.cancel.disabled=pending or main.game.game_over
+	for id in project_controls.keys():
+		if not _project_data.has(id): _retire_control(project_controls[id].box); project_controls.erase(id)
+	if not _pending_construction_cancel.is_empty() and not _construction_confirmation_matches(): _clear_construction_cancel()
+	for key in ["construction_confirm","construction_keep"]: action_buttons[key].disabled=pending or main.game.game_over
+	action_buttons.roads_toggle.disabled=pending or main.game.game_over
+	var develop: Dictionary=data.options.develop
+	main.develop_btn.text="Entwicklung +1 · %d Gold" % int(develop.gold) if int(vm.development)<10 else "Entwicklung 10/10 · Voll ausgebaut"
+	main.develop_btn.disabled=not bool(develop.ok) or pending or main.game.game_over
+	fields.develop.text=_construction_option_text(develop)
+	fields.develop.visible=int(vm.development)<10 and data.project.is_empty()
+	var depot: Dictionary=data.options.depot
+	var show_depot: bool=data.depot_visible
+	action_buttons["build:depot"].visible=show_depot
+	fields["build:depot"].visible=show_depot and int(data.depot)==0 and data.project.is_empty()
+	action_buttons["build:depot"].text="Versorgungsdepot · %d Gold" % int(depot.gold) if int(data.depot)==0 else "Versorgungsdepot · Fertig"
+	action_buttons["build:depot"].disabled=not bool(depot.ok) or pending or main.game.game_over
+	var depot_effect:="Bis zu %d Mann Durchsatz aus vorhandenem Kornkammerüberschuss über das eigene Netz an landbenachbarte eigene Frontheere." % int(data.depot_throughput)
+	fields["build:depot"].text=_construction_option_text(depot)
+	action_buttons["build:depot"].tooltip_text=depot_effect
+	var audit: Array[String]=["Produktion und Bau", "Baustoffe %s / %s · frei +%s pro Monat\nGemeinsame Monatsarbeit %s" % [ViewModel.material_text(int(data.materials_u)),ViewModel.material_text(capacity),ViewModel.material_text(int(data.production_per_month_u)),ViewModel.material_text(int(data.labor_capacity_u))],fields.production_last.text,fields.delivery_details.text]
+	for project in projects: audit.append(str(project.name)+"\n"+str(project_controls[int(project.id)].detail.text))
+	for building in vm.buildings: audit.append(str(building.name)+" · "+str(building.effect)+"\n"+_construction_option_audit(building.preview))
+	audit.append("Entwicklung +1\n"+_construction_option_audit(develop))
+	if show_depot: audit.append("Versorgungsdepot\n"+depot_effect+"\n"+_construction_option_audit(depot))
+	audit.append("Produktion und alle Baustellen teilen die örtliche Arbeit. Fehlende Baustoffe werden örtlich erzeugt oder aus wirklichen Überschüssen über fertige eigene Straßen geliefert.")
+	fields.details.text=str(vm.details)+"\n\n"+"\n\n".join(audit)
+
+func _construction_option_text(preview: Dictionary) -> String:
+	var text:="%s Baustoffe · %s Arbeit" % [ViewModel.material_text(int(preview.material_total_u)),ViewModel.material_text(int(preview.work_total_u))]
+	if not str(preview.reason).is_empty(): text+="\n"+str(preview.reason)
+	return text
+
+func _construction_option_audit(preview: Dictionary) -> String:
+	var text:="%d Gold · " % int(preview.gold)+_construction_option_text(preview)
+	if bool(preview.ok) and int(preview.local_months)>0: text+="\nÖrtliche Schätzung: %d Monate ohne Lieferungen und weitere Baustellen." % int(preview.local_months)
+	return text
+
+func _clear_project_controls() -> void:
+	for controls in project_controls.values(): _retire_control(controls.box)
+	project_controls.clear()
+	_project_data.clear()
+
+func _retire_control(node: Node) -> void:
+	# ModernInterface retains registered tool buttons for Touch scaling.
+	# Remove dynamic controls from that registry before releasing them.
+	if node.is_ancestor_of(construction_cancel_box): _clear_construction_cancel()
+	var ui=main.get_meta("modern_interface")
+	if node is Button: ui._hud_buttons.erase(node)
+	for button in node.find_children("*","Button",true,false): ui._hud_buttons.erase(button)
+	if node.get_parent()!=null: node.get_parent().remove_child(node)
+	node.queue_free()
 
 func _owns_selection() -> bool:
 	if main==null or main.game==null or selected_id.is_empty(): return false
@@ -267,7 +544,7 @@ func _refresh_focus(game, vm: Dictionary) -> void:
 	_preview_focus()
 
 func _refresh_supply(game, id: String) -> void:
-	var report: Dictionary = game.supply_report()
+	var report: Dictionary = main.supply_snapshot if not main.supply_snapshot.is_empty() else game.supply_report()
 	var supply: Dictionary = report.get("regions",{}).get(id,{})
 	fields.supply.visible = not supply.is_empty()
 	if supply.is_empty(): return
@@ -298,12 +575,17 @@ func fit_tabs() -> void:
 	section_tabs.columns = 1 if main.get_meta("modern_interface").text_scale > 1.3 else maxi(1,visible_tabs)
 
 func _refresh_administration(own: bool) -> void:
-	for key in ["build:market","build:barracks","build:walls","province_focus","research_plan"]:
+	for key in ["build:market","build:barracks","build:walls","build:depot","roads_toggle","province_focus","research_plan"]:
 		action_buttons[key].visible = own
 		if not own: action_buttons[key].disabled = true
 	action_buttons.research_plan.disabled = not own
 	main.develop_btn.visible = own
 	if own: return
+	_clear_construction_cancel()
+	_clear_project_controls()
+	main.road_buttons.hide()
+	for key in ["production","production_last","production_delivery","construction_state","develop","build:depot"]:
+		fields[key].text=""; fields[key].hide()
 	_focus_province = ""
 	focus_picker.clear()
 	focus_picker.disabled = true
@@ -319,8 +601,12 @@ func refresh(game, id: String) -> void:
 	if selection_changed:
 		status.text = ""
 		_clear_disband()
+		_clear_construction_cancel()
+		_roads_expanded=false
+		action_buttons.roads_toggle.text="Straßen ▸"
+		_road_context=""
 	selected_id = id
-	var vm: Dictionary = ViewModel.province(game,id)
+	var vm: Dictionary = ViewModel.province(game,id,main.production_report)
 	_refresh_administration(not vm.is_empty() and bool(vm.own))
 	section_tabs.visible = not vm.is_empty()
 	for key in section_buttons:
@@ -383,6 +669,7 @@ func refresh(game, id: String) -> void:
 	var pending: bool = main._lan_active() and main.lan_session.pending_command
 	_refresh_focus(game,vm)
 	_refresh_supply(game,id)
+	_refresh_construction(vm,pending)
 	if vm.own:
 		fields.buildings.text = "Entwicklung %d/10 · Örtliche Gebäude mit höchstens drei Stufen" % int(vm.development)
 		for building in vm.buildings:
@@ -391,8 +678,8 @@ func refresh(game, id: String) -> void:
 			action_buttons[key].text = "%s 3/3 · Voll ausgebaut" % building.name if complete else "%s %d/3 · %d Gold" % [building.name,building.level,building.cost]
 			action_buttons[key].disabled = not building.enabled or pending or game.game_over
 			action_buttons[key].tooltip_text = str(building.effect)
-			fields[key].visible = not complete
-			fields[key].text = "" if complete else str(building.effect) + ("\n"+str(building.reason) if not str(building.reason).is_empty() else "")
+			fields[key].visible = not complete and vm.construction.project.is_empty()
+			fields[key].text = "" if complete else _construction_option_text(building.preview)
 	_refresh_local_forces(game,vm,army)
 	action_buttons.army.disabled = not vm.own or int(game.house().gold) < 50 or pending or game.game_over
 	var armies: Array = game.house().get("armies",[])

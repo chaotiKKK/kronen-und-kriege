@@ -41,6 +41,8 @@ func _ready() -> void:
 		return
 	if not _previous_gameplay_release():
 		return
+	if not _previous_production_release():
+		return
 	print("LEGACYLANMIGRATIONTEST OK: %d Prüfungen" % checks)
 	get_tree().quit(0)
 
@@ -311,12 +313,82 @@ func _without_naval(protocol, state: Dictionary) -> String:
 
 func _project_unused_naval_fields(state: Dictionary) -> Dictionary:
 	var old := state.duplicate(true)
+	old.erase("project_serial")
+	for province in old.provinces:
+		for field in ["production","regional_project","logistics_sites"]:
+			if province.has(field):
+				var expected = {"materials_u":0,"rate_carry":0} if field=="production" else ({"depot":0} if field=="logistics_sites" else {})
+				check(province[field]==expected,"Historical migration adds only empty production state: "+field)
+				province.erase(field)
+	for road in old.get("roads",[]):
+		road.erase("construction")
+		road.erase("legacy_construction")
 	for house in old.houses:
 		for fleet in house.get("fleets",[]):
 			if fleet.has("last_naval_month"):
 				check(fleet.last_naval_month == -1,"Historische Flotte erhält ausschließlich eine unbenutzte Monatswache")
 				fleet.erase("last_naval_month")
 	return old
+
+func _previous_production_release() -> bool:
+	var protocol = load("res://scripts/LanProtocol.gd")
+	var fixture := "res://tests/fixtures/lan-191-campaign-schema16-original.json"
+	var hash := "2e2b8befa58ef22ec3547221af2b4a059d4b09df6264a028a012eb9aac563e40"
+	if not check(FileAccess.get_sha256(fixture)==hash,"Actual campaign16 original is unchanged and provenance-pinned"): return false
+	var raw := FileAccess.get_file_as_bytes(fixture)
+	var original: Dictionary = JSON.parse_string(raw.get_string_from_utf8())
+	if not check(original.app=="1.9.1" and original.v==3 and original.state.schema_version==16 and original.fingerprint=="dc8f13abb2f9b93c1aabfcf115f592df02c8af9ceb2b445127bdcefd22fd3903","Actual schema16 family is exact, not relabelled"): return false
+	var session = load("res://scripts/LanSession.gd").new()
+	session.discovery_enabled = false
+	add_child(session)
+	if not check(session.host("Production16migration","Host",0,56000+OS.get_process_id()%1000).ok,"Own lobby for genuine16local migration"): return false
+	var stem := "user://previous-production-%d-%d" % [OS.get_process_id(),Time.get_ticks_usec()]
+	var path := stem+"-load.json"
+	var suffix := ".pre-production-schema16.bak"
+	_write_bytes(path,raw)
+	check(not protocol.handshake_error(original,session._app,session._fingerprint).is_empty(),"Old16peer remains rejected on the live wire")
+	var loaded: Dictionary = session.load_host_lobby(path)
+	if not check(loaded.ok,"Actual16file migrates locally with new production: "+str(loaded.message)):
+		session.close_session()
+		return false
+	var projected := _project_unused_naval_fields(session.game.snapshot())
+	projected.schema_version = 16
+	# This original has no fleets, so no naval-month projection is removed.
+	if not check(Save.state_equal(projected,original.state),"Actual16migration preserves every prior shared/personal world field"): return false
+	if not check(FileAccess.get_file_as_bytes(path)==raw and FileAccess.get_file_as_bytes(path+suffix)==raw,"Local16load preserves source and byte-exact backup"): return false
+	var live: Dictionary = session.game.snapshot()
+	var direct := stem+"-direct.json"
+	_write_bytes(direct,raw)
+	if not check(session.save_host(direct).ok and FileAccess.get_file_as_bytes(direct+suffix)==raw and session.game.snapshot()==live,"Never-loaded genuine16target is protected before direct overwrite"): return false
+	for variant in ["unknown_hash","current_hash","app","wire","schema15","schema17","future_schema","catalog","malformed_production"]:
+		var bad := original.duplicate(true)
+		match variant:
+			"unknown_hash": bad.fingerprint = "unknown-schema16"
+			"current_hash": bad.fingerprint = session._fingerprint
+			"app": bad.app = "1.9.0"
+			"wire": bad.v = 2
+			"schema15": bad.state.schema_version = 15
+			"schema17": bad.state.schema_version = 17
+			"future_schema": bad.state.schema_version = Save.CURRENT_VERSION+1
+			"catalog": bad.state.region_catalog_hash = "wrong-catalog"
+			"malformed_production": bad.state.provinces[0].production = null
+		var bad_path := stem+"-"+str(variant)+".json"
+		var bytes := JSON.stringify(bad).to_utf8_buffer()
+		_write_bytes(bad_path,bytes)
+		if not check(not session.load_host_lobby(bad_path).ok and not session.save_host(bad_path).ok,"Unknown/contradictory16identity rejects both file paths: "+variant): return false
+		if not check(FileAccess.get_file_as_bytes(bad_path)==bytes and session.game.snapshot()==live and not FileAccess.file_exists(bad_path+suffix),"Rejected16file preserves source/liveworld/backups: "+variant): return false
+	var collision := stem+"-collision.json"
+	_write_bytes(collision,raw)
+	_write_bytes(collision+suffix,"unrelated".to_utf8_buffer())
+	if not check(session.load_host_lobby(collision).ok and FileAccess.get_file_as_string(collision+suffix)=="unrelated" and FileAccess.get_file_as_bytes(collision+".pre-regions-"+hash.substr(0,16)+".bak")==raw,"16backup collision preserves unrelated history and exact original"): return false
+	var blocked := stem+"-blocked.json"
+	_write_bytes(blocked,raw)
+	DirAccess.make_dir_absolute(ProjectSettings.globalize_path(blocked+suffix))
+	if not check(not session.load_host_lobby(blocked).ok and not session.save_host(blocked).ok and FileAccess.get_file_as_bytes(blocked)==raw and session.game.snapshot()==live,"Unwritable16backup prevents both paths without mutation"): return false
+	check(FileAccess.get_sha256(fixture)==hash,"Historical16fixture remains immutable after all cases")
+	session.close_session()
+	session.queue_free()
+	return true
 
 func _write_bytes(path: String, bytes: PackedByteArray) -> void:
 	var file := FileAccess.open(path, FileAccess.WRITE)

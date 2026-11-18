@@ -92,7 +92,7 @@ func _route(id: String, command: Dictionary) -> Dictionary:
 	var refresh: Array = FULL_REFRESH.duplicate()
 	# Modellaktionen melden aufgelöste Militärbefehle selbst. Navigation und
 	# reine Vorbedingungsfehler dürfen keine zweite dauerhafte Notiz erzeugen.
-	var log_result := id not in ["attack","siege","march","claim","army","fleet","blockade","select_army","transport_army","relieve","recover_army","disband_army"]
+	var log_result := id not in ["attack","siege","march","claim","army","fleet","blockade","select_army","transport_army","relieve","recover_army","disband_army","build","develop","road","province_focus","construction_cancel","construction_priority"]
 	match id:
 		"continue_sandbox":
 			raw = game.continue_sandbox()
@@ -159,6 +159,12 @@ func _route(id: String, command: Dictionary) -> Dictionary:
 			if selection == "":
 				return _blocked("invalid", "Keine Provinz gewählt.")
 			raw = game.set_province_focus(selection, str(command.get("focus", "")))
+		"construction_cancel":
+			if selection == "": return _blocked("invalid", "Keine Provinz gewählt.")
+			raw=game.cancel_construction(selection,int(command.get("project",-1)))
+		"construction_priority":
+			if selection == "": return _blocked("invalid", "Keine Provinz gewählt.")
+			raw=game.prioritize_construction(selection,int(command.get("project",-1)),int(command.get("priority",-1)))
 		"set_tax":
 			var current_tax := int(game.house()["laws"]["tax"])
 			raw = game.set_law("tax", str((current_tax + 1) % 3))
@@ -255,7 +261,7 @@ func _route(id: String, command: Dictionary) -> Dictionary:
 func _finish(raw: Dictionary, before: Dictionary, refresh: Array, log_result: bool) -> Dictionary:
 	var ok := bool(raw.get("ok", false))
 	var message := str(raw.get("msg", ""))
-	if log_result and message != "":
+	if ok and log_result and message != "":
 		game.note(message)
 	var result := {
 		"ok": ok,

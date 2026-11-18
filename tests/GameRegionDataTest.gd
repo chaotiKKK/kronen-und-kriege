@@ -71,14 +71,24 @@ func _ready() -> void:
 	if not check(capacity == {"maximum":1000, "recruit":40, "recruit_cost":8, "develop":30, "develop_cost":13, "annual_flat":1}, "Viertelregion erhält Viertelkapazität und anteilige Kosten"):
 		return
 	var growth_game = load("res://scripts/Game.gd").new(load("res://scripts/Data.gd"), 0)
-	growth_game.provinces = [{"id":"quarter", "name":"Viertel", "owner":0, "dev":3, "levy":100, "economic_share":0.25}, {"levy":100, "economic_share":0.75}]
+	# Controlled capacity fixture still uses complete current province records.
+	var quarter_region: Dictionary=growth_game.provinces[0].duplicate(true)
+	quarter_region.merge({"id":"quarter","name":"Viertel","owner":0,"dev":3,"levy":100,"economic_share":0.25},true)
+	var remainder_region: Dictionary=growth_game.provinces[1].duplicate(true)
+	remainder_region.merge({"id":"remainder","owner":0,"levy":100,"economic_share":0.75},true)
+	growth_game.provinces = [quarter_region,remainder_region]
 	growth_game._regenerate_province_levies()
 	if not check(int(growth_game.provinces[0].levy) == 103 and int(growth_game.provinces[1].levy) == 106, "Jährlicher Flachbonus skaliert mit der Regionskapazität"):
 		return
 	growth_game.houses[0].gold = 100
 	if not check(bool(growth_game.recruit("quarter").ok) and int(growth_game.provinces[0].levy) == 143 and int(growth_game.houses[0].gold) == 92, "Werbung nutzt echte Regionskosten und Kapazität"):
 		return
-	if not check(bool(growth_game.develop("quarter").ok) and int(growth_game.provinces[0].levy) == 173 and int(growth_game.houses[0].gold) == 79, "Ausbau nutzt echte Regionskosten und Kapazität"):
+	if not check(bool(growth_game.develop("quarter").ok) and int(growth_game.provinces[0].levy) == 143 and int(growth_game.provinces[0].dev)==3 and int(growth_game.houses[0].gold) == 79, "Ausbau bezahlt echte Regionskosten und gewährt vor Fertigstellung keinen Kapazitätseffekt"):
+		return
+	for month_index in 36:
+		growth_game._tick_regional_economy([])
+		if growth_game.provinces[0].regional_project.is_empty(): break
+	if not check(growth_game.provinces[0].regional_project.is_empty() and int(growth_game.provinces[0].levy)==173 and int(growth_game.provinces[0].dev)==4 and int(growth_game.houses[0].gold)==79,"Regulär örtlich erzeugte Baustoffe und Arbeit vollenden den Ausbau mit genau einem Kapazitätseffekt und ohne weitere Goldzahlung"):
 		return
 	growth_game.provinces[0].levy = 1100
 	if not check(not bool(growth_game.recruit("quarter").ok) and int(growth_game.houses[0].gold) == 79 and int(growth_game.provinces[0].levy) == 1100, "Volle Region kostet kein Gold und verliert keine vorhandenen Truppen"):

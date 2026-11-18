@@ -10,6 +10,7 @@ var phase: int = 0
 var last_pos := Vector2.ZERO
 var dev_before: int = 0
 var gold_before: int = 0
+var expected_cost: int = 0
 var touch_pos := Vector2.ZERO
 var target_id: String = ""
 var _checks: int = 0
@@ -23,6 +24,8 @@ func _ready() -> void:
 	DisplayServer.window_set_size(Vector2i(1280, 720))
 	# Hauswahl überspringen: als Falkenried starten, damit die Karte bedienbar ist.
 	main._start(0)
+	main.game.speed=0
+	main.settings.autosave=false
 
 func _centroid(poly: Array) -> Vector2:
 	var sum := Vector2.ZERO
@@ -99,6 +102,7 @@ func _process(_delta: float) -> void:
 		4:
 			dev_before = int(main.game.province(target_id)["dev"])
 			gold_before = int(main.game.house()["gold"])
+			expected_cost=int(main.game.regional_project_preview(target_id,"develop").gold)
 			var r: Rect2 = main.develop_btn.get_global_rect()
 			_touch(r.get_center(), true)
 			phase = 5
@@ -108,15 +112,16 @@ func _process(_delta: float) -> void:
 		6:
 			var dev_after: int = int(main.game.province(target_id)["dev"])
 			var gold_after: int = int(main.game.house()["gold"])
-			if dev_after != dev_before + 1:
-				_fail("Ausbau-Button reagierte nicht auf Touch (Entwicklung %d -> %d)" % [dev_before, dev_after])
+			var project: Dictionary=main.game.province(target_id).regional_project
+			if project.is_empty() or str(project.kind)!="develop" or int(project.target_level)!=dev_before+1 or dev_after!=dev_before:
+				_fail("Touch muss einen Entwicklungsauftrag ohne sofortigen Stufenbonus starten (Projekt %s, Entwicklung %d -> %d)" % [project,dev_before,dev_after])
 				return
-			if not gold_after < gold_before:
+			if gold_after != gold_before-expected_cost:
 				_fail("Gold wurde nicht abgezogen (%d -> %d)" % [gold_before, gold_after])
 				return
-			if not _check(dev_after == dev_before + 1 and gold_after < gold_before, "Der Touch-Ausbau ist unvollständig."):
+			if not _check(not project.is_empty() and dev_after==dev_before and gold_after==gold_before-expected_cost, "Der ScreenTouch startet das korrekt bezahlte zeitgebundene Ausbauvorhaben."):
 				return
-			print("TOUCHTEST OK: Provinz per InputEventScreenTouch gewählt, Ausbau per Touch ausgelöst (%d -> %d Entwicklung, Gold %d -> %d); %d Prüfungen." % [dev_before, dev_after, gold_before, gold_after, _checks])
+			print("TOUCHTEST OK: Provinz per InputEventScreenTouch gewählt, bezahlter Ausbauauftrag per Touch ausgelöst (Entwicklung bleibt %d bis Fertigstellung, Gold %d -> %d); %d Prüfungen." % [dev_after,gold_before,gold_after,_checks])
 			get_tree().quit(0)
 
 func _check(condition: bool, message: String) -> bool:

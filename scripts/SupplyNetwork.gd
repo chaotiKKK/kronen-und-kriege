@@ -2,7 +2,7 @@ extends RefCounted
 ## Abgeleitete, ganzzahlige Versorgung; weder Zustandsänderung noch Nahrungsvorrat.
 ## Armeen gehören bereits dem angefragten Haus. Kapazitäten enthalten den Bonus.
 
-static func calculate(provinces: Array, roads: Array, armies: Array, house_index: int, local_capacities: Dictionary, agriculture_bonuses: Dictionary) -> Dictionary:
+static func calculate(provinces: Array, roads: Array, armies: Array, house_index: int, local_capacities: Dictionary, agriculture_bonuses: Dictionary, blocked: Dictionary = {}) -> Dictionary:
 	var catalog := {}
 	var own := {}
 	var demand := {}
@@ -30,7 +30,7 @@ static func calculate(provinces: Array, roads: Array, armies: Array, house_index
 		var needed := int(demand.get(id,0))
 		var available := mini(maxi(0,int(agriculture_bonuses.get(id,0))),maxi(0,capacity-needed)) if own.has(id) else 0
 		regions[id] = {"demand":needed,"local_capacity":capacity,"export_available":available,"export":0,"import":0,"shortfall":maxi(0,needed-capacity)}
-	var edges := _roads(roads,catalog,own,house_index)
+	var edges := _roads(roads,catalog,own,house_index,blocked)
 	var graph := {}
 	var own_ids: Array = own.keys()
 	own_ids.sort()
@@ -58,7 +58,7 @@ static func calculate(provinces: Array, roads: Array, armies: Array, house_index
 		networks.append(_distribute(members,regions))
 	return {"regions":regions,"roads":edges,"networks":networks}
 
-static func _roads(roads: Array, catalog: Dictionary, own: Dictionary, house_index: int) -> Array:
+static func _roads(roads: Array, catalog: Dictionary, own: Dictionary, house_index: int, blocked: Dictionary = {}) -> Array:
 	# Gegenläufige/mehrfach gespeicherte Kanten teilen genau eine Verbindung.
 	# Falls alte Daten eine Baustelle und fertige Kante enthalten, gilt die fertige.
 	var unique := {}
@@ -89,6 +89,8 @@ static func _roads(roads: Array, catalog: Dictionary, own: Dictionary, house_ind
 			reason = "Straßenendpunkte stehen nicht beide unter eigener Kontrolle."
 		elif _hostile_siege(catalog[a],house_index) or _hostile_siege(catalog[b],house_index):
 			reason = "Feindliche Belagerung unterbricht die Versorgung."
+		elif blocked.has(a) or blocked.has(b):
+			reason = "Fremdes Feldheer unterbricht die Versorgung."
 		result.append({"from":a,"to":b,"active":reason.is_empty(),"reason":reason})
 	result.sort_custom(func(a: Dictionary,b: Dictionary) -> bool:
 		return a.from < b.from if a.from != b.from else a.to < b.to)

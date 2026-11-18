@@ -61,10 +61,10 @@ func _ready() -> void:
 	for month in 2:
 		main.game.advance_month()
 	panel.refresh(main.game)
-	check(absf(panel.progress_bar.value - 100.0 / 3.0) < 0.1 and main.research_label.text.contains("4 Monate"), "Fortschritt basiert auf zwei von sechs tatsächlich verstrichenen Monaten")
+	check(absf(panel.progress_bar.value - 50.0) < 0.1 and main.research_label.text.contains("2 Monate"), "Fortschritt basiert auf zwei von vier tatsächlich verstrichenen Monaten")
 	panel.set_branch("Medizin")
 	check(panel.progress_bar.visible and main.research_label.text.contains("Vermessung"), "Aktiver Fortschritt bleibt auch bei anderem Zweig sichtbar")
-	for month in 4:
+	for month in 2:
 		main.game.advance_month()
 	panel.refresh(main.game)
 	check(main.game.house().research.known.has("surveying") and main.research_buttons["surveying"].text.contains("Erforscht"), "Abgeschlossene Forschung erhält ihren dauerhaften Status")

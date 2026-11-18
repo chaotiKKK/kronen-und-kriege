@@ -18,7 +18,13 @@ extends RefCounted
 ## erhält alle vorhandenen Felder und ergänzt nur neue Pflichtfelder mit
 ## deterministischen Defaults. Sie überschreibt keine unbekannten Felder.
 
-const CURRENT_VERSION := 16
+const CURRENT_VERSION := 17
+const Production = preload("res://scripts/RegionalProduction.gd")
+const MAX_PRODUCTION_UNITS := Production.MAX_UNITS
+const MAX_PROJECT_SERIAL := Production.MAX_SERIAL
+const REGIONAL_PROJECT_FIELDS := ["id","builder","kind","target_level","paid_gold","material_total_u","material_spent_u","work_total_u","work_done_u","priority","started_month"]
+const ROAD_CONSTRUCTION_FIELDS := ["id","paid_gold","priority","started_month","legs"]
+const CONSTRUCTION_LEG_FIELDS := ["province","material_total_u","material_spent_u","work_total_u","work_done_u"]
 const CampaignLimits = preload("res://scripts/CampaignLimits.gd")
 const MAX_ARMY_STRENGTH := CampaignLimits.MAX_ARMY_STRENGTH
 const MAX_ARMY_UPKEEP := CampaignLimits.MAX_ARMY_UPKEEP
@@ -58,9 +64,9 @@ const REQUIRED_TOP_LEVEL := [
 	"game_over", "log", "pending", "houses", "provinces", "opinion",
 	"cooldowns", "captive", "scandal", "custom", "victory",
 	"calendar_version", "month_index", "campaign_sandbox",
-	"roads",
+	"roads", "project_serial",
 ]
-const REQUIRED_PROVINCE := ["id", "name", "owner", "dev", "levy", "buildings", "defense", "siege", "siege_owner", "blockade", "blockade_owner", "economic_focus", "focus_changed_month"]
+const REQUIRED_PROVINCE := ["id", "name", "owner", "dev", "levy", "buildings", "defense", "siege", "siege_owner", "blockade", "blockade_owner", "economic_focus", "focus_changed_month", "production", "regional_project", "logistics_sites"]
 const REQUIRED_HOUSE := [
 	"name", "color", "gold", "prestige", "legitimacy", "capital", "realm", "ruler",
 	"spouse", "children", "heir", "heir_age", "pregnant", "lover_house",
@@ -73,11 +79,15 @@ const REQUIRED_HOUSE := [
 static func migrate(data: Dictionary) -> Dictionary:
 	var errors: Array = []
 	var out: Dictionary = data.duplicate(true)
+	if out.has("schema_version") and not _bounded_integer(out.schema_version,1,CURRENT_VERSION):
+		return {"ok":false,"data":out,"from_version":0,"to_version":CURRENT_VERSION,"errors":["Ungültige oder nicht unterstützte Schema-Version."]}
 	var from_version: int = int(out.get("schema_version", 1))
+	errors.append_array(_research_fields(out,from_version))
 	errors.append_array(_siege_dates(out))
 	errors.append_array(_focus_fields(out,from_version >= 14))
 	errors.append_array(_naval_dates(out,from_version >= 15))
 	errors.append_array(_army_bounds(out,from_version >= 16))
+	errors.append_array(_production_fields(out,from_version >= 17))
 	if not errors.is_empty():
 		return {"ok":false,"data":out,"from_version":from_version,"to_version":CURRENT_VERSION,"errors":errors}
 	if from_version < 1:
@@ -119,6 +129,9 @@ static func migrate(data: Dictionary) -> Dictionary:
 	out["scandal"] = int(out.get("scandal", 0))
 	out["custom"] = bool(out.get("custom", false))
 	out["victory"] = bool(out.get("victory", false))
+	if not out.has("project_serial"):
+		out["project_serial"] = 0
+	out["project_serial"] = int(out["project_serial"])
 	out["houses"] = _migrate_houses(out.get("houses", []), errors)
 	out["provinces"] = _migrate_provinces(out.get("provinces", []), errors)
 	for h in out["houses"]:
@@ -128,6 +141,17 @@ static func migrate(data: Dictionary) -> Dictionary:
 			h["research"] = InfrastructureScript.initial_research()
 	if not out.has("roads"):
 		out["roads"] = []
+	for road in out["roads"]:
+		if not road.has("construction"):
+			road["construction"] = {}
+		if from_version < 17 and str(road.get("state","")) == "building" and road.construction.is_empty():
+			road["legacy_construction"] = true
+		if not road.construction.is_empty():
+			for field in ["id","paid_gold","priority","started_month"]:
+				road.construction[field] = int(road.construction[field])
+			for leg in road.construction.legs:
+				for field in ["material_total_u","material_spent_u","work_total_u","work_done_u"]:
+					leg[field] = int(leg[field])
 	if str(out.get("world_layout", "")) == "regions108":
 		errors.append_array(RegionMigrationScript.validate_current(out))
 	errors.append_array(InfrastructureScript.validate(out))
@@ -150,6 +174,7 @@ static func validate(data: Dictionary) -> Array:
 	errors.append_array(_siege_dates(data))
 	errors.append_array(_naval_dates(data,true))
 	errors.append_array(_army_bounds(data,true))
+	errors.append_array(_production_fields(data,true))
 	# Pflichtfelder am Rohstand prüfen, bevor migrate() Defaults ergänzt.
 	# Sonst würde validate() einen Feldverlust nie bemerken.
 	if int(data.get("schema_version", 0)) != CURRENT_VERSION:
@@ -622,6 +647,198 @@ static func _focus_fields(data: Dictionary, required: bool) -> Array:
 				errors.append("Ungültiger oder fehlender Schwerpunktzeitpunkt.")
 	return errors
 
+static func _bounded_integer(value, minimum: int, maximum: int) -> bool:
+	return (value is int or value is float) and is_finite(float(value)) and floor(float(value))==float(value) and value>=minimum and value<=maximum
+
+static func _research_fields(data: Dictionary, source_version: int) -> Array:
+	var errors: Array=[]
+	var houses = data.get("houses",[])
+	if not houses is Array: return errors
+	for house in houses:
+		if not house is Dictionary: continue
+		if not house.has("research"):
+			if source_version>=12: errors.append("Forschungsstand fehlt im aktuellen Save.")
+			continue
+		var research = house.research
+		if research is Dictionary and source_version<17:
+			var active = research.get("active")
+			if active is String and InfrastructureScript.LEGACY_RESEARCH_DURATIONS.has(active) and not research.has("legacy_duration"):
+				research["legacy_duration"]=int(InfrastructureScript.LEGACY_RESEARCH_DURATIONS[active])
+		var problems: Array=InfrastructureScript.research_errors(research)
+		errors.append_array(problems)
+		if problems.is_empty():
+			research.months=int(research.months)
+			if research.has("legacy_duration"): research.legacy_duration=int(research.legacy_duration)
+	return errors
+
+static func _exact_fields(value: Dictionary, fields: Array) -> bool:
+	if value.size()!=fields.size(): return false
+	for field in fields:
+		if not value.has(field): return false
+	return true
+
+static func _builder_knows(houses, builder, innovation: String) -> bool:
+	if not houses is Array or not _bounded_integer(builder,0,houses.size()-1): return false
+	var house = houses[int(builder)]
+	if not house is Dictionary: return false
+	var research = house.get("research")
+	return research is Dictionary and research.get("known") is Array and research.known.has(innovation)
+
+static func _construction_progress(value: Dictionary, allow_complete: bool) -> Array:
+	var errors: Array = []
+	for field in ["material_total_u","work_total_u"]:
+		if not _bounded_integer(value.get(field),1,MAX_PRODUCTION_UNITS):
+			errors.append("Ungültiger oder fehlender Baugesamtwert: "+field)
+	for field in ["material_spent_u","work_done_u"]:
+		if not _bounded_integer(value.get(field),0,MAX_PRODUCTION_UNITS):
+			errors.append("Ungültiger oder fehlender Baufortschritt: "+field)
+	if not errors.is_empty(): return errors
+	var material: int = int(value.material_total_u)
+	var work: int = int(value.work_total_u)
+	var done: int = int(value.work_done_u)
+	if done>work or (done==work and not allow_complete):
+		errors.append("Abgeschlossener oder überhöhter Regionalbaufortschritt.")
+		return errors
+	# Shared exact quotient/remainder arithmetic never forms material*done,
+	# which can overflow int64 even when all three bounded values are valid.
+	var expected: int = Production.material_at_work(material,work,done)
+	if int(value.material_spent_u)!=expected:
+		errors.append("Materialverbrauch und kumulativer Arbeitsfortschritt widersprechen sich.")
+	return errors
+
+static func _production_fields(data: Dictionary, required: bool) -> Array:
+	var errors: Array = []
+	var serial = data.get("project_serial",0)
+	if (required and not data.has("project_serial")) or not _bounded_integer(serial,0,MAX_PROJECT_SERIAL):
+		errors.append("Ungültige oder fehlende globale Bauauftragsnummer.")
+		serial = 0
+	var now := CalendarScript.to_index(int(data.get("year",-2000)),int(data.get("month",1)))
+	if int(data.get("calendar_version",0))==0 and int(data.get("year",-2000))>=0:
+		now = CalendarScript.to_index(int(data.get("year",0))+1,int(data.get("month",1)))
+	var houses = data.get("houses",[])
+	var house_count: int = houses.size() if houses is Array else 0
+	var provinces = data.get("provinces",[])
+	if not provinces is Array: return ["Produktionsregionen müssen als Liste gespeichert sein."]
+	var by_id: Dictionary = {}
+	var ids: Dictionary = {}
+	for p in provinces:
+		if p is Dictionary: by_id[str(p.get("id",""))] = p
+	for p in provinces:
+		if not p is Dictionary: continue
+		if required and p.get("buildings") is Dictionary and p.buildings.has("depot"):
+			errors.append("Das Depot muss getrennt von den historischen Gebäudelinien gespeichert sein.")
+		for field in ["production","regional_project","logistics_sites"]:
+			if (required or p.has(field)) and not p.get(field) is Dictionary:
+				errors.append("Ungültiges oder fehlendes Provinzfeld: "+field)
+		var production = p.get("production")
+		if production is Dictionary:
+			if not _exact_fields(production,["materials_u","rate_carry"]) or not _bounded_integer(production.get("materials_u"),0,MAX_PRODUCTION_UNITS) or not _bounded_integer(production.get("rate_carry"),0,31):
+				errors.append("Ungültiger Baustoffbestand oder Produktionsrest.")
+			elif int(production.materials_u)>Production.stock_capacity_u(p):
+				errors.append("Der Baustoffbestand überschreitet das örtliche Lager.")
+		var sites = p.get("logistics_sites")
+		if sites is Dictionary:
+			if not _exact_fields(sites,["depot"]) or not _bounded_integer(sites.get("depot"),0,1):
+				errors.append("Ungültiges örtliches Depot.")
+		var project = p.get("regional_project")
+		if not project is Dictionary or project.is_empty(): continue
+		if not _exact_fields(project,REGIONAL_PROJECT_FIELDS):
+			errors.append("Unvollständiger oder unbekannt erweiterter Regionalauftrag.")
+			continue
+		var project_id = project.get("id")
+		if not _bounded_integer(project_id,1,MAX_PROJECT_SERIAL) or ids.has(int(project_id)) or project_id>serial:
+			errors.append("Ungültige, doppelte oder nicht vergebene Bauauftragsnummer.")
+		else: ids[int(project_id)] = true
+		if not _bounded_integer(project.get("builder"),0,house_count-1) or project.builder!=p.get("owner"):
+			errors.append("Der Regionalauftrag gehört nicht dem Provinzbesitzer.")
+		if project.get("kind")=="depot" and not _builder_knows(houses,project.get("builder"),"logistics"):
+			errors.append("Dem Depotbauherrn fehlt das erforschte Versorgungswesen.")
+		if not _bounded_integer(project.get("paid_gold"),1,MAX_PRODUCTION_UNITS) or not _bounded_integer(project.get("priority"),0,1) or not _bounded_integer(project.get("started_month"),0,now):
+			errors.append("Ungültige Zahlung, Priorität oder Startzeit des Regionalauftrags.")
+		var kind = project.get("kind")
+		var expected_target := -1
+		var levels = p.get("buildings",{})
+		if not levels is Dictionary:
+			errors.append("Ungültige Gebäudestufen eines Bauauftrags.")
+			continue
+		if kind is String:
+			if BUILDING_KEYS.has(kind): expected_target = int(levels.get(kind,0))+1
+			elif kind=="develop" and _bounded_integer(project.get("target_level"),1,10):
+				# Development events may change the live level while work is paid.
+				# Its bounded start reference pins the recipe, not the current dev.
+				expected_target = int(project.target_level)
+			elif kind=="depot" and sites is Dictionary: expected_target = int(sites.get("depot",0))+1
+		if expected_target<1 or not _bounded_integer(project.get("target_level"),expected_target,expected_target) or (BUILDING_KEYS.has(kind) and expected_target>3) or (kind=="depot" and expected_target>1) or (kind=="develop" and expected_target>10):
+			errors.append("Ungültiges oder nicht mehr passendes Bauziel.")
+		else:
+			var requirement_province: Dictionary = p.duplicate(true)
+			if kind=="develop": requirement_province.dev = expected_target-1
+			var expected: Dictionary = Production.requirements(requirement_province,str(kind),expected_target)
+			if expected.is_empty() or project.get("material_total_u")!=expected.get("material_total_u") or project.get("work_total_u")!=expected.get("work_total_u"):
+				errors.append("Die gespeicherten Bauanforderungen passen nicht zum eingefrorenen Ziel.")
+		errors.append_array(_construction_progress(project,false))
+	var roads = data.get("roads",[])
+	if required and not data.has("roads"): errors.append("Aktuelles Straßennetz fehlt.")
+	if not roads is Array: return errors+["Straßenbaustellen müssen als Liste gespeichert sein."]
+	# The region graph has226 undirected edges; legacy provenance may retain
+	# up to the old49-region complete graph in addition. No unbounded queue.
+	if roads.size()>1402: errors.append("Zu viele gespeicherte Straßen.")
+	for road in roads:
+		if not road is Dictionary:
+			errors.append("Ungültige Straßenbaustelle.")
+			continue
+		var construction = road.get("construction")
+		if not road.has("construction") and not required: continue
+		if required and (not _bounded_integer(road.get("months"),0,3) or not road.get("state") is String or not _bounded_integer(road.get("builder"),0,house_count-1)):
+			errors.append("Ungültige aktuelle Straßendauer oder Zustand.")
+		if not construction is Dictionary:
+			errors.append("Ungültige oder fehlende Straßenbaurechnung.")
+			continue
+		if road.has("legacy_construction") and (not road.legacy_construction is bool or road.legacy_construction!=true):
+			errors.append("Ungültige Kennzeichnung einer alten Straßenbaustelle.")
+		if str(road.get("state",""))=="complete":
+			if not construction.is_empty(): errors.append("Fertige Straße besitzt noch einen Bauauftrag.")
+			continue
+		if construction.is_empty():
+			if required and road.get("legacy_construction")!=true: errors.append("Historischer Straßenbau ist nicht gekennzeichnet.")
+			continue
+		if road.has("legacy_construction") or not _exact_fields(construction,ROAD_CONSTRUCTION_FIELDS):
+			errors.append("Ungültige Felder einer neuen Straßenbaurechnung.")
+			continue
+		var project_id = construction.get("id")
+		if not _bounded_integer(project_id,1,MAX_PROJECT_SERIAL) or ids.has(int(project_id)) or project_id>serial:
+			errors.append("Ungültige, doppelte oder nicht vergebene Straßenauftragsnummer.")
+		else: ids[int(project_id)] = true
+		if not _bounded_integer(construction.get("paid_gold"),1,MAX_PRODUCTION_UNITS) or not _bounded_integer(construction.get("priority"),0,1) or not _bounded_integer(construction.get("started_month"),0,now):
+			errors.append("Ungültige Zahlung, Priorität oder Startzeit einer Straße.")
+		var a := str(road.get("from",""))
+		var b := str(road.get("to",""))
+		if a>=b or not by_id.has(a) or not by_id.has(b) or not _bounded_integer(road.get("builder"),0,house_count-1):
+			errors.append("Ungültige neue Straßenendpunkte oder Bauherr.")
+			continue
+		if by_id[a].get("owner")!=road.builder or by_id[b].get("owner")!=road.builder:
+			errors.append("Neue Straßenbaustelle besitzt einen fremden Endpunkt.")
+		if not _builder_knows(houses,road.get("builder"),"road_building"):
+			errors.append("Dem neuen Straßenbauherrn fehlt die Straßenbauforschung.")
+		var legs = construction.get("legs")
+		if not legs is Array or legs.size()!=2:
+			errors.append("Eine Straßenbaustelle benötigt genau zwei Beine.")
+			continue
+		var both_complete := true
+		var expected_road: Dictionary = Production.road_requirements(by_id[a],by_id[b])
+		for i in 2:
+			var leg = legs[i]
+			if not leg is Dictionary or not _exact_fields(leg,CONSTRUCTION_LEG_FIELDS):
+				errors.append("Ungültige Straßenbeinfelder.")
+				continue
+			if leg.get("province")!=([a,b][i]): errors.append("Straßenbeine und Endpunkte widersprechen sich.")
+			if leg.get("material_total_u")!=expected_road.legs[i].material_total_u or leg.get("work_total_u")!=expected_road.legs[i].work_total_u:
+				errors.append("Die Straßenanforderungen passen nicht zu den Endpunkten.")
+			errors.append_array(_construction_progress(leg,true))
+			both_complete = both_complete and leg.get("work_done_u") == leg.get("work_total_u")
+		if both_complete: errors.append("Abgeschlossene Straßenbeine besitzen noch eine Baustelle.")
+	return errors
+
 static func _siege_dates(data: Dictionary) -> Array:
 	var errors := []
 	var year := int(data.get("year", -2000))
@@ -874,5 +1091,17 @@ static func _migrate_provinces(raw, errors: Array) -> Array:
 				value = int(raw_buildings.get(key, 0))
 			buildings[key] = clampi(value, 0, 3)
 		p["buildings"] = buildings
+		if not p.has("production"):
+			p["production"] = {"materials_u":0,"rate_carry":0}
+		if not p.has("regional_project"):
+			p["regional_project"] = {}
+		if not p.has("logistics_sites"):
+			p["logistics_sites"] = {"depot":0}
+		for field in ["materials_u","rate_carry"]:
+			p.production[field] = int(p.production[field])
+		p.logistics_sites.depot = int(p.logistics_sites.depot)
+		if not p.regional_project.is_empty():
+			for field in REGIONAL_PROJECT_FIELDS:
+				if field!="kind": p.regional_project[field] = int(p.regional_project[field])
 		out.append(p)
 	return out

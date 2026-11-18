@@ -266,11 +266,14 @@ func _test_passive_guest_infrastructure_and_birth() -> void:
 	roads.province(a).owner = 1
 	roads.province(b).owner = 1
 	_check(roads.build_road(a, b, 1).ok, "Gaststraße konnte nicht real gestartet werden.")
-	for _month in 3:
+	var construction_months:=0
+	for _month in 24:
 		roads.advance_month()
-	_check(roads.player == 0 and roads.calendar_index() == 3 and int(roads.houses[1].gold) == 470, "Straßenmeldung verursachte weitere Kosten oder Welttakte.")
+		construction_months+=1
+		if str(roads.roads[0].state)=="complete": break
+	_check(roads.player == 0 and roads.calendar_index() == construction_months and construction_months<12 and int(roads.houses[1].gold) == 470, "Echte örtliche Bauzeit enthält genau einen Welttakt pro Monat und keine weitere Straßenzahlung vor dem Jahreswechsel.")
 	_check(roads.roads.size() == 1 and roads.roads[0].state == "complete" and roads.road_income(1) == 2, "Gaststraße wurde nicht genau einmal fertiggestellt.")
-	_check(_messages_with(roads, 1, "Straßenverbindung ist fertiggestellt") == 1 and _messages_with(roads, 0, "Straßenverbindung ist fertiggestellt") == 0, "Gaststraßenmeldung fehlt beim Besitzer oder landet beim Host.")
+	_check(_messages_with(roads, 1, "Straßenverbindung ist mit örtlichen Baustoffen und Arbeit fertiggestellt") == 1 and _messages_with(roads, 0, "Straßenverbindung ist mit örtlichen Baustoffen und Arbeit fertiggestellt") == 0, "Gaststraßenmeldung fehlt beim Besitzer oder landet beim Host.")
 	var birth = _new_game()
 	birth.log_lines.clear()
 	var children: int = birth.houses[1].children.size()

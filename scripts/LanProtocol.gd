@@ -7,6 +7,7 @@ const DISCOVERY_PORT := 28740
 const MAX_PLAYERS := 4
 const MAX_PACKET_BYTES := 2097152
 const MAX_COMMAND_BYTES := 4096
+const SNAPSHOT_FIELDS := ["v","type","revision","hash","state","missing_peer","all_over","production_report"]
 const Save = preload("res://scripts/SaveGame.gd")
 const PERSONAL_FIELDS := ["player", "opinion", "cooldowns", "captive", "scandal", "event_timer",
 	"event_instance", "pending", "game_over", "victory", "history", "log", "lan_contexts", "lan_projection"]
@@ -19,6 +20,8 @@ const FIELDS := {
 	"disband_army":{"army":"army_id"},
 	"research":{"innovation":"text"}, "road":{"to":"text"}, "build":{"key":"text"},
 	"province_focus":{"focus":"text"},
+	"construction_cancel":{"project":"sequence"},
+	"construction_priority":{"project":"sequence","priority":"priority"},
 	"marry":{"target":"house"}, "seduce":{"target":"house"}, "murder":{"target":"house"},
 	"kidnap":{"target":"house"}, "declare_holy_war":{"target":"house"},
 	"apply_event":{"option":"option", "event_instance":"sequence"},
@@ -62,7 +65,7 @@ static func validate_command(command: Dictionary) -> Dictionary:
 			clean[key] = value
 		else:
 			var bounds: Array = {"house":[0,255], "index":[0,127], "optional_index":[-1,127], "army_id":[1,2147483647],
-				"option":[0,31], "sequence":[0,2147483647], "speed":[0,3], "level":[0,2]}[kind]
+				"option":[0,31], "sequence":[0,2147483647], "speed":[0,3], "level":[0,2], "priority":[0,1]}[kind]
 			if not integer(value, bounds[0], bounds[1]):
 				return failure("Ungültiger Zahlenwert: %s." % key)
 			clean[key] = int(value)
@@ -117,6 +120,12 @@ static func handshake_error(message: Dictionary, app: String, fingerprint: Strin
 	if message.get("fingerprint") != fingerprint:
 		return "Die Spieldaten unterscheiden sich. Bitte dieselbe vollständige Fassung verwenden."
 	return ""
+
+static func valid_snapshot_frame(message: Dictionary) -> bool:
+	if message.size()!=SNAPSHOT_FIELDS.size() or not _json_safe(message,0): return false
+	for field in message:
+		if not SNAPSHOT_FIELDS.has(field): return false
+	return integer(message.get("v"),VERSION,VERSION) and message.get("type")=="snapshot" and JSON.stringify(message).to_utf8_buffer().size()<=MAX_PACKET_BYTES
 
 static func world_hash(state: Dictionary) -> String:
 	var shared := state.duplicate(true)

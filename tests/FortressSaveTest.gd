@@ -38,7 +38,7 @@ func _ready() -> void:
 	check(FileAccess.get_sha256(PATH)==HASH,"Published naval15 original remains genuine and byte-identical")
 	var original: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(PATH))
 	check(original.state.schema_version==15 and original.fingerprint==FINGERPRINT and original.app=="1.9.1" and original.v==3,"Historical schema15/app/wire/fingerprint pins come from actual original bytes")
-	check(Save.CURRENT_VERSION==16,"Large untruncated armies use schema16")
+	check(Save.CURRENT_VERSION==17,"Large untruncated armies remain supported in production schema17")
 	var constants: Dictionary = Save.new().get_script().get_script_constant_map()
 	check(constants.get("MAX_ARMY_STRENGTH")==100000 and constants.get("MAX_ARMY_UPKEEP")==400,"Shared explicit strength100000/upkeep400 limits are published by Save")
 	_test_large_world(original.state)
@@ -52,8 +52,8 @@ func _ready() -> void:
 	print("FORTRESSSAVETEST %s: %d Prüfungen" % ["OK" if failures==0 else "FAIL",checks])
 	get_tree().quit(0 if failures==0 else 1)
 
-func _large(source: Dictionary, version: int = 16) -> Dictionary:
-	var state := source.duplicate(true)
+func _large(source: Dictionary, version: int = Save.CURRENT_VERSION) -> Dictionary:
+	var state: Dictionary = Save.migrate(source).data if version==Save.CURRENT_VERSION else source.duplicate(true)
 	state.schema_version = version
 	var home := str(state.houses[0].capital)
 	state.houses[0].armies = [
@@ -62,21 +62,35 @@ func _large(source: Dictionary, version: int = 16) -> Dictionary:
 	]
 	return state
 
+## Project current additive fields away only for comparison with untouched history.
+func _historical_projection(source: Dictionary, version: int) -> Dictionary:
+	var state: Dictionary = source.duplicate(true)
+	state.schema_version = version
+	if version<17:
+		state.erase("project_serial")
+		for p in state.provinces:
+			for field in ["production","regional_project","logistics_sites"]:
+				p.erase(field)
+		for road in state.roads:
+			road.erase("construction")
+			road.erase("legacy_construction")
+	return state
+
 func _test_large_world(source: Dictionary) -> void:
 	var state := _large(source)
 	var before := state.duplicate(true)
 	var migrated: Dictionary = Save.migrate(state)
-	check(migrated.ok and state==before,"Schema16 large-army normalization is pure and accepted")
+	check(migrated.ok and state==before,"Current large-army normalization is pure and accepted")
 	if migrated.ok:
 		check(migrated.data.houses[0].armies==state.houses[0].armies,"7500/30 and50000/200 are preserved without the old5000/50 truncation")
 		check(Save.validate(migrated.data).is_empty(),"Normalized large-army world is a valid current save")
 	var game = Game.new(Data,0)
 	var restored: bool = game.restore(state)
-	check(restored,"Real Game restores controlled large armies under schema16")
+	check(restored,"Real Game restores controlled large armies under the current production schema")
 	if not restored: return
 	check(game.houses[0].armies==state.houses[0].armies and game.army_upkeep()==230,"Actual runtime armies and annual230upkeep remain intact")
 	var actual: Dictionary = game.snapshot()
-	check(actual.schema_version==16 and actual.houses[0].armies==state.houses[0].armies,"Actual schema16 snapshot keeps both complete forces")
+	check(actual.schema_version==Save.CURRENT_VERSION and actual.houses[0].armies==state.houses[0].armies,"Actual current snapshot keeps both complete forces")
 	var again = Game.new(Data,0)
 	check(again.restore(JSON.parse_string(JSON.stringify(actual))) and Save.state_equal({"armies":again.houses[0].armies},{"armies":state.houses[0].armies}),"JSON and second Game restore do not clip either army/upkeep or alter any unit field")
 
@@ -104,28 +118,26 @@ func _test_current_raw_bounds(source: Dictionary) -> void:
 	check(removed.ok and removed.data.houses[0].armies.size()==1 and removed.data.houses[0].armies[0].id==7,"Current zero remains an explicitly removable empty unit, not a live ghost")
 
 func _test_old_compatibility(source: Dictionary) -> void:
-	for version in range(1,16):
+	for version in range(1,Save.CURRENT_VERSION):
 		var controlled := _large(source,version)
 		var before := controlled.duplicate(true)
 		var result: Dictionary = Save.migrate(controlled)
 		check(result.ok and controlled==before,"Controlled old source migration remains pure/accepted for version"+str(version))
 		if result.ok:
-			check(result.data.schema_version==16 and result.data.houses[0].armies==controlled.houses[0].armies,"Valid large old armies retain original men/upkeep in schema16 from"+str(version))
+			check(result.data.schema_version==Save.CURRENT_VERSION and result.data.houses[0].armies==controlled.houses[0].armies,"Valid large old armies retain original men/upkeep in the current schema from"+str(version))
 	var actual: Dictionary = Save.migrate(source)
 	check(actual.ok,"Actual unmodified published15world migrates")
 	if actual.ok:
-		var projected: Dictionary = actual.data.duplicate(true)
-		projected.schema_version = 15
-		check(Save.state_equal(projected,source),"Genuine published15world changes only its schema number")
+		var projected: Dictionary = _historical_projection(actual.data,15)
+		check(Save.state_equal(projected,source),"Genuine published15world changes only its schema number and additive production fields")
 
 func _test_old_layout() -> void:
-	var old: Dictionary = Game.new(Legacy,0).snapshot()
-	old.schema_version = 15
+	var old: Dictionary = _historical_projection(Game.new(Legacy,0).snapshot(),15)
 	old.houses[0].armies = [{"id":4,"province":"suebia","strength":50000,"upkeep":200,"morale":75}]
 	var normalized: Dictionary = Save.migrate(old)
 	if not check(normalized.ok,"Controlled old49region large army normalizes"): return
 	var result: Dictionary = Migration.migrate_state(normalized.data)
-	check(result.ok and result.data.schema_version==16,"49→108 conversion never rolls schema16 back")
+	check(result.ok and result.data.schema_version==Save.CURRENT_VERSION,"49→108 conversion never rolls the current schema back")
 	if result.ok:
 		check(result.data.houses[0].armies[0].strength==50000 and result.data.houses[0].armies[0].upkeep==200 and Save.validate(result.data).is_empty(),"Layout migration preserves controlled large legacy force and current validity")
 
@@ -153,8 +165,7 @@ func _test_published_lan(original: Dictionary) -> void:
 	var loaded: Dictionary = session.load_host_lobby(path)
 	check(loaded.ok,"Genuine published naval15file resumes locally: "+str(loaded.message))
 	if loaded.ok:
-		var projection: Dictionary = session.game.snapshot()
-		projection.schema_version = 15
+		var projection: Dictionary = _historical_projection(session.game.snapshot(),15)
 		check(Save.state_equal(projection,original.state),"Actual old LAN migration retains the complete shared/personal world")
 	else:
 		session.game = Game.new(Data,0)

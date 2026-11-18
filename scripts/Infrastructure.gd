@@ -1,15 +1,16 @@
 extends RefCounted
 ## Reine Definitionen und Save-Prüfung; Zustandsänderungen bleiben in Game.
+const LEGACY_RESEARCH_DURATIONS := {"surveying":6,"road_building":12,"logistics":10}
 const INNOVATIONS := {
-	"surveying": {"name":"Vermessung", "branch":"Verwaltung", "months":6, "gold":20, "requires":"", "description":"Land, Entfernungen und Besitz werden verlässlich erfasst.", "effect_text":"Eröffnet Straßenbau und weitere Wissenszweige.", "effects":{}},
-	"road_building": {"name":"Straßenbau", "branch":"Logistik", "months":12, "gold":40, "requires":"surveying", "description":"Feste Verbindungen erschließen benachbarte eigene Gebiete.", "effect_text":"Schaltet örtliche Straßen frei: +2 Gold/Jahr je fertiger eigener Verbindung.", "effects":{}},
+	"surveying": {"name":"Vermessung", "branch":"Verwaltung", "months":4, "gold":20, "requires":"", "description":"Land, Entfernungen und Besitz werden verlässlich erfasst.", "effect_text":"Eröffnet Straßenbau und weitere Wissenszweige.", "effects":{}},
+	"road_building": {"name":"Straßenbau", "branch":"Logistik", "months":6, "gold":40, "requires":"surveying", "description":"Feste Verbindungen erschließen benachbarte eigene Gebiete.", "effect_text":"Schaltet örtliche Straßen frei: gewichteter Handel und begrenzte Baustofflieferung über eigene fertige Wege.", "effects":{}},
 	"crop_rotation": {"name":"Fruchtwechsel", "branch":"Wirtschaft", "months":8, "gold":32, "requires":"surveying", "description":"Wechselnde Feldfrüchte schonen fruchtbare Böden.", "effect_text":"+10 % regionaler Grundertrag in Ebenen und Ackerland.", "terrains":["plains","farmland"], "effects":{"income_percent":10}},
 	"irrigation": {"name":"Bewässerung", "branch":"Wirtschaft", "months":10, "gold":45, "requires":"crop_rotation", "description":"Gezielte Wasserverteilung verbessert Anbauflächen.", "effect_text":"+8 % regionaler Grundertrag in Ebenen, Ackerland und Steppe.", "terrains":["plains","farmland","steppe"], "effects":{"income_percent":8}},
 	"accounting": {"name":"Buchführung", "branch":"Verwaltung", "months":8, "gold":35, "requires":"surveying", "description":"Einheitliche Listen machen Abgaben nachvollziehbar.", "effect_text":"+5 % Grundertrag in allen eigenen Regionen.", "effects":{"income_percent":5}},
 	"masonry": {"name":"Steinbau", "branch":"Militär", "months":9, "gold":45, "requires":"surveying", "description":"Werkzeuge und Baupläne verringern den Materialverlust.", "effect_text":"−10 % Kosten für Markt, Kaserne und Mauern.", "effects":{"build_discount":10}},
 	"fortification": {"name":"Befestigungskunst", "branch":"Militär", "months":12, "gold":60, "requires":"masonry", "description":"Gestaffelte Befestigungen schützen eigene Gebiete.", "effect_text":"+8 Prozentpunkte Verteidigung bei Feldschlachten.", "effects":{"defense":8}},
 	"drill": {"name":"Gemeinsamer Drill", "branch":"Militär", "months":9, "gold":50, "requires":"surveying", "description":"Einheitliche Ausbildung erleichtert das Anwerben von Aufgeboten.", "effect_text":"−10 % Kosten der regionalen Truppenwerbung.", "effects":{"recruit_discount":10}},
-	"logistics": {"name":"Versorgungswesen", "branch":"Logistik", "months":10, "gold":55, "requires":"road_building", "description":"Geplante Depots versorgen größere Heere.", "effect_text":"+20 % örtliche Versorgungskapazität für deine Armeen.", "effects":{"supply_percent":20}},
+	"logistics": {"name":"Versorgungswesen", "branch":"Logistik", "months":6, "gold":55, "requires":"road_building", "description":"Geplante Depots versorgen größere Heere.", "effect_text":"+20 % örtliche Versorgungskapazität; schaltet Frontdepots für tatsächlichen Nachschub über die Landgrenze frei.", "effects":{"supply_percent":20}},
 	"field_medicine": {"name":"Heilkunde", "branch":"Medizin", "months":10, "gold":55, "requires":"surveying", "description":"Gesammelte Behandlungserfahrung hilft dem Herrscher.", "effect_text":"+2 Herrschergesundheit beim Jahreswechsel.", "effects":{"health":2}},
 	"sanitation": {"name":"Wasserhygiene", "branch":"Medizin", "months":12, "gold":65, "requires":"field_medicine", "description":"Sauberes Wasser und getrennte Abfälle mindern Krankheiten.", "effect_text":"Weitere +2 Herrschergesundheit beim Jahreswechsel.", "effects":{"health":2}},
 	"trade_charters": {"name":"Handelsrechte", "branch":"Wirtschaft", "months":12, "gold":70, "requires":"accounting", "description":"Verlässliche Regeln stärken bestehende Marktorte.", "effect_text":"+8 % Einnahmen aus tatsächlich errichteten Märkten.", "effects":{"market_percent":8}},
@@ -22,6 +23,30 @@ const DataScript = preload("res://scripts/Data.gd")
 
 static func initial_research() -> Dictionary:
 	return {"known": [], "active": "", "months": 0}
+
+static func _research_integer(value, minimum: int, maximum: int) -> bool:
+	return (value is int or value is float) and is_finite(float(value)) and floor(float(value))==float(value) and value>=minimum and value<=maximum
+
+static func research_duration(research: Dictionary) -> int:
+	var active := str(research.get("active",""))
+	if not INNOVATIONS.has(active): return 0
+	if research.has("legacy_duration") and LEGACY_RESEARCH_DURATIONS.has(active) and _research_integer(research.legacy_duration,int(LEGACY_RESEARCH_DURATIONS[active]),int(LEGACY_RESEARCH_DURATIONS[active])):
+		return int(research.legacy_duration)
+	return int(INNOVATIONS[active].months)
+
+static func research_errors(research) -> Array:
+	if not research is Dictionary or not research.get("known") is Array or not research.get("active") is String or not _research_integer(research.get("months"),0,36):
+		return ["Fehlende oder ungültige Forschungsfelder."]
+	var active: String=research.active
+	var errors: Array=[]
+	if research.has("legacy_duration"):
+		if not LEGACY_RESEARCH_DURATIONS.has(active) or not _research_integer(research.legacy_duration,int(LEGACY_RESEARCH_DURATIONS.get(active,0)),int(LEGACY_RESEARCH_DURATIONS.get(active,0))) or research.known.has(active):
+			errors.append("Ungültige historische Gesamtdauer des aktiven Forschungsprojekts.")
+	if active.is_empty():
+		if int(research.months)!=0 or research.has("legacy_duration"): errors.append("Forschungsdauer ohne aktives Projekt.")
+	elif not INNOVATIONS.has(active) or not _research_integer(research.months,1,research_duration(research)):
+		errors.append("Ungültige Restdauer des aktiven Forschungsprojekts.")
+	return errors
 
 static func edge_key(a: String, b: String) -> String:
 	return a + "|" + b if a < b else b + "|" + a
@@ -43,8 +68,9 @@ static func validate(data: Dictionary) -> Array:
 				if not id is String or not event_ids.has(id):
 					errors.append("Unbekanntes Ereignis in der Historie.")
 		var research = houses[i].get("research", null)
-		if not (research is Dictionary) or not (research.get("known", null) is Array):
-			errors.append("Forschungsstand von Haus %d fehlt oder ist ungültig." % i)
+		var research_problems:=research_errors(research)
+		if not research_problems.is_empty():
+			errors.append_array(research_problems)
 			continue
 		var active := str(research.get("active", ""))
 		var months := int(research.get("months", -1))
@@ -66,7 +92,7 @@ static func validate(data: Dictionary) -> Array:
 			errors.append("Unbekanntes Forschungsprojekt.")
 		else:
 			var info: Dictionary = INNOVATIONS[active]
-			if months < 1 or months > int(info.months) or known.has(active) or (str(info.requires) != "" and not known.has(info.requires)):
+			if months < 1 or months > research_duration(research) or known.has(active) or (str(info.requires) != "" and not known.has(info.requires)):
 				errors.append("Inkonsistentes Forschungsprojekt.")
 	var provinces := {}
 	for p in data.get("provinces", []):

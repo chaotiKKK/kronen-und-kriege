@@ -50,7 +50,7 @@ func _ready() -> void:
 	main._on_province_selected(home)
 	inspector.show_section("buildings")
 	await settle()
-	check(inspector.focus_picker.item_count==3 and inspector.action_buttons["build:market"].visible,"Rückkehr zum Eigenbesitz stellt echte Verwaltungsaktionen wieder her")
+	check(inspector.focus_picker.item_count==4 and inspector.focus_picker.get_item_metadata(3)=="workshops" and inspector.action_buttons["build:market"].visible,"Rückkehr zum Eigenbesitz stellt vier tatsächliche Schwerpunkte und eigene Verwaltungsaktionen wieder her")
 	main._on_province_selected("")
 	await settle()
 	check_admin_closed("Leerauswahl")
@@ -70,9 +70,14 @@ func _ready() -> void:
 	await settle()
 	var level: int = game.province(home).buildings.market
 	var gold: int = game.house().gold
+	var price: int = game.regional_project_preview(home,"market").gold
 	inspector.action_buttons["build:market"].pressed.emit()
 	await settle()
-	check(int(game.province(home).buildings.market)==level+1 and int(game.house().gold)<gold,"Wiederhergestellter Baubutton baut tatsächlich einmal und bezahlt seine Kosten")
+	var project: Dictionary=game.province(home).regional_project
+	check(not project.is_empty() and str(project.kind)=="market" and int(project.target_level)==level+1 and int(game.province(home).buildings.market)==level and int(game.house().gold)==gold-price,"Wiederhergestellter Baubutton bezahlt genau einmal den echten Marktauftrag ohne vorzeitige Fertigwirkung")
+	var paid_state: Dictionary=game.snapshot()
+	inspector.action_buttons["build:market"].pressed.emit()
+	check(game.snapshot()==paid_state,"Ein wiederholter alter Bauaufruf bezahlt keinen zweiten Auftrag und verändert keine History")
 	var original_owner: int = game.province(home).owner
 	game.province(home).owner = game.province(remote).owner
 	main.refresh()

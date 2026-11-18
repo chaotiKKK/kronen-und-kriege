@@ -21,7 +21,7 @@ set -u
 cd "$(dirname "$0")/.." || exit 1
 TOOLS=".tools"
 GODOT="$TOOLS/godot.exe"
-export APPDATA="$PWD/$TOOLS/appdata"
+export APPDATA="${GODOT_TEST_APPDATA:-$PWD/$TOOLS/appdata}"
 # A release may retain its own logs without replacing earlier evidence.
 LOGDIR="${GODOT_TEST_LOGDIR:-build/tests}"
 TIMEOUT_SECONDS=300
@@ -37,6 +37,18 @@ mkdir -p "$LOGDIR"
 
 # Logik- und UI-Tests ohne Renderpfad.
 HEADLESS=(
+	RegionalProductionTest
+	MaterialTransportTest
+	DepotSupplyTest
+	EconomyPlannerTest
+	ProductionSaveTest
+	ConstructionGameTest
+	ProductionCommandTest
+	ProductionFlowIntegrationTest
+	ProductionCampaignTest
+	ProductionNpcCampaignTest
+	ProductionLanReportTest
+	LegacyResearchTest
 	ArmyDisbandTest
 	ArmyRecoveryTest
 	FieldBattleRulesTest
@@ -119,6 +131,8 @@ HEADLESS=(
 # Suiten, die einen echten Viewport brauchen.
 # CourtShotTest gehört ebenfalls hierher; es war zuvor nicht registriert.
 WINDOWED=(
+	ProductionUiTest
+	ConstructionMapTest
 	ProvinceUiSimplificationTest
 	FortressCampaignUiTest
 	ProvinceContextTest

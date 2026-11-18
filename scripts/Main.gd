@@ -114,6 +114,8 @@ var infrastructure_layer: Control
 var infrastructure_body: VBoxContainer
 var research_buttons: Dictionary = {}
 var road_buttons: VBoxContainer
+var production_report: Dictionary = {}
+var supply_snapshot: Dictionary = {}
 var sandbox_button: Button
 var court_layer: Control
 var court_title: Label
@@ -705,6 +707,7 @@ func _build() -> void:
 	map_view.province_selected.connect(_on_province_selected)
 	map_view.province_activated.connect(_on_province_activated)
 	map_view.army_selected.connect(_on_army_selected)
+	map_view.construction_selected.connect(_on_construction_selected)
 	map_view.map_mode_changed.connect(_on_map_mode_changed)
 	map_view.atlas_location_selected.connect(_on_atlas_location_selected)
 	map_wrap.add_child(map_view)
@@ -2327,6 +2330,12 @@ func _on_army_selected(_house_index: int, id: String) -> void:
 	if has_meta("modern_interface"):
 		get_meta("modern_interface").province_inspector.show_section("army")
 
+func _on_construction_selected(id: String, _project_id: int) -> void:
+	if game==null or game.province(id).is_empty() or int(game.province(id).owner)!=game.player: return
+	if selected!=id: _on_province_selected(id)
+	if has_meta("modern_interface"):
+		get_meta("modern_interface").province_inspector.show_section("buildings")
+
 func _open_province_management(section: String = "buildings") -> void:
 	_hide_rule()
 	_hide_chronicle()
@@ -2593,8 +2602,12 @@ func refresh() -> void:
 	if game == null:
 		return
 	var h: Dictionary = game.house()
+	# Reports belong to the accepted game update, never the map's pan/draw path.
+	production_report=game.regional_production_report()
+	supply_snapshot=game.supply_report()
 	_ensure_custom_crest(h)
 	map_view.set_game(game)
+	map_view.set_simulation_reports(production_report,supply_snapshot)
 	map_view.queue_redraw()
 	var vm: Dictionary = ViewModelBuilder.refresh(game, selected)
 	date_label.text = str(vm["date"])
@@ -2729,40 +2742,6 @@ func _refresh_infrastructure() -> void:
 	if game == null:
 		return
 	get_meta("research_panel").refresh(game,selected)
-	for child in road_buttons.get_children():
-		road_buttons.remove_child(child)
-		child.queue_free()
-	var province: Dictionary = game.province(selected)
-	if province.is_empty():
-		var select_hint := _label("Wähle auf der Karte eine eigene Provinz. Hier erscheinen anschließend baubare Verbindungen zu deinen Nachbarn.", 14, INK_SOFT)
-		select_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		road_buttons.add_child(select_hint)
-	if not province.is_empty() and int(province.owner) == game.player:
-		for neighbor_id in game.neighbours(selected):
-			var neighbor: Dictionary = game.province(str(neighbor_id))
-			if neighbor.is_empty() or int(neighbor.owner) != game.player:
-				continue
-			var target := str(neighbor_id)
-			var reason: String = game.road_blocker(selected, target)
-			var button := _button("Straße nach %s · 30 Gold" % neighbor.name, func(): _dispatch({"id": "road", "to": target}), "gold")
-			button.custom_minimum_size.y = 48
-			button.set_meta("to", target)
-			button.disabled = reason != ""
-			button.tooltip_text = reason if reason != "" else "Bauzeit: 3 Monate. Danach +2 Gold jährlich bei gemeinsamem Besitz."
-			road_buttons.add_child(button)
-			if reason != "":
-				var explanation := _label(reason, 12, INK_SOFT)
-				explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-				road_buttons.add_child(explanation)
-	for road in game.road_segments():
-		if int(road.builder) != game.player:
-			continue
-		var state: String = "Fertig" if road.state == "complete" else "Bau: noch %d Monate" % road.months
-		if road.state == "building" and (int(game.province(str(road.from)).owner) != game.player or int(game.province(str(road.to)).owner) != game.player):
-			state = "Bau pausiert · Besitz verloren"
-		var label := _label("%s – %s\n%s" % [game.province(str(road.from)).name, game.province(str(road.to)).name, state], 12, INK_SOFT)
-		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		road_buttons.add_child(label)
 	sandbox_button.visible = game.calendar_index() >= 50399 and not game.campaign_sandbox
 
 func _build_rule_layer() -> void:
