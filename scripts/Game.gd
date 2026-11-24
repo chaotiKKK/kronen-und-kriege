@@ -149,6 +149,7 @@ const DepotSupplyScript = preload("res://scripts/DepotSupply.gd")
 const EconomyPlannerScript = preload("res://scripts/EconomyPlanner.gd")
 const MaterialTradeScript = preload("res://scripts/MaterialTrade.gd")
 const CivicProvisionScript = preload("res://scripts/CivicProvision.gd")
+const CivicFreightScript = preload("res://scripts/CivicFreight.gd")
 const CivicProvisionReportScript = preload("res://scripts/CivicProvisionReport.gd")
 const CIVIC_PROVISION_RULES := {
 	"version":1,"phase":"after-research-before-material-trade",
@@ -156,7 +157,7 @@ const CIVIC_PROVISION_RULES := {
 	"npc_recovery_tax_threshold":40,"npc_recovery_tax":1,"no_human_automation":true,
 	"food_stock_initialization":"three-weighted-normal-months",
 	"income":"weighted-regional-base-summed-before-rounding",
-	"military_rations":false,"food_transport":false,
+	"military_rations":false,"food_transport":CivicFreightScript.RULES,
 }
 const MATERIAL_TRADE_RULES := {
 	"algorithm_version":1,"source_reserve_weights":2,"protected_local_work_months":1,"own_demand_months":2,
@@ -850,7 +851,7 @@ func advance_month() -> void:
 	var transport_roads: Array = roads.duplicate(true)
 	_tick_infrastructure()
 	_run_ai_provisioning()
-	_tick_provisioning()
+	_tick_provisioning(transport_roads)
 	_tick_material_trade()
 	_tick_regional_economy(transport_roads)
 	_run_ai_military()
@@ -1451,7 +1452,7 @@ func _provision_bonuses(p: Dictionary) -> Dictionary:
 	var hi:int=int(p.get("owner",-1))
 	return {"harvest_percent":roundi(research_bonus("food_harvest_percent",hi,p)),"storage_percent":roundi(research_bonus("food_storage_percent",hi,p))}
 
-func _provision_plan(p: Dictionary, month_index: int, rations: String="", blocked: bool=false) -> Dictionary:
+func _provision_plan(p: Dictionary, month_index: int, rations: String="", blocked: bool=false, cargo_delta_u: int=0) -> Dictionary:
 	var shadow:Dictionary=p
 	if not rations.is_empty() and rations!=str(p.provisioning.rations):
 		shadow=p.duplicate()
@@ -1459,7 +1460,7 @@ func _provision_plan(p: Dictionary, month_index: int, rations: String="", blocke
 		shadow.provisioning.rations=rations
 	var hi:int=int(p.get("owner",-1))
 	if hi<0 or hi>=houses.size(): return {"ok":false,"reason":"Ungültiger Versorgungsbesitzer."}
-	return CivicProvisionScript.plan(shadow,month_index,int(houses[hi].laws.tax),_provision_bonuses(p),blocked)
+	return CivicProvisionScript.plan(shadow,month_index,int(houses[hi].laws.tax),_provision_bonuses(p),blocked,cargo_delta_u)
 
 func provision_preview(id: String, rations: String="", hi: int=-1) -> Dictionary:
 	hi=player if hi<0 else hi
@@ -1498,14 +1499,24 @@ func provision_report(hi: int=-1) -> Dictionary:
 		var row:Dictionary=_last_provisioning.regions[id]
 		var p:Dictionary=province(str(id))
 		if not p.is_empty() and int(p.owner)==hi and int(row.owner)==hi: result.regions[id]=row.duplicate(true)
+	if _last_provisioning.has("flows"):
+		result["flows"]=[]
+		for flow in _last_provisioning.flows:
+			if result.regions.has(flow.from) and result.regions.has(flow.to):
+				result.flows.append(flow.duplicate(true))
 	return result
 
-func _tick_provisioning() -> void:
+func _tick_provisioning(transport_roads: Array = []) -> void:
 	if _provisioning_settled_month==calendar_index(): return
 	var blocked:Dictionary=_production_blocked()
+	var bonuses := {}
+	for p in provinces:
+		bonuses[str(p.id)]=_provision_bonuses(p)
+	var freight:=CivicFreightScript.plan(provinces,transport_roads,calendar_index(),blocked,bonuses)
 	var plans:Dictionary={}
 	for p in provinces:
-		var plan:Dictionary=_provision_plan(p,calendar_index(),"",blocked.has(str(p.id)))
+		var id:=str(p.id)
+		var plan:Dictionary=_provision_plan(p,calendar_index(),"",blocked.has(id),int(freight.deltas.get(id,0)))
 		if not bool(plan.ok):
 			push_error("Zivile Monatsplanung: "+str(plan.reason))
 			return
@@ -1516,6 +1527,8 @@ func _tick_provisioning() -> void:
 		p.provisioning=plan.state.duplicate(true)
 		rows[str(p.id)]=plan.ledger.duplicate(true)
 	_last_provisioning={"month_index":calendar_index(),"regions":rows}
+	if not freight.flows.is_empty():
+		_last_provisioning["flows"]=freight.flows
 	_provisioning_settled_month=calendar_index()
 
 func _run_ai_provisioning() -> void:
@@ -1994,7 +2007,8 @@ func _tick_regional_economy(transport_roads: Array) -> void:
 		offers[id]=maxi(0,stock-2*ProductionScript.weight_u(p)-next_need)
 		var demand: int=maxi(0,two_month_need-stock)
 		if demand>0: demands.append({"province":id,"house":int(p.owner),"amount_u":demand,"priority":priority,"project_id":project_id})
-	var transport: Dictionary=MaterialTransportScript.plan(provinces,transport_roads,demands,offers,calendar_index(),blocked)
+	var reserved:=CivicFreightScript.used_space(_last_provisioning.get("flows",[]))
+	var transport: Dictionary=MaterialTransportScript.plan(provinces,transport_roads,demands,offers,calendar_index(),blocked,{},reserved)
 	for id in transport.deltas:
 		var delta: int=transport.deltas[id]
 		var p := province(str(id))

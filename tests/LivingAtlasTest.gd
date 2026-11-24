@@ -60,6 +60,7 @@ func _ready() -> void:
 	_check(preload("res://scripts/SaveGame.gd").diff(original_state, main.game.snapshot()).is_empty(), "Kartenansicht verändert keine Spielwerte")
 	ui.set_text_scale(1.0)
 	await _test_front_supply(main,proof)
+	await _test_civic_freight(main,proof)
 	main._stop_audio()
 	print("LIVINGATLAS %s: %d Prüfungen, %d Fehler" % ["OK" if _failed == 0 else "FAIL", _checks, _failed])
 	get_tree().quit(0 if _failed == 0 else 1)
@@ -92,6 +93,39 @@ func _test_front_supply(main, proof: String) -> void:
 	await _wait_frames()
 	_check(not mode_view._motion.is_processing() and not mode_view.frontier_supply_paths().is_empty(),"Bewegung aus blendet Nachschubinformationen nicht aus")
 	_check(get_viewport().get_texture().get_image().save_png(proof.path_join("war-front-supply.png")) == OK,"Frontnachschub ist im gerenderten Kriegsbild dokumentiert")
+
+func _test_civic_freight(main, proof: String) -> void:
+	var sample:=OS.get_environment("BQ_FREIGHT_CAMPAIGN_PROOF")
+	if FileAccess.file_exists(sample):
+		_check(main.game.restore(JSON.parse_string(FileAccess.get_file_as_string(sample))),"Finanzierte Nahrungsfracht wird mitsamt Monatsweg geladen")
+	else:
+		main._start(0)
+		var source: Dictionary=main.game.province("germanien__03")
+		source.economic_focus="agriculture"
+		var food=load("res://scripts/CivicProvision.gd")
+		source.provisioning.food_u=6*food.need_u(source)
+		main.game.province("germanien__05").economic_focus="workshops"
+		main.game.roads.append({"from":source.id,"to":"germanien__05","state":"complete","builder":0,"months":0,"construction":{}})
+		main.game.advance_month()
+	main.game.speed=0
+	main._set_map_mode("economy")
+	main._on_province_selected("germanien__05")
+	main.refresh()
+	var motion=main.map_view._motion
+	main.map_view.set_map_motion_enabled(true)
+	await _wait_frames()
+	var focus: Array=main.game.provision_report().get("flows",[])
+	_check(not focus.is_empty() and not motion.food_paths.is_empty() and motion.is_processing(),"Gebuchte Nahrungsfracht bewegt den Getreidewagen auf der Wirtschaftskarte")
+	_check(motion.GRAIN_CART.get_size()==Vector2(128,128) and ResourceLoader.exists("res://assets/map/freight/grain_cart.glb"),"Eigenes Wagenmodell und transparenter Render sind im Kartenbestand verfügbar")
+	var inspector=main.get_meta("modern_interface").province_inspector
+	inspector.show_section("buildings")
+	if not inspector.civic_panel.body.visible: inspector.civic_panel.toggle.pressed.emit()
+	await _wait_frames()
+	_check(inspector.civic_panel.balance_label.text.contains("Nahrungsfracht eingetroffen"),"Die Provinzbilanz benennt die tatsächlich eingegangene Menge")
+	main.map_view.set_map_motion_enabled(false)
+	await _wait_frames()
+	_check(not motion.is_processing() and not motion.food_paths.is_empty(),"Reduzierte Bewegung hält den Wagen an seiner Route und erhält die Bilanz")
+	_check(get_viewport().get_texture().get_image().save_png(proof.path_join("economy-grain-cart.png")) == OK,"Echte Nahrungsfracht ist im gerenderten Kartenbild sichtbar")
 
 func _wait_frames() -> void:
 	for i in 4:

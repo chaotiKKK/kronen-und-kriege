@@ -8,7 +8,7 @@ const STATE_FIELDS := ["food_u","harvest_carry","ration_carry","satisfaction","r
 const RATIONS := {"scarce":75,"normal":100,"generous":125}
 const HARVEST := {"balanced":200,"agriculture":300,"trade":160,"workshops":150}
 const RULES := {
-	"algorithm_version":1,"unit":UNIT,"max_units":MAX_UNITS,"max_month":MAX_MONTH,
+	"algorithm_version":2,"unit":UNIT,"max_units":MAX_UNITS,"max_month":MAX_MONTH,
 	"state_fields":STATE_FIELDS,"normal_need_per_weight":1,"initial_rations":3,
 	"base_storage_rations":6,"normal_reserve_rations":3,"agriculture_reserve_rations":6,
 	"rations":RATIONS,"harvest_focus_numerator":HARVEST,"harvest_denominator":10000,
@@ -17,7 +17,7 @@ const RULES := {
 	"income_min_percent":80,"income_max_percent":110,"income_neutral_satisfaction":50,
 	"scarce_satisfaction_delta":-1,"normal_recovery_step":1,"generous_satisfaction_delta":2,"generous_recovery_cap":75,
 	"tax_deltas":[1,0,-2],"maximum_shortfall_penalty":8,"max_owner":255,
-	"no_food_transport":true,"blocked_consumes_existing_stock":true,
+	"freight_precedes_farm_and_rations":true,"blocked_consumes_existing_stock":true,
 	"industry_uses_min_pre_post_labor":true,"raw_overcapacity_is_valid":true,
 }
 
@@ -71,7 +71,12 @@ static func income_percent(satisfaction: int) -> int:
 static func ration_rate(id: String) -> int:
 	return int(RATIONS.get(id,0))
 
-static func plan(region: Dictionary, month_index: int, tax_level: int, bonuses: Dictionary={}, blocked: bool=false) -> Dictionary:
+static func requested_u(region: Dictionary) -> int:
+	var raw:Dictionary=region.provisioning
+	@warning_ignore("integer_division")
+	return (need_u(region)*ration_rate(str(raw.rations))+int(raw.ration_carry))/100
+
+static func plan(region: Dictionary, month_index: int, tax_level: int, bonuses: Dictionary={}, blocked: bool=false, cargo_delta_u: int=0) -> Dictionary:
 	var errors := state_errors(region.get("provisioning"),month_index)
 	errors.append_array(_bonus_errors(bonuses))
 	if tax_level<0 or tax_level>2: errors.append("Die Steuerstufe ist ungültig.")
@@ -80,7 +85,10 @@ static func plan(region: Dictionary, month_index: int, tax_level: int, bonuses: 
 	if not _integer(region.get("owner"),0,int(RULES.max_owner)): errors.append("Der Besitzer der versorgten Region ist ungültig.")
 	if not errors.is_empty(): return {"ok":false,"reason":" ".join(errors)}
 	var raw: Dictionary=region.provisioning
-	var before := int(raw.food_u)
+	var original_stock := int(raw.food_u)
+	var before := original_stock+cargo_delta_u
+	if before<0 or before>MAX_UNITS or (blocked and cargo_delta_u!=0):
+		return {"ok":false,"reason":"Ungültige gebuchte Nahrungsfracht."}
 	var satisfaction_before := int(raw.satisfaction)
 	var rations := str(raw.rations)
 	var need := need_u(region)
@@ -115,10 +123,13 @@ static func plan(region: Dictionary, month_index: int, tax_level: int, bonuses: 
 	var industry_labor := maxi(0,total_labor-farm_work)
 	var state := {"food_u":after,"harvest_carry":harvest_carry,"ration_carry":ration_numerator%100,
 		"satisfaction":satisfaction_after,"rations":rations,"changed_month":int(raw.changed_month)}
-	var ledger := {"owner":int(region.owner),"before_u":before,"produced_u":produced,"consumed_u":consumed,
+	var ledger := {"owner":int(region.owner),"before_u":original_stock,"produced_u":produced,"consumed_u":consumed,
 		"requested_u":requested,"shortfall_u":shortfall,"wasted_u":wasted,"after_u":after,
 		"farm_work_u":farm_work,"industry_labor_u":industry_labor,"total_labor_u":total_labor,
 		"satisfaction_before":satisfaction_before,"satisfaction_after":satisfaction_after,"rations":rations}
+	if cargo_delta_u!=0:
+		ledger["import_u"]=maxi(0,cargo_delta_u)
+		ledger["export_u"]=maxi(0,-cargo_delta_u)
 	return {"ok":true,"reason":"","state":state,"ledger":ledger}
 
 static func _labor(region: Dictionary, satisfaction: int) -> int:

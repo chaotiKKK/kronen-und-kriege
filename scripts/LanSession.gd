@@ -49,6 +49,7 @@ const LOCAL_TRADE_191_FINGERPRINT := "2432e8e7c3561b3cc8a099f6f883a5b31a26ca7621
 # Original signed-off Windows preview, saved through the actual ENet host.
 const LOCAL_PROVISIONS_191_FINGERPRINT := "06c3f77868779e9f8169e3aa47f95f2ef4b75697a09fb96e7dcee63ae00421d7"
 const LOCAL_FRONT_SUPPLY_191_FINGERPRINT := "8b9aaf4dcd51aa33d1199168ff3ff08ddd503178ac18654fc70d1e1ac7560bd7"
+const LOCAL_REGIONAL_EVENTS_191_FINGERPRINT := "534fcf6326aa79f6aa614d54d55fb1731ba84a841755e499e90514b6bcb80c50"
 static var _cached_fingerprints: Dictionary = {}
 
 var phase := "idle"
@@ -490,6 +491,8 @@ func _local_legacy_backup_suffix(envelope: Dictionary, matching_catalog: bool) -
 		return ".pre-front-supply-schema19.bak"
 	if _app == "1.9.1" and Save.CURRENT_VERSION >= 19 and file_app == "1.9.1" and matching_catalog and Protocol.integer(envelope.get("v"),3,3) and Protocol.integer(envelope.state.get("schema_version"),19,19) and envelope.get("fingerprint") == LOCAL_FRONT_SUPPLY_191_FINGERPRINT:
 		return ".pre-regional-events-schema19.bak"
+	if _app == "1.9.1" and Save.CURRENT_VERSION >= 19 and file_app == "1.9.1" and matching_catalog and Protocol.integer(envelope.get("v"),3,3) and Protocol.integer(envelope.state.get("schema_version"),19,19) and envelope.get("fingerprint") == LOCAL_REGIONAL_EVENTS_191_FINGERPRINT:
+		return ".pre-civic-freight-schema19.bak"
 	# 13/14 are source versions actually supported by the earlier regional
 	# family; increasing our target schema must not extend this source range.
 	if matching_catalog and file_app.begins_with("1.8.") and Protocol.integer(envelope.get("v"),2,Protocol.VERSION) and Protocol.integer(envelope.state.get("schema_version"),13,14):

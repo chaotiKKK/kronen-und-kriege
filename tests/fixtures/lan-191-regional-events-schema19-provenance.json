@@ -1,0 +1,10 @@
+{
+  "source_commit": "34f129587b098096963ceb9aebd212cac2cd0132",
+  "apk_build_code": 26,
+  "exe_sha256": "ee6ed858df7a120f720d7634960de051b48b0019e48a50dfd0a5d0af453bf97f",
+  "save_sha256": "5c6247371ccc2d1bcd498445b14e0262ceb64512921eb27958350cfeae0fbc7f",
+  "fingerprint": "534fcf6326aa79f6aa614d54d55fb1731ba84a841755e499e90514b6bcb80c50",
+  "schema": 19,
+  "wire": 3,
+  "generation": "Ordinary game started by two live ENet peers, one ration decision and one settled month, saved by the archived build 26 EXE."
+}

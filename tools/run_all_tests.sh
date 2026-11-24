@@ -39,6 +39,7 @@ mkdir -p "$LOGDIR"
 HEADLESS=(
 	CivicProvisionTest
 	CivicProvisionGameTest
+	CivicFreightTest
 	CivicProvisionReportTest
 	CivicProvisionSaveTest
 	MaterialTradeTest

@@ -2,10 +2,12 @@ extends Node2D
 ## Screen-space feedback. Updating effects never rebuilds the map or labels.
 const LIMIT := 24
 const STEP := 1.0 / 24.0
+const GRAIN_CART = preload("res://assets/map/freight/grain_cart.png")
 var host
 var enabled := true
 var paths: Array[PackedVector2Array] = []
 var frontier_paths: Array[PackedVector2Array] = []
+var food_paths: Array[PackedVector2Array] = []
 var _elapsed := 0.0
 var _transition := 0.0
 var _selection := 0.0
@@ -31,9 +33,10 @@ func play_selection() -> void:
 	_selection = 0.38 if enabled else 0.0
 	refresh_activity()
 
-func set_deliveries(flows: Array, front_supplies: Array = []) -> void:
+func set_deliveries(flows: Array, front_supplies: Array = [], provisions: Array = []) -> void:
 	paths = _map_paths(flows, "amount_u")
 	frontier_paths = _map_paths(front_supplies, "amount")
+	food_paths = _map_paths(provisions, "amount_u")
 	refresh_activity()
 
 func _map_paths(flows: Array, amount_field: String) -> Array[PackedVector2Array]:
@@ -58,8 +61,11 @@ func _current_paths() -> Array[PackedVector2Array]:
 		"war": return frontier_paths
 	return []
 
+func _has_routes() -> bool:
+	return not _current_paths().is_empty() or (host.map_mode=="economy" and not food_paths.is_empty())
+
 func refresh_activity() -> void:
-	var moving: bool = is_visible_in_tree() and enabled and (_transition > 0 or _selection > 0 or not _current_paths().is_empty())
+	var moving: bool = is_visible_in_tree() and enabled and (_transition > 0 or _selection > 0 or _has_routes())
 	set_process(moving)
 	queue_redraw()
 
@@ -68,7 +74,7 @@ func _process(delta: float) -> void:
 	_transition = maxf(0.0, _transition - delta)
 	_selection = maxf(0.0, _selection - delta)
 	_accumulated += delta
-	if _accumulated >= STEP or (_transition == 0 and _selection == 0 and _current_paths().is_empty()):
+	if _accumulated >= STEP or (_transition == 0 and _selection == 0 and not _has_routes()):
 		_accumulated = 0.0
 		refresh_activity()
 
@@ -84,13 +90,17 @@ func _draw() -> void:
 	var light := Color("a9fff0") if host.map_mode == "war" else Color("fff0a7")
 	for index in active_routes.size():
 		var points := active_routes[index]
-		var phase := fposmod(_elapsed * .53 + index * .21, 1.0) if enabled else .5
-		var leg := phase * float(points.size() - 1)
-		var from := mini(int(leg), points.size() - 2)
-		var pos: Vector2 = points[from].lerp(points[from + 1], leg - from) * scale + offset
+		var pos := _cargo_position(points, index, .53) * scale + offset
 		if canvas.grow(-5).has_point(pos):
 			draw_circle(pos, 4, ink, true, -1, true)
 			draw_circle(pos, 2.5, light, true, -1, true)
+	if host.map_mode=="economy":
+		for index in food_paths.size():
+			var pos := _cargo_position(food_paths[index], index, .34) * scale + offset
+			if canvas.grow(-16).has_point(pos):
+				draw_circle(pos, 12.0, Color("293029"), true, -1.0, true)
+				draw_circle(pos, 12.0, Color("dfc583"), false, 1.5, true)
+				draw_texture_rect(GRAIN_CART, Rect2(pos-Vector2(15,17),Vector2(30,30)), false)
 	if not enabled:
 		return
 	if _selection > 0 and not host.selected.is_empty():
@@ -103,3 +113,10 @@ func _draw() -> void:
 	if _transition > 0:
 		var fraction := _transition / .30
 		draw_rect(canvas, Color(.045, .06, .075, .21 * fraction))
+
+
+func _cargo_position(points: PackedVector2Array, index: int, velocity: float) -> Vector2:
+	var phase := fposmod(_elapsed * velocity + index * .21, 1.0) if enabled else .5
+	var leg := phase * float(points.size() - 1)
+	var from := mini(int(leg), points.size() - 2)
+	return points[from].lerp(points[from + 1], leg - from)

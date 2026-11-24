@@ -23,6 +23,7 @@ func _ready() -> void:
 	test_local_lan_envelope(FIXTURE,FIXTURE_HASH,".pre-provisions-schema18.bak",18,46300)
 	test_local_lan_envelope("res://tests/fixtures/lan-191-provisions-schema19-original.json","65dfe6c33856eb48145076e1cd99df352063dde79564b2d86fef52c6ea26995b",".pre-front-supply-schema19.bak",19,46900)
 	test_local_lan_envelope("res://tests/fixtures/lan-191-front-supply-schema19-original.json","a6914bea136c315648739b1934705c9f3cc15d033444d7fa7a9d9fa47a1a922c",".pre-regional-events-schema19.bak",19,47800)
+	test_local_lan_envelope("res://tests/fixtures/lan-191-regional-events-schema19-original.json","5c6247371ccc2d1bcd498445b14e0262ceb64512921eb27958350cfeae0fbc7f",".pre-civic-freight-schema19.bak",19,48400)
 	test_current_and_raw()
 	test_legacy_research()
 	test_store()

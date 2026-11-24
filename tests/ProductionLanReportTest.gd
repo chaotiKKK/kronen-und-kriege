@@ -64,6 +64,7 @@ func _ready() -> void:
 	await abandoned_road_report(false)
 	await ration_command()
 	await abandoned_road_report(true)
+	await food_freight()
 	finish()
 
 func pure_and_frames() -> void:
@@ -277,6 +278,27 @@ func ration_command() -> void:
 	check(host_food==guest_food and host_food.regions[id].consumed_u>0 and host_food.regions[id].rations=="generous","Both peers share the one real consumption ledger")
 	check(Protocol.world_hash(world.snapshot())==Protocol.world_hash(guest.game.snapshot()),"Food and real monthly ledger participate in the same world hash")
 	guest.command_finished.disconnect(observe)
+
+func food_freight() -> void:
+	var world=Game.new(Data,1)
+	if not check(world.configure_human_houses([1,0]),"A real independent world uses the active peer seats"): return
+	var source:Dictionary=world.province("germanien__03")
+	var target:Dictionary=world.province("germanien__05")
+	var food=load("res://scripts/CivicProvision.gd")
+	source.economic_focus="agriculture"
+	source.provisioning.food_u=6*food.need_u(source)
+	target.economic_focus="workshops"
+	world.roads.append({"from":source.id,"to":target.id,"state":"complete","builder":0,"months":0,"construction":{}})
+	world.advance_month()
+	host.game=world
+	host._authority.game=world
+	host.revision+=1
+	host._broadcast_snapshot()
+	if not check(await until(func():return guest.revision==host.revision),"Actual ENet guest accepts both kinds of cargo and their common road space"): return
+	var expected:Dictionary=world.provision_report(0)
+	var observed:Dictionary=guest.game.provision_report(0)
+	check(not expected.get("flows",[]).is_empty() and expected==observed,"Guest receives the host's exact food quantity, route and reserve without a second simulation")
+	check(Protocol.world_hash(world.snapshot())==Protocol.world_hash(guest.game.snapshot()),"Food freight shares the exact settled world hash")
 
 func until(condition: Callable) -> bool:
 	var deadline:=Time.get_ticks_msec()+10000

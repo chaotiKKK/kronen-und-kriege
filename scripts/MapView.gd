@@ -141,14 +141,14 @@ func set_game(g) -> void:
 		_base.queue_redraw()
 	queue_redraw()
 
-func set_simulation_reports(production: Dictionary, supply: Dictionary) -> void:
+func set_simulation_reports(production: Dictionary, supply: Dictionary, food: Array = []) -> void:
 	# Game reports are calculated by Main once per accepted simulation refresh.
 	_production_snapshot=production.duplicate(true)
 	_supply_snapshot=supply.duplicate(true)
 	_road_snapshot=game.road_segments() if game!=null else []
 	_simulation_reports_set=true
 	if _motion != null:
-		_motion.set_deliveries(production.get("flows", []),supply.get("frontier_deliveries", []))
+		_motion.set_deliveries(production.get("flows", []),supply.get("frontier_deliveries", []),food)
 	queue_redraw()
 
 func set_mode(mode: String) -> void:
@@ -1282,7 +1282,7 @@ func _draw_legend(map_rect: Rect2, font: Font) -> void:
 		"political":["Flächen: aktueller Hausbesitz","Eroberungen verschieben diese Grenzen"],
 		"terrain":["Relief, Flüsse und Geländesymbole","Titelgrenzen bleiben bei Eroberung fest"],
 		"titles":["Rechtsebene oben umschalten","Titelgebiet und Besitz können abweichen"],
-		"economy":["Braun → Gold → Grün: Ertrag","Schilder: örtliche Schwerpunkte","Grün: nutzbare eigene Straße","Rot: Versorgung unterbrochen","Lichtpunkt: gebuchte Baustofflieferung"],
+		"economy":["Braun → Gold → Grün: Ertrag","Schilder: örtliche Schwerpunkte","Grün: nutzbare eigene Straße","Rot: Versorgung unterbrochen","Lichtpunkt: gebuchte Baustofflieferung","Wagen: Nahrungsfracht im letzten Monat"],
 		"war":["Grün: eigene Spielregionen","Orange: aktuell angreifbare Gebiete","Grau: weitere Gebiete · Ringe: Belagerung","Gold: gewählter Seeweg","Mint: eigener Frontnachschub aus Depot"],
 	}[map_mode]
 	var w := minf(320.0*ui_scale,size.x-24)

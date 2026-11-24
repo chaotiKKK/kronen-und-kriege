@@ -136,9 +136,13 @@ func _render(preview: Dictionary,last: Dictionary) -> void:
 	var taxes: int=int(preview.get("tax_level",1))
 	var tax_name: String=["niedrig (+1)","normal (±0)","hoch (−2)"][clampi(taxes,0,2)]
 	plan_label.text="Rationen %d %% · Steuern %s\nZufriedenheit %d → %d %%\nLandarbeit %s · Industriebudget %s (gesamt %s Arbeit)\nNächster Vorrat %s Nahrung · Lager %s Monatsrationen" % [int(preview.get("ration_rate",100)),tax_name,int(next.get("satisfaction_before",preview.get("satisfaction",50))),int(next.get("satisfaction_after",preview.get("satisfaction",50))),ViewModel.material_text(int(next.get("farm_work_u",0))),ViewModel.material_text(int(next.get("industry_labor_u",0))),ViewModel.material_text(int(next.get("total_labor_u",0))),ViewModel.material_text(int(next.get("after_u",0))),_decimal(float(preview.get("capacity_months",0)))]
-	balance_label.text="Nahrungsbilanz: Anfang %s · Erzeugt %s · Verbraucht %s\nFehlbedarf %s · Überlauf %s · Ende %s\nVorschau bei unverändertem Stand; Forschung, Steuern und Blockaden können den nächsten Monat verändern." % [ViewModel.material_text(int(next.get("before_u",0))),ViewModel.material_text(int(next.get("produced_u",0))),ViewModel.material_text(int(next.get("consumed_u",0))),ViewModel.material_text(int(next.get("shortfall_u",0))),ViewModel.material_text(int(next.get("wasted_u",0))),ViewModel.material_text(int(next.get("after_u",0)))]
+	balance_label.text="Nahrungsbilanz: Anfang %s · Erzeugt %s · Verbraucht %s\nFehlbedarf %s · Überlauf %s · Ende %s\nÖrtliche Vorschau ohne künftige Lieferungen. Forschung, Steuern und Blockaden können den nächsten Monat verändern." % [ViewModel.material_text(int(next.get("before_u",0))),ViewModel.material_text(int(next.get("produced_u",0))),ViewModel.material_text(int(next.get("consumed_u",0))),ViewModel.material_text(int(next.get("shortfall_u",0))),ViewModel.material_text(int(next.get("wasted_u",0))),ViewModel.material_text(int(next.get("after_u",0)))]
 	if not last.is_empty():
 		balance_label.text+="\nZuletzt abgerechnet: %s erzeugt · %s verbraucht · %s Fehlbedarf." % [ViewModel.material_text(int(last.produced_u)),ViewModel.material_text(int(last.consumed_u)),ViewModel.material_text(int(last.shortfall_u))]
+		var incoming:=int(last.get("import_u",0))
+		var outgoing:=int(last.get("export_u",0))
+		if incoming>0: balance_label.text+="\nNahrungsfracht eingetroffen · "+ViewModel.material_text(incoming)
+		if outgoing>0: balance_label.text+="\nNahrungsfracht abgegangen · "+ViewModel.material_text(outgoing)
 	status_label.text=str(preview.get("reason",""))
 	var blocked:=str(preview.get("blocked_reason",""))
 	if not blocked.is_empty(): status_label.text+=("\n" if not status_label.text.is_empty() else "")+blocked+" · vorhandene Vorräte werden weiter verbraucht."

@@ -3,14 +3,14 @@ extends RefCounted
 const Production = preload("res://scripts/RegionalProduction.gd")
 const MAX_UNITS := 1000000000000
 const MAX_SERIAL := 1000000000
-const RULES := {"algorithm_version":1,"max_units":MAX_UNITS,"max_serial":MAX_SERIAL,
+const RULES := {"algorithm_version":2,"prior_food_shares_material_road_capacity":true,"max_units":MAX_UNITS,"max_serial":MAX_SERIAL,
 	"capacity_per_edge_weight":4,"max_demands":2048,"max_flows":4096,
 	"offers_are_after_game_reserve":true,"offers_bounded_by_original_stock":true,
 	"received_stock_cannot_relay":true,"shared_bidirectional_edge_capacity":true,
 	"equal_priority_rotates_by_month":true,"requires_own_completed_unblocked_path":true,
 	"reserves_and_two_month_demand_computed_by_game":true,"overflow_import_forbidden":true}
 
-static func plan(provinces: Array, roads: Array, demands: Array, offers: Dictionary, month_index: int, blocked: Dictionary = {}) -> Dictionary:
+static func plan(provinces: Array, roads: Array, demands: Array, offers: Dictionary, month_index: int, blocked: Dictionary = {}, cargo: Dictionary = {}, reserved: Dictionary = {}) -> Dictionary:
 	var catalog := _catalog(provinces)
 	var edges := _edges(roads,catalog,blocked)
 	var graph := {}
@@ -23,11 +23,18 @@ static func plan(provinces: Array, roads: Array, demands: Array, offers: Diction
 		var p: Dictionary=catalog[id]
 		var production: Dictionary=p.get("production",{}) if p.get("production",{}) is Dictionary else {}
 		var stock := clampi(int(production.get("materials_u",0)),0,MAX_UNITS)
+		var bin: Dictionary=cargo.get(id,{})
+		if not bin.is_empty():
+			stock=_amount(bin.get("stock_u",0))
 		available[id]=mini(stock,_amount(offers.get(id,0))) if not _blocked(p,blocked) else 0
-		room[id]=maxi(0,Production.stock_capacity_u(p)-stock)
+		room[id]=maxi(0,Production.stock_capacity_u(p)-stock) if bin.is_empty() else _amount(bin.get("room_u",0))
+	var reserved_amounts := {}
 	for index in edges.size():
 		var edge: Dictionary=edges[index]
 		if not bool(edge.active): continue
+		var taken:int=mini(int(edge.capacity_u),_amount(reserved.get(edge_key(str(edge.from),str(edge.to)),0)))
+		edge.used_u=taken
+		if taken>0: reserved_amounts[index]=taken
 		graph[edge.from].append({"to":edge.to,"index":index})
 		graph[edge.to].append({"to":edge.from,"index":index})
 	for id in ids:
@@ -64,7 +71,13 @@ static func plan(provinces: Array, roads: Array, demands: Array, offers: Diction
 	var ordered_deltas := {}
 	for id in ids:
 		if int(deltas.get(id,0))!=0: ordered_deltas[id]=int(deltas[id])
+	# Return this payload's own booking. The other payload has its own report.
+	for index in reserved_amounts:
+		edges[index].used_u=int(edges[index].used_u)-int(reserved_amounts[index])
 	return {"deltas":ordered_deltas,"flows":flows,"edges":edges}
+
+static func edge_key(a: String,b: String) -> String:
+	return JSON.stringify([a,b] if a<b else [b,a])
 
 static func _amount(value: Variant) -> int:
 	if not value is int: return 0

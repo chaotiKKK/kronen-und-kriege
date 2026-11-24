@@ -2622,7 +2622,7 @@ func refresh() -> void:
 	supply_snapshot=game.supply_report()
 	_ensure_custom_crest(h)
 	map_view.set_game(game)
-	map_view.set_simulation_reports(production_report,supply_snapshot)
+	map_view.set_simulation_reports(production_report,supply_snapshot,game.provision_report().get("flows",[]))
 	map_view.queue_redraw()
 	var vm: Dictionary = ViewModelBuilder.refresh(game, selected)
 	date_label.text = str(vm["date"])
