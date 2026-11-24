@@ -148,7 +148,7 @@ func set_simulation_reports(production: Dictionary, supply: Dictionary) -> void:
 	_road_snapshot=game.road_segments() if game!=null else []
 	_simulation_reports_set=true
 	if _motion != null:
-		_motion.set_deliveries(production.get("flows", []))
+		_motion.set_deliveries(production.get("flows", []),supply.get("frontier_deliveries", []))
 	queue_redraw()
 
 func set_mode(mode: String) -> void:
@@ -494,6 +494,7 @@ func _draw() -> void:
 		return
 	_draw_hover_highlight(s, off)
 	_draw_infrastructure(s, off)
+	_draw_frontier_supply(s, off)
 	_draw_labels(s, off)
 
 func _draw_sea_names(s: float, off: Vector2, occupied: Array) -> void:
@@ -561,6 +562,32 @@ func _draw_infrastructure(s: float, off: Vector2) -> void:
 		for endpoint in [a, b]:
 			draw_circle(endpoint, width + 1.5, Color(0.12, 0.08, 0.035))
 			draw_circle(endpoint, width - 0.5, Color(0.98, 0.85, 0.52))
+
+func frontier_supply_paths() -> Array:
+	if game == null or map_mode != "war":
+		return []
+	var report: Dictionary = _supply_snapshot if _simulation_reports_set else game.supply_report()
+	var paths := {}
+	for delivery in report.get("frontier_deliveries",[]):
+		var path: Array = delivery.get("path",[])
+		if path.size() < 2:
+			continue
+		paths[JSON.stringify(path)] = path
+	return paths.values()
+
+func _draw_frontier_supply(s: float, off: Vector2) -> void:
+	for path in frontier_supply_paths():
+		var points := PackedVector2Array()
+		for id in path:
+			var region: Dictionary = game.province(str(id))
+			if region.is_empty():
+				break
+			points.append(off + _label_point(region) * s)
+		if points.size() != path.size():
+			continue
+		draw_polyline(points, Color(0.035,0.11,0.1,0.95), 7.0, true)
+		draw_polyline(points, Color("8de6ce"), 3.0, true)
+		draw_circle(points[0], 4.5, Color("8de6ce"), true, -1.0, true)
 
 func _draw_labels(s: float, off: Vector2) -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
@@ -1256,7 +1283,7 @@ func _draw_legend(map_rect: Rect2, font: Font) -> void:
 		"terrain":["Relief, Flüsse und Geländesymbole","Titelgrenzen bleiben bei Eroberung fest"],
 		"titles":["Rechtsebene oben umschalten","Titelgebiet und Besitz können abweichen"],
 		"economy":["Braun → Gold → Grün: Ertrag","Schilder: örtliche Schwerpunkte","Grün: nutzbare eigene Straße","Rot: Versorgung unterbrochen","Lichtpunkt: gebuchte Baustofflieferung"],
-		"war":["Grün: eigene Spielregionen","Orange: aktuell angreifbare Gebiete","Grau: weitere Gebiete · Ringe: Belagerung","Goldene Linie: gewählter geprüfter Seeweg"],
+		"war":["Grün: eigene Spielregionen","Orange: aktuell angreifbare Gebiete","Grau: weitere Gebiete · Ringe: Belagerung","Gold: gewählter Seeweg","Mint: eigener Frontnachschub aus Depot"],
 	}[map_mode]
 	var w := minf(320.0*ui_scale,size.x-24)
 	var h := (36.0 + (rows.size()+explanations.size())*20.0)*ui_scale

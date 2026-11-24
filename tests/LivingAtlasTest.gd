@@ -58,9 +58,40 @@ func _ready() -> void:
 	await _wait_frames()
 	_check(not mode_view._motion.is_processing() and miniature._tween == null, "Reduzierte Bewegung stoppt alle Kartenübergänge")
 	_check(preload("res://scripts/SaveGame.gd").diff(original_state, main.game.snapshot()).is_empty(), "Kartenansicht verändert keine Spielwerte")
+	ui.set_text_scale(1.0)
+	await _test_front_supply(main,proof)
 	main._stop_audio()
 	print("LIVINGATLAS %s: %d Prüfungen, %d Fehler" % ["OK" if _failed == 0 else "FAIL", _checks, _failed])
 	get_tree().quit(0 if _failed == 0 else 1)
+
+func _test_front_supply(main, proof: String) -> void:
+	var game = main.game
+	var mode_view = main.map_view
+	var depot := "germanien__03"
+	var border := "germanien__02"
+	var target := "gallien__05"
+	# Controlled on-map fixture. The ordinary NPC campaign proves paid construction separately.
+	game.province(depot).logistics_sites.depot = 1
+	game.province(depot).economic_focus = "agriculture"
+	game.roads.append({"from":depot,"to":border,"state":"complete","months":0,"builder":0})
+	game.house().armies.append({"id":1,"province":target,"strength":1800,"upkeep":30,"morale":85,"last_siege_month":-1})
+	_check(game.neighbours(border).has(target) and not game.neighbours(depot).has(target),"Echter Grenzübergang liegt zwischen Depot und fremder Front")
+	main._on_province_selected(target)
+	main.refresh()
+	mode_view.set_map_motion_enabled(true)
+	await _wait_frames()
+	_check(mode_view.frontier_supply_paths()==[[depot,border,target]],"Kriegskarte liest echte Depotroute aus der Simulationsbilanz")
+	_check(mode_view._motion.is_processing() and not mode_view._motion.frontier_paths.is_empty(),"Eigener Frontnachschub wird im Kriegsreiter animiert")
+	var inspector = main.get_meta("modern_interface").province_inspector
+	_check(inspector.fields.battle.is_visible_in_tree() and inspector.fields.battle.text.contains("Frontnachschub") and inspector.fields.battle.text.contains(" über "),"Provinzleiste nennt im Krieg das Depot und den Grenzübergang")
+	main._set_map_mode("economy")
+	await _wait_frames()
+	_check(mode_view.frontier_supply_paths().is_empty(),"Wirtschaftskarte erhält keine fremde Kriegslinie")
+	main._set_map_mode("war")
+	mode_view.set_map_motion_enabled(false)
+	await _wait_frames()
+	_check(not mode_view._motion.is_processing() and not mode_view.frontier_supply_paths().is_empty(),"Bewegung aus blendet Nachschubinformationen nicht aus")
+	_check(get_viewport().get_texture().get_image().save_png(proof.path_join("war-front-supply.png")) == OK,"Frontnachschub ist im gerenderten Kriegsbild dokumentiert")
 
 func _wait_frames() -> void:
 	for i in 4:

@@ -15,6 +15,7 @@ func _ready() -> void:
 		test_road_and_control_barriers()
 		test_blocker_value_types()
 		test_land_adjacency_and_no_relay()
+		test_connected_border_crossing()
 		test_multiple_depots_and_armies()
 		test_weighted_capacity()
 		test_determinism_and_immutability()
@@ -53,7 +54,7 @@ func test_frontier_import() -> void:
 	check(balance(result,"front").get("import") == 300 and balance(result,"front").get("shortfall") == 100,"Completed adjacent depot supplies 300 actual men to the existing frontier deficit")
 	if depot == null: return
 	check(balance(result,"source").get("export") == 400,"Frontier delivery charges the actual source after its 100-man internal export")
-	check(result.frontier_deliveries == [{"from":"source","depot":"depot","to":"front","amount":300}],"Delivery names the real source, depot, foreign recipient and amount")
+	check(result.frontier_deliveries == [{"from":"source","depot":"depot","to":"front","amount":300,"path":["depot","front"]}],"Delivery names the real source, depot, foreign recipient and amount")
 	var network: Dictionary = result.networks[0]
 	check(network.members == ["depot","home","source"] and network.demand == 200 and network["import"] == 100 and network.shortfall == 0,"Foreign receiver never joins own network or changes its internal demand/import accounting")
 	check(network["export"] == 400 and network.frontier_export == 300,"Network export includes exact frontier source charges, with a separate frontier subset")
@@ -133,6 +134,33 @@ func test_land_adjacency_and_no_relay() -> void:
 	f.provinces[3].owner = 0
 	recompute(f)
 	check(balance(apply_fixture(f),"front")["import"] == 0,"Depot frontier stage cannot bypass missing own roads to an own recipient")
+
+func test_connected_border_crossing() -> void:
+	var f := fixture()
+	f.provinces.append(province("gate"))
+	f.provinces.append(province("gate2"))
+	f.adjacency = {"gate":["front"],"gate2":["front"],"front":["gate","gate2","far"]}
+	f.armies.append(army(3,"far",100))
+	f.roads.append(road("depot","gate"))
+	f.roads.append(road("depot","gate2"))
+	recompute(f)
+	var report := apply_fixture(f)
+	check(balance(report,"front")["import"] == 300 and balance(report,"far")["import"]==0,"A depot inland reaches the foreign army through a completed own border road, without foreign relay")
+	if report.frontier_deliveries.size()==1:
+		check(report.frontier_deliveries[0].path==["depot","gate","front"],"Equally short open crossings choose a stable named path")
+	else:
+		check(false,"One connected depot has exactly one allocation to the actual receiver")
+	check(balance(report,"source")["export"]==400 and report.networks[0].frontier_export==300,"The connected crossing uses the same depot and original surplus limits")
+	f.roads.reverse()
+	f.provinces.reverse()
+	recompute(f)
+	check(apply_fixture(f)==report,"Territorial corridor and border tie break survive shuffled input")
+	check(apply_fixture(f,{"gate":true}).frontier_deliveries.any(func(row): return row.get("path",[])==["depot","gate2","front"]),"Blocking one crossing selects the remaining completed route")
+	check(apply_fixture(f,{"gate":true,"gate2":true}).frontier_deliveries.is_empty(),"Two blocked crossing provinces cannot forward supplies")
+	for lane in f.roads:
+		if lane.to in ["gate","gate2"]: lane.state="building"
+	recompute(f)
+	check(apply_fixture(f).frontier_deliveries.is_empty(),"A border corridor under construction carries no depot exports")
 
 func test_blocker_value_types() -> void:
 	for row in [[false,300],["",300],[true,0],["Enemy field army",0],[&"Enemy field army",0]]:

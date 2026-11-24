@@ -7,8 +7,9 @@ const RULES := {
 	"depot_level":1,
 	"source_budget":"export_available-minus-existing-export",
 	"network":"existing-members-and-active-roads-own-unblocked-only",
-	"receiver":"own-army-on-land-adjacent-foreign-region-no-relay",
-	"order":"network-id-depot-id-receiver-id-source-id",
+	"receiver":"own-army-across-one-land-border-from-active-own-road-network-no-foreign-relay",
+	"route":"depot-to-nearest-open-own-crossing-to-foreign-recipient",
+	"order":"network-id-depot-id-nearest-receiver-then-id-source-id",
 	"network_export":"internal-plus-frontier-export",
 	"network_import_demand_shortfall":"own-members-only",
 	"blocked":"explicit-region-or-hostile-siege",
@@ -45,17 +46,24 @@ static func apply(report: Dictionary, provinces: Array, adjacency: Dictionary, a
 				depot_remaining[depot_id] = _capacity(site)
 			if int(depot_remaining[depot_id]) <= 0:
 				continue
-			var targets: Array = []
-			for neighbor in adjacency.get(depot_id,[]):
-				var target := str(neighbor)
-				if targets.has(target) or not receivers.has(target) or not catalog.has(target) or not regions.has(target):
-					continue
-				if int(catalog[target].get("owner",-1)) == house_index or _blocked(catalog[target],house_index,blocked):
-					continue
-				targets.append(target)
-			targets.sort()
-			var sources := _reachable(depot_id,graph)
+			var parents := _reachable_parents(depot_id,graph)
+			var paths := {}
+			# Breadth-first insertion order gives the shortest open road route.
+			for border in parents:
+				for neighbor in adjacency.get(border,[]):
+					var target := str(neighbor)
+					if paths.has(target) or not receivers.has(target) or not catalog.has(target) or not regions.has(target):
+						continue
+					if int(catalog[target].get("owner",-1)) == house_index or _blocked(catalog[target],house_index,blocked):
+						continue
+					paths[target] = _path_to_front(parents,str(border),target)
+			var targets := paths.keys()
+			targets.sort_custom(func(a: String, b: String) -> bool:
+				return paths[a].size() < paths[b].size() if paths[a].size() != paths[b].size() else a < b)
+			var sources := parents.keys()
+			sources.sort()
 			for target in targets:
+				var path: Array[String] = paths[target]
 				for source in sources:
 					if int(depot_remaining[depot_id]) <= 0 or int(regions[target].get("shortfall",0)) <= 0:
 						break
@@ -71,7 +79,7 @@ static func apply(report: Dictionary, provinces: Array, adjacency: Dictionary, a
 					depot_remaining[depot_id] = int(depot_remaining[depot_id])-amount
 					network["export"] = int(network.get("export",0))+amount
 					network["frontier_export"] = int(network.frontier_export)+amount
-					result.frontier_deliveries.append({"from":source,"depot":depot_id,"to":target,"amount":amount})
+					result.frontier_deliveries.append({"from":source,"depot":depot_id,"to":target,"amount":amount,"path":path.duplicate()})
 	return result
 
 static func _network_graph(network: Dictionary, roads: Array, catalog: Dictionary, house_index: int, blocked: Dictionary) -> Dictionary:
@@ -88,19 +96,28 @@ static func _network_graph(network: Dictionary, roads: Array, catalog: Dictionar
 			if not graph[b].has(a): graph[b].append(a)
 	return graph
 
-static func _reachable(start: String, graph: Dictionary) -> Array:
-	var seen := {start:true}
+static func _reachable_parents(start: String, graph: Dictionary) -> Dictionary:
+	var parents := {start:""}
 	var pending: Array = [start]
 	var next := 0
 	while next < pending.size():
-		for neighbor in graph[pending[next]]:
-			if not seen.has(neighbor):
-				seen[neighbor] = true
+		var origin: String = pending[next]
+		var neighbors: Array = graph[origin].duplicate()
+		neighbors.sort()
+		for neighbor in neighbors:
+			if not parents.has(neighbor):
+				parents[neighbor] = origin
 				pending.append(neighbor)
 		next += 1
-	var ids: Array = seen.keys()
-	ids.sort()
-	return ids
+	return parents
+
+static func _path_to_front(parents: Dictionary, border: String, target: String) -> Array[String]:
+	var path: Array[String] = [target]
+	var at := border
+	while not at.is_empty():
+		path.push_front(at)
+		at = str(parents[at])
+	return path
 
 static func _blocked(province: Dictionary, house_index: int, blocked: Dictionary) -> bool:
 	var obstruction = blocked.get(str(province.id),false)

@@ -45,6 +45,8 @@ const LOCAL_CAMPAIGN_191_FINGERPRINT := "dc8f13abb2f9b93c1aabfcf115f592df02c8af9
 const LOCAL_PRODUCTION_191_FINGERPRINT := "5a1269fa4d99c6482fcdbaec1782ddba755240dde46caf462310f28753594c4d"
 # Original schema 18 save and package provenance are under tests/fixtures.
 const LOCAL_TRADE_191_FINGERPRINT := "2432e8e7c3561b3cc8a099f6f883a5b31a26ca7621a4fae333fff16dbee314ed"
+# Original signed-off Windows preview, saved through the actual ENet host.
+const LOCAL_PROVISIONS_191_FINGERPRINT := "06c3f77868779e9f8169e3aa47f95f2ef4b75697a09fb96e7dcee63ae00421d7"
 static var _cached_fingerprints: Dictionary = {}
 
 var phase := "idle"
@@ -482,6 +484,8 @@ func _local_legacy_backup_suffix(envelope: Dictionary, matching_catalog: bool) -
 		return ".pre-trade-schema17.bak"
 	if _app == "1.9.1" and Save.CURRENT_VERSION >= 19 and file_app == "1.9.1" and matching_catalog and Protocol.integer(envelope.get("v"),3,3) and Protocol.integer(envelope.state.get("schema_version"),18,18) and envelope.get("fingerprint") == LOCAL_TRADE_191_FINGERPRINT:
 		return ".pre-provisions-schema18.bak"
+	if _app == "1.9.1" and Save.CURRENT_VERSION >= 19 and file_app == "1.9.1" and matching_catalog and Protocol.integer(envelope.get("v"),3,3) and Protocol.integer(envelope.state.get("schema_version"),19,19) and envelope.get("fingerprint") == LOCAL_PROVISIONS_191_FINGERPRINT:
+		return ".pre-front-supply-schema19.bak"
 	# 13/14 are source versions actually supported by the earlier regional
 	# family; increasing our target schema must not extend this source range.
 	if matching_catalog and file_app.begins_with("1.8.") and Protocol.integer(envelope.get("v"),2,Protocol.VERSION) and Protocol.integer(envelope.state.get("schema_version"),13,14):

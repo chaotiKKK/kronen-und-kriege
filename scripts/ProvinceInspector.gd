@@ -577,14 +577,30 @@ func _refresh_focus(game, vm: Dictionary) -> void:
 	focus_picker.disabled = game.game_over or (main._lan_active() and main.lan_session.pending_command)
 	_preview_focus()
 
-func _refresh_supply(game, id: String) -> void:
+func _refresh_supply(game, id: String) -> Array[String]:
 	var report: Dictionary = main.supply_snapshot if not main.supply_snapshot.is_empty() else game.supply_report()
 	var supply: Dictionary = report.get("regions",{}).get(id,{})
 	fields.supply.visible = not supply.is_empty()
-	if supply.is_empty(): return
+	if supply.is_empty(): return []
 	fields.supply.text = "Versorgung · gemeinsamer Bedarf %d Mann\nÖrtlich %d · Import %d · Fehlbedarf %d\nVersorgungsverluste werden jährlich abgerechnet." % [int(supply.demand),int(supply.local_capacity),int(supply["import"]),int(supply.shortfall)]
 	if int(supply.get("export_available",0)) > 0:
 		fields.supply.text += "\nKornkammerüberschuss %d · davon geliefert %d" % [int(supply.export_available),int(supply["export"])]
+	var depot_totals := {}
+	for delivery in report.get("frontier_deliveries",[]):
+		if str(delivery.to)!=id or delivery.get("path",[]).size()<2:
+			continue
+		var depot: Dictionary = game.province(str(delivery.depot))
+		var border: Dictionary = game.province(str(delivery.path[-2]))
+		var route := str(depot.get("name",delivery.depot))
+		if border.get("id")!=depot.get("id"):
+			route += " über "+str(border.get("name",delivery.path[-2]))
+		depot_totals[route]=int(depot_totals.get(route,0))+int(delivery.amount)
+	var front_lines: Array[String] = []
+	for route in depot_totals:
+		front_lines.append("Frontnachschub %d · Depot %s" % [int(depot_totals[route]),route])
+	for line in front_lines:
+		fields.supply.text += "\n"+line
+	return front_lines
 
 func show_section(id: String) -> void:
 	if not sections.has(id) or not section_buttons[id].visible or section_buttons[id].disabled: return
@@ -713,7 +729,7 @@ func refresh(game, id: String) -> void:
 	summary.tooltip_text = str(vm.details)
 	var pending: bool = main._lan_active() and main.lan_session.pending_command
 	_refresh_focus(game,vm)
-	_refresh_supply(game,id)
+	var front_supply := _refresh_supply(game,id)
 	_refresh_construction(vm,pending)
 	if vm.own:
 		fields.buildings.text = "Entwicklung %d/10" % int(vm.development) if int(vm.development)<10 else "Örtlicher Ausbau"
@@ -785,7 +801,7 @@ func refresh(game, id: String) -> void:
 	fields.war.visible = not vm.own and military_context
 	fields.war.text = "Anspruch vorhanden." if claimed else ("Anspruch als Kriegsgrund vorbereiten." if claim_reason.is_empty() else claim_reason)
 	_refresh_transport(game,transport,pending)
-	_refresh_campaign(game,vm,army,pending,naval_context,military_context,army_near)
+	_refresh_campaign(game,vm,army,pending,naval_context,military_context,army_near,front_supply)
 	if vm.own: _refresh_knowledge(game,vm)
 	fields.achievements.text = ""
 	if not vm.own:
@@ -813,7 +829,7 @@ func _refresh_local_forces(game, vm: Dictionary, selected_army: Dictionary) -> v
 	fields.army.text = "\n".join(rows)
 	fields.army.visible = not rows.is_empty()
 
-func _refresh_campaign(game, vm: Dictionary, army: Dictionary, pending: bool, naval_context: bool, military_context: bool, army_near: bool) -> void:
+func _refresh_campaign(game, vm: Dictionary, army: Dictionary, pending: bool, naval_context: bool, military_context: bool, army_near: bool, front_supply: Array[String]) -> void:
 	var military: Dictionary=vm.military
 	var recovery: Dictionary=military.recovery
 	var relief: Dictionary=military.relief
@@ -872,6 +888,7 @@ func _refresh_campaign(game, vm: Dictionary, army: Dictionary, pending: bool, na
 		fields.battle.tooltip_text="Die neuen Soldaten werden dem örtlichen Aufgebot entnommen. Mindestens %d Mann bleiben Reserve. Auffüllen verbraucht eine Heeresaktion; Unterhalt bleibt jährlich." % int(recovery.get("reserve",50))
 	if action_buttons.march.visible:
 		_add_reason(reasons,game.march_reason(selected_id))
+	if not lines.is_empty(): lines.append_array(front_supply)
 	fields.battle.text="\n".join(lines)
 	fields.battle.visible=not lines.is_empty()
 	if fields.battle.visible: fields.supply.hide()

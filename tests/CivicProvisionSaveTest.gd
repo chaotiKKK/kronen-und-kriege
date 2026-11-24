@@ -20,7 +20,8 @@ var old: Dictionary = {}
 func _ready() -> void:
 	old = JSON.parse_string(FileAccess.get_file_as_string(FIXTURE)).state
 	test_original18()
-	test_local_lan_envelope()
+	test_local_lan_envelope(FIXTURE,FIXTURE_HASH,".pre-provisions-schema18.bak",18,46300)
+	test_local_lan_envelope("res://tests/fixtures/lan-191-provisions-schema19-original.json","65dfe6c33856eb48145076e1cd99df352063dde79564b2d86fef52c6ea26995b",".pre-front-supply-schema19.bak",19,46900)
 	test_current_and_raw()
 	test_legacy_research()
 	test_store()
@@ -59,25 +60,30 @@ func test_original18() -> void:
 	var twice: Dictionary = Save.migrate(migrated.data)
 	check(twice.ok and Save.state_equal(twice.data,migrated.data),"Repeat migration cannot replenish food or change old values")
 
-func test_local_lan_envelope() -> void:
-	var original:=FileAccess.get_file_as_bytes(FIXTURE)
+func test_local_lan_envelope(fixture: String, digest: String, suffix: String, schema: int, base_port: int) -> void:
+	var original:=FileAccess.get_file_as_bytes(fixture)
+	if FileAccess.get_sha256(fixture)!=digest:
+		check(false,"Actual historical envelope bytes must retain recorded hash: "+str(schema))
+		return
 	var envelope:Dictionary=JSON.parse_string(original.get_string_from_utf8())
 	var session:=Session.new()
 	session.discovery_enabled=false
 	add_child(session)
-	var opened:=session.host("Sicherung Schema 18","Prüfhost",0,46300+OS.get_process_id()%500)
+	var opened:=session.host("Sicherung Schema "+str(schema),"Prüfhost",0,base_port+OS.get_process_id()%500)
 	check(opened.ok,"Local migration runs in a private LAN lobby")
 	if not opened.ok: return
-	var path:="user://historical-rations-%d.json" % OS.get_process_id()
+	var path:="user://historical-rations-%d-%d.json" % [schema,OS.get_process_id()]
 	var destination:=FileAccess.open(path,FileAccess.WRITE)
 	destination.store_buffer(original)
 	destination.close()
 	var loaded:=session.load_host_lobby(path)
-	check(loaded.ok,"Actual schema 18 network save migrates through the local lobby")
+	check(loaded.ok,"Actual historical network save migrates through the local lobby: "+str(schema))
 	check(not Protocol.handshake_error(envelope,session._app,session._fingerprint).is_empty(),"Historical save identity is restricted to local migration")
 	if loaded.ok:
-		check(Save.state_equal(projection(session.game.snapshot()),envelope.state),"Lobby migration retains the historical local world exactly")
-		check(FileAccess.get_file_as_bytes(path)==original and FileAccess.get_file_as_bytes(path+".pre-provisions-schema18.bak")==original,"Local migration keeps an exact backup before saving")
+		var restored: Dictionary=session.game.snapshot()
+		if schema<19: restored=projection(restored)
+		check(Save.state_equal(restored,envelope.state),"Lobby migration retains the historical local world exactly")
+		check(FileAccess.get_file_as_bytes(path)==original and FileAccess.get_file_as_bytes(path+suffix)==original,"Local migration keeps an exact backup before saving")
 		check(session.save_host(path).ok,"Migrated lobby can save with the current content identity")
 		var updated:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(path))
 		check(int(updated.state.schema_version)==Save.CURRENT_VERSION and updated.fingerprint==session._fingerprint,"Current save owns the new schema and content fingerprint")
