@@ -6,8 +6,20 @@ const MAP_SIZE := Vector2(1200, 760)
 const KIND_NAMES := {"country": "Land", "region": "Region", "district": "Kreis", "municipality": "Gemeinde", "city": "Ort"}
 const TEXT := Color("fff7df")
 const OUTLINE := Color(0.035, 0.055, 0.045, 0.96)
+const REFERENCE_PIN = preload("res://assets/map/reference/atlas_pin.png")
+# Crop the transparent margins from the Blender render. The tip touches the
+# bottom center of the crop so the mark points at the original map coordinate.
+const PIN_SOURCE := Rect2(23, 8, 50, 82)
+const PIN_SIZE := Vector2(20, 32.8)
 var host
-var selected_id := ""
+var audit_pin := Rect2()
+var selected_id := "":
+	set(value):
+		if selected_id == value:
+			return
+		selected_id = value
+		audit_pin = Rect2()
+		queue_redraw()
 var audit_labels: Array = []
 var audit_features: Array = []
 var _last_key := ""
@@ -42,6 +54,7 @@ func _process(_delta: float) -> void:
 		refresh()
 
 func _draw() -> void:
+	audit_pin = Rect2()
 	audit_labels.clear()
 	audit_features.clear()
 	if host == null or host.game == null or host.atlas_data == null:
@@ -72,7 +85,14 @@ func _draw_places(atlas, features: Array, visible: Rect2, scale: float, offset: 
 	var viewport := Rect2(Vector2(5, 5), size - Vector2(10, 10))
 	var candidates: Array = []
 	var selected: Dictionary = atlas.lookup(selected_id) if not selected_id.is_empty() else {}
+	var occupied: Array = host.atlas_obstacles.duplicate()
 	if not selected.is_empty() and visible.has_point(selected.point):
+		var anchor: Vector2 = offset + selected.point * scale
+		var pin := Rect2(anchor - Vector2(PIN_SIZE.x * 0.5, PIN_SIZE.y), PIN_SIZE)
+		if viewport.encloses(pin):
+			draw_texture_rect_region(REFERENCE_PIN, pin, PIN_SOURCE)
+			audit_pin = pin
+			occupied.append(pin)
 		candidates.append({"record": selected, "rank": 2000000000})
 	for city in atlas.visible_cities(visible, host.zoom):
 		if str(city.id) != selected_id:
@@ -88,7 +108,6 @@ func _draw_places(atlas, features: Array, visible: Rect2, scale: float, offset: 
 		if int(a.rank) != int(b.rank):
 			return int(a.rank) > int(b.rank)
 		return str(a.record.name) < str(b.record.name))
-	var occupied: Array = host.atlas_obstacles.duplicate()
 	var names: Dictionary = {}
 	var text_scale: float = clampf(UiScript.text_scale, 1.0, 2.0)
 	var limit := clampi(int(size.x * size.y / (7000.0 * text_scale * text_scale)), 12, 100)
@@ -133,11 +152,12 @@ func _draw_places(atlas, features: Array, visible: Rect2, scale: float, offset: 
 		var ink := Color("ffe7a0") if chosen else TEXT
 		if chosen:
 			draw_style_box(_selected_style(), box.grow(2))
-		if kind == "city":
-			draw_circle(anchor, 3.8 if chosen else 3.0, OUTLINE)
-			draw_circle(anchor, 2.2 if chosen else 1.65, ink)
-		else:
-			draw_circle(anchor, 1.5, Color(ink.r, ink.g, ink.b, 0.65))
+		if not chosen or not audit_pin.has_area():
+			if kind == "city":
+				draw_circle(anchor, 3.8 if chosen else 3.0, OUTLINE)
+				draw_circle(anchor, 2.2 if chosen else 1.65, ink)
+			else:
+				draw_circle(anchor, 1.5, Color(ink.r, ink.g, ink.b, 0.65))
 		draw_string_outline(font, text_position, name, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 3, OUTLINE)
 		draw_string(font, text_position, name, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, ink)
 		audit_labels.append({"rect": box, "text": name, "font_size": font_size, "kind": kind, "id": str(record.get("id", ""))})

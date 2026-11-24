@@ -744,6 +744,9 @@ func refresh(game, id: String) -> void:
 	title.text = str(vm.name)
 	summary.text = "%s · %s\n%d Gold/Jahr" % [vm.terrain,vm.owner,vm.income]
 	if vm.own: summary.text += " · Aufgebot %d · Verteidigung %+d%%" % [vm.levy,int(vm.defense)+int(vm.terrain_defense)]
+	var location: String = main.map_view.atlas_location
+	if not location.is_empty():
+		summary.text = "Spielregion · Atlasort %s\n%s" % [location, summary.text]
 	summary.tooltip_text = str(vm.details)
 	var pending: bool = main._lan_active() and main.lan_session.pending_command
 	_refresh_focus(game,vm)

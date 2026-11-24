@@ -83,6 +83,7 @@ func _ready() -> void:
 	_check(wiesbaden_point.distance_to(Vector2(379.5, 427.159)) < 1.0, "Wiesbaden liegt nicht bei ungefähr 8,24° Ost / 50,08° Nord.")
 	_check(berlin_point.distance_to(Vector2(476.344, 379.610)) < 2.0, "Berlin liegt nicht bei ungefähr 13,405° Ost / 52,52° Nord.")
 	await _check_search_widget(wiesbaden_point)
+	await _check_reference_roles_and_pin(wiesbaden)
 	await _check_unassigned_atlas_location(wiesbaden)
 	await _check_label_tap(wiesbaden)
 	await _check_background_area_tap(wiesbaden)
@@ -460,6 +461,57 @@ func _touch_search_result(button: Button) -> void:
 		await get_tree().process_frame
 	search_touch_inputs += 1
 	await _settle_ui()
+
+func _check_reference_roles_and_pin(wiesbaden: Dictionary) -> void:
+	var map = main.map_view
+	var layer = map.atlas_layer
+	var inspector = main.get_meta("modern_interface").province_inspector
+	map.focus_atlas_location(wiesbaden)
+	await _settle_ui()
+	var province: Dictionary = main.game.province(main.selected)
+	_check(not province.is_empty(), "Der Atlasort bleibt einem tatsächlichen Spielgebiet zugeordnet.")
+	var region: String = str(province.get("name", ""))
+	_check(main.map_header_meta.text.begins_with("Atlasort Wiesbaden · Spielregion " + region),
+		"Kartenkopf unterscheidet den Atlasort Wiesbaden von seiner Spielregion.")
+	_check(inspector.summary.text.begins_with("Spielregion · Atlasort Wiesbaden"),
+		"Provinzleiste kennzeichnet den Atlasbezug mit sichtbaren Rollen.")
+	await _draw_frame()
+	var pin = layer.get("audit_pin")
+	_check(pin is Rect2 and pin.has_area(), "Der gewählte Atlasort zeichnet genau eine sichtbare Kompassmarke.")
+	if pin is Rect2 and pin.has_area():
+		var fit: Array = map._fit()
+		var anchor: Vector2 = _point(wiesbaden) * float(fit[0]) + (fit[1] as Vector2)
+		_check(absf(pin.get_center().x - anchor.x) < .8 and absf(pin.end.y - anchor.y) < .8,
+			"Die Spitze der Kompassmarke liegt am genauen Referenzpunkt.")
+		for entry in layer.audit_labels:
+			_check(not (entry.rect as Rect2).intersects(pin), "Der Pin überdeckt kein gerendertes Ortsnamensschild.")
+		# Android can deliver a touch and its emulated mouse press in the
+		# same frame. The second event must hit the same displayed pin.
+		map._pick_at(pin.get_center())
+		map._pick_at(pin.get_center())
+		await _settle_ui()
+		_check(layer.selected_id == str(wiesbaden.id) and str(main.selected) == str(province.id),
+			"Der Tipp auf das Kartenzeichen behält den Ort und das zugehörige Spielgebiet.")
+		await _shot("atlas-roles-pin")
+	map.reset_view()
+	await _settle_ui()
+	var overview_fit: Array = map._fit()
+	var overview_point: Vector2 = _point(wiesbaden) * float(overview_fit[0]) + (overview_fit[1] as Vector2)
+	map._pick_at(overview_point)
+	await _settle_ui()
+	_check(str(map.atlas_location).is_empty() and str(layer.selected_id).is_empty(),
+		"Direkter Provinztipp in der Übersicht löscht Ortsname und Kompassmarke gemeinsam.")
+	_check(str(main.selected) == str(province.id) and not main.map_header_meta.text.begins_with("Atlasort "),
+		"Die Provinz bleibt bedienbar und der Kartenkopf verliert den alten Referenzort.")
+	map.focus_atlas_location(wiesbaden)
+	await _settle_ui()
+	var clear_click := InputEventMouseButton.new()
+	clear_click.button_index = MOUSE_BUTTON_RIGHT
+	clear_click.pressed = true
+	map._gui_input(clear_click)
+	await _settle_ui()
+	_check(str(main.selected).is_empty() and str(map.atlas_location).is_empty() and str(layer.selected_id).is_empty(),
+		"Rechtsklick verwirft gleichzeitig Provinz, Atlasort und Pin.")
 
 func _check_unassigned_atlas_location(wiesbaden: Dictionary) -> void:
 	var map = main.map_view

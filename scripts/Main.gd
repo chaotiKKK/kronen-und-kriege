@@ -2427,7 +2427,8 @@ func _refresh_map_header() -> void:
 	var province: Dictionary = game.province(selected) if not selected.is_empty() else {}
 	var detail: String = MapViewScript.MapModesScript.context_line(game, province, mode, map_view.title_level)
 	if not map_view.atlas_location.is_empty():
-		detail = "%s · Referenzort" % map_view.atlas_location if province.is_empty() else "%s · %s" % [map_view.atlas_location, detail]
+		var context := "Außerhalb der Spielregionen" if province.is_empty() else "Spielregion " + detail
+		detail = "Atlasort %s · %s" % [map_view.atlas_location, context]
 	map_header_meta.text = detail
 	map_header_meta.tooltip_text = detail
 

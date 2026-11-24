@@ -128,6 +128,7 @@ func set_game(g) -> void:
 	game = g
 	hovered = ""
 	if game != null and game.get_instance_id() != _game_id:
+		# A complete WLAN update replaces Game while the local view stays open.
 		_simulation_reports_set=false
 		if _motion != null:
 			_motion.set_deliveries([])
@@ -193,6 +194,12 @@ func mode_title() -> String:
 	return str(MODE_TITLES.get(map_mode, "Politik"))
 
 func select(id: String) -> void:
+	_select_province(id, {})
+
+func _select_province(id: String, reference: Dictionary) -> void:
+	# Keep a matching reference alive across emulated and native input events
+	# that hit the displayed pin before the next rendered frame.
+	_set_atlas_reference(reference)
 	var changed := selected != id
 	selected = id
 	if changed and _motion != null:
@@ -319,19 +326,18 @@ func focus_atlas_location(record: Dictionary) -> void:
 	if record.is_empty() or atlas_layer == null:
 		return
 	var point: Vector2 = record.get("point", record.get("center", Vector2.ZERO))
-	atlas_location = str(record.get("name", ""))
-	atlas_layer.selected_id = str(record.get("id", ""))
 	var kind := str(record.get("kind", "city"))
 	zoom = 4.5 if kind in ["country", "region"] else (12.0 if kind == "district" else (48.0 if kind in ["municipality", "local_admin"] else 24.0))
 	center_on(point)
 	var province_id := _region_for_record(record)
-	if game != null and not game.province(province_id).is_empty():
-		select(province_id)
-		province_selected.emit(province_id)
-	else:
-		select("")
-		province_selected.emit("")
+	_select_province(province_id if game != null and not game.province(province_id).is_empty() else "", record)
+	province_selected.emit(selected)
 	atlas_location_selected.emit(record)
+
+func _set_atlas_reference(record: Dictionary) -> void:
+	atlas_location = str(record.get("name", ""))
+	if atlas_layer != null:
+		atlas_layer.selected_id = str(record.get("id", ""))
 
 func _region_for_record(record: Dictionary) -> String:
 	if game != null and game.data.has_method("region_at"):
@@ -432,7 +438,6 @@ func _pick_at(pos: Vector2) -> void:
 		for marker in markers:
 			if (marker.rect as Rect2).has_point(pos):
 				select(str(marker.province))
-				atlas_location = ""
 				province_selected.emit(selected)
 				army_selected.emit(int(marker.house),selected)
 				queue_redraw()
@@ -440,49 +445,44 @@ func _pick_at(pos: Vector2) -> void:
 	for marker in construction_markers():
 		if (marker.hit_rect as Rect2).has_point(pos):
 			select(str(marker.province))
-			atlas_location=""
 			province_selected.emit(selected)
 			construction_selected.emit(selected,int(marker.id))
 			queue_redraw()
 			return
-	atlas_location = ""
+	var had_reference := not atlas_location.is_empty()
 	var record: Dictionary = {}
 	var anchor_target := false
 	if atlas_layer != null and zoom >= 2.5:
 		var fit := _fit()
 		var point: Vector2 = (pos - fit[1]) / float(fit[0])
+		if atlas_layer.audit_pin.has_point(pos):
+			record = atlas_data.lookup(atlas_layer.selected_id)
+			anchor_target = not record.is_empty()
 		# Ein verschobenes Namensschild gehört weiterhin zu seinem tatsächlichen Ort.
-		for label in atlas_layer.audit_labels:
-			if (label.get("rect", Rect2()) as Rect2).has_point(pos):
-				record = atlas_data.lookup(str(label.get("id", "")))
-				anchor_target = not record.is_empty()
-				break
+		if record.is_empty():
+			for label in atlas_layer.audit_labels:
+				if (label.get("rect", Rect2()) as Rect2).has_point(pos):
+					record = atlas_data.lookup(str(label.get("id", "")))
+					anchor_target = not record.is_empty()
+					break
 		if record.is_empty():
 			record = atlas_data.nearest_city(point, 12.0 / float(fit[0]))
 			anchor_target = not record.is_empty()
 		if record.is_empty():
 			record = atlas_data.feature_at(point, zoom)
-		atlas_layer.selected_id = str(record.get("id", ""))
-		atlas_location = str(record.get("name", ""))
 	var id: String = _province_at(pos)
 	if anchor_target:
 		var mapped_id := _region_for_record(record)
 		id = mapped_id if not game.province(mapped_id).is_empty() else ""
-	if id == "":
-		if selected != "":
-			select("")
-			province_selected.emit("")
-			queue_redraw()
-		if not record.is_empty():
-			atlas_location_selected.emit(record)
-		return
-	select(id)
-	hovered = id
-	_hover_pos = pos
-	province_selected.emit(selected)
-	if not record.is_empty():
+	var province_changed := selected != id
+	_select_province(id, record)
+	if not id.is_empty():
+		hovered = id
+		_hover_pos = pos
+	if not id.is_empty() or province_changed:
+		province_selected.emit(selected)
+	if not record.is_empty() or had_reference:
 		atlas_location_selected.emit(record)
-	queue_redraw()
 
 func _draw() -> void:
 	_sync_base_transform()
@@ -1382,10 +1382,9 @@ func _gui_input(event: InputEvent) -> void:
 			return
 		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 			_dragging = false
-			selected = ""
+			select("")
 			hovered = ""
 			province_selected.emit("")
-			queue_redraw()
 			accept_event()
 			return
 		if event.button_index == MOUSE_BUTTON_LEFT:

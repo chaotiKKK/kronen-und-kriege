@@ -41,6 +41,15 @@ func _ready() -> void:
 	for extra in other_guests:
 		check(await until(func(): return extra.phase == "playing"), "Dritter/vierter Gast erhält Spiel")
 		check(Protocol.world_hash(extra.game.snapshot()) == Protocol.world_hash(host.game.snapshot()), "Vier Sitzwelten identisch")
+	var reference: Dictionary = guest.map_view.atlas_data.lookup("geonames:2809346")
+	guest.map_view.focus_atlas_location(reference)
+	var reference_region: String = guest.selected
+	var expected_revision: int = g.revision + 1
+	h.revision += 1
+	h._broadcast_snapshot()
+	check(await until(func(): return int(g.revision) >= expected_revision), "Gast erhält aktualisierte Welt ohne Ansichtswechsel")
+	check(guest.map_view.atlas_location == "Wiesbaden" and guest.map_view.atlas_layer.selected_id == str(reference.id)
+		and guest.selected == reference_region, "Vollständiger WLAN-Stand erhält den lokalen Atlasort und seine Spielregion")
 	# Real guest UI must send the nonce for the reward-free event escape too.
 	var host_event_before = h.game.pending_event
 	h.game.select_player_context(1)
