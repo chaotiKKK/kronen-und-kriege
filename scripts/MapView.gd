@@ -612,6 +612,7 @@ func _draw_labels(s: float, off: Vector2) -> void:
 		return
 	var occupied: Array = []
 	atlas_obstacles.append_array(_military_obstacles())
+	_draw_undertaking_marker(inner)
 	occupied.append_array(atlas_obstacles)
 	var font_scale: float = preload("res://scripts/ModernInterface.gd").text_scale
 	var fs_title := int(round(19 * font_scale))
@@ -1145,6 +1146,28 @@ func _draw_market_models(scale: float, offset: Vector2, inner: Rect2) -> void:
 		draw_texture_rect(MapModesScript.MINIATURES.economy, rect, false)
 		atlas_obstacles.append(rect.grow(2.0))
 		shown += 1
+
+func undertaking_marker() -> Dictionary:
+	if game==null: return {}
+	var active: Dictionary=game.house().get("undertaking",{}).get("active",{})
+	if active.is_empty() or str(game.ReignUndertakingsScript.CATALOG[active.id].map)!=map_mode: return {}
+	var p: Dictionary=game.province(str(active.province))
+	if p.is_empty(): return {}
+	var fit := _fit()
+	var point: Vector2=_label_point(p)*float(fit[0])+fit[1]
+	return {"id":str(p.id),"rect":Rect2(point+Vector2(-15,-37),Vector2(30,33)),
+		"owned":int(p.owner)==game.player}
+
+func _draw_undertaking_marker(inner: Rect2) -> void:
+	var marker := undertaking_marker()
+	if marker.is_empty() or not inner.encloses(marker.rect): return
+	var rect: Rect2=marker.rect
+	var center := rect.get_center()
+	var tint := Color("f8dc8d") if marker.owned else Color("c29f92")
+	draw_circle(center,14,Color(.035,.075,.085,.9),true,-1,true)
+	draw_circle(center,14,tint,false,1.2,true)
+	draw_texture_rect(preload("res://assets/map/undertakings/undertaking_marker.png"),rect,false)
+	atlas_obstacles.append(rect.grow(2))
 
 func _draw_economic_markers(font: Font) -> void:
 	var scale: float = preload("res://scripts/ModernInterface.gd").text_scale

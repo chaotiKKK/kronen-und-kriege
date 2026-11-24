@@ -3307,6 +3307,7 @@ func _discover_secret() -> void:
 func _expose_secret() -> void:
 	_dispatch({"id": "secret_expose"})
 
+const UndertakingPanel = preload("res://scripts/UndertakingPanel.gd")
 var chronicle_layer: Control
 var chronicle_body: VBoxContainer
 var _chronicle_span: int = 60
@@ -3362,6 +3363,13 @@ func _show_chronicle() -> void:
 	_fill_chronicle()
 	chronicle_layer.visible = true
 	kernel.push_modal("chronik")
+
+func _focus_undertaking(province_id: String, mode: String) -> void:
+	if game==null or game.province(province_id).is_empty(): return
+	_hide_chronicle()
+	_set_map_mode(mode)
+	_on_province_selected(province_id)
+	map_view.center_on(map_view._label_point(game.province(province_id)))
 
 func _hide_chronicle() -> void:
 	kernel.pop_modal("chronik")
@@ -3534,7 +3542,10 @@ func _fill_chronicle() -> void:
 		chronicle_body.remove_child(c)
 		c.queue_free()
 	var h: Dictionary = game.house()
-	chronicle_body.add_child(_label("Haus %s · %s" % [str(h["name"]), str(ViewModelBuilder.refresh(game, selected)["date"])], 15, INK_SOFT))
+	chronicle_body.add_child(_label("%s · %s" % [str(h["name"]), str(ViewModelBuilder.refresh(game, selected)["date"])], 15, INK_SOFT))
+	var undertakings := UndertakingPanel.new()
+	undertakings.configure(self)
+	chronicle_body.add_child(undertakings)
 
 	var filters := HBoxContainer.new()
 	filters.add_theme_constant_override("separation", 6)

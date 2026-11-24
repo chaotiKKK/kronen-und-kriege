@@ -41,6 +41,7 @@ HEADLESS=(
 	CivicProvisionGameTest
 	CivicFreightTest
 	IrrigationWorksTest
+	UndertakingsTest
 	CivicProvisionReportTest
 	CivicProvisionSaveTest
 	MaterialTradeTest
@@ -146,6 +147,7 @@ HEADLESS=(
 WINDOWED=(
 	CivicProvisionUiTest
 	LivingAtlasTest
+	UndertakingUiTest
 	MaterialTradeUiTest
 	MaterialTradeRegularUiTest
 	ProductionUiTest

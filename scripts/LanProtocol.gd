@@ -22,6 +22,8 @@ const FIELDS := {
 	"disband_army":{"army":"army_id"},
 	"research":{"innovation":"text"}, "road":{"to":"text"}, "build":{"key":"text"},
 	"province_focus":{"focus":"text"},
+	"undertake_start":{"kind":"text","province":"text"},
+	"undertake_cancel":{"token":"sequence"}, "undertake_finish":{"token":"sequence"},
 	"province_rations":{"rations":"ration"},
 	"construction_cancel":{"project":"sequence"},
 	"construction_priority":{"project":"sequence","priority":"priority"},

@@ -148,6 +148,7 @@ const MaterialTransportScript = preload("res://scripts/MaterialTransport.gd")
 const DepotSupplyScript = preload("res://scripts/DepotSupply.gd")
 const EconomyPlannerScript = preload("res://scripts/EconomyPlanner.gd")
 const MaterialTradeScript = preload("res://scripts/MaterialTrade.gd")
+const ReignUndertakingsScript = preload("res://scripts/ReignUndertakings.gd")
 const CivicProvisionScript = preload("res://scripts/CivicProvision.gd")
 const CivicFreightScript = preload("res://scripts/CivicFreight.gd")
 const CivicProvisionReportScript = preload("res://scripts/CivicProvisionReport.gd")
@@ -5344,6 +5345,91 @@ func _apply_effects(e: Dictionary) -> void:
 	if e.has("heir") and h["heir"] == "":
 		h["children"].append({"name": _random_name(), "age": 0, "gender": "f" if randf() < 0.5 else "m"})
 		_recompute_heir(h)
+
+func undertaking_board(preferred: String = "", house_index: int = -1) -> Dictionary:
+	var hi := player if house_index<0 else house_index
+	if hi<0 or hi>=houses.size(): return {}
+	var state: Dictionary=houses[hi].get("undertaking",ReignUndertakingsScript.empty())
+	var board := {"offers":[],"active":state.active.duplicate(),"completed":state.completed.duplicate(),
+		"ready":false,"reason":"","steps":[],"reward":{}}
+	if not state.active.is_empty():
+		board.merge(ReignUndertakingsScript.progress(self,hi,state.active),true)
+		board.reward=ReignUndertakingsScript.CATALOG[state.active.id].duplicate()
+		return board
+	var places: Array=[]
+	for p in provinces:
+		if int(p.owner)==hi: places.append(str(p.id))
+	places.sort()
+	if places.has(preferred):
+		places.erase(preferred)
+		places.push_front(preferred)
+	for kind in ReignUndertakingsScript.ORDER:
+		var definition: Dictionary=ReignUndertakingsScript.CATALOG[kind]
+		var row: Dictionary=definition.duplicate()
+		row.merge({"id":kind,"ok":false,"done":state.completed.has(kind),
+			"reason":"Hierfür ist derzeit kein eigener geeigneter Ort verfügbar."})
+		if row.done:
+			row.reason="Bereits abgeschlossen."
+		else:
+			for id in places:
+				var result: Dictionary=ReignUndertakingsScript.offer(self,hi,kind,id)
+				if not result.ok: continue
+				row.merge(result.plan,true)
+				row.ok=true
+				row.reason=""
+				break
+		board.offers.append(row)
+	return board
+
+func start_undertaking(kind: String, id: String, house_index: int = -1) -> Dictionary:
+	var hi := player if house_index<0 else house_index
+	if hi<0 or hi>=houses.size(): return _res(false,"Kein gültiges Haus aktiv.")
+	if bool(houses[hi].get("defeated",false)) or (hi==player and game_over):
+		return _res(false,"Dieses Haus kann keine Vorhaben mehr annehmen.")
+	var state: Dictionary=houses[hi].get("undertaking",ReignUndertakingsScript.empty())
+	if not state.active.is_empty(): return _res(false,"Dein Haus verfolgt bereits ein Vorhaben.")
+	if state.completed.has(kind): return _res(false,"Dieses Vorhaben wurde bereits abgeschlossen.")
+	if int(state.serial)>=ReignUndertakingsScript.MAX_SERIAL: return _res(false,"Keine freie Vorhabenskennung.")
+	var checked: Dictionary=ReignUndertakingsScript.offer(self,hi,kind,id)
+	if not checked.ok: return _res(false,str(checked.reason))
+	state.serial=int(state.serial)+1
+	state.active=checked.plan
+	state.active.merge({"serial":int(state.serial),"started":calendar_index()})
+	houses[hi]["undertaking"]=state
+	var title: String=ReignUndertakingsScript.CATALOG[kind].name
+	_note_for_house(hi,"%s bei %s angenommen." % [title,str(province(id).name)])
+	return _res(true,title+" angenommen.")
+
+func cancel_undertaking(token: int, house_index: int = -1) -> Dictionary:
+	var hi := player if house_index<0 else house_index
+	if hi<0 or hi>=houses.size(): return _res(false,"Kein gültiges Haus aktiv.")
+	var state: Dictionary=houses[hi].get("undertaking",{})
+	if int(state.get("active",{}).get("serial",-1))!=token or token<1:
+		return _res(false,"Dieses Reichsvorhaben ist nicht mehr aktuell.")
+	state.active={}
+	_note_for_house(hi,"Reichsvorhaben aufgegeben.")
+	return _res(true,"Reichsvorhaben aufgegeben.")
+
+func finish_undertaking(token: int, house_index: int = -1) -> Dictionary:
+	var hi := player if house_index<0 else house_index
+	if hi<0 or hi>=houses.size(): return _res(false,"Kein gültiges Haus aktiv.")
+	if bool(houses[hi].get("defeated",false)) or (hi==player and game_over):
+		return _res(false,"Dieses Haus kann keine Vorhaben mehr abschließen.")
+	var state: Dictionary=houses[hi].get("undertaking",{})
+	var active: Dictionary=state.get("active",{})
+	if int(active.get("serial",-1))!=token or token<1:
+		return _res(false,"Dieses Reichsvorhaben ist nicht mehr aktuell.")
+	var outcome: Dictionary=ReignUndertakingsScript.progress(self,hi,active)
+	if not outcome.ready:
+		return _res(false,str(outcome.reason) if not str(outcome.reason).is_empty() else "Das Reichsvorhaben ist noch nicht erfüllt.")
+	var reward: Dictionary=ReignUndertakingsScript.CATALOG[active.id]
+	state.completed[active.id]=calendar_index()
+	state.active={}
+	houses[hi].gold=int(houses[hi].gold)+int(reward.gold)
+	houses[hi].renown=int(houses[hi].renown)+int(reward.renown)
+	var notice := "%s abgeschlossen · +%d Gold · +%d Ruhm." % [reward.name,int(reward.gold),int(reward.renown)]
+	_note_for_house(hi,notice)
+	return _res(true,notice)
 
 func _res(ok: bool, msg: String) -> Dictionary:
 	return {"ok": ok, "msg": msg}

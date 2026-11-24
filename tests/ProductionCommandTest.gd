@@ -64,7 +64,26 @@ func _ready() -> void:
 	check(await command({"id":"construction_cancel","selection":own,"project":id}) and not bool(replies[-1].ok),"Wiederholte Bestätigung kann keinen neuen Auftrag oder alten Vorrat treffen")
 	check(exact_host()==before and same_world(),"Wiederholter Abbruch hat auch keinen Log-/Historyeffekt")
 	await irrigation_command()
+	await undertaking_command()
 	finish()
+
+func undertaking_command() -> void:
+	var target: String = str(host.game.houses[1].capital)
+	var start := {"id":"undertake_start","kind":"granary","province":target}
+	check(await command(start) and bool(replies[-1].ok),"Gast nimmt über ENet ein eigenes Reichsvorhaben an")
+	var host_plan: Dictionary=host.game.undertaking_board("",1).active
+	var projection: Dictionary=host._authority.snapshot_for_peer(guest.local_peer_id)
+	var frame: Dictionary={"v":Protocol.VERSION,"type":"snapshot","revision":host.revision,
+		"hash":Protocol.world_hash(projection),"state":projection,"missing_peer":false,"all_over":false,
+		"production_report":preload("res://scripts/ProductionNetworkReport.gd").pack(host.game._last_production,projection)}
+	var serialized: PackedByteArray=Protocol.encode_packet(frame)
+	check(not serialized.is_empty() and Protocol.decode_packet(serialized).ok,"Der angenommene Auftrag ist als echtes WLAN-Paket kodierbar")
+	var arrived: bool=await until(func():return guest.game!=null and guest.game.undertaking_board().active==host_plan and same_world())
+	check(host_plan.get("province")==target and arrived,"Autorisierter Auftrag wird bei beiden Peers identisch gespeichert · Gastgeber %s · Gast %s · Revisionen %d / %d" % [host.status,guest.status,host.revision,guest.revision])
+	if host_plan.is_empty(): return
+	var finish_order := {"id":"undertake_finish","token":int(host_plan.serial)}
+	var prior: String=exact_host()
+	check(await command(finish_order) and not bool(replies[-1].ok) and exact_host()==prior,"Host verweigert vorzeitige Auszahlung ohne Spielstandsänderung")
 
 func irrigation_command() -> void:
 	var id := "gallien__06"

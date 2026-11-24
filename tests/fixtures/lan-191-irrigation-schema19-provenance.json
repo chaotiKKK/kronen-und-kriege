@@ -1,0 +1,11 @@
+{
+  "description": "Synthetic host and guest round stored by published Build 29 Windows export",
+  "app": "1.9.1",
+  "android_code": 29,
+  "schema": 19,
+  "protocol": 3,
+  "published_commit": "45ecc53496e3ce39f537f02cda96fd492565a16d",
+  "package_sha256": "c09c30df7bd763e95d1ba3dcca09c0fc4f740b520ee755fae36d04a9a2dec647",
+  "fixture_sha256": "dabda69b99717c5845eecbe75009289ae3eb155ae9b0e5ba36a95ed2bad7da47",
+  "fingerprint": "bbd52b6d85bb59a48eb6e90bf15348a776a42b05e379aa38076d34b495379c3c"
+}

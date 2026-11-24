@@ -26,6 +26,7 @@ const MaterialTrade = preload("res://scripts/MaterialTrade.gd")
 const Civic = preload("res://scripts/CivicProvision.gd")
 const RegionalEvents = preload("res://scripts/RegionalEvents.gd")
 const ProvisionReport = preload("res://scripts/CivicProvisionReport.gd")
+const Undertakings = preload("res://scripts/ReignUndertakings.gd")
 const TRADE_INTEGER_FIELDS := ["id","seller","buyer","proposer","lot_u","lot_gold","created_month","expires_month","accepted_month","last_delivery_month","delivered_lots"]
 const MAX_PRODUCTION_UNITS := Production.MAX_UNITS
 const MAX_PROJECT_SERIAL := Production.MAX_SERIAL
@@ -97,6 +98,7 @@ static func migrate(data: Dictionary) -> Dictionary:
 	errors.append_array(_production_fields(out,from_version >= 17))
 	errors.append_array(_trade_fields(out,from_version >= 18))
 	errors.append_array(_provision_fields(out,from_version >= 19))
+	errors.append_array(Undertakings.save_errors(out))
 	if not errors.is_empty():
 		return {"ok":false,"data":out,"from_version":from_version,"to_version":CURRENT_VERSION,"errors":errors}
 	if from_version < 1:
@@ -1117,6 +1119,7 @@ static func _migrate_houses(raw, errors: Array) -> Array:
 			h["color"] = [c.r, c.g, c.b]
 		h["legitimacy"] = clampi(int(h.get("legitimacy", 50)), 0, 100)
 		h["renown"] = maxi(0, int(h.get("renown", 80)))
+		if h.has("undertaking"): Undertakings.normalize(h.undertaking)
 		h["legacies"] = _migrate_legacies(h.get("legacies", {}))
 		h["factions"] = _migrate_factions(h.get("factions", []))
 		h["council"] = _migrate_council(h.get("council", {}), h.get("courtiers", []))

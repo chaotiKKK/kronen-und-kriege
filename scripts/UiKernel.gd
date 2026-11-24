@@ -92,10 +92,18 @@ func _route(id: String, command: Dictionary) -> Dictionary:
 	var refresh: Array = FULL_REFRESH.duplicate()
 	# Modellaktionen melden aufgelöste Militärbefehle selbst. Navigation und
 	# reine Vorbedingungsfehler dürfen keine zweite dauerhafte Notiz erzeugen.
-	var log_result := id not in ["attack","siege","march","claim","army","fleet","blockade","select_army","transport_army","relieve","recover_army","disband_army","build","develop","road","province_focus","construction_cancel","construction_priority","province_rations","material_trade_offer","material_trade_accept","material_trade_cancel"]
+	var log_result := id not in ["attack","siege","march","claim","army","fleet","blockade","select_army","transport_army","relieve","recover_army","disband_army","build","develop","road","province_focus","construction_cancel","construction_priority","province_rations","material_trade_offer","material_trade_accept","material_trade_cancel","undertake_start","undertake_cancel","undertake_finish"]
 	match id:
 		"continue_sandbox":
 			raw = game.continue_sandbox()
+		"undertake_start", "undertake_cancel", "undertake_finish":
+			var checked: Dictionary=load("res://scripts/LanProtocol.gd").validate_command(command)
+			if not checked.ok: return checked
+			var intent: Dictionary=checked.command
+			match id:
+				"undertake_start": raw=game.start_undertaking(intent.kind,intent.province)
+				"undertake_cancel": raw=game.cancel_undertaking(intent.token)
+				"undertake_finish": raw=game.finish_undertaking(intent.token)
 		"research":
 			raw = game.start_research(str(command.get("innovation", "")))
 		"road":
