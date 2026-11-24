@@ -167,6 +167,7 @@ var settings := {
 	"ui_scale": 1.0,
 	"ui_theme": ModernInterfaceScript.DEFAULT_APPEARANCE,
 	"text_scale": 1.0,
+	"map_motion": true,
 	"music": 55,
 	"sfx": 75,
 	"muted": false,
@@ -398,6 +399,7 @@ func _load_settings() -> void:
 	settings["ui_scale"] = clampf(float(cf.get_value("bild", "ui_scale", 1.0)), 0.8, 1.2)
 	settings["ui_theme"] = clampi(int(cf.get_value("bild", "ui_theme", ModernInterfaceScript.DEFAULT_APPEARANCE)), 0, ModernInterfaceScript.THEME_NAMES.size() - 1)
 	settings["text_scale"] = clampf(float(cf.get_value("bild", "text_scale", 1.0)), 1.0, 2.0)
+	settings["map_motion"] = bool(cf.get_value("bild", "kartenanimation", true))
 	settings["music"] = clampi(int(cf.get_value("ton", "musik", 55)), 0, 100)
 	settings["sfx"] = clampi(int(cf.get_value("ton", "effekte", 75)), 0, 100)
 	settings["muted"] = bool(cf.get_value("ton", "stumm", false))
@@ -413,6 +415,7 @@ func _save_settings() -> void:
 	cf.set_value("bild", "ui_scale", float(settings["ui_scale"]))
 	cf.set_value("bild", "ui_theme", int(settings["ui_theme"]))
 	cf.set_value("bild", "text_scale", float(settings["text_scale"]))
+	cf.set_value("bild", "kartenanimation", bool(settings["map_motion"]))
 	cf.set_value("ton", "musik", int(settings["music"]))
 	cf.set_value("ton", "effekte", int(settings["sfx"]))
 	cf.set_value("ton", "stumm", bool(settings["muted"]))
@@ -703,6 +706,7 @@ func _build() -> void:
 	map_wrap.custom_minimum_size = Vector2(420, 320)
 	left.add_child(map_wrap)
 	map_view = MapViewScript.new()
+	map_view.set_map_motion_enabled(bool(settings["map_motion"]))
 	map_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	map_view.province_selected.connect(_on_province_selected)
 	map_view.province_activated.connect(_on_province_activated)
@@ -807,6 +811,7 @@ func _build() -> void:
 		mb.add_theme_stylebox_override("pressed", _flat(Color(0.30, 0.22, 0.10, 0.98), Color(0.96, 0.78, 0.38), 2))
 		map_mode_buttons[str(mode)] = mb
 		mode_row.add_child(mb)
+	mode_row.add_child(VSeparator.new())
 	var chronicle_btn := _map_tool("Chronik", Callable(self, "_show_chronicle"))
 	chronicle_btn.custom_minimum_size = Vector2(64, 30)
 	chronicle_btn.add_theme_font_size_override("font_size", 10)
@@ -1422,6 +1427,17 @@ func _build_options_layer() -> void:
 			_save_settings()
 	)
 	bild.add_child(_option_row("Textgröße", opt_text_scale))
+	var motion := _check_option("Kartenanimationen aktiv")
+	motion.set_pressed_no_signal(bool(settings["map_motion"]))
+	motion.toggled.connect(func(enabled: bool):
+		settings["map_motion"] = enabled
+		if map_view != null:
+			map_view.set_map_motion_enabled(enabled)
+		if not enabled and has_meta("modern_interface"):
+			get_meta("modern_interface").map_miniature.stop_motion()
+		_save_settings()
+	)
+	bild.add_child(_option_row("Kartenanimationen", motion))
 
 	var ton: VBoxContainer = options_sections["ton"]
 	opt_muted = _check_option("Ton aktiv")
@@ -2294,6 +2310,7 @@ func _on_map_mode_changed(mode: String) -> void:
 	_sync_map_mode_buttons()
 	if map_view != null and map_view.selected != "":
 		refresh()
+		_show_selected_map_section(mode)
 
 func _sync_map_mode_buttons() -> void:
 	if map_view == null:
@@ -2322,8 +2339,20 @@ func _on_province_selected(id: String) -> void:
 		side_toggle_btn.set_pressed_no_signal(true)
 		ui.show_section("overview")
 	refresh()
-	if id != "" and map_view.map_mode == "war" and has_meta("modern_interface"):
-		get_meta("modern_interface").province_inspector.show_section("army")
+	_show_selected_map_section(map_view.map_mode)
+
+func _show_selected_map_section(mode: String) -> void:
+	if game == null or selected.is_empty() or not has_meta("modern_interface"):
+		return
+	var ui = get_meta("modern_interface")
+	if ui.current_section != "overview":
+		return
+	if mode == "war":
+		ui.province_inspector.show_section("army")
+	elif mode == "economy":
+		var province: Dictionary = game.province(selected)
+		if not province.is_empty():
+			ui.province_inspector.show_section("buildings" if int(province.owner) == game.player else "achievements")
 
 func _on_army_selected(_house_index: int, id: String) -> void:
 	_on_province_selected(id)
@@ -2382,38 +2411,24 @@ func _toggle_side_panel() -> void:
 func _refresh_map_header() -> void:
 	if map_header_title == null or map_view == null:
 		return
-	map_header_title.text = "ATLAS · EUROPA · %s" % _map_mode_title(str(map_view.map_mode)).to_upper()
+	var mode: String = map_view.map_mode
+	map_header_title.text = _map_mode_title(mode).to_upper()
+	if mode == "titles":
+		map_header_title.text += "  ·  " + MapViewScript.MapModesScript.TIER_NAMES[map_view.title_level]
+	if has_meta("modern_interface"):
+		var miniature = get_meta("modern_interface").map_miniature
+		if miniature != null:
+			miniature.show_mode(mode, bool(settings["map_motion"]))
 	if game == null:
 		return
 	if top_world_label != null:
 		top_world_label.text = "BANGER QUEENS · %s" % ("%d v. Chr." % -game.year if game.year < 0 else "%d n. Chr." % game.year)
-	if selected.is_empty() and not map_view.atlas_location.is_empty():
-		map_header_meta.text = "%s · Referenzort\nAußerhalb der simulierten Spielgebiete" % map_view.atlas_location
-		return
-	if selected != "":
-		var p: Dictionary = game.province(selected)
-		if not p.is_empty():
-			if not map_view.atlas_location.is_empty():
-				map_header_meta.text = "%s · Referenzort\nHerrschaft: %s · Spielgebiet %s" % [map_view.atlas_location, str(game.houses[int(p["owner"])]["name"]), str(p["name"])]
-				return
-			map_header_meta.text = "%s · %s\n%s · Entw. %d · Aufgebot %d" % [
-				str(p["name"]), str(game.houses[int(p["owner"])]["name"]),
-				str(p.get("terrain_name", "Ebenen")), int(p.get("dev", 1)), int(p.get("levy", 0)),
-			]
-			return
-	var h: Dictionary = game.house()
-	map_header_meta.text = "%d Grafschaften · %d Königreiche · %d Reiche\nHaus %s · %s" % [
-		game.provinces.size(), _count_distinct("kingdom"), _count_distinct("empire"),
-		str(h.get("name", "Haus")), str(game.date_text()),
-	]
-
-func _count_distinct(key: String) -> int:
-	var seen := {}
-	if game == null:
-		return 0
-	for p in game.provinces:
-		seen[str(p.get(key, ""))] = true
-	return seen.size()
+	var province: Dictionary = game.province(selected) if not selected.is_empty() else {}
+	var detail: String = MapViewScript.MapModesScript.context_line(game, province, mode, map_view.title_level)
+	if not map_view.atlas_location.is_empty():
+		detail = "%s · Referenzort" % map_view.atlas_location if province.is_empty() else "%s · %s" % [map_view.atlas_location, detail]
+	map_header_meta.text = detail
+	map_header_meta.tooltip_text = detail
 
 func _set_speed(value: int) -> void:
 	_dispatch({"id": "set_speed", "value": value})

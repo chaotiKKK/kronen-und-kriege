@@ -12,26 +12,9 @@ signal atlas_location_selected(record: Dictionary)
 
 const MapModesScript = preload("res://scripts/MapModes.gd")
 const MAP_MODES := MapModesScript.IDS
-const MODE_TITLES := {
-	"political": "Politik",
-	"terrain": "Gelände",
-	"duchy": "Titel",
-	"kingdom": "Reiche",
-	"development": "Entwicklung",
-	"titles": "Rechtstitel",
-	"economy": "Wirtschaft",
-	"war": "Krieg",
-}
-const MODE_HINTS := {
-	"political": "Reichs- und Grafschaftsgrenzen",
-	"terrain": "Gelände, Flüsse und Versorgung",
-	"duchy": "Herzogtümer und ihre Grenzen",
-	"kingdom": "Königreiche und Reichsgrenzen",
-	"development": "Entwicklung der Grafschaften",
-	"titles": "Angestammte Titel · Rechtsstufe rechts umschalten",
-	"economy": "Landsertrag, Entwicklung, Gebäude und Straßen",
-	"war": "Belagerungen, Flotten und Kriegsstand",
-}
+const MODE_TITLES := MapModesScript.TITLES
+const MODE_HINTS := MapModesScript.HINTS
+const MotionScript := preload("res://scripts/AtlasMotion.gd")
 const TERRAIN_ORDER := ["plains", "farmland", "forest", "hills", "mountains", "marsh", "coast", "steppe", "heath"]
 const TITLE_COLORS := [
 	Color(0.62, 0.27, 0.20), Color(0.24, 0.40, 0.58), Color(0.25, 0.48, 0.31),
@@ -91,6 +74,8 @@ var _terrain_tex: Dictionary = {}
 var _building_tex: Dictionary = {}
 var _unit_tex: Dictionary = {}
 var _base
+var _motion: Node2D
+var map_motion_enabled := true
 var atlas_data
 var atlas_layer
 var atlas_obstacles: Array = []
@@ -112,6 +97,10 @@ func _ready() -> void:
 	_base.size = MAP_SIZE
 	add_child(_base)
 	move_child(_base, 0)
+	_motion = MotionScript.new()
+	_motion.host = self
+	add_child(_motion)
+	_motion.set_enabled(map_motion_enabled)
 	resized.connect(_sync_base_transform)
 	mouse_exited.connect(_on_mouse_exited)
 	_sync_base_transform()
@@ -139,6 +128,8 @@ func set_game(g) -> void:
 	hovered = ""
 	if game != null and game.get_instance_id() != _game_id:
 		_simulation_reports_set=false
+		if _motion != null:
+			_motion.set_deliveries([])
 		_game_id = game.get_instance_id()
 		var catalog: String = game.data.catalog_hash() if game.data.has_method("catalog_hash") else ""
 		# Region geometry is immutable and catalog-bound. A network snapshot
@@ -156,6 +147,8 @@ func set_simulation_reports(production: Dictionary, supply: Dictionary) -> void:
 	_supply_snapshot=supply.duplicate(true)
 	_road_snapshot=game.road_segments() if game!=null else []
 	_simulation_reports_set=true
+	if _motion != null:
+		_motion.set_deliveries(production.get("flows", []))
 	queue_redraw()
 
 func set_mode(mode: String) -> void:
@@ -166,13 +159,15 @@ func set_mode(mode: String) -> void:
 		queue_redraw()
 		return
 	map_mode = clean
+	if _motion != null:
+		_motion.play_transition()
 	if _base != null:
 		_base.queue_redraw()
 	queue_redraw()
 	map_mode_changed.emit(map_mode)
 
 func set_title_level(level: String) -> void:
-	if not level in ["duchy", "kingdom", "empire"]:
+	if not level in ["duchy", "kingdom", "empire"] or title_level == level:
 		return
 	title_level = level
 	if _base != null:
@@ -180,12 +175,22 @@ func set_title_level(level: String) -> void:
 	queue_redraw()
 	if atlas_layer != null:
 		atlas_layer.refresh()
+	if map_mode == "titles":
+		map_mode_changed.emit(map_mode)
+
+func set_map_motion_enabled(enabled: bool) -> void:
+	map_motion_enabled = enabled
+	if _motion != null:
+		_motion.set_enabled(enabled)
 
 func mode_title() -> String:
 	return str(MODE_TITLES.get(map_mode, "Politik"))
 
 func select(id: String) -> void:
+	var changed := selected != id
 	selected = id
+	if changed and _motion != null:
+		_motion.play_selection()
 	if _base != null:
 		_base.queue_redraw()
 	queue_redraw()
@@ -227,6 +232,8 @@ func _sync_base_transform() -> void:
 	var fit := _fit()
 	_base.position = fit[1]
 	_base.scale = Vector2(float(fit[0]), float(fit[0]))
+	if _motion != null and not _motion.paths.is_empty():
+		_motion.queue_redraw()
 	var bucket := int(zoom)
 	if bucket != _base_zoom_bucket:
 		_base_zoom_bucket = bucket
@@ -418,7 +425,7 @@ func _pick_at(pos: Vector2) -> void:
 		markers.reverse()
 		for marker in markers:
 			if (marker.rect as Rect2).has_point(pos):
-				selected = str(marker.province)
+				select(str(marker.province))
 				atlas_location = ""
 				province_selected.emit(selected)
 				army_selected.emit(int(marker.house),selected)
@@ -426,7 +433,7 @@ func _pick_at(pos: Vector2) -> void:
 				return
 	for marker in construction_markers():
 		if (marker.hit_rect as Rect2).has_point(pos):
-			selected=str(marker.province)
+			select(str(marker.province))
 			atlas_location=""
 			province_selected.emit(selected)
 			construction_selected.emit(selected,int(marker.id))
@@ -457,13 +464,13 @@ func _pick_at(pos: Vector2) -> void:
 		id = mapped_id if not game.province(mapped_id).is_empty() else ""
 	if id == "":
 		if selected != "":
-			selected = ""
+			select("")
 			province_selected.emit("")
 			queue_redraw()
 		if not record.is_empty():
 			atlas_location_selected.emit(record)
 		return
-	selected = id
+	select(id)
 	hovered = id
 	_hover_pos = pos
 	province_selected.emit(selected)
@@ -487,10 +494,9 @@ func _draw() -> void:
 		return
 	_draw_hover_highlight(s, off)
 	_draw_infrastructure(s, off)
-	_draw_sea_names(s, off)
 	_draw_labels(s, off)
 
-func _draw_sea_names(s: float, off: Vector2) -> void:
+func _draw_sea_names(s: float, off: Vector2, occupied: Array) -> void:
 	if zoom >= 3.0:
 		return
 	var font := ThemeDB.fallback_font
@@ -499,8 +505,14 @@ func _draw_sea_names(s: float, off: Vector2) -> void:
 		var position: Vector2 = off + sea.pos * s
 		if not Rect2(Vector2.ZERO, size).has_point(position):
 			continue
+
+		var width := font.get_string_size(sea.name, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+		var bounds := Rect2(position - Vector2(0, font_size), Vector2(width, font_size + 3))
+		if occupied.any(func(obstacle: Rect2) -> bool: return obstacle.grow(3).intersects(bounds)):
+			continue
 		draw_string_outline(font, position, sea.name, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 3, Color(0.08, 0.16, 0.18, 0.85))
 		draw_string(font, position, sea.name, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(0.85, 0.91, 0.88, 0.85))
+		occupied.append(bounds)
 
 func infrastructure_segments() -> Array:
 	var segments: Array = []
@@ -524,12 +536,14 @@ func _road_key(a: String, b: String) -> String:
 	return a+"|"+b if a<b else b+"|"+a
 
 func _draw_infrastructure(s: float, off: Vector2) -> void:
+	if map_mode not in ["political", "economy", "war"]:
+		return
 	for segment in infrastructure_segments():
 		var a: Vector2 = off + segment.a * s
 		var b: Vector2 = off + segment.b * s
 		var width: float = clampf(2.0 * s, 2.5, 6.0)
 		if segment.state == "complete":
-			var road_color := Color(0.95,0.81,0.48)
+			var road_color := Color("d5b97a") if map_mode == "economy" else Color("b0a490")
 			if map_mode in ["economy","war"] and bool(segment.own_route):
 				road_color = Color("77c9a4") if bool(segment.transport_active) else Color("d58b72")
 			draw_line(a, b, Color(0.12, 0.08, 0.035, 0.92), width + 3.0, true)
@@ -575,16 +589,22 @@ func _draw_labels(s: float, off: Vector2) -> void:
 		if map_mode == "war":
 			_draw_war_markers(s, off, font)
 		elif map_mode == "economy":
+			_draw_market_models(s, off, inner)
 			_draw_economic_markers(font)
 		_draw_construction_markers(font)
 		_draw_construction_cues()
 		_draw_hover_tooltip(font)
+		if legend_visible:
+			_draw_legend(map_rect, font)
 		return
 
 	# Die Blender-Marker sitzen an den Halte- und Königreichssitzen. Sie werden
 	# vor den Titeln eingeplant, damit die Beschriftung nicht auf ihnen landet.
-	_draw_3d_markers(s, off, occupied, inner)
-	if map_mode == "economy":
+	if map_mode in ["political", "titles"]:
+		_draw_3d_markers(s, off, occupied, inner)
+	elif map_mode == "economy":
+		_draw_market_models(s, off, inner)
+		occupied.append_array(atlas_obstacles)
 		_draw_economic_markers(font)
 		for marker in economic_markers_drawn: occupied.append(marker.rect)
 	_draw_construction_markers(font)
@@ -615,7 +635,7 @@ func _draw_labels(s: float, off: Vector2) -> void:
 		var p: Dictionary = g["p"]
 		var title: String = str(p.get(str(g.field) + "_name", "")) if str(g.field) != "owner" else str(game.houses[int(p.owner)].name)
 		var house_name: String = "Angestammter Titel" if map_mode in ["terrain", "titles"] else "%d Spielregionen" % int(g.count)
-		if map_mode == "economy": house_name = "%d Gold/Jahr Landsertrag" % int(g.income)
+		if map_mode == "economy": house_name = "%d Gold/Jahr" % int(g.income)
 		if map_mode == "war": house_name = "%d Mann Aufgebot" % int(g.levy)
 		var tw: float = font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_title).x
 		var ow: float = font.get_string_size(house_name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_owner).x
@@ -647,7 +667,7 @@ func _draw_labels(s: float, off: Vector2) -> void:
 		# Kontur statt deckender Kästen, dazu eine schmale Hausfarben-Marke.
 		var tx := box.position.x + (w - tw) * 0.5
 		var ty := box.position.y + float(fs_title) + 2.0
-		var hcol: Color = game.houses[int(p["owner"])].get("color", GOLD)
+		var hcol: Color = game.houses[int(p["owner"])].get("color", GOLD) if map_mode == "political" else MapModesScript.ACCENTS[map_mode]
 		draw_rect(Rect2(box.position.x + 1, box.position.y + 9, 3, float(fs_title) - 2), Color(hcol.r, hcol.g, hcol.b, 0.92), true)
 		draw_string_outline(font, Vector2(tx, ty), title, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_title, 4, Color(0.025, 0.018, 0.010, 0.9))
 		draw_string(font, Vector2(tx, ty), title, HORIZONTAL_ALIGNMENT_LEFT, -1, fs_title, CREAM)
@@ -730,6 +750,7 @@ func _draw_labels(s: float, off: Vector2) -> void:
 			draw_line(txt + Vector2(0, 2), txt + Vector2(w, 2), Color(1.0, 0.80, 0.34, 0.95), 1.2, true)
 		drawn += 1
 	labels_drawn = drawn
+	_draw_sea_names(s, off, occupied)
 	atlas_obstacles.append_array(occupied)
 
 	if map_mode == "war":
@@ -927,7 +948,9 @@ func _draw_3d_markers(s: float, off: Vector2, occupied: Array, inner: Rect2) -> 
 	var specs := marker_specs()
 	for spec in specs:
 		var pos: Vector2 = (spec["pos"] as Vector2) * s + off
-		var castle_size := Vector2(27.0, 27.0) * ms
+		if not inner.grow(18.0).has_point(pos):
+			continue
+		var castle_size := Vector2(34.0, 34.0) * ms
 		var castle_rect := _clamp_marker_rect(Rect2(
 			pos + Vector2(-castle_size.x * 0.5, 18.0 * ms - castle_size.y),
 			castle_size), inner)
@@ -937,14 +960,15 @@ func _draw_3d_markers(s: float, off: Vector2, occupied: Array, inner: Rect2) -> 
 			banner_size), inner)
 		var shade_pos := Vector2(pos.x, castle_rect.end.y - 2.0 * ms)
 		draw_circle(shade_pos, 10.0 * ms, Color(0.035, 0.025, 0.015, 0.32))
-		if bool(spec.get("imperial", false)):
+		if bool(spec.get("imperial", false)) and map_mode in ["political","titles"]:
 			var halo := banner_rect.get_center()
 			draw_circle(halo, 15.0 * ms, Color(0.94, 0.70, 0.24, 0.14))
 			draw_arc(halo, 15.0 * ms, 0.0, TAU, 28, Color(0.95, 0.75, 0.28, 0.90), 1.7 * ms, true)
-		draw_texture_rect(MARKER_CASTLE, castle_rect, false, Color(1, 1, 1, 0.98))
-		draw_texture_rect(MARKER_BANNER, banner_rect, false, Color(1, 1, 1, 0.98))
+		draw_texture_rect(MapModesScript.MINIATURES[map_mode], castle_rect, false, Color(1, 1, 1, 0.98))
+		if map_mode in ["political","titles"]:
+			draw_texture_rect(MARKER_BANNER, banner_rect, false, Color(1, 1, 1, 0.98))
+			occupied.append(banner_rect.grow(1.0))
 		occupied.append(castle_rect.grow(1.0))
-		occupied.append(banner_rect.grow(1.0))
 		capital_markers_drawn.append(str(spec["id"]))
 		kingdom_banners_drawn.append(str(spec["id"]))
 		if bool(spec.get("imperial", false)):
@@ -1029,6 +1053,27 @@ func focus_markers() -> Array:
 		markers.append({"id":str(p.id),"focus":focus,"label":label,"rect":rect,"color":Color("97d4a2") if focus=="agriculture" else Color("edd18c")})
 	return markers
 
+func _draw_market_models(scale: float, offset: Vector2, inner: Rect2) -> void:
+	var shown := 0
+	var candidates: Array = game.provinces.duplicate()
+	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return int(a.id == selected) > int(b.id == selected) if (a.id == selected) != (b.id == selected) else int(a.buildings.market) > int(b.buildings.market))
+	for province in candidates:
+		if shown >= 12:
+			break
+		if int(province.buildings.market) <= 0:
+			continue
+		var point: Vector2 = _label_point(province) * scale + offset
+		var extent := 28.0 if zoom < 2.5 else 36.0
+		var rect := Rect2(point + Vector2(-extent / 2.0, -extent - 5.0), Vector2.ONE * extent)
+		if not inner.encloses(rect):
+			continue
+		if atlas_obstacles.any(func(obstacle: Rect2) -> bool: return obstacle.intersects(rect.grow(2.0))):
+			continue
+		draw_texture_rect(MapModesScript.MINIATURES.economy, rect, false)
+		atlas_obstacles.append(rect.grow(2.0))
+		shown += 1
+
 func _draw_economic_markers(font: Font) -> void:
 	var scale: float = preload("res://scripts/ModernInterface.gd").text_scale
 	for marker in focus_markers():
@@ -1109,7 +1154,7 @@ func _draw_war_markers(s: float, off: Vector2, font: Font) -> void:
 		var pos: Vector2=marker.anchor*s+off
 		var color: Color=marker.color
 		var siege: int=marker.progress
-		var token: Texture2D = _unit_tex.get("siege")
+		var token: Texture2D = MapModesScript.MINIATURES.war
 		if token != null:
 			draw_texture_rect(token, Rect2(pos - Vector2(14, 14), Vector2(28, 28)), false)
 			draw_arc(pos,15.0,0.0,TAU,32,Color(.03,.03,.025,.85),4.0,true)
@@ -1196,6 +1241,8 @@ func _legend_rows() -> Array:
 		rows = [["Feste Königreichsgrenze",styles.kingdom[0],styles.kingdom[1]],["Feste Reichsgrenze",styles.empire[0],styles.empire[1]]]
 	elif map_mode == "titles":
 		rows = [["Angestammte " + {"duchy":"Herzogtümer","kingdom":"Königreiche","empire":"Reiche"}[title_level],styles[title_level][0],styles[title_level][1]]]
+	elif map_mode == "war":
+		rows = [["Grenze deines Hauses",styles.front[0],styles.front[1]],["Andere Hausgrenze",styles.owner[0],styles.owner[1]]]
 	else:
 		rows = [["Tatsächliche Hausgrenze",styles.owner[0],styles.owner[1]]]
 	return rows
@@ -1208,7 +1255,7 @@ func _draw_legend(map_rect: Rect2, font: Font) -> void:
 		"political":["Flächen: aktueller Hausbesitz","Eroberungen verschieben diese Grenzen"],
 		"terrain":["Relief, Flüsse und Geländesymbole","Titelgrenzen bleiben bei Eroberung fest"],
 		"titles":["Rechtsebene oben umschalten","Titelgebiet und Besitz können abweichen"],
-		"economy":["Rot → Gelb → Grün: weniger → mehr","Schilder: Kornkammer oder Handelsort","Straßen grün: eigenes Transportnetz","Straßen rot: Versorgung unterbrochen","Gestrichelt: Straße noch im Bau"],
+		"economy":["Braun → Gold → Grün: Ertrag","Schilder: örtliche Schwerpunkte","Grün: nutzbare eigene Straße","Rot: Versorgung unterbrochen","Lichtpunkt: gebuchte Baustofflieferung"],
 		"war":["Grün: eigene Spielregionen","Orange: aktuell angreifbare Gebiete","Grau: weitere Gebiete · Ringe: Belagerung","Goldene Linie: gewählter geprüfter Seeweg"],
 	}[map_mode]
 	var w := minf(320.0*ui_scale,size.x-24)

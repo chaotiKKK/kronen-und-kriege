@@ -31,6 +31,7 @@ var touch_layout := OS.has_feature("android") or OS.has_feature("ios")
 var _hud_buttons: Array[Button] = []
 var province_inspector
 var title_tier: OptionButton
+var map_miniature: Control
 var _title_menu: VBoxContainer
 var _title_actions: GridContainer
 var _title_buttons: Array[Button] = []
@@ -385,11 +386,22 @@ func _rebuild_map_tools() -> void:
 	header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.custom_minimum_size = Vector2(0, 38)
 	header.add_theme_stylebox_override("panel", surface(Color(0.04, 0.07, 0.07, 0.72), 4))
+	var header_labels: VBoxContainer = main.map_header_title.get_parent()
+	var header_row := HBoxContainer.new()
+	header_row.add_theme_constant_override("separation", 7)
+	header.add_child(header_row)
+	header_labels.reparent(header_row)
+	header_labels.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header_labels.alignment = BoxContainer.ALIGNMENT_CENTER
+	map_miniature = preload("res://scripts/MapMiniature.gd").new()
+	header_row.add_child(map_miniature)
+	header_row.move_child(map_miniature, 0)
 	_font(main.map_header_title, 12)
 	_font(main.map_header_meta, 10)
-	main.map_header_meta.max_lines_visible = 1
+	main.map_header_meta.autowrap_mode = TextServer.AUTOWRAP_OFF
+	main.map_header_meta.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	main.map_header_meta.clip_text = true
-	main.map_header_meta.tooltip_text = "Referenzatlas mit heutigen Verwaltungsnamen. Spielkarte: 108 Regionen, 9 Königreiche, 3 Reiche."
+	main.map_header_meta.tooltip_text = ""
 	var zoom: HBoxContainer = main.side_toggle_btn.get_parent()
 	zoom.reparent(tools)
 	zoom.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
