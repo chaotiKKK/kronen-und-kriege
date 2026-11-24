@@ -136,6 +136,7 @@ const InfrastructureScript = preload("res://scripts/Infrastructure.gd")
 const ProvinceEconomyScript = preload("res://scripts/ProvinceEconomy.gd")
 const SupplyNetworkScript = preload("res://scripts/SupplyNetwork.gd")
 const EventDirectorScript = preload("res://scripts/EventDirector.gd")
+const RegionalEventsScript = preload("res://scripts/RegionalEvents.gd")
 const NavalTransportScript = preload("res://scripts/NavalTransport.gd")
 const NavalCampaignScript = preload("res://scripts/NavalCampaign.gd")
 const SiegeRulesScript = preload("res://scripts/SiegeRules.gd")
@@ -364,7 +365,7 @@ func _personal_state() -> Dictionary:
 	return {
 		"opinion": opinion.duplicate(), "cooldowns": cooldowns.duplicate(true),
 		"captive": captive.duplicate(true), "scandal": scandal,
-		"pending": str(pending_event["id"]) if pending_event != null else "",
+		"pending": _pending_token(),
 		"event_timer": event_timer, "event_instance": _event_instance,
 		"game_over": game_over, "victory": victory,
 		"history": history.duplicate(true), "log": log_lines.duplicate(),
@@ -397,11 +398,27 @@ func _load_player_context(context: Dictionary) -> void:
 	victory = bool(context["victory"])
 	history = context["history"].duplicate(true)
 	log_lines = context["log"].duplicate()
-	pending_event = null
+	var restored_event := _event_from_token(str(context.pending))
+	pending_event = null if restored_event.is_empty() else restored_event
+
+func _pending_token() -> String:
+	if pending_event==null:
+		return ""
+	var id := str(pending_event.id)
+	return id+"@"+str(pending_event.region) if pending_event.has("region") else id
+
+func _event_from_token(token: String) -> Dictionary:
+	if token.is_empty() or token.length()>130:
+		return {}
+	if token.contains("@"):
+		var fields := token.split("@",true,2)
+		if fields.size()!=2 or not data.has_method("catalog_hash") or province(fields[1]).is_empty():
+			return {}
+		return RegionalEventsScript.for_region(fields[0],fields[1])
 	for event in data.events():
-		if str(event["id"]) == str(context["pending"]):
-			pending_event = event
-			break
+		if str(event.id)==token:
+			return event
+	return {}
 
 func _valid_human_ids(ids: Array, house_count: int) -> bool:
 	if ids.size() < 2 or ids.size() > 4:
@@ -1324,15 +1341,16 @@ func _random_name() -> String:
 	return pool[randi_range(0, pool.size() - 1)]
 
 func _trigger_event() -> void:
-	var pool: Array = data.events()
-	var context := event_context()
-	pending_event = EventDirectorScript.choose(pool, context, house().get("event_history", []), randf())
+	var roll := randf()
+	pending_event = RegionalEventsScript.choose(self,roll) if data.has_method("catalog_hash") else {}
+	if pending_event.is_empty():
+		pending_event = EventDirectorScript.choose(data.events(),event_context(),house().get("event_history",[]),roll)
 	if pending_event.is_empty():
 		pending_event = null
 		event_timer = 1
 		return
 	house().event_history.append(str(pending_event.id))
-	while house().event_history.size() > 6:
+	while house().event_history.size() > RegionalEventsScript.MAX_RECENT:
 		house().event_history.pop_front()
 	_event_instance += 1
 
@@ -5190,12 +5208,20 @@ func force_marry_captive() -> Dictionary:
 
 # --- Ereignisse ----------------------------------------------------------
 
+func regional_event_option(option_index: int) -> Dictionary:
+	if pending_event==null or not pending_event.has("region"):
+		return {}
+	return RegionalEventsScript.option(self,pending_event,option_index)
+
 func event_option_reason(option_index: int) -> String:
 	if pending_event == null:
 		return "Kein offenes Ereignis."
 	var options: Array = pending_event["options"]
 	if option_index < 0 or option_index >= options.size():
 		return "Ungültige Ereignisoption."
+	var regional := regional_event_option(option_index)
+	if not regional.is_empty():
+		return str(regional.reason)
 	var cost := maxi(0, -int(options[option_index].get("effects", {}).get("gold", 0)))
 	if cost > maxi(0, int(house()["gold"])):
 		return "Nicht genug Gold: Diese Entscheidung kostet %d Gold." % cost
@@ -5227,8 +5253,15 @@ func apply_event(option_index: int) -> Dictionary:
 		return _res(false, reason)
 	var options: Array = pending_event["options"]
 	var opt: Dictionary = options[option_index]
-	_apply_effects(opt["effects"])
-	note("%s: %s" % [pending_event["title"], opt["label"]])
+	var title := str(pending_event.title)
+	if pending_event.has("region"):
+		var result := RegionalEventsScript.option(self,pending_event,option_index,true)
+		if not bool(result.ok):
+			return result
+		title += " · " + str(province(str(pending_event.region)).get("name",pending_event.region))
+	else:
+		_apply_effects(opt["effects"])
+	note("%s: %s" % [title, opt["label"]])
 	pending_event = null
 	event_timer = randi_range(7, 14)
 	return _res(true, "Entscheidung umgesetzt.")
@@ -5315,7 +5348,7 @@ func snapshot() -> Dictionary:
 	data_state["log"] = log_lines.duplicate()
 	data_state["history"] = history.duplicate(true)
 	data_state["house_history"] = house_history.duplicate(true)
-	data_state["pending"] = pending_event["id"] if pending_event != null else ""
+	data_state["pending"] = _pending_token()
 	data_state["houses"] = hs
 	data_state["provinces"] = ps
 	if data.has_method("catalog_hash"):
@@ -5368,14 +5401,8 @@ func _valid_personal_context(context, house_count: int) -> bool:
 	var pending = context.get("pending")
 	if not pending is String:
 		return false
-	if pending != "":
-		var known := false
-		for event in data.events():
-			if str(event["id"]) == pending:
-				known = true
-				break
-		if not known or int(context["event_instance"]) < 1:
-			return false
+	if pending != "" and (_event_from_token(pending).is_empty() or int(context["event_instance"]) < 1):
+		return false
 	var saved_cooldowns = context.get("cooldowns")
 	if not saved_cooldowns is Dictionary or saved_cooldowns.size() > 256:
 		return false
@@ -5410,6 +5437,9 @@ func _valid_personal_context(context, house_count: int) -> bool:
 	return true
 
 func _valid_lan_state(state: Dictionary) -> bool:
+	var event_token := str(state.get("pending",""))
+	if event_token.contains("@") and _event_from_token(event_token).is_empty():
+		return false
 	if state.has("event_instance") and (not _whole_number(state["event_instance"]) or int(state["event_instance"]) < 0):
 		return false
 	if not state.has("lan_human_houses"):
@@ -5552,15 +5582,11 @@ func restore(d: Dictionary) -> bool:
 		if i < saved_heirs.size() and str(saved_heirs[i]["heir"]) != "":
 			houses[i]["heir"] = saved_heirs[i]["heir"]
 			houses[i]["heir_age"] = saved_heirs[i]["heir_age"]
-	pending_event = null
-	var pid: String = str(state.get("pending", ""))
-	if pid != "":
-		for ev in data.events():
-			if ev["id"] == pid:
-				pending_event = ev
-				# Alte Einzelspielstände besitzen noch keine Ereignisinstanz.
-				_event_instance = maxi(1, _event_instance)
-				break
+	var restored_event := _event_from_token(str(state.get("pending","")))
+	pending_event = null if restored_event.is_empty() else restored_event
+	if pending_event != null:
+		# Alte Einzelspielstände besitzen noch keine Ereignisinstanz.
+		_event_instance = maxi(1, _event_instance)
 	history = _clean_series(state.get("history", []))
 	var raw_house_history = state.get("house_history", [])
 	house_history = []

@@ -51,11 +51,13 @@ static func research_errors(research) -> Array:
 static func edge_key(a: String, b: String) -> String:
 	return a + "|" + b if a < b else b + "|" + a
 
-static func validate(data: Dictionary) -> Array:
+static func validate(data: Dictionary, regional_event_ids: Array = []) -> Array:
 	var errors: Array = []
 	var event_ids := {}
 	for event in DataScript.events():
 		event_ids[str(event.id)] = true
+	for id in regional_event_ids:
+		event_ids[str(id)] = true
 	var houses: Array = data.get("houses", [])
 	for i in houses.size():
 		if not str(houses[i].get("doctrine", "balanced")) in ["balanced", "infantry", "cavalry", "siege"]:

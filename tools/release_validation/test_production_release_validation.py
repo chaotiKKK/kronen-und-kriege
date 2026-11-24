@@ -323,8 +323,12 @@ class ExplicitSaveSchema(unittest.TestCase):
             self.fail(f"Explicit schema18 must be accepted independently of artifacts: {exc}")
         self.assertEqual((args.schema, args.android_code), (18, 22))
 
+    def test_cli_accepts_explicit19_with_code26(self):
+        args = self.call("parse_args", ["freeze", "--output", "unused", "--schema", "19", "--android-code", "26"])
+        self.assertEqual((args.schema, args.android_code), (19, 26))
+
     def test_cli_rejects_invalid_schemas_before_evidence(self):
-        for invalid in ("0", "-1", "18.0", "1.5", "true", "NaN", "inf", "", "2147483648", "19"):
+        for invalid in ("0", "-1", "18.0", "1.5", "true", "NaN", "inf", "", "2147483648", "20"):
             with self.subTest(schema=invalid), tempfile.TemporaryDirectory() as directory:
                 output = Path(directory) / "must-not-exist"
                 with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as failure:
@@ -333,7 +337,7 @@ class ExplicitSaveSchema(unittest.TestCase):
                 self.assertFalse(output.exists())
 
     def test_expected_schema_rejects_boolean_float_nan_and_unknown(self):
-        for invalid in (True, False, 18.0, 18.5, float("nan"), float("inf"), "18", None, 0, -1, 2147483648, 19):
+        for invalid in (True, False, 18.0, 18.5, float("nan"), float("inf"), "18", None, 0, -1, 2147483648, 20):
             with self.subTest(schema=invalid), self.assertRaisesRegex(ValueError, "schema"):
                 self.call("require_schema", invalid)
 

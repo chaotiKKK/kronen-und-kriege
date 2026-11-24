@@ -22,6 +22,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[2]
 VERSION, CODE, SCHEMA = "1.9.1", 20, 17
 SUPPORTED_SCHEMAS = frozenset((17, 18, 19))
+REGIONAL_EVENTS = "scripts/RegionalEvents.gd"
 PROVISION_MODULES = {f"scripts/{name}.gd" for name in ("CivicProvision", "CivicProvisionReport", "CivicProvisionPanel")}
 CERT = "298739811808ab3c59ef84fd3a0db8bf44f574840c0166b35585079b1c3f6677"
 LOGO = "assets/ui/chaotiKKK_logo.png"
@@ -131,6 +132,8 @@ def contract(files, android_code=CODE, schema=SCHEMA):
         require(set(scripts) >= TRADE_MODULES, "Frozen source must include every required material-trade module")
     if schema >= 19:
         require(set(scripts) >= PROVISION_MODULES, "Frozen source must include every required civilian provisioning module")
+    if android_code >= 26 and schema >= 19:
+        require(REGIONAL_EVENTS in scripts, "Frozen source must include the regional events catalog")
     require(scripts == sorted(path.relative_to(ROOT).as_posix() for path in (ROOT / "scripts").rglob("*.gd")), "Frozen runtime source inventory is incomplete")
     data = sorted(name for name in files if name.startswith("data/") and Path(name).suffix in (".json", ".bin"))
     require(len(data) == 24, "Expected the complete twenty-four shipping data files")

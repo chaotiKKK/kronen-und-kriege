@@ -22,6 +22,7 @@ func _ready() -> void:
 	test_original18()
 	test_local_lan_envelope(FIXTURE,FIXTURE_HASH,".pre-provisions-schema18.bak",18,46300)
 	test_local_lan_envelope("res://tests/fixtures/lan-191-provisions-schema19-original.json","65dfe6c33856eb48145076e1cd99df352063dde79564b2d86fef52c6ea26995b",".pre-front-supply-schema19.bak",19,46900)
+	test_local_lan_envelope("res://tests/fixtures/lan-191-front-supply-schema19-original.json","a6914bea136c315648739b1934705c9f3cc15d033444d7fa7a9d9fa47a1a922c",".pre-regional-events-schema19.bak",19,47800)
 	test_current_and_raw()
 	test_legacy_research()
 	test_store()
@@ -72,7 +73,7 @@ func test_local_lan_envelope(fixture: String, digest: String, suffix: String, sc
 	var opened:=session.host("Sicherung Schema "+str(schema),"Prüfhost",0,base_port+OS.get_process_id()%500)
 	check(opened.ok,"Local migration runs in a private LAN lobby")
 	if not opened.ok: return
-	var path:="user://historical-rations-%d-%d.json" % [schema,OS.get_process_id()]
+	var path:="user://historical-rations-%d-%d.json" % [base_port,OS.get_process_id()]
 	var destination:=FileAccess.open(path,FileAccess.WRITE)
 	destination.store_buffer(original)
 	destination.close()

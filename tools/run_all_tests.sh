@@ -87,6 +87,7 @@ HEADLESS=(
 	ResearchPanelTest
 	ResearchDepthTest
 	EventVarietyTest
+	RegionalEventsTest
 	HouseDesignTest
 	LanDesignerTest
 	MapCacheReuseTest

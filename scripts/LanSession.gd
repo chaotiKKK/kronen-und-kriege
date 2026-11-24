@@ -19,6 +19,7 @@ const Economy = preload("res://scripts/ProvinceEconomy.gd")
 const Naval = preload("res://scripts/NavalTransport.gd")
 const ProductionReport = preload("res://scripts/ProductionNetworkReport.gd")
 const Civic = preload("res://scripts/CivicProvision.gd")
+const RegionalEvents = preload("res://scripts/RegionalEvents.gd")
 const ProvisionReport = preload("res://scripts/CivicProvisionReport.gd")
 const TIMEOUT_MS := 8000
 # Tatsächlicher Fingerabdruck der veröffentlichten 1.9.0-Definitionen.
@@ -47,6 +48,7 @@ const LOCAL_PRODUCTION_191_FINGERPRINT := "5a1269fa4d99c6482fcdbaec1782ddba75524
 const LOCAL_TRADE_191_FINGERPRINT := "2432e8e7c3561b3cc8a099f6f883a5b31a26ca7621a4fae333fff16dbee314ed"
 # Original signed-off Windows preview, saved through the actual ENet host.
 const LOCAL_PROVISIONS_191_FINGERPRINT := "06c3f77868779e9f8169e3aa47f95f2ef4b75697a09fb96e7dcee63ae00421d7"
+const LOCAL_FRONT_SUPPLY_191_FINGERPRINT := "8b9aaf4dcd51aa33d1199168ff3ff08ddd503178ac18654fc70d1e1ac7560bd7"
 static var _cached_fingerprints: Dictionary = {}
 
 var phase := "idle"
@@ -102,14 +104,14 @@ func _content_fingerprint() -> String:
 	var provision_rules := {"model":Civic.RULES,"report":ProvisionReport.RULES,"policy":GameScript.CIVIC_PROVISION_RULES}
 	var identity := {"schema":Save.CURRENT_VERSION,"protocol":Protocol.VERSION,
 		"commands":Protocol.FIELDS,"naval":Naval.RULES,"campaign":campaign_rules,
-		"production":production_rules,"material_trade":trade_rules,"provisioning":provision_rules,"innovations":Infrastructure.INNOVATIONS,
+		"production":production_rules,"material_trade":trade_rules,"provisioning":provision_rules,"regional_events":RegionalEvents.RULES,"innovations":Infrastructure.INNOVATIONS,
 		"province_economy":{"foci":Economy.FOCI,"lock_months":Economy.LOCK_MONTHS}}
 	var cache_key := str(_data.resource_path)+"|"+route_fingerprint+"|"+JSON.stringify(Save.canonical(identity))
 	if _cached_fingerprints.has(cache_key):
 		return str(_cached_fingerprints[cache_key])
 	var content := {"schema":Save.CURRENT_VERSION, "protocol":Protocol.VERSION,
 		"houses":_data.houses(), "provinces":_data.provinces(), "adjacency":_data.adjacency(),
-		"events":_data.events(), "innovations":Infrastructure.INNOVATIONS, "commands":Protocol.FIELDS,
+		"events":_data.events(), "regional_events":RegionalEvents.RULES, "innovations":Infrastructure.INNOVATIONS, "commands":Protocol.FIELDS,
 		"province_economy":{"foci":Economy.FOCI,"lock_months":Economy.LOCK_MONTHS},
 		"naval_transport":{"rules":Naval.RULES,"route_fingerprint":route_fingerprint},
 		"field_campaign":campaign_rules,"production":production_rules,"material_trade":trade_rules,"provisioning":provision_rules}
@@ -486,6 +488,8 @@ func _local_legacy_backup_suffix(envelope: Dictionary, matching_catalog: bool) -
 		return ".pre-provisions-schema18.bak"
 	if _app == "1.9.1" and Save.CURRENT_VERSION >= 19 and file_app == "1.9.1" and matching_catalog and Protocol.integer(envelope.get("v"),3,3) and Protocol.integer(envelope.state.get("schema_version"),19,19) and envelope.get("fingerprint") == LOCAL_PROVISIONS_191_FINGERPRINT:
 		return ".pre-front-supply-schema19.bak"
+	if _app == "1.9.1" and Save.CURRENT_VERSION >= 19 and file_app == "1.9.1" and matching_catalog and Protocol.integer(envelope.get("v"),3,3) and Protocol.integer(envelope.state.get("schema_version"),19,19) and envelope.get("fingerprint") == LOCAL_FRONT_SUPPLY_191_FINGERPRINT:
+		return ".pre-regional-events-schema19.bak"
 	# 13/14 are source versions actually supported by the earlier regional
 	# family; increasing our target schema must not extend this source range.
 	if matching_catalog and file_app.begins_with("1.8.") and Protocol.integer(envelope.get("v"),2,Protocol.VERSION) and Protocol.integer(envelope.state.get("schema_version"),13,14):

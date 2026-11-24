@@ -126,8 +126,60 @@ func _ready() -> void:
 	var prestige_before: int = main.game.house().prestige
 	rows[1].get_child(0).pressed.emit()
 	_check(main.game.pending_event == null and main.game.house().gold == 0 and main.game.house().prestige == prestige_before + 4, "Der freigegebene Originalbutton zahlt den vollen Preis und gewährt genau seine Wirkung.")
+	await _check_local_council(main)
 	print("EVENTCHOICETEST %s; %d Prüfungen." % ["OK" if failures == 0 else "FAIL", checks])
 	get_tree().quit(0 if failures == 0 else 1)
+
+func _check_local_council(main) -> void:
+	var campaign := OS.get_environment("BQ_REGIONAL_EVENT_PROOF")
+	if FileAccess.file_exists(campaign):
+		var state: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(campaign))
+		_check(main.game.restore(state),"Tatsächliche offene Provinzentscheidung lässt sich in Main laden.")
+	else:
+		var region := str(main.game.house().capital)
+		main.game.house().gold = 100
+		main.game.house().research.known = ["surveying","crop_rotation"]
+		main.game.pending_event = load("res://scripts/RegionalEvents.gd").for_region("rat_lager",region)
+	main.game.speed = 0
+	main._show_event()
+	var site: Dictionary = main.game.province(str(main.game.pending_event.region))
+	var ui = main.get_meta("modern_interface")
+	for scale in [1.0,2.0]:
+		ui.set_text_scale(scale)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var rows: Array = main.event_buttons.get_children()
+		_check(rows.size()==2 and main.event_text.text.contains(str(site.name)),"Rat zeigt den tatsächlichen Ort und zwei Entscheidungen.")
+		var first: Button = rows[0].get_child(0)
+		_check(first.accessibility_name.contains("−65 Gold") and first.accessibility_name.contains("12 Monate") and not first.disabled,"Forschungskosten und Zeit stehen im zugänglichen Button.")
+		_check(not first.get_global_rect().intersects(rows[1].get_child(0).get_global_rect()),"Örtliche Entscheidungen bleiben bei 200 Prozent getrennt.")
+		var path := OS.get_environment("BQ_REGIONAL_EVENT_RENDER")
+		if not path.is_empty() and DisplayServer.get_name()!="headless":
+			await RenderingServer.frame_post_draw
+			_check(get_viewport().get_texture().get_image().save_png(path.path_join("vorratsrat-%d.png" % int(scale*100)))==OK,"Gelesener Provinzrat ist als Bild dokumentiert.")
+	ui.set_text_scale(1.0)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var button: Button = main.event_buttons.get_child(0).get_child(0)
+	var gold: int = main.game.house().gold
+	if DisplayServer.get_name()=="headless":
+		button.pressed.emit()
+	else:
+		var point := button.get_viewport().get_screen_transform()*button.get_global_transform_with_canvas()*(button.size*.5)
+		var motion := InputEventMouseMotion.new()
+		motion.position = point
+		motion.global_position = point
+		Input.parse_input_event(motion)
+		await get_tree().process_frame
+		_check(get_viewport().gui_get_hovered_control()==button,"Touch zeigt auf die richtige Entscheidung.")
+		for pressed in [true,false]:
+			var event := InputEventScreenTouch.new()
+			event.index = 0
+			event.position = point
+			event.pressed = pressed
+			Input.parse_input_event(event)
+			await get_tree().process_frame
+	_check(main.game.pending_event==null and main.game.house().research.active=="granaries" and int(main.game.house().gold)==gold-65,"Echter Aktionsbutton startet bezahlte Vorratsforschung und schließt den Rat.")
 
 func _check(ok: bool, message: String) -> void:
 	checks += 1

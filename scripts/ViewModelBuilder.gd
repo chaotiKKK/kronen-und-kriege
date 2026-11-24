@@ -128,9 +128,20 @@ static func event(game) -> Dictionary:
 	var options: Array = []
 	for index in ev.get("options", []).size():
 		var opt: Dictionary = ev.options[index]
-		var reason: String = game.event_option_reason(index)
-		options.append({"label": str(opt["label"]), "chips": _effect_chips(opt.get("effects", {})), "enabled":reason.is_empty(), "reason":reason})
-	return {"id": str(ev.get("id", "")), "art":str(ev.get("art", "")), "title": str(ev["title"]), "text": str(ev["text"]), "options": options, "decline_enabled":game.event_decline_reason().is_empty()}
+		var quote: Dictionary = game.regional_event_option(index)
+		var reason: String = game.event_option_reason(index) if quote.is_empty() else str(quote.reason)
+		var chips := _effect_chips(opt.get("effects", {}))
+		if not quote.is_empty():
+			chips = str(quote.detail)
+			if int(quote.cost)>0:
+				chips = _effect_chips({"gold":-int(quote.cost)}) + "   " + chips
+		options.append({"label":str(opt.label),"chips":chips,"enabled":reason.is_empty(),"reason":reason})
+	var text := str(ev.text)
+	if ev.has("region"):
+		var region: Dictionary = game.province(str(ev.region))
+		text = str(region.get("name",ev.region)) + " · " + text
+	return {"id":str(ev.get("id","")),"art":str(ev.get("art","")),"title":str(ev.title),"text":text,"options":options,"decline_enabled":game.event_decline_reason().is_empty()}
+
 
 static func province(game, id: String, production_report: Dictionary = {}) -> Dictionary:
 	var p: Dictionary = game.province(id)

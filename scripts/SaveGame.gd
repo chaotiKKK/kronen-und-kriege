@@ -24,6 +24,7 @@ const CURRENT_VERSION := 19
 const Production = preload("res://scripts/RegionalProduction.gd")
 const MaterialTrade = preload("res://scripts/MaterialTrade.gd")
 const Civic = preload("res://scripts/CivicProvision.gd")
+const RegionalEvents = preload("res://scripts/RegionalEvents.gd")
 const ProvisionReport = preload("res://scripts/CivicProvisionReport.gd")
 const TRADE_INTEGER_FIELDS := ["id","seller","buyer","proposer","lot_u","lot_gold","created_month","expires_month","accepted_month","last_delivery_month","delivered_lots"]
 const MAX_PRODUCTION_UNITS := Production.MAX_UNITS
@@ -173,7 +174,8 @@ static func migrate(data: Dictionary) -> Dictionary:
 					leg[field] = int(leg[field])
 	if str(out.get("world_layout", "")) == "regions108":
 		errors.append_array(RegionMigrationScript.validate_current(out))
-	errors.append_array(InfrastructureScript.validate(out))
+	var regional_event_ids := RegionalEvents.SCENES.keys() if str(out.get("world_layout",""))=="regions108" else []
+	errors.append_array(InfrastructureScript.validate(out,regional_event_ids))
 
 	return {
 		"ok": errors.is_empty(), "data": out, "from_version": from_version,
