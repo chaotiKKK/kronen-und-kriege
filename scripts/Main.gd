@@ -116,6 +116,7 @@ var research_buttons: Dictionary = {}
 var road_buttons: VBoxContainer
 var production_report: Dictionary = {}
 var supply_snapshot: Dictionary = {}
+var march_plan: Dictionary = {}
 var sandbox_button: Button
 var court_layer: Control
 var court_title: Label
@@ -2620,9 +2621,10 @@ func refresh() -> void:
 	# Reports belong to the accepted game update, never the map's pan/draw path.
 	production_report=game.regional_production_report()
 	supply_snapshot=game.supply_report()
+	march_plan = game.march_preview(selected) if map_view.map_mode == "war" and not selected.is_empty() and not game.game_over else {}
 	_ensure_custom_crest(h)
 	map_view.set_game(game)
-	map_view.set_simulation_reports(production_report,supply_snapshot,game.provision_report().get("flows",[]))
+	map_view.set_simulation_reports(production_report,supply_snapshot,game.provision_report().get("flows",[]),march_plan)
 	map_view.queue_redraw()
 	var vm: Dictionary = ViewModelBuilder.refresh(game, selected)
 	date_label.text = str(vm["date"])

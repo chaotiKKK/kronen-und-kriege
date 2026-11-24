@@ -4198,6 +4198,9 @@ func supply_report(hi: int = -1) -> Dictionary:
 	hi = player if hi < 0 else hi
 	if hi < 0 or hi >= houses.size():
 		return {"regions":{},"roads":[],"networks":[]}
+	return _supply_report_with_armies(hi,houses[hi].get("armies",[]))
+
+func _supply_report_with_armies(hi: int, armies: Array) -> Dictionary:
 	var capacities := {}
 	var bonuses := {}
 	for p in provinces:
@@ -4205,8 +4208,8 @@ func supply_report(hi: int = -1) -> Dictionary:
 		capacities[str(p.id)] = local
 		bonuses[str(p.id)] = maxi(0,local - _province_supply_base(p,hi)) if str(p.get("economic_focus","balanced")) == "agriculture" else 0
 	var blocked := _supply_blocked(hi)
-	var report: Dictionary=SupplyNetworkScript.calculate(provinces,roads,houses[hi].get("armies",[]),hi,capacities,bonuses,blocked)
-	return DepotSupplyScript.apply(report,provinces,adjacency,houses[hi].get("armies",[]),hi,blocked)
+	var report: Dictionary=SupplyNetworkScript.calculate(provinces,roads,armies,hi,capacities,bonuses,blocked)
+	return DepotSupplyScript.apply(report,provinces,adjacency,armies,hi,blocked)
 
 func _supply_blocked(hi: int) -> Dictionary:
 	# Zivile Besetzung und militärische Empfänger sind verschiedene Perspektiven:
@@ -4222,6 +4225,10 @@ func _supply_blocked(hi: int) -> Dictionary:
 				result[str(army.get("province",""))]="Feindliches Feldheer."
 	return result
 
+static func _annual_supply_loss(demand: int, shortfall: int) -> int:
+	if demand <= 0 or shortfall <= 0: return 0
+	return mini(maxi(1,roundi(shortfall * 0.02)),maxi(1,int(demand / 20)))
+
 ## Ein jährliches Verlustbudget je Standort. Kein Mindestverlust je Verband:
 ## kleine und große Heere teilen Deckung, Import und Verluste proportional.
 func _apply_army_supply(i: int) -> void:
@@ -4230,9 +4237,9 @@ func _apply_army_supply(i: int) -> void:
 		var region: Dictionary = report.regions[id]
 		var demand := int(region.demand)
 		var shortfall := int(region.shortfall)
-		if demand <= 0 or shortfall <= 0:
+		var loss := _annual_supply_loss(demand,shortfall)
+		if loss == 0:
 			continue
-		var loss := mini(maxi(1,roundi(shortfall * 0.02)),maxi(1,int(demand / 20)))
 		var entries: Array = []
 		var allocated := 0
 		for army in houses[i].get("armies",[]):
@@ -4485,6 +4492,27 @@ func march_reason(province_id: String, house_index: int = -1) -> String:
 
 func can_march(province_id: String, house_index: int = -1) -> bool:
 	return march_reason(province_id,house_index)==""
+
+## Versorgung am Ziel bei unveränderter Weltlage und gemeinsamem Standort.
+func march_preview(province_id: String, house_index: int = -1) -> Dictionary:
+	var hi := player if house_index < 0 else house_index
+	var reason := march_reason(province_id,hi)
+	if not reason.is_empty(): return {"ok":false,"reason":reason}
+	var armies: Array = houses[hi].armies.duplicate()
+	var advancing: Dictionary = armies[0].duplicate()
+	var origin := str(advancing.province)
+	advancing.province = province_id
+	armies[0] = advancing
+	var report := _supply_report_with_armies(hi,armies)
+	var supply: Dictionary = report.regions[province_id]
+	var depots: Array[String] = []
+	for delivery in report.frontier_deliveries:
+		var depot := str(delivery.depot)
+		if delivery.to == province_id and not depots.has(depot):
+			depots.append(depot)
+	return {"ok":true,"origin":origin,"target":province_id,"supply":supply,
+		"depots":depots,"annual_loss":_annual_supply_loss(int(supply.demand),int(supply.shortfall)),
+		"annual_in_months":int(SiegeRulesScript.RULES.annual_months)-month+1}
 
 func march_army(province_id: String, house_index: int = -1) -> Dictionary:
 	var hi: int = player if house_index < 0 else house_index

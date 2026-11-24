@@ -74,12 +74,16 @@ func exercise_army(inspector, home: String) -> void:
 			break
 	check(not next.is_empty(), "Angrenzende eigene Marschregion vorhanden")
 	if not next.is_empty():
-		main._on_province_selected(next)
+		_touch_province(next)
 		await settle()
+		check(main.selected==next,"Touch auf eine Nachbarprovinz wählt das Marschziel")
 		check(inspector.action_buttons.march.is_visible_in_tree() and not inspector.action_buttons.march.disabled, "Erreichbarer Marsch ist direkt auswählbar")
+		await check_march_preview(inspector,home,next)
 		inspector.action_buttons.march.pressed.emit()
 		await settle()
 		check(str(g.army_for().province) == next, "Tatsächlicher Provinzbutton bewegt die Armee")
+		if inspector.fields.has("march_preview"):
+			check(not inspector.fields.march_preview.visible and main.map_view.march_route_overlay().is_empty(),"Nach Bestätigung verschwindet die geplante Bewegung")
 		main._on_province_selected(home)
 		await settle()
 		check(inspector.action_buttons.march.disabled, "Zweiter Marsch im selben Monat wird bereits in der UI gesperrt")
@@ -117,6 +121,47 @@ func exercise_army(inspector, home: String) -> void:
 	main._show_province()
 	await settle()
 	check(inspector.is_visible_in_tree() and inspector.selected_id == main.selected and not main.kernel.modal_stack.has("provinz"), "Auch der alte Detailaufruf führt direkt zur einen rechten Provinzverwaltung")
+
+
+func _touch_province(id: String) -> void:
+	var map = main.map_view
+	var fit: Array = map._fit()
+	var center: Vector2 = map._label_point(main.game.province(id))*float(fit[0])+fit[1]
+	for offset in [Vector2.ZERO,Vector2(0,-8),Vector2(0,8),Vector2(8,0),Vector2(-8,0)]:
+		var position: Vector2 = center+offset
+		if map._province_at(position)!=id: continue
+		if map.army_markers().any(func(m): return m.rect.has_point(position)): continue
+		var event := InputEventScreenTouch.new()
+		event.position = position
+		event.pressed = true
+		map._gui_input(event)
+		event.pressed = false
+		map._gui_input(event)
+		return
+
+func check_march_preview(inspector, origin: String, target: String) -> void:
+	if not inspector.fields.has("march_preview") or not main.map_view.has_method("march_route_overlay"):
+		check(false,"Kriegsreiter zeigt die nachprüfbare Zielversorgung in Karte und Provinzleiste")
+		return
+	var map = main.map_view
+	var preview: Dictionary = map.march_route_overlay()
+	check(preview.get("origin")==origin and preview.get("target")==target,"Karte zeigt genau den geplanten Schritt des aktiven Heeres")
+	var detail: Label = inspector.fields.march_preview
+	check(detail.is_visible_in_tree() and detail.text.contains("versorgt"),"Zielversorgung steht direkt über dem Marschbefehl")
+	check(main.game.army_for().province==origin,"Vorschau bewegt die gerade gewählte Armee noch nicht")
+	if DisplayServer.get_name() != "headless":
+		await RenderingServer.frame_post_draw
+		var path := "res://build/verify/marschvorschau-20261124"
+		check(get_viewport().get_texture().get_image().save_png(path.path_join("marschraster.png"))==OK,"Gerichteter Marsch ist als Kartenbild dokumentiert")
+	map.set_map_motion_enabled(false)
+	await settle()
+	check(not map._motion.is_processing() and not map.march_route_overlay().is_empty(),"Bewegungsreduktion erhält die statische Route")
+	map.set_map_motion_enabled(true)
+	main._set_map_mode("terrain")
+	await settle()
+	check(map.march_route_overlay().is_empty() and not detail.visible,"Marschvorschau ist nur im Kriegsreiter sichtbar")
+	main._set_map_mode("war")
+	await settle()
 
 func _has_button(node: Node, prefix: String) -> bool:
 	for button in node.find_children("*","Button",true,false):

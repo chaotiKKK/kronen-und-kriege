@@ -3,11 +3,13 @@ extends Node2D
 const LIMIT := 24
 const STEP := 1.0 / 24.0
 const GRAIN_CART = preload("res://assets/map/freight/grain_cart.png")
+const MARCH_PENNANT = preload("res://assets/map/war/march_pennant.png")
 var host
 var enabled := true
 var paths: Array[PackedVector2Array] = []
 var frontier_paths: Array[PackedVector2Array] = []
 var food_paths: Array[PackedVector2Array] = []
+var march_overlay: Dictionary = {}
 var _elapsed := 0.0
 var _transition := 0.0
 var _selection := 0.0
@@ -39,6 +41,16 @@ func set_deliveries(flows: Array, front_supplies: Array = [], provisions: Array 
 	food_paths = _map_paths(provisions, "amount_u")
 	refresh_activity()
 
+func set_march_preview(preview: Dictionary) -> void:
+	march_overlay = {}
+	if preview.get("ok",false):
+		var a: Dictionary = host.game.province(str(preview.origin))
+		var b: Dictionary = host.game.province(str(preview.target))
+		var points := PackedVector2Array([host._label_point(a),host._label_point(b)])
+		march_overlay = {"origin":preview.origin,"target":preview.target,"points":points,
+			"shortfall":int(preview.supply.shortfall)}
+	refresh_activity()
+
 func _map_paths(flows: Array, amount_field: String) -> Array[PackedVector2Array]:
 	var result: Array[PackedVector2Array] = []
 	for delivery in flows:
@@ -62,7 +74,7 @@ func _current_paths() -> Array[PackedVector2Array]:
 	return []
 
 func _has_routes() -> bool:
-	return not _current_paths().is_empty() or (host.map_mode=="economy" and not food_paths.is_empty())
+	return not _current_paths().is_empty() or (host.map_mode=="economy" and not food_paths.is_empty()) or (host.map_mode=="war" and not march_overlay.is_empty())
 
 func refresh_activity() -> void:
 	var moving: bool = is_visible_in_tree() and enabled and (_transition > 0 or _selection > 0 or _has_routes())
@@ -101,6 +113,8 @@ func _draw() -> void:
 				draw_circle(pos, 12.0, Color("293029"), true, -1.0, true)
 				draw_circle(pos, 12.0, Color("dfc583"), false, 1.5, true)
 				draw_texture_rect(GRAIN_CART, Rect2(pos-Vector2(15,17),Vector2(30,30)), false)
+	if host.map_mode == "war" and not march_overlay.is_empty():
+		_draw_march(scale,offset,canvas)
 	if not enabled:
 		return
 	if _selection > 0 and not host.selected.is_empty():
@@ -114,6 +128,28 @@ func _draw() -> void:
 		var fraction := _transition / .30
 		draw_rect(canvas, Color(.045, .06, .075, .21 * fraction))
 
+
+func _draw_march(scale: float, offset: Vector2, canvas: Rect2) -> void:
+	var points: PackedVector2Array = march_overlay.points
+	var a := points[0]*scale+offset
+	var b := points[1]*scale+offset
+	if a.distance_squared_to(b) < 4.0: return
+	var heading := (b-a).normalized()
+	var side := Vector2(-heading.y,heading.x)
+	var light := Color("ffc0b4") if int(march_overlay.shortfall)>0 else Color("f5f1ca")
+	var ink := Color("17242a")
+	var left := b-heading*10+side*5
+	var right := b-heading*10-side*5
+	draw_line(a,b,ink,5.0,true)
+	draw_dashed_line(a,b,light,2.4,6.0,true,true)
+	draw_polyline(PackedVector2Array([left,b,right]),ink,6.0,true)
+	draw_polyline(PackedVector2Array([left,b,right]),light,2.5,true)
+	var t := .18+.52*fposmod(_elapsed*.42,1.0) if enabled else .5
+	var pos := a.lerp(b,t)
+	if canvas.grow(-13).has_point(pos):
+		draw_circle(pos,10.0,ink,true,-1,true)
+		draw_circle(pos,10.0,light,false,1.2,true)
+		draw_texture_rect(MARCH_PENNANT,Rect2(pos-Vector2(13,14),Vector2(26,26)),false)
 
 func _cargo_position(points: PackedVector2Array, index: int, velocity: float) -> Vector2:
 	var phase := fposmod(_elapsed * velocity + index * .21, 1.0) if enabled else .5

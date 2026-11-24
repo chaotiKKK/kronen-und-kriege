@@ -130,6 +130,7 @@ func set_game(g) -> void:
 		_simulation_reports_set=false
 		if _motion != null:
 			_motion.set_deliveries([])
+			_motion.set_march_preview({})
 		_game_id = game.get_instance_id()
 		var catalog: String = game.data.catalog_hash() if game.data.has_method("catalog_hash") else ""
 		# Region geometry is immutable and catalog-bound. A network snapshot
@@ -141,7 +142,7 @@ func set_game(g) -> void:
 		_base.queue_redraw()
 	queue_redraw()
 
-func set_simulation_reports(production: Dictionary, supply: Dictionary, food: Array = []) -> void:
+func set_simulation_reports(production: Dictionary, supply: Dictionary, food: Array = [], march: Dictionary = {}) -> void:
 	# Game reports are calculated by Main once per accepted simulation refresh.
 	_production_snapshot=production.duplicate(true)
 	_supply_snapshot=supply.duplicate(true)
@@ -149,7 +150,11 @@ func set_simulation_reports(production: Dictionary, supply: Dictionary, food: Ar
 	_simulation_reports_set=true
 	if _motion != null:
 		_motion.set_deliveries(production.get("flows", []),supply.get("frontier_deliveries", []),food)
+		_motion.set_march_preview(march)
 	queue_redraw()
+
+func march_route_overlay() -> Dictionary:
+	return _motion.march_overlay.duplicate() if _motion != null and map_mode == "war" else {}
 
 func set_mode(mode: String) -> void:
 	var clean := MapModesScript.canonical(mode)
@@ -1283,7 +1288,7 @@ func _draw_legend(map_rect: Rect2, font: Font) -> void:
 		"terrain":["Relief, Flüsse und Geländesymbole","Titelgrenzen bleiben bei Eroberung fest"],
 		"titles":["Rechtsebene oben umschalten","Titelgebiet und Besitz können abweichen"],
 		"economy":["Braun → Gold → Grün: Ertrag","Schilder: örtliche Schwerpunkte","Grün: nutzbare eigene Straße","Rot: Versorgung unterbrochen","Lichtpunkt: gebuchte Baustofflieferung","Wagen: Nahrungsfracht im letzten Monat"],
-		"war":["Grün: eigene Spielregionen","Orange: aktuell angreifbare Gebiete","Grau: weitere Gebiete · Ringe: Belagerung","Gold: gewählter Seeweg","Mint: eigener Frontnachschub aus Depot"],
+		"war":["Grün: eigene Spielregionen","Orange: aktuell angreifbare Gebiete","Grau: weitere Gebiete · Ringe: Belagerung","Gold: gewählter Seeweg","Mint: eigener Frontnachschub aus Depot","Gestrichelter Pfeil: geplanter Marsch","Rosafarbener Pfeil: Versorgungslücke"],
 	}[map_mode]
 	var w := minf(320.0*ui_scale,size.x-24)
 	var h := (36.0 + (rows.size()+explanations.size())*20.0)*ui_scale

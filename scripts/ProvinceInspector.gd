@@ -133,6 +133,7 @@ func configure(host) -> void:
 	main.get_meta("modern_interface")._style_tool(focus)
 	sections.army.add_child(focus)
 	action_buttons.focus_army = focus
+	fields.march_preview = _text("",11,sections.army)
 	_action("march", "Hierher marschieren", {"id":"march"}, sections.army)
 	fields.transport = _text("",11,sections.army)
 	_action("transport_army","Hierher übersetzen",{"id":"transport_army"},sections.army)
@@ -172,7 +173,7 @@ func configure(host) -> void:
 	_action("secret_discover","Geheimnis aufdecken",{"id":"secret_discover"},sections.achievements)
 	_action("secret_expose","Geheimnis ausnutzen",{"id":"secret_expose"},sections.achievements)
 	# Erst die nächste Entscheidung, darunter die ausführlichen Bestandszahlen.
-	var war_order: Array = [fields.war,action_buttons.claim,army_picker,fields.field_army,fields.transport,action_buttons.transport_army,fields.battle,action_buttons.march,action_buttons.siege,main.attack_btn,action_buttons.relieve,action_buttons.recover_army,fields.orders,action_buttons.army,action_buttons.focus_army,fields.supply,action_buttons.fleet,action_buttons.blockade,main.recruit_btn,fields.army,action_buttons.disband_army,disband_box]
+	var war_order: Array = [fields.war,action_buttons.claim,army_picker,fields.field_army,fields.transport,action_buttons.transport_army,fields.march_preview,action_buttons.march,fields.battle,action_buttons.siege,main.attack_btn,action_buttons.relieve,action_buttons.recover_army,fields.orders,action_buttons.army,action_buttons.focus_army,fields.supply,action_buttons.fleet,action_buttons.blockade,main.recruit_btn,fields.army,action_buttons.disband_army,disband_box]
 	for index in war_order.size(): sections.army.move_child(war_order[index],index)
 	trade_panel=TradePanel.new()
 	sections.buildings.add_child(trade_panel)
@@ -766,6 +767,7 @@ func refresh(game, id: String) -> void:
 	action_buttons.focus_army.disabled = not action_buttons.focus_army.visible
 	action_buttons.march.visible = army_near and str(army.province) != id and (vm.own or claimed)
 	action_buttons.march.disabled = pending or game.game_over or not game.can_march(id)
+	_refresh_march_preview(game,id)
 	action_buttons.siege.visible = not vm.own and claimed and army_near
 	action_buttons.siege.disabled = pending or game.game_over or not bool(military.siege.get("ok",false))
 	action_buttons.siege.tooltip_text = str(military.siege.get("reason",""))
@@ -860,7 +862,7 @@ func _refresh_campaign(game, vm: Dictionary, army: Dictionary, pending: bool, na
 		elif int(siege.get("current",0))>0: lines.append("Belagerung %d%%" % int(siege.current))
 		if bool(assault.get("ok",false)):
 			lines.append("Sturmchance %d%% · Angriff %d / Abwehr %d" % [roundi(float(assault.chance)*100),roundi(float(assault.attack_power)),roundi(float(assault.defense))])
-		if army_near and siege.get("supply",{}) is Dictionary and not siege.get("supply",{}).is_empty():
+		if not fields.march_preview.visible and army_near and siege.get("supply",{}) is Dictionary and not siege.get("supply",{}).is_empty():
 			var supply: Dictionary=siege.supply
 			var shortfall:=int(supply.get("shortfall",0))
 			lines.append(("Versorgung gedeckt" if shortfall==0 else "Versorgung: %d Mann ungedeckt" % shortfall)+" · Bilanz in %d Monaten" % int(supply.get("annual_in_months",0)))
@@ -891,12 +893,35 @@ func _refresh_campaign(game, vm: Dictionary, army: Dictionary, pending: bool, na
 	if not lines.is_empty(): lines.append_array(front_supply)
 	fields.battle.text="\n".join(lines)
 	fields.battle.visible=not lines.is_empty()
-	if fields.battle.visible: fields.supply.hide()
+	if fields.battle.visible or fields.march_preview.visible: fields.supply.hide()
 	fields.orders.text="\n".join(reasons)
 	fields.orders.visible=not reasons.is_empty()
 
 func _add_reason(reasons: Array[String], reason: String) -> void:
 	if not reason.is_empty() and not reasons.has(reason): reasons.append(reason)
+
+func _refresh_march_preview(game,id: String) -> void:
+	var label: Label = fields.march_preview
+	var plan: Dictionary = main.march_plan
+	label.visible = action_buttons.march.visible and plan.get("ok",false) and plan.target == id
+	label.text = ""
+	if not label.visible: return
+	var supply: Dictionary = plan.supply
+	var demand := int(supply.demand)
+	var gap := int(supply.shortfall)
+	var place: Dictionary = game.province(id)
+	var lines: Array[String] = ["Marschziel · %s" % str(place.terrain_name),
+		"Am Ziel %d von %d Mann versorgt" % [demand-gap,demand]]
+	var received := int(supply["import"])
+	if received > 0:
+		var depots: Array[String] = []
+		for depot in plan.depots:
+			depots.append(str(game.province(depot).name))
+		var route := "Depot %s" % ", ".join(depots) if not depots.is_empty() else "Straßennetz"
+		lines.append("+%d Mann durch Nachschub · %s" % [received,route])
+	if gap > 0:
+		lines.append("Bei gleicher Lage: −%d Mann zur Jahresbilanz in %d Mon." % [int(plan.annual_loss),int(plan.annual_in_months)])
+	label.text = "\n".join(lines)
 
 func _refresh_transport(game, preview: Dictionary, pending: bool) -> void:
 	var relevant := not str(preview.get("route_id","")).is_empty()
