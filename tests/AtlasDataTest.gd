@@ -60,6 +60,7 @@ func _ready() -> void:
 	_check_unknown_names(atlas)
 	_check_spatial_query_contract(atlas)
 	_check_shared_query_contract(atlas)
+	_check_search_ranking(atlas)
 	_check_boundary_line_clipping()
 	_check_boundary_path_visibility()
 	_check_native_local_role()
@@ -270,6 +271,27 @@ func _check_spatial_query_contract(atlas) -> void:
 			var actual := _ids(records)
 			var expected := _expected_city_ids(atlas.cities, rect, population)
 			_check(actual == expected and records.size() == actual.size(), "Der Bevölkerungsindex verändert die sichtbaren Orts-IDs bei Zoom %.2f in %s." % [zoom, rect])
+
+func _check_search_ranking(atlas) -> void:
+	var isolated = load("res://scripts/AtlasData.gd").new()
+	for i in range(39, -1, -1):
+		isolated._add_lookup({"id":"gleich:%02d" % i,"name":"Älta"},0)
+	isolated._add_lookup({"id":"exakt-stadt","name":"Alta"},1050000)
+	isolated._add_lookup({"id":"anfang-gross","name":"Altalinde"},1090000)
+	isolated._add_lookup({"id":"mitte-gross","name":"Neu Alta"},1200000)
+	isolated._add_lookup({"id":"versteckt","name":"Alta","name_known":false},2000000)
+	var expected := ["exakt-stadt"]
+	for i in 40:
+		expected.append("gleich:%02d" % i)
+	expected.append_array(["anfang-gross","mitte-gross"])
+	for limit in [1,6,50]:
+		var ids: Array = isolated.search("   ALTA ",limit).map(func(record): return str(record.id))
+		_check(ids == expected.slice(0,limit),
+			"Ortssuche ordnet exakte Namen, Wertung und gleiche Namen stabil bei Limit %d." % limit)
+	for query in ["a","ber","Wiesbaden","Viseu"]:
+		var small: Array = atlas.search(query,6)
+		var large: Array = atlas.search(query,20)
+		_check(small == large.slice(0,6), "Die Treffergrenze verändert den Rang für %s." % query)
 
 func _check_shared_query_contract(atlas) -> void:
 	var shared = load("res://scripts/AtlasData.gd").new()

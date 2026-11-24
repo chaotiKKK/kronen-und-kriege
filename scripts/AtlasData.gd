@@ -6,6 +6,11 @@ const CELL_SIZE := 32.0
 const KIND_ZOOM := {"country": 1.0, "region": 2.0, "district": 6.0, "municipality": 24.0, "local_admin": 24.0}
 const KIND_DETAIL := {"country": 0, "region": 1, "district": 2, "municipality": 3, "local_admin": 3}
 const CITY_POPULATION_TIERS := [1000000, 350000, 80000, 20000]
+const FOLD_REPLACEMENTS := [
+	["ä", "a"], ["ö", "o"], ["ü", "u"], ["ß", "ss"], ["é", "e"],
+	["è", "e"], ["ê", "e"], ["á", "a"], ["à", "a"], ["â", "a"],
+	["í", "i"], ["ó", "o"], ["ô", "o"], ["ú", "u"], ["ñ", "n"], ["ç", "c"],
+]
 static var _shared: Dictionary = {}
 
 var features: Array = []
@@ -52,10 +57,11 @@ func load_data() -> bool:
 	_lookup = {}
 	_search_index = []
 	_paths = {}
+	# Newly parsed records are private until the complete atlas is published.
 	for raw in parsed.get("features", []):
 		if not (raw is Dictionary):
 			continue
-		var feature: Dictionary = raw.duplicate()
+		var feature: Dictionary = raw
 		feature["bounds"] = _rect(raw.get("bounds", []))
 		feature["center"] = _point(raw.get("center", []))
 		feature["point"] = feature.center
@@ -71,7 +77,7 @@ func load_data() -> bool:
 	for raw in parsed.get("cities", []):
 		if not (raw is Dictionary):
 			continue
-		var city: Dictionary = raw.duplicate()
+		var city: Dictionary = raw
 		city["point"] = _point(raw.get("point", []))
 		city["kind"] = "city"
 		city["population"] = int(raw.get("population", 0))
@@ -87,7 +93,7 @@ func load_data() -> bool:
 	for raw in parsed.get("rivers", []):
 		if not (raw is Dictionary):
 			continue
-		var river: Dictionary = raw.duplicate()
+		var river: Dictionary = raw
 		river["bounds"] = _rect(raw.get("bounds", []))
 		river["paths"] = raw.get("paths", [])
 		rivers.append(river)
@@ -175,24 +181,47 @@ func search(query: String, limit: int = 20) -> Array:
 	var term := _fold(query)
 	if term.is_empty() or limit <= 0:
 		return []
-	var matches: Array = []
+	# The interactive search usually shows six rows. Keep only the requested
+	# leaders so common terms never allocate and sort every occurrence.
+	var best: Array[Dictionary] = []
 	for entry in _search_index:
 		var name: String = entry.text
 		var position := name.find(term)
 		if position < 0:
 			continue
 		var category := 0 if name == term else (1 if position == 0 else 2)
-		matches.append({"record": entry.record, "category": category, "rank": entry.rank, "name": name})
-	matches.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		if int(a.category) != int(b.category):
-			return int(a.category) < int(b.category)
-		if int(a.rank) != int(b.rank):
-			return int(a.rank) > int(b.rank)
-		return str(a.name) < str(b.name))
+		if best.size() == limit and not _search_precedes(category, entry, best.back()):
+			continue
+		var first := 0
+		var last := best.size()
+		while first < last:
+			var middle := (first + last) >> 1
+			if _search_precedes(category, entry, best[middle]):
+				last = middle
+			else:
+				first = middle + 1
+		best.insert(first, {"category": category, "entry": entry})
+		if best.size() > limit:
+			best.pop_back()
 	var result: Array = []
-	for i in mini(limit, matches.size()):
-		result.append(matches[i].record)
+	for hit in best:
+		result.append(hit.entry.record)
 	return result
+
+static func _search_precedes(category: int, entry: Dictionary, incumbent: Dictionary) -> bool:
+	var previous_category: int = incumbent.category
+	if category != previous_category:
+		return category < previous_category
+	var previous: Dictionary = incumbent.entry
+	var rank: int = entry.rank
+	var previous_rank: int = previous.rank
+	if rank != previous_rank:
+		return rank > previous_rank
+	var name: String = entry.text
+	var previous_name: String = previous.text
+	if name != previous_name:
+		return name < previous_name
+	return str(entry.record.get("id", "")) < str(previous.record.get("id", ""))
 
 func lookup(id: String) -> Dictionary:
 	return _lookup.get(id, {})
@@ -265,6 +294,6 @@ static func _rect(value: Array) -> Rect2:
 
 static func _fold(text: String) -> String:
 	var folded := text.strip_edges().to_lower()
-	for pair in [["ä", "a"], ["ö", "o"], ["ü", "u"], ["ß", "ss"], ["é", "e"], ["è", "e"], ["ê", "e"], ["á", "a"], ["à", "a"], ["â", "a"], ["í", "i"], ["ó", "o"], ["ô", "o"], ["ú", "u"], ["ñ", "n"], ["ç", "c"]]:
+	for pair in FOLD_REPLACEMENTS:
 		folded = folded.replace(pair[0], pair[1])
 	return folded

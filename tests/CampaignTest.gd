@@ -42,6 +42,11 @@ func _ready() -> void:
 	legacy.erase("month_index")
 	legacy.erase("calendar_version")
 	legacy.erase("campaign_sandbox")
+	# Schema 11 had no monthly provisioning state. This snapshot already
+	# advanced twice, so leaving modern stock in it makes the input invalid.
+	legacy.erase("provisioning_report")
+	for province in legacy.provinces:
+		province.erase("provisioning")
 	legacy["year"] = 0
 	legacy["month"] = 12
 	legacy["cooldowns"] = {"calendar_probe": 24014}
