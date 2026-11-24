@@ -147,6 +147,16 @@ const MaterialTransportScript = preload("res://scripts/MaterialTransport.gd")
 const DepotSupplyScript = preload("res://scripts/DepotSupply.gd")
 const EconomyPlannerScript = preload("res://scripts/EconomyPlanner.gd")
 const MaterialTradeScript = preload("res://scripts/MaterialTrade.gd")
+const CivicProvisionScript = preload("res://scripts/CivicProvision.gd")
+const CivicProvisionReportScript = preload("res://scripts/CivicProvisionReport.gd")
+const CIVIC_PROVISION_RULES := {
+	"version":1,"phase":"after-research-before-material-trade",
+	"npc_policy":"blocked-low-reserve-scarce;high-tax-or-low-satisfaction-generous;otherwise-normal",
+	"npc_recovery_tax_threshold":40,"npc_recovery_tax":1,"no_human_automation":true,
+	"food_stock_initialization":"three-weighted-normal-months",
+	"income":"weighted-regional-base-summed-before-rounding",
+	"military_rations":false,"food_transport":false,
+}
 const MATERIAL_TRADE_RULES := {
 	"algorithm_version":1,"source_reserve_weights":2,"protected_local_work_months":1,"own_demand_months":2,
 	"scheduled_own_transport_precedes_sale":true,"phase":"after-yearly-before-local-production",
@@ -191,6 +201,8 @@ var trade_serial := 0
 var _last_material_trade: Dictionary = {}
 var _material_trade_settled_month := -1
 var _last_production: Dictionary = {}
+var _last_provisioning: Dictionary = {"month_index":-1,"regions":{}}
+var _provisioning_settled_month := -1
 var _last_economy_month: Dictionary = {}
 var _last_economy_orders: Dictionary = {}
 var month: int = 1
@@ -447,6 +459,7 @@ func _note_for_houses(recipients: Array, msg: String) -> void:
 
 func _normalize_province(p: Dictionary) -> void:
 	if not p.has("production"): p["production"] = {"materials_u":0,"rate_carry":0}
+	if not p.has("provisioning"): p["provisioning"] = CivicProvisionScript.initial_state(p)
 	if not p.has("regional_project"): p["regional_project"] = {}
 	if not p.has("logistics_sites"): p["logistics_sites"] = {"depot":0}
 	if not p.has("economic_focus"):
@@ -819,6 +832,8 @@ func advance_month() -> void:
 	_tick_dynasty()
 	var transport_roads: Array = roads.duplicate(true)
 	_tick_infrastructure()
+	_run_ai_provisioning()
+	_tick_provisioning()
 	_tick_material_trade()
 	_tick_regional_economy(transport_roads)
 	_run_ai_military()
@@ -1398,13 +1413,126 @@ func province_economy_preview(id: String, focus: String = "", hi: int = -1) -> D
 	focus = current if focus == "" else focus
 	var alternative: Dictionary = p.duplicate()
 	alternative.economic_focus = focus
+	var blocked:bool=_production_blocked().has(id)
+	var current_food:Dictionary=_provision_plan(p,calendar_index()+1,"",blocked)
+	var future_food:Dictionary=_provision_plan(alternative,calendar_index()+1,"",blocked)
+	var current_work:int=int(current_food.ledger.industry_labor_u) if bool(current_food.ok) else 0
+	var future_work:int=int(future_food.ledger.industry_labor_u) if bool(future_food.ok) else 0
 	return {"id":id,"focus":focus,"current_focus":current,
-		"current_income":region_income(p) + _province_market_income(p,current),
-		"projected_income":region_income(alternative) + _province_market_income(p,focus),
+		"current_industry_labor_u":current_work,"projected_industry_labor_u":future_work,
+		"current_material_potential_u":ProductionScript.mul_div_floor(current_work,ProductionScript.yield_numerator(p),32),
+		"projected_material_potential_u":ProductionScript.mul_div_floor(future_work,ProductionScript.yield_numerator(alternative),32),
+		"current_income":_region_income_value(p) + _province_market_income(p,current),
+		"projected_income":_region_income_value(alternative) + _province_market_income(p,focus),
 		"current_supply":army_supply_capacity(id,hi),
 		"projected_supply":_province_local_supply(alternative,hi),
 		"cost":0 if focus == current else ProvinceEconomyScript.change_cost(p),
 		"lock_months":_province_focus_lock(p),"reason":province_focus_reason(id,focus,hi)}
+
+func _provision_bonuses(p: Dictionary) -> Dictionary:
+	var hi:int=int(p.get("owner",-1))
+	return {"harvest_percent":roundi(research_bonus("food_harvest_percent",hi,p)),"storage_percent":roundi(research_bonus("food_storage_percent",hi,p))}
+
+func _provision_plan(p: Dictionary, month_index: int, rations: String="", blocked: bool=false) -> Dictionary:
+	var shadow:Dictionary=p
+	if not rations.is_empty() and rations!=str(p.provisioning.rations):
+		shadow=p.duplicate()
+		shadow.provisioning=p.provisioning.duplicate()
+		shadow.provisioning.rations=rations
+	var hi:int=int(p.get("owner",-1))
+	if hi<0 or hi>=houses.size(): return {"ok":false,"reason":"Ungültiger Versorgungsbesitzer."}
+	return CivicProvisionScript.plan(shadow,month_index,int(houses[hi].laws.tax),_provision_bonuses(p),blocked)
+
+func provision_preview(id: String, rations: String="", hi: int=-1) -> Dictionary:
+	hi=player if hi<0 else hi
+	var p:Dictionary=province(id)
+	if p.is_empty() or hi<0 or hi>=houses.size() or int(p.owner)!=hi: return {}
+	var current:String=str(p.provisioning.rations)
+	rations=current if rations.is_empty() else rations
+	if not CivicProvisionScript.RATIONS.has(rations): return {"id":id,"ok":false,"reason":"Unbekannte Ration."}
+	var blocked:Dictionary=_production_blocked()
+	var plan:Dictionary=_provision_plan(p,calendar_index()+1,rations,blocked.has(id))
+	if not bool(plan.ok): return {"id":id,"ok":false,"reason":str(plan.reason)}
+	var need:int=CivicProvisionScript.need_u(p)
+	return {"id":id,"rations":rations,"current_rations":current,"ok":not game_over,"reason":"Die Partie ist beendet." if game_over else "",
+		"next":plan.ledger,"stock_months":float(p.provisioning.food_u)/need,"capacity_months":float(CivicProvisionScript.capacity_u(p,_provision_bonuses(p)))/need,
+		"satisfaction":int(p.provisioning.satisfaction),"tax_level":int(houses[hi].laws.tax),"ration_rate":CivicProvisionScript.ration_rate(rations),
+		"blocked_reason":str(blocked.get(id,""))}
+
+func set_province_rations(id: String, rations: String, hi: int=-1) -> Dictionary:
+	hi=player if hi<0 else hi
+	var p:Dictionary=province(id)
+	if game_over: return _res(false,"Die Partie ist beendet.")
+	if p.is_empty() or hi<0 or hi>=houses.size() or int(p.owner)!=hi: return _res(false,"Rationen können nur im eigenen Land geplant werden.")
+	if not CivicProvisionScript.RATIONS.has(rations): return _res(false,"Unbekannte Ration.")
+	if str(p.provisioning.rations)==rations: return _res(false,"Diese Ration gilt bereits.")
+	p.provisioning.rations=rations
+	p.provisioning.changed_month=calendar_index()
+	var label:String=str({"scarce":"Knappe Rationen","normal":"Normale Rationen","generous":"Großzügige Rationen"}[rations])
+	_note_for_house(hi,"%s: %s ab der nächsten Monatsabrechnung." % [p.name,label])
+	return _res(true,label+" sind geplant.")
+
+func provision_report(hi: int=-1) -> Dictionary:
+	hi=player if hi<0 else hi
+	var result:Dictionary={"month_index":int(_last_provisioning.get("month_index",-1)),"regions":{}}
+	if hi<0 or hi>=houses.size(): return result
+	for id in _last_provisioning.get("regions",{}):
+		var row:Dictionary=_last_provisioning.regions[id]
+		var p:Dictionary=province(str(id))
+		if not p.is_empty() and int(p.owner)==hi and int(row.owner)==hi: result.regions[id]=row.duplicate(true)
+	return result
+
+func _tick_provisioning() -> void:
+	if _provisioning_settled_month==calendar_index(): return
+	var blocked:Dictionary=_production_blocked()
+	var plans:Dictionary={}
+	for p in provinces:
+		var plan:Dictionary=_provision_plan(p,calendar_index(),"",blocked.has(str(p.id)))
+		if not bool(plan.ok):
+			push_error("Zivile Monatsplanung: "+str(plan.reason))
+			return
+		plans[str(p.id)]=plan
+	var rows:Dictionary={}
+	for p in provinces:
+		var plan:Dictionary=plans[str(p.id)]
+		p.provisioning=plan.state.duplicate(true)
+		rows[str(p.id)]=plan.ledger.duplicate(true)
+	_last_provisioning={"month_index":calendar_index(),"regions":rows}
+	_provisioning_settled_month=calendar_index()
+
+func _run_ai_provisioning() -> void:
+	var blocked:Dictionary=_production_blocked()
+	for hi in houses.size():
+		if is_human_house(hi) or bool(houses[hi].get("defeated",false)): continue
+		var lowest:int=100
+		for p in provinces:
+			if int(p.owner)==hi: lowest=mini(lowest,int(p.provisioning.satisfaction))
+		if lowest<int(CIVIC_PROVISION_RULES.npc_recovery_tax_threshold) and int(houses[hi].laws.tax)==2:
+			set_law("tax",str(CIVIC_PROVISION_RULES.npc_recovery_tax),hi)
+		for p in provinces:
+			if int(p.owner)!=hi: continue
+			var desired:String="normal"
+			if blocked.has(str(p.id)) and int(p.provisioning.food_u)<2*CivicProvisionScript.need_u(p): desired="scarce"
+			elif int(houses[hi].laws.tax)==2 or int(p.provisioning.satisfaction)<50: desired="generous"
+			if str(p.provisioning.rations)!=desired: set_province_rations(str(p.id),desired,hi)
+
+func _industry_budget(id: String, month_offset: int=1, blocked: Variant=null) -> int:
+	var p:Dictionary=province(id)
+	if p.is_empty(): return 0
+	if month_offset==0 and int(_last_provisioning.get("month_index",-1))==calendar_index() and _last_provisioning.regions.has(id):
+		return int(_last_provisioning.regions[id].industry_labor_u)
+	var is_blocked:bool=_production_blocked().has(id) if blocked==null else bool(blocked)
+	var shadow:Dictionary=p.duplicate()
+	var budget:int=0
+	for index in maxi(1,month_offset):
+		var plan:Dictionary=_provision_plan(shadow,calendar_index()+index+1,"",is_blocked)
+		if not bool(plan.ok): return 0
+		budget=int(plan.ledger.industry_labor_u)
+		shadow.provisioning=plan.state
+	return budget
+
+func _civil_income_percent(p: Dictionary) -> int:
+	return CivicProvisionScript.income_percent(int(p.get("provisioning",{}).get("satisfaction",50)))
 
 func _production_blocked() -> Dictionary:
 	var result := {}
@@ -1428,7 +1556,11 @@ func _local_project_months(p: Dictionary, requirements: Dictionary) -> int:
 	var task := requirements.duplicate(true)
 	task.merge({"token":"forecast","priority":0,"started_month":calendar_index(),"work_done_u":0,"material_spent_u":0})
 	for index in 120:
-		var result: Dictionary = ProductionScript.plan_local(shadow,[task],calendar_index()+index)
+		var month_index:=calendar_index()+index+1
+		var plan:=_provision_plan(shadow,month_index)
+		if not bool(plan.ok): return -1
+		shadow.provisioning=plan.state
+		var result: Dictionary = ProductionScript.plan_local(shadow,[task],month_index,false,int(plan.ledger.industry_labor_u))
 		shadow.production = {"materials_u":int(result.materials_u),"rate_carry":int(result.rate_carry)}
 		if result.task_updates.is_empty(): return -1
 		task.work_done_u = int(result.task_updates[0].work_done_u)
@@ -1531,22 +1663,32 @@ func _construction_catalog() -> Dictionary:
 			references[task.token]=leg
 	return {"tasks":tasks,"references":references}
 
-func _material_horizon(p: Dictionary, tasks: Array, months: int) -> int:
-	# Materialreicher Schattenzustand misst nur gemeinsam verfügbare Bauarbeit.
-	var shadow: Dictionary=p.duplicate()
+func _material_horizon(p: Dictionary, tasks: Array, months: int, blocked: bool, use_current: bool=false) -> int:
+	if tasks.is_empty() or blocked: return 0
+	var shadow:Dictionary=p.duplicate()
 	shadow.production={"materials_u":ProductionScript.stock_capacity_u(p),"rate_carry":0}
-	var working: Array=tasks.duplicate(true)
-	var used := 0
+	var working:Array=tasks.duplicate(true)
+	var current:bool=use_current and int(_last_provisioning.get("month_index",-1))==calendar_index() and _last_provisioning.regions.has(str(p.id))
+	var used:int=0
 	for index in months:
-		var plan: Dictionary=ProductionScript.plan_local(shadow,working,calendar_index()+index)
+		var month_index:=calendar_index()+index+(0 if current else 1)
+		var budget:int=0
+		if index==0 and current:
+			budget=int(_last_provisioning.regions[str(p.id)].industry_labor_u)
+		else:
+			var food:Dictionary=_provision_plan(shadow,month_index)
+			if not bool(food.ok): return used
+			budget=int(food.ledger.industry_labor_u)
+			shadow.provisioning=food.state
+		var plan:Dictionary=ProductionScript.plan_local(shadow,working,month_index,false,budget)
 		used+=int(plan.used_u)
 		for update in plan.task_updates:
 			for task in working:
 				if str(task.token)==str(update.token):
 					task.work_done_u=int(update.work_done_u)
 					task.material_spent_u=int(update.material_spent_u)
-		shadow.production={"materials_u":ProductionScript.stock_capacity_u(p),"rate_carry":0}
 	return used
+
 
 func _material_trade_live() -> Array:
 	var result: Array = []
@@ -1579,7 +1721,7 @@ func _material_trade_hostilities() -> Dictionary:
 				result["%d|%d" % [mini(enemy,int(p.owner)),maxi(enemy,int(p.owner))]]=true
 	return result
 
-func _material_trade_context() -> Dictionary:
+func _material_trade_context(use_current: bool=false) -> Dictionary:
 	# Protect original reserves, next local work and already useful own transport.
 	# This is a read-only plan; quotes must never advance production or funding.
 	var catalog := _construction_catalog()
@@ -1591,8 +1733,8 @@ func _material_trade_context() -> Dictionary:
 	for p in provinces:
 		var id := str(p.id)
 		var tasks: Array = catalog.tasks[id]
-		var next_need := 0 if tasks.is_empty() else _material_horizon(p,tasks,int(MATERIAL_TRADE_RULES.protected_local_work_months))
-		var two_need := 0 if tasks.is_empty() else _material_horizon(p,tasks,int(MATERIAL_TRADE_RULES.own_demand_months))
+		var next_need := _material_horizon(p,tasks,int(MATERIAL_TRADE_RULES.protected_local_work_months),blocked.has(id),use_current)
+		var two_need := _material_horizon(p,tasks,int(MATERIAL_TRADE_RULES.own_demand_months),blocked.has(id),use_current)
 		var stock := int(p.production.materials_u)
 		offers[id]=maxi(0,stock-int(MATERIAL_TRADE_RULES.source_reserve_weights)*ProductionScript.weight_u(p)-next_need)
 		needs[id]=maxi(0,two_need-stock)
@@ -1757,7 +1899,7 @@ func _tick_material_trade() -> void:
 	_material_trade_settled_month=calendar_index()
 	_last_material_trade={}
 	if material_trades.is_empty(): return
-	var context := _material_trade_context()
+	var context := _material_trade_context(true)
 	var trade_blocks := _material_trade_blocks(context)
 	var plan: Dictionary = MaterialTradeScript.plan(provinces,material_trades,context.offers,context.funds,calendar_index(),trade_blocks,context.hostile_pairs,adjacency,context.npc_needs)
 	for id in plan.stock_deltas:
@@ -1809,21 +1951,22 @@ func _tick_regional_economy(transport_roads: Array) -> void:
 		var legacy_work := false
 		for road in transport_roads:
 			if str(road.state)=="building" and road.get("construction",{}).is_empty() and id in [str(road.from),str(road.to)] and int(road.builder)==int(p.owner) and int(province(str(road.from)).owner)==int(road.builder) and int(province(str(road.to)).owner)==int(road.builder): legacy_work=true
-		var result: Dictionary=ProductionScript.plan_local(p,catalog.tasks[id],calendar_index(),blocked.has(id) or legacy_work)
+		var available:=_industry_budget(str(id),0,blocked.has(id))
+		var result: Dictionary=ProductionScript.plan_local(p,catalog.tasks[id],calendar_index(),blocked.has(id) or legacy_work,available)
 		p.production={"materials_u":int(result.materials_u),"rate_carry":int(result.rate_carry)}
 		for update in result.task_updates:
 			var reference: Dictionary=catalog.references[str(update.token)]
 			reference.work_done_u=int(update.work_done_u)
 			reference.material_spent_u=int(update.material_spent_u)
-		ledger[id]={"owner":int(p.owner),"before_u":int(old_stocks[id]),"produced_u":int(result.produced_u),"used_u":int(result.used_u),"wasted_u":int(result.wasted_u),"work_u":int(result.work_u),"production_work_u":int(result.production_work_u),"legacy_work_u":ProductionScript.labor_capacity_u(p) if legacy_work and not blocked.has(id) else 0,"import_u":0,"export_u":0}
+		ledger[id]={"owner":int(p.owner),"before_u":int(old_stocks[id]),"produced_u":int(result.produced_u),"used_u":int(result.used_u),"wasted_u":int(result.wasted_u),"work_u":int(result.work_u),"production_work_u":int(result.production_work_u),"legacy_work_u":available if legacy_work and not blocked.has(id) else 0,"import_u":0,"export_u":0}
 	# Eingetroffene Mengen werden erst nach sämtlicher örtlicher Arbeit gebucht.
 	var offers := {}
 	var demands: Array=[]
 	catalog=_construction_catalog()
 	for id in ids:
 		var p := province(str(id))
-		var next_need := _material_horizon(p,catalog.tasks[id],1)
-		var two_month_need := _material_horizon(p,catalog.tasks[id],2)
+		var next_need := _material_horizon(p,catalog.tasks[id],1,blocked.has(id))
+		var two_month_need := _material_horizon(p,catalog.tasks[id],2,blocked.has(id))
 		var priority := 0
 		var project_id := ProductionScript.MAX_SERIAL
 		for task in catalog.tasks[id]:
@@ -1856,7 +1999,7 @@ func _tick_regional_economy(transport_roads: Array) -> void:
 		for leg in project.legs:
 			var remaining: int=int(leg.work_total_u)-int(leg.work_done_u)
 			if remaining>0: complete=false
-			months_left=maxi(months_left,ceili(float(remaining)/float(ProductionScript.labor_capacity_u(province(str(leg.province))))))
+			months_left=maxi(months_left,ceili(float(remaining)/float(maxi(1,_industry_budget(str(leg.province))))))
 		road.months=clampi(months_left,1,3) if not complete else 0
 		if complete:
 			road.state="complete"
@@ -1913,8 +2056,9 @@ func regional_production_report(house_index: int = -1) -> Dictionary:
 	for p in provinces:
 		if int(p.owner)!=hi: continue
 		var id := str(p.id)
-		var rate: int=ProductionScript.mul_div_floor(ProductionScript.labor_capacity_u(p),ProductionScript.yield_numerator(p),32)
-		result.regions[id]={"materials_u":int(p.production.materials_u),"storage_capacity_u":ProductionScript.stock_capacity_u(p),"production_per_month_u":rate,"labor_capacity_u":ProductionScript.labor_capacity_u(p),"project":p.regional_project.duplicate(true),"tasks":catalog.tasks[id].duplicate(true),"blocked_reason":str(blocked.get(id,"")),"depot":int(p.logistics_sites.depot)}
+		var available:int=_industry_budget(id,1,blocked.has(id))
+		var rate: int=ProductionScript.mul_div_floor(available,ProductionScript.yield_numerator(p),32)
+		result.regions[id]={"materials_u":int(p.production.materials_u),"storage_capacity_u":ProductionScript.stock_capacity_u(p),"production_per_month_u":rate,"labor_capacity_u":available,"project":p.regional_project.duplicate(true),"tasks":catalog.tasks[id].duplicate(true),"blocked_reason":str(blocked.get(id,"")),"depot":int(p.logistics_sites.depot)}
 		if _last_production.get("regions",{}).has(id) and int(_last_production.regions[id].owner)==hi: result.ledger[id]=_last_production.regions[id].duplicate(true)
 	for road in roads:
 		if int(province(str(road.from)).owner)==hi and int(province(str(road.to)).owner)==hi: result.roads.append(road.duplicate(true))
@@ -3904,29 +4048,35 @@ func region_capacity(region: Dictionary) -> Dictionary:
 func _regenerate_province_levies() -> void:
 	for p in provinces:
 		var capacity := region_capacity(p)
-		p["levy"] = maxi(int(p["levy"]), mini(int(capacity.maximum), int(p["levy"]) + int(p["levy"] * 0.02) + int(capacity.annual_flat)))
+		var replenishment:int=roundi(float(int(p["levy"]*0.02)+int(capacity.annual_flat))*float(_civil_income_percent(p))/100.0)
+		p["levy"]=maxi(int(p["levy"]),mini(int(capacity.maximum),int(p["levy"])+replenishment))
 
 func region_income(region: Dictionary) -> int:
+	return roundi(_region_income_value(region))
+
+func _region_income_value(region: Dictionary) -> float:
 	var development_delta := int(region["dev"]) - int(region.get("initial_dev", region["dev"]))
 	var base: int = maxi(0, int(region.get("base_income", int(region.dev) * 4)) + roundi(development_delta * 4.0 * float(region.get("economic_share", 1.0))))
 	var researched := roundi(base * (1.0 + minf(40.0, research_bonus("income_percent", int(region.get("owner", player)), region)) / 100.0))
-	return roundi(researched * ProvinceEconomyScript.income_multiplier(str(region.get("economic_focus","balanced"))))
+	var base_income:=roundi(researched * ProvinceEconomyScript.income_multiplier(str(region.get("economic_focus","balanced"))))
+	return base_income * _civil_income_percent(region) / 100.0
 
 func region_income_total() -> int:
-	var total := 0
+	var total := 0.0
 	for region in provinces:
-		total += region_income(region)
+		total += _region_income_value(region)
 	for h in houses:
 		total += int(int(h["ruler"]["stewardship"]) / 4)
-	return total
+	return roundi(total)
 
 func _apply_house_economy(i: int) -> void:
 	var h: Dictionary = houses[i]
 	var r: Dictionary = h["ruler"]
-	var base: int = int(int(r["stewardship"]) / 4)
+	var weighted_base:float=float(int(int(r["stewardship"])/4))
 	for p in provinces:
-		if int(p["owner"]) == i:
-			base += region_income(p)
+		if int(p["owner"])==i:
+			weighted_base+=_region_income_value(p)
+	var base:int=roundi(weighted_base)
 	h["gold"] = int(h["gold"]) + base
 	_apply_tax_income(i, base)
 	_apply_market_income(i)
@@ -3958,17 +4108,16 @@ func _apply_tax_income(i: int, base: int) -> void:
 
 func _province_market_income(p: Dictionary, focus: String) -> float:
 	var hi := int(p.owner)
-	return building_effect_units(p,"market") * 4.0 * (1.0 + research_bonus("market_percent",hi) / 100.0) * ProvinceEconomyScript.income_multiplier(focus)
+	return building_effect_units(p,"market") * 4.0 * (1.0 + research_bonus("market_percent",hi) / 100.0) * ProvinceEconomyScript.income_multiplier(focus) * _civil_income_percent(p) / 100.0
 
 ## Gewichtete Effekte werden wie bisher hausweit summiert, danach Forschung
 ## angewandt und genau einmal gerundet. Provinzvorschauen bleiben ungerundet.
 func _market_income(hi: int) -> int:
-	var units := 0.0
+	var income := 0.0
 	for p in provinces:
-		if int(p.owner) != hi:
-			continue
-		units += building_effect_units(p,"market") * ProvinceEconomyScript.income_multiplier(str(p.get("economic_focus","balanced")))
-	return roundi(units * 4.0 * (1.0 + research_bonus("market_percent",hi) / 100.0))
+		if int(p.owner) == hi:
+			income += _province_market_income(p,str(p.get("economic_focus","balanced")))
+	return roundi(income)
 
 func _apply_market_income(i: int) -> void:
 	var amount := _market_income(i)
@@ -5139,6 +5288,7 @@ func snapshot() -> Dictionary:
 			"economic_focus":str(p.get("economic_focus","balanced")),
 			"focus_changed_month":int(p.get("focus_changed_month",-1)),
 			"production":p.production.duplicate(true),
+			"provisioning":p.provisioning.duplicate(true),
 			"regional_project":p.regional_project.duplicate(true),
 			"logistics_sites":p.logistics_sites.duplicate(true),
 		})
@@ -5156,6 +5306,7 @@ func snapshot() -> Dictionary:
 	data_state["project_serial"] = project_serial
 	data_state["material_trades"] = material_trades.duplicate(true)
 	data_state["trade_serial"] = trade_serial
+	data_state["provisioning_report"] = _last_provisioning.duplicate(true)
 	data_state["player"] = player
 	data_state["speed"] = speed
 	data_state["event_timer"] = event_timer
@@ -5326,6 +5477,8 @@ func restore(d: Dictionary) -> bool:
 	month = int(state.get("month", 1))
 	# Saves represent a completed month, never a suspended half-booked trade phase.
 	_material_trade_settled_month=calendar_index()
+	_provisioning_settled_month=calendar_index()
+	_last_provisioning=state.get("provisioning_report",CivicProvisionReportScript.empty()).duplicate(true)
 	_last_material_trade={}
 	campaign_sandbox = bool(state.get("campaign_sandbox", false))
 	roads = (state.get("roads", []) as Array).duplicate(true)

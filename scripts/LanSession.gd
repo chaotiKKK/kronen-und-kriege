@@ -18,6 +18,8 @@ const Infrastructure = preload("res://scripts/Infrastructure.gd")
 const Economy = preload("res://scripts/ProvinceEconomy.gd")
 const Naval = preload("res://scripts/NavalTransport.gd")
 const ProductionReport = preload("res://scripts/ProductionNetworkReport.gd")
+const Civic = preload("res://scripts/CivicProvision.gd")
+const ProvisionReport = preload("res://scripts/CivicProvisionReport.gd")
 const TIMEOUT_MS := 8000
 # Tatsächlicher Fingerabdruck der veröffentlichten 1.9.0-Definitionen.
 # Der damalige Algorithmus band Ereignisse/Forschung, jedoch noch nicht FIELDS.
@@ -41,6 +43,8 @@ const LOCAL_CAMPAIGN_191_FINGERPRINT := "dc8f13abb2f9b93c1aabfcf115f592df02c8af9
 # PCK, exact bytes/provenance in tests/fixtures/lan-191-production-schema17-*.
 # Recognized for local migration only; old peers still fail strict handshakes.
 const LOCAL_PRODUCTION_191_FINGERPRINT := "5a1269fa4d99c6482fcdbaec1782ddba755240dde46caf462310f28753594c4d"
+# Original schema 18 save and package provenance are under tests/fixtures.
+const LOCAL_TRADE_191_FINGERPRINT := "2432e8e7c3561b3cc8a099f6f883a5b31a26ca7621a4fae333fff16dbee314ed"
 static var _cached_fingerprints: Dictionary = {}
 
 var phase := "idle"
@@ -93,9 +97,10 @@ func _content_fingerprint() -> String:
 	var campaign_rules := _field_campaign_rules()
 	var production_rules := _production_rules()
 	var trade_rules := _material_trade_rules()
+	var provision_rules := {"model":Civic.RULES,"report":ProvisionReport.RULES,"policy":GameScript.CIVIC_PROVISION_RULES}
 	var identity := {"schema":Save.CURRENT_VERSION,"protocol":Protocol.VERSION,
 		"commands":Protocol.FIELDS,"naval":Naval.RULES,"campaign":campaign_rules,
-		"production":production_rules,"material_trade":trade_rules,"innovations":Infrastructure.INNOVATIONS,
+		"production":production_rules,"material_trade":trade_rules,"provisioning":provision_rules,"innovations":Infrastructure.INNOVATIONS,
 		"province_economy":{"foci":Economy.FOCI,"lock_months":Economy.LOCK_MONTHS}}
 	var cache_key := str(_data.resource_path)+"|"+route_fingerprint+"|"+JSON.stringify(Save.canonical(identity))
 	if _cached_fingerprints.has(cache_key):
@@ -105,7 +110,7 @@ func _content_fingerprint() -> String:
 		"events":_data.events(), "innovations":Infrastructure.INNOVATIONS, "commands":Protocol.FIELDS,
 		"province_economy":{"foci":Economy.FOCI,"lock_months":Economy.LOCK_MONTHS},
 		"naval_transport":{"rules":Naval.RULES,"route_fingerprint":route_fingerprint},
-		"field_campaign":campaign_rules,"production":production_rules,"material_trade":trade_rules}
+		"field_campaign":campaign_rules,"production":production_rules,"material_trade":trade_rules,"provisioning":provision_rules}
 	for path in ["res://data/atlas.json", "res://data/atlas_geometry.bin", "res://data/europe_geometry.json"]:
 		var digest := FileAccess.get_sha256(path)
 		if digest == "":
@@ -475,6 +480,8 @@ func _local_legacy_backup_suffix(envelope: Dictionary, matching_catalog: bool) -
 		return ".pre-production-schema16.bak"
 	if _app == "1.9.1" and Save.CURRENT_VERSION >= 18 and file_app == "1.9.1" and matching_catalog and Protocol.integer(envelope.get("v"),3,3) and Protocol.integer(envelope.state.get("schema_version"),17,17) and envelope.get("fingerprint") == LOCAL_PRODUCTION_191_FINGERPRINT:
 		return ".pre-trade-schema17.bak"
+	if _app == "1.9.1" and Save.CURRENT_VERSION >= 19 and file_app == "1.9.1" and matching_catalog and Protocol.integer(envelope.get("v"),3,3) and Protocol.integer(envelope.state.get("schema_version"),18,18) and envelope.get("fingerprint") == LOCAL_TRADE_191_FINGERPRINT:
+		return ".pre-provisions-schema18.bak"
 	# 13/14 are source versions actually supported by the earlier regional
 	# family; increasing our target schema must not extend this source range.
 	if matching_catalog and file_app.begins_with("1.8.") and Protocol.integer(envelope.get("v"),2,Protocol.VERSION) and Protocol.integer(envelope.state.get("schema_version"),13,14):
@@ -856,6 +863,12 @@ func _broadcast_snapshot() -> void:
 		if report.is_empty():
 			_set_status("Produktionsbericht konnte nicht vollständig geprüft werden.")
 			return
+		var report_context:=state.duplicate()
+		report_context["production_report"]=report
+		var provision:=ProvisionReport.validate(state.get("provisioning_report"),report_context)
+		if not bool(provision.ok):
+			_set_status("Ungültige zivile Monatsbilanz: "+str(provision.reason))
+			return
 		_send(int(id), {"type":"snapshot", "revision":revision, "hash":Protocol.world_hash(state), "state":state, "missing_peer":_missing_peer, "all_over":all_houses_over,"production_report":report})
 	_update_discovery()
 
@@ -881,6 +894,12 @@ func _receive_snapshot(message: Dictionary) -> void:
 	var report: Dictionary=ProductionReport.normalize(message.production_report,state)
 	if not bool(report.ok):
 		_set_status("Ungültiger Produktionsbericht: "+str(report.reason))
+		return
+	var report_context:=state.duplicate()
+	report_context["production_report"]=report.data
+	var provision:=ProvisionReport.validate(state.get("provisioning_report"),report_context)
+	if not bool(provision.ok):
+		_set_status("Ungültige zivile Monatsbilanz: "+str(provision.reason))
 		return
 	next._last_production=report.data
 	var starting := phase != "playing"

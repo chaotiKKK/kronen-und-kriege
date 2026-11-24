@@ -40,9 +40,14 @@ func _ready() -> void:
 	game.roads=[{"from":source,"to":target,"builder":0,"months":0,"state":"complete","construction":{}}]
 	check(game.set_province_focus(source,"workshops",0).ok and game.start_regional_project(target,"walls",0).ok,"Guest house legally pays actual workshop and destination construction")
 	check(int(game.province(source).production.materials_u)==0,"Delivery source starts without material gifts")
-	game.advance_month()
-	var expected: Dictionary=game.regional_production_report(0)
-	check(expected.flows.any(func(flow):return str(flow.from)==source and str(flow.to)==target and int(flow.amount_u)>0),"Actual Game month sends produced source stock over the real road")
+	var expected: Dictionary={}
+	var delivered:=false
+	for attempt in 4:
+		game.advance_month()
+		expected=game.regional_production_report(0)
+		delivered=expected.flows.any(func(flow):return str(flow.from)==source and str(flow.to)==target and int(flow.amount_u)>0)
+		if delivered: break
+	if not check(delivered,"A Game month sends earned surplus over the real road as soon as reserves permit"): finish(); return
 	host.revision+=1; host._broadcast_snapshot()
 	check(await until(func():return guest.game.calendar_index()==game.calendar_index()),"Actual monthly snapshot arrives over ENet")
 	var actual: Dictionary=guest.game.regional_production_report()
@@ -57,6 +62,7 @@ func _ready() -> void:
 	await pure_and_frames()
 	await legacy_self_report()
 	await abandoned_road_report(false)
+	await ration_command()
 	await abandoned_road_report(true)
 	finish()
 
@@ -243,6 +249,34 @@ func abandoned_road_report(captured: bool) -> void:
 	check(await until(func():return guest.revision==host.revision),"Actual ENet snapshot after removing the worked road arrives: "+label)
 	check(load("res://scripts/SaveGame.gd").state_equal(guest.game.regional_production_report(),world.regional_production_report(0)) and guest.game._last_production==report_before,"Guest public report and genuine past ledger remain equal after removal: "+label)
 	check(Protocol.world_hash(guest.game.snapshot())==Protocol.world_hash(world.snapshot()),"Removed-road host and guest retain identical actual world accounts: "+label)
+
+func ration_command() -> void:
+	var world=host.game
+	var id:String=str(world.houses[0].capital)
+	var foreign:String=str(world.houses[1].capital)
+	var old_food:int=int(world.province(id).provisioning.food_u)
+	var replies:Array=[]
+	var observe:=func(result):replies.append(result)
+	guest.command_finished.connect(observe)
+	for variant in [{"rations":true},{"rations":"free"},{"rations":"normal","food_u":999}]:
+		var command:Dictionary={"id":"province_rations","selection":id}
+		command.merge(variant)
+		check(not guest.submit(command).ok,"Guest cannot inject or invent a ration")
+	check(guest.submit({"id":"province_rations","selection":foreign,"rations":"generous"}).ok,"Actual ENet request attempts to use the other house")
+	if not check(await until(func():return replies.size()==1),"Authority replies to the attempted foreign change"): return
+	check(not replies[0].ok and str(world.province(foreign).provisioning.rations)=="normal","Actual host rejects foreign ration adjustments")
+	check(guest.submit({"id":"province_rations","selection":id,"rations":"generous"}).ok,"Real guest submits a ration for its house")
+	if not check(await until(func():return replies.size()==2 and str(guest.game.province(id).provisioning.rations)=="generous"),"Actual host accepts and broadcasts the guest policy"): return
+	check(replies[1].ok and int(world.province(id).provisioning.food_u)==old_food,"Policy acknowledgement alone books no food")
+	world.advance_month()
+	host.revision+=1
+	host._broadcast_snapshot()
+	if not check(await until(func():return guest.revision==host.revision),"New actual food ledger arrives over ENet"): return
+	var host_food:Dictionary=world.provision_report(0)
+	var guest_food:Dictionary=guest.game.provision_report(0)
+	check(host_food==guest_food and host_food.regions[id].consumed_u>0 and host_food.regions[id].rations=="generous","Both peers share the one real consumption ledger")
+	check(Protocol.world_hash(world.snapshot())==Protocol.world_hash(guest.game.snapshot()),"Food and real monthly ledger participate in the same world hash")
+	guest.command_finished.disconnect(observe)
 
 func until(condition: Callable) -> bool:
 	var deadline:=Time.get_ticks_msec()+10000

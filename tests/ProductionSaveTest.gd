@@ -68,7 +68,9 @@ func _ready() -> void:
 
 func _current(source: Dictionary) -> Dictionary:
 	var state := _production17(source)
-	state.schema_version = 18
+	state.schema_version = Save.CURRENT_VERSION
+	state["provisioning_report"]={"month_index":-1,"regions":{}}
+	for p in state.provinces: p["provisioning"]=load("res://scripts/CivicProvision.gd").initial_state(p)
 	state["material_trades"] = []
 	state["trade_serial"] = 0
 	return state
@@ -117,6 +119,8 @@ func _without_trade(state: Dictionary) -> Dictionary:
 	out.schema_version = 17
 	out.erase("material_trades")
 	out.erase("trade_serial")
+	out.erase("provisioning_report")
+	for p in out.provinces: p.erase("provisioning")
 	return out
 
 func _test_legacy_defaults(source: Dictionary) -> void:
@@ -124,7 +128,7 @@ func _test_legacy_defaults(source: Dictionary) -> void:
 	var result: Dictionary = Save.migrate(source)
 	check(result.ok and source==before,"Migration reads genuine16source without mutation")
 	if not result.ok: return
-	check(result.data.schema_version==18,"Genuine16migration advances to current18")
+	check(result.data.schema_version==Save.CURRENT_VERSION,"Genuine16migration advances to the current schema")
 	check(result.data.get("material_trades")==[] and result.data.get("trade_serial")==0,"Genuine16migration creates no trade contract, payment or consumed trade ID")
 	check(result.data.get("project_serial",-1)==0,"No historical job IDs are invented")
 	var defaults := true
@@ -155,7 +159,7 @@ func _test_previous_production_defaults(source: Dictionary) -> void:
 	check(int(previous.schema_version)==17 and not previous.has("material_trades") and not previous.has("trade_serial"),"Actual published production17 source has no invented trade state")
 	check(migrated.ok and previous==original,"Actual production17 migration reads the original state without mutation")
 	if migrated.ok:
-		check(int(migrated.data.schema_version)==18 and migrated.data.material_trades==[] and int(migrated.data.trade_serial)==0,"Actual17 receives exclusively an empty trade list and unused serial")
+		check(int(migrated.data.schema_version)==Save.CURRENT_VERSION and migrated.data.material_trades==[] and int(migrated.data.trade_serial)==0,"Actual17 receives an empty trade list and unused serial")
 		check(Save.state_equal(_without_trade(migrated.data),previous),"Every actual17 production, research, road, personal and monetary field remains unchanged")
 	var active := _production17(source)
 	active.project_serial = 9
@@ -176,7 +180,7 @@ func _test_current_roundtrip(source: Dictionary) -> void:
 	check(result.ok and state==before,"Current partially paid project accepts pure normalization")
 	check(Save.validate(state).is_empty(),"Current stock/depot/project structure validates")
 	if not result.ok: return
-	check(Save.state_equal(result.data,state),"Valid18stock, carry, frozen project accounting and empty trade state survive unchanged")
+	check(Save.state_equal(result.data,state),"Current stock, carry, frozen project accounting and empty trade state survive unchanged")
 	var json_state: Dictionary = JSON.parse_string(JSON.stringify(state))
 	var normalized: Dictionary = Save.migrate(json_state)
 	if normalized.ok:

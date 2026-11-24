@@ -133,7 +133,7 @@ func _ready() -> void:
 	contract=find_contract()
 	check(not contract.is_empty() and int(contract.delivered_lots)==1,"The same active contract visibly records exactly1of3 real deliveries")
 	check(game.houses.size()==9 and game.provinces.size()==108 and game.player==0 and game.human_houses.is_empty(),"No NPC is removed, disabled, converted to human or replaced during the journey")
-	check(SaveScript.validate(game.snapshot()).is_empty(),"The actual post-delivery world remains a valid schema18 save")
+	check(SaveScript.validate(game.snapshot()).is_empty(),"The actual post-delivery world remains a valid current save")
 	write_state("after-delivery")
 	await select_source()
 	await capture_scales("normal-delivered","contract:"+str(contract_id))

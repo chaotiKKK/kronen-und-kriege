@@ -58,7 +58,7 @@ func _draw() -> void:
 	var features: Array = atlas.visible_features(visible, host.zoom)
 	var drawable_features: Array = []
 	_boundaries.update_view(atlas, visible, host.zoom, scale, offset)
-	_boundaries.modulate.a = 1.0 if host.map_mode == "terrain" else (.35 if host.map_mode == "titles" else .18)
+	_boundaries.modulate.a = 0.57 if host.map_mode == "terrain" else (0.23 if host.map_mode == "titles" else 0.12)
 	for feature in features:
 		var kind := str(feature.kind)
 		if kind in ["municipality", "local_admin"] and float(feature.bounds.get_area()) * scale * scale < 256.0:

@@ -33,6 +33,8 @@ func _ready() -> void:
 	legacy.schema_version=17
 	legacy.erase("material_trades")
 	legacy.erase("trade_serial")
+	legacy.erase("provisioning_report")
+	for p in legacy.provinces: p.erase("provisioning")
 	if not proof_dir.is_empty() and Save.CURRENT_VERSION==17:
 		check(Save.validate(legacy).is_empty(),"Before-version-bump world is a valid genuine schema17 state")
 		DirAccess.make_dir_recursive_absolute(proof_dir)
@@ -55,8 +57,13 @@ func _ready() -> void:
 	get_tree().quit(0 if failures==0 else 1)
 
 func current() -> Dictionary:
-	var state:=legacy.duplicate(true)
-	state.schema_version=18
+	return with_current_trade_defaults(legacy)
+
+func with_current_trade_defaults(source: Dictionary) -> Dictionary:
+	var state:=source.duplicate(true)
+	state.schema_version=Save.CURRENT_VERSION
+	state["provisioning_report"]={"month_index":-1,"regions":{}}
+	for p in state.provinces: p["provisioning"]=load("res://scripts/CivicProvision.gd").initial_state(p)
 	state["material_trades"]=[]
 	state["trade_serial"]=0
 	return state
@@ -65,10 +72,9 @@ func test_legacy17() -> void:
 	var bytes:=var_to_bytes(legacy)
 	var result: Dictionary=Save.migrate(legacy)
 	check(result.ok,"Published17-format complete Game world remains migratable")
-	check(Save.CURRENT_VERSION==18 and result.to_version==18 and result.data.schema_version==18,"Trade migration advances exactly to schema18")
-	check(result.data.get("material_trades",null) is Array and result.data.get("material_trades",[1]).is_empty() and result.data.get("trade_serial",-1)==0,"17-to18 adds no offer, delivery, serial or goods")
-	var expected:=legacy.duplicate(true)
-	expected.schema_version=18; expected["material_trades"]=[]; expected["trade_serial"]=0
+	check(result.to_version==Save.CURRENT_VERSION and result.data.schema_version==Save.CURRENT_VERSION,"Trade migration advances to the current schema")
+	check(result.data.get("material_trades",null) is Array and result.data.get("material_trades",[1]).is_empty() and result.data.get("trade_serial",-1)==0,"Migration adds no offer, delivery, serial or goods")
+	var expected:=with_current_trade_defaults(legacy)
 	check(Save.state_equal(expected,result.data),"Every pre-existing17 research, production, project and personal value is preserved")
 	check(var_to_bytes(legacy)==bytes,"Migration never mutates its historical input")
 	check(Save.validate(result.data).is_empty(),"Migrated17 state satisfies the full current schema")
@@ -80,7 +86,7 @@ func test_legacy16() -> void:
 	var source: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(LEGACY16)).state
 	var before:=var_to_bytes(source)
 	var result: Dictionary=Save.migrate(source)
-	check(result.ok and result.data.schema_version==18,"Genuine16 source advances through production to18")
+	check(result.ok and result.data.schema_version==Save.CURRENT_VERSION,"Genuine16 source advances through production to the current schema")
 	if not result.ok: return
 	for index in source.houses.size():
 		var old: Dictionary=source.houses[index].research
@@ -102,10 +108,9 @@ func check_original17(path: String, expected_hash: String, label: String) -> voi
 	check(int(source.get("schema_version",0))==17,label+": genuine source version is17")
 	var before:=var_to_bytes(source)
 	var result: Dictionary=Save.migrate(source)
-	check(result.ok and result.data.schema_version==18,label+": source migrates to18")
-	var expected:=source.duplicate(true)
-	expected.schema_version=18; expected["material_trades"]=[]; expected["trade_serial"]=0
-	check(Save.state_equal(expected,result.data),label+": all historical values remain exact with only empty trade defaults")
+	check(result.ok and result.data.schema_version==Save.CURRENT_VERSION,label+": source migrates to the current schema")
+	var expected:=with_current_trade_defaults(source)
+	check(Save.state_equal(expected,result.data),label+": all historical values remain exact alongside neutral new defaults")
 	check(var_to_bytes(source)==before and FileAccess.get_sha256(path)==expected_hash,label+": no original or source mutation")
 
 func pair(state: Dictionary) -> Array:
@@ -273,7 +278,7 @@ func test_store_backups() -> void:
 	if result.ok:
 		check(Store.write_snapshot(path,result.data),"Actual Store atomically writes the validated18 migration")
 		var loaded: Dictionary=Store.load_snapshot(path)
-		check(loaded.ok and Save.state_equal(loaded.data,result.data),"Actual Store18 reload preserves all values and empty trade accounting")
+		check(loaded.ok and Save.state_equal(loaded.data,result.data),"Actual Store reload preserves all values and empty trade accounting")
 		var written:=FileAccess.get_file_as_bytes(path)
 		var malformed: Dictionary=result.data.duplicate(true)
 		malformed.erase("material_trades")

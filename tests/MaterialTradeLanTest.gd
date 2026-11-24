@@ -27,7 +27,6 @@ func migration_contract() -> void:
 	if not check(not original.is_empty() and FileAccess.get_sha256(fixture_path)==FIXTURE_HASH,"Synthetic save made now by unchanged released production PCK remains byte-exact"): return
 	var old: Dictionary=JSON.parse_string(original.get_string_from_utf8())
 	check(int(old.state.schema_version)==17 and old.fingerprint==OLD_FINGERPRINT and old.app=="1.9.1" and int(old.v)==3,"Actual untouched predecessor envelope records schema17/protocol3/package identity")
-	if not check(Save.CURRENT_VERSION==18,"Trade target schema is18; no source-envelope relabeling is used"): return
 	var session=Session.new()
 	session.discovery_enabled=false
 	add_child(session)
@@ -39,9 +38,11 @@ func migration_contract() -> void:
 	if not check(session.load_host_lobby(path).ok,"Actual old schema17 file loads through the recognized local migration path"):
 		session.close_session(); session.queue_free(); return
 	var current: Dictionary=session.game.snapshot()
-	check(int(current.schema_version)==18 and current.material_trades.is_empty() and int(current.trade_serial)==0,"Migration introduces only empty trade state and an unused serial")
+	check(int(current.schema_version)==Save.CURRENT_VERSION and current.material_trades.is_empty() and int(current.trade_serial)==0,"Migration introduces empty trade state and an unused serial")
 	var without_trade: Dictionary=current.duplicate(true)
 	without_trade.erase("material_trades"); without_trade.erase("trade_serial")
+	without_trade.erase("provisioning_report")
+	for p in without_trade.provinces: p.erase("provisioning")
 	without_trade.schema_version=17
 	check(Save.state_equal(without_trade,old.state),"Every actual previous world/resource/context/research/project field is preserved independently of trade defaults")
 	check(FileAccess.get_file_as_bytes(path)==original and FileAccess.get_file_as_bytes(path+BACKUP_SUFFIX)==original,"Original file and mandatory backup are byte-identical before any current save")
@@ -58,9 +59,9 @@ func migration_contract() -> void:
 		var rejected_path: String=path+"-"+str(variant)
 		write_raw(rejected_path,JSON.stringify(forged).to_utf8_buffer())
 		check(not session.load_host_lobby(rejected_path).ok and Save.state_equal(session.game.snapshot(),stable),"Forged historical admission changes neither current world nor logs: "+variant)
-	check(session.save_host(path).ok,"Migrated lobby writes a genuine current18 host envelope")
+	check(session.save_host(path).ok,"Migrated lobby writes a genuine current host envelope")
 	var saved: Dictionary=JSON.parse_string(FileAccess.get_file_as_string(path))
-	check(int(saved.state.schema_version)==18 and saved.fingerprint==session._fingerprint and FileAccess.get_file_as_bytes(path+BACKUP_SUFFIX)==original,"New save uses current identity and preserves the original17 backup")
+	check(int(saved.state.schema_version)==Save.CURRENT_VERSION and saved.fingerprint==session._fingerprint and FileAccess.get_file_as_bytes(path+BACKUP_SUFFIX)==original,"New save uses current identity and preserves the original17 backup")
 	var direct:=path+"-direct"
 	write_raw(direct,original)
 	check(session.save_host(direct).ok and FileAccess.get_file_as_bytes(direct+BACKUP_SUFFIX)==original,"Direct overwrite of never-loaded recognized17 target also protects exact original bytes")
@@ -93,7 +94,7 @@ func live_contract() -> void:
 	guest.choose_house(1); guest.set_ready(true)
 	if not check(await until(func():return host.players[guest.local_peer_id].ready),"Counterparty seat/consent setup reaches authority"): return
 	check(host.start_match().ok,"Host creates actual two-human trade world")
-	if not check(await until(func():return guest.phase=="playing"),"Guest restores authoritative schema18 world"): return
+	if not check(await until(func():return guest.phase=="playing"),"Guest restores authoritative current world"): return
 	host.game.speed=0
 	guest.command_finished.connect(func(result):replies.append(result))
 	var pair:=border(host.game,0,1)

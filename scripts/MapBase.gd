@@ -52,8 +52,9 @@ func _draw() -> void:
 	_draw_geography(host.map_mode == "terrain")
 
 	var border_batches: Dictionary = {
-		"province": [], "duchy": [], "kingdom": [], "owner": [], "empire": [], "coast": [],
+		"province": [], "duchy": [], "kingdom": [], "owner": [], "empire": [], "coast": [], "front": [],
 	}
+	var seen_segments := {}
 	for p in host.game.provinces:
 		var parts: Array = host._province_parts(p)
 		for pi in parts.size():
@@ -63,29 +64,37 @@ func _draw() -> void:
 				var b: Vector2 = pts[(i + 1) % pts.size()]
 				var nid: String = str(host._edge_neighbor.get("%s|%d|%d" % [p["id"], pi, i], ""))
 				var q: Dictionary = host.game.province(nid) if nid != "" else {}
-				var key: String = host.MapModesScript.border_key(p, q, host.map_mode, host.title_level)
+				var key: String = host.MapModesScript.border_key(p, q, host.map_mode, host.title_level, host.game.player)
+				var start := a.min(b) if a.x == b.x else (a if a.x < b.x else b)
+				var finish := b if start == a else a
+				var identity := Vector4(start.x, start.y, finish.x, finish.y)
+				if seen_segments.has(identity):
+					continue
+				seen_segments[identity] = true
 				var seg: Array = border_batches[key]
 				seg.append(a)
 				seg.append(b)
 	var screen_scale: float = maxf(0.1, float(host._fit()[0]))
 	var border_style: Dictionary = host.MapModesScript.border_styles(host.map_mode)
 	border_counts.clear()
-	for key in ["province", "duchy", "kingdom", "owner", "empire", "coast"]:
+	for key in ["province", "coast", "duchy", "kingdom", "owner", "empire", "front"]:
 		var points := PackedVector2Array(border_batches[key])
 		border_counts[key] = points.size() / 2
 		if points.size() >= 2:
 			var style: Array = border_style[key]
 			if float(style[1]) > 0:
+				if key in ["duchy", "kingdom", "owner", "empire", "front"]:
+					draw_multiline(points, Color(.065, .075, .078, .87), (float(style[1]) + 2.2) / screen_scale, true)
 				draw_multiline(points, style[0], float(style[1]) / screen_scale, true)
 
 	if host.selected != "":
 		var sel: Dictionary = host.game.province(host.selected)
 		if not sel.is_empty():
 			for part in host._province_parts(sel):
-				draw_colored_polygon(part, Color(1.0, 0.92, 0.62, 0.18))
+				draw_colored_polygon(part, Color(host.MapModesScript.ACCENTS[host.map_mode], 0.18))
 				var outline: PackedVector2Array = part.duplicate()
 				outline.append(part[0])
-				draw_polyline(outline, Color(1.0, 0.90, 0.55), 2.0 / screen_scale, true)
+				draw_polyline(outline, host.MapModesScript.ACCENTS[host.map_mode], 2.0 / screen_scale, true)
 	_draw_edge_vignette()
 
 func relief_texture() -> Texture2D:
@@ -104,6 +113,8 @@ func _sync_relief_strength() -> void:
 	_relief_material.set_shader_parameter("strength", strength)
 
 func _draw_geography(detailed: bool) -> void:
+	if not detailed:
+		return
 	var screen_scale: float = maxf(0.1, float(host._fit()[0]))
 	for river in host.rivers():
 		var line := PackedVector2Array()
@@ -111,12 +122,10 @@ func _draw_geography(detailed: bool) -> void:
 			line.append(point)
 		if line.size() > 1:
 			draw_polyline(line, Color(0.20, 0.40, 0.44, 0.68), 1.0 / screen_scale, true)
-	if not detailed:
-		return
 	for p in host.game.provinces:
 		var pos: Vector2 = host._label_point(p) + Vector2(0, -10)
 		var kind: String = str(p.get("terrain", "plains"))
-		var token: Texture2D = host._terrain_tex.get(kind)
+		var token: Texture2D = host.MapModesScript.MINIATURES.terrain if kind == "mountains" else host._terrain_tex.get(kind)
 		if token != null:
 			draw_texture_rect(token, Rect2(pos - Vector2(11, 11), Vector2(22, 22)), false, Color(1, 1, 1, 0.94))
 		else:

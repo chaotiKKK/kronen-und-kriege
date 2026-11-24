@@ -37,6 +37,10 @@ mkdir -p "$LOGDIR"
 
 # Logik- und UI-Tests ohne Renderpfad.
 HEADLESS=(
+	CivicProvisionTest
+	CivicProvisionGameTest
+	CivicProvisionReportTest
+	CivicProvisionSaveTest
 	MaterialTradeTest
 	MaterialTradeSaveTest
 	MaterialTradeGameTest
@@ -137,6 +141,8 @@ HEADLESS=(
 # Suiten, die einen echten Viewport brauchen.
 # CourtShotTest gehört ebenfalls hierher; es war zuvor nicht registriert.
 WINDOWED=(
+	CivicProvisionUiTest
+	LivingAtlasTest
 	MaterialTradeUiTest
 	MaterialTradeRegularUiTest
 	ProductionUiTest

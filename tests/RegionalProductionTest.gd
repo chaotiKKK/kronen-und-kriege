@@ -23,6 +23,7 @@ func _ready() -> void:
 	test_completion_alternatives()
 	test_large_exact_ratio()
 	test_public_exact_helpers()
+	test_available_labor_budget()
 	finish()
 
 func region(weight: float=1.0, stock: int=0, focus: String="balanced", terrain: String="plains") -> Dictionary:
@@ -164,6 +165,31 @@ func test_public_exact_helpers() -> void:
 	check(production.call("mul_div_floor",999999999999,999999999998,999999999997)==1000000000000,"Public floor helper remains exact at the admitted quantity ceiling")
 	check(production.call("mul_div_floor",200000000000,200000000000,400000000000)==100000000000,"Public floor helper computes harmonic road products beyond int64 safely")
 	check(production.call("mul_div_floor",1000000000000,1000000000000,1)==1000000000000,"Public quantity helper saturates oversized results at admitted MAX_UNITS")
+
+func test_available_labor_budget() -> void:
+	var supported:=false
+	for method in production.get_script_method_list():
+		if method.name=="plan_local": supported=method.args.size()==5
+	if not supported:
+		check(false,"An explicit industrial remainder must constrain existing production instead of duplicating civilian labor")
+		return
+	var p:=region()
+	var before:=JSON.stringify(p)
+	var low: Dictionary=production.plan_local(p,[],0,false,500000)
+	check(low.production_work_u==500000 and low.produced_u==125000,"Explicit500000 work produces only125000 material, not the full region output")
+	var zero: Dictionary=production.plan_local(p,[task()],0,false,0)
+	check(zero.work_u==0 and zero.production_work_u==0 and zero.produced_u==0,"No remaining work means neither construction nor material fabrication")
+	var shared: Dictionary=production.plan_local(region(1.0,12000000),[task()],0,false,900000)
+	check(shared.work_u==900000 and shared.production_work_u==0,"Stocked construction is limited to its exact explicit budget")
+	var mixed: Dictionary=production.plan_local(p,[task()],0,false,900000)
+	check(mixed.work_u>0 and mixed.work_u+mixed.production_work_u<=900000,"Construction and its prerequisite production share the smaller budget")
+	check(production.plan_local(p,[],0)==production.plan_local(p,[],0,false,-1),"Omitted or sentinel budget preserves the original pure module behavior")
+	check(production.plan_local(p,[],0)==production.plan_local(p,[],0,false,999999999999),"A caller cannot invent labor beyond actual regional capacity")
+	var invalid: Dictionary=production.plan_local(p,[],0,false,-2)
+	check(invalid.production_work_u==0 and invalid.produced_u==0,"Only the documented minus-one sentinel means full capacity; other negative budgets fail closed")
+	var blocked: Dictionary=production.plan_local(p,[],0,true,900000)
+	check(blocked.work_u==0 and blocked.production_work_u==0,"An explicit work budget cannot bypass hostile occupation")
+	check(JSON.stringify(p)==before,"Explicit budget planning preserves the original province")
 
 func check(ok: bool, message: String) -> void:
 	checks+=1

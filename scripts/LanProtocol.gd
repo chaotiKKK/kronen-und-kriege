@@ -10,6 +10,7 @@ const MAX_COMMAND_BYTES := 4096
 const SNAPSHOT_FIELDS := ["v","type","revision","hash","state","missing_peer","all_over","production_report"]
 const TRADE_STATE_FIELDS := ["material_trades","trade_serial"]
 const Save = preload("res://scripts/SaveGame.gd")
+const Civic = preload("res://scripts/CivicProvision.gd")
 const PERSONAL_FIELDS := ["player", "opinion", "cooldowns", "captive", "scandal", "event_timer",
 	"event_instance", "pending", "game_over", "victory", "history", "log", "lan_contexts", "lan_projection"]
 const FIELDS := {
@@ -21,6 +22,7 @@ const FIELDS := {
 	"disband_army":{"army":"army_id"},
 	"research":{"innovation":"text"}, "road":{"to":"text"}, "build":{"key":"text"},
 	"province_focus":{"focus":"text"},
+	"province_rations":{"rations":"ration"},
 	"construction_cancel":{"project":"sequence"},
 	"construction_priority":{"project":"sequence","priority":"priority"},
 	"material_trade_offer":{"from":"text","to":"text"},
@@ -66,6 +68,10 @@ static func validate_command(command: Dictionary) -> Dictionary:
 		if kind == "text":
 			if not value is String or value.is_empty() or value.length() > 80 or "\n" in value:
 				return failure("Ungültiger Bezeichner: %s." % key)
+			clean[key] = value
+		elif kind == "ration":
+			if not value is String or not Civic.RATIONS.has(value):
+				return failure("Unbekannte Ration.")
 			clean[key] = value
 		else:
 			var bounds: Array = {"house":[0,255], "index":[0,127], "optional_index":[-1,127], "army_id":[1,2147483647],

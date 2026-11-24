@@ -38,7 +38,7 @@ func _ready() -> void:
 	check(FileAccess.get_sha256(PATH)==HASH,"Published naval15 original remains genuine and byte-identical")
 	var original: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(PATH))
 	check(original.state.schema_version==15 and original.fingerprint==FINGERPRINT and original.app=="1.9.1" and original.v==3,"Historical schema15/app/wire/fingerprint pins come from actual original bytes")
-	check(Save.CURRENT_VERSION==18,"Large untruncated armies remain supported in trade schema18")
+	check(Save.CURRENT_VERSION>=18,"Large untruncated armies remain supported in the current schema")
 	var constants: Dictionary = Save.new().get_script().get_script_constant_map()
 	check(constants.get("MAX_ARMY_STRENGTH")==100000 and constants.get("MAX_ARMY_UPKEEP")==400,"Shared explicit strength100000/upkeep400 limits are published by Save")
 	_test_large_world(original.state)
@@ -71,6 +71,9 @@ func _large(source: Dictionary, version: int = Save.CURRENT_VERSION) -> Dictiona
 func _historical_projection(source: Dictionary, version: int) -> Dictionary:
 	var state: Dictionary = source.duplicate(true)
 	state.schema_version = version
+	if version<19:
+		state.erase("provisioning_report")
+		for p in state.provinces: p.erase("provisioning")
 	if version<18:
 		check(state.get("material_trades")==[] and state.get("trade_serial")==0,"Historical army projection removes only proven empty trade additions")
 		state.erase("material_trades")

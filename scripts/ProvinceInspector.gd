@@ -2,6 +2,7 @@ extends VBoxContainer
 ## Stabile örtliche Verwaltung. Keine Spielregeln und keine direkte Mutation.
 const ViewModel = preload("res://scripts/ViewModelBuilder.gd")
 const TradePanel = preload("res://scripts/MaterialTradePanel.gd")
+const CivicPanel = preload("res://scripts/CivicProvisionPanel.gd")
 var main
 var selected_id := ""
 var section_buttons: Dictionary = {}
@@ -32,6 +33,7 @@ var _roads_expanded := false
 var _road_context := ""
 var _road_controls: Dictionary = {}
 var trade_panel
+var civic_panel
 
 func configure(host) -> void:
 	main = host
@@ -72,6 +74,9 @@ func configure(host) -> void:
 	fields.buildings = _text("", 12, sections.buildings)
 	fields.completed_buildings = _text("", 11, sections.buildings)
 	fields.completed_buildings.hide()
+	civic_panel=CivicPanel.new()
+	sections.buildings.add_child(civic_panel)
+	civic_panel.setup(main)
 	_configure_production()
 	focus_box = VBoxContainer.new()
 	focus_box.add_theme_constant_override("separation",4)
@@ -541,6 +546,8 @@ func _preview_focus() -> void:
 	action_buttons.province_focus.visible = changing
 	if changing:
 		fields.focus_preview.text = "Ertrag %s → %s Gold/Jahr\nVersorgung %d → %d Mann\nZwölf Monate Bindung nach einem Wechsel." % [_gold(preview.current_income),_gold(preview.projected_income),int(preview.current_supply),int(preview.projected_supply)]
+		fields.focus_preview.text += "\nBaustoffpotenzial %s → %s pro Monat\nProduktionsarbeit nach Landarbeit %s → %s" % [ViewModel.material_text(int(preview.current_material_potential_u)),ViewModel.material_text(int(preview.projected_material_potential_u)),ViewModel.material_text(int(preview.current_industry_labor_u)),ViewModel.material_text(int(preview.projected_industry_labor_u))]
+		fields.focus_preview.text += "\nBaustellen, Lager und Blockaden begrenzen die Produktion. Das Potenzial ist keine garantierte Lieferung."
 		fields.focus_preview.text += "\n" + (reason if not reason.is_empty() else "Bereit · Änderung gilt nach Bestätigung.")
 	else:
 		fields.focus_preview.text = "%s Gold/Jahr · Versorgung %d Mann" % [_gold(preview.current_income),int(preview.current_supply)]
@@ -642,6 +649,7 @@ func refresh(game, id: String) -> void:
 		action_buttons.roads_toggle.text="Straßen ▸"
 		_road_context=""
 	selected_id = id
+	civic_panel.refresh(game,id)
 	_refresh_trade_panel(game,id)
 	var vm: Dictionary = ViewModel.province(game,id,main.production_report)
 	_refresh_administration(not vm.is_empty() and bool(vm.own))

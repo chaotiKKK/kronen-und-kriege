@@ -24,12 +24,12 @@ func shared_horizon() -> void:
 	var tasks: Array=[{"token":"region:1","id":1,"priority":0,"started_month":0,"material_total_u":6*w,"material_spent_u":0,"work_total_u":4*w,"work_done_u":0},
 		{"token":"road:2:a","id":2,"priority":0,"started_month":0,"material_total_u":3*w,"material_spent_u":0,"work_total_u":3*w,"work_done_u":0}]
 	var before: Dictionary=game.snapshot()
-	var need: int=game._material_horizon(p,tasks,2)
-	check(need<=6*w and need>=4*w,"Zwei Monate gemeinsamer Arbeit fordern nicht neun vollständige Materialeinheiten je Gewicht an")
+	var need: int=game._material_horizon(p,tasks,2,false)
+	check(need>0 and need<=6*w,"Zwei Monate gemeinsamer Arbeit fordern nicht neun vollständige Materialeinheiten je Gewicht an")
 	check(game.snapshot()==before and int(tasks[0].work_done_u)==0,"Theoretischer Horizont verändert weder Welt noch tatsächliche Aufgaben")
 	var reverse: Array=tasks.duplicate(true)
 	reverse.reverse()
-	check(game._material_horizon(p,reverse,2)==need,"Gemeinsame Nachfrage bleibt unabhängig von der Eingabereihenfolge")
+	check(game._material_horizon(p,reverse,2,false)==need,"Gemeinsame Nachfrage bleibt unabhängig von der Eingabereihenfolge")
 
 func current_production_export() -> void:
 	var game = Game.new(Data,0)
@@ -39,11 +39,14 @@ func current_production_export() -> void:
 	game.roads=[{"from":source,"to":target,"builder":0,"months":0,"state":"complete","construction":{}}]
 	check(game.set_province_focus(source,"workshops").ok and game.build(target,"walls").ok,"Echte Startkasse bezahlt Werkstätten und tatsächliche Zielbaustelle")
 	check(int(game.province(source).production.materials_u)==0,"Quelle beginnt ohne geliehenen oder vorbereiteten Vorrat")
-	game.advance_month()
-	var report: Dictionary=game.regional_production_report()
+	var report: Dictionary={}
 	var sent := 0
-	for flow in report.flows:
-		if str(flow.from)==source and str(flow.to)==target: sent+=int(flow.amount_u)
+	for month in 4:
+		game.advance_month()
+		report=game.regional_production_report()
+		for flow in report.flows:
+			if str(flow.from)==source and str(flow.to)==target: sent+=int(flow.amount_u)
+		if sent>0: break
 	check(sent>0,"Tatsächlich im Monat produzierte freie Baustoffe werden nach Reserve schon über den fertigen Weg geliefert")
 	check(int(report.ledger[source].export_u)==sent and int(report.ledger[target].import_u)==sent,"Gleiche wirkliche Menge verlässt die Quelle und erreicht die Baustelle")
 	for id in [source,target]:

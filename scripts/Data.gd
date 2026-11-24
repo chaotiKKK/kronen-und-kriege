@@ -540,10 +540,10 @@ static func events() -> Array:
 				{"label": "Gabe aufteilen  (−15 Gold, +6 Prestige, +40 Truppen)", "effects": {"gold": -15, "prestige": 6, "levy": 40}},
 			]},
 		{"id": "ernte", "title": "Gute Ernte",
-			"text": "Die Speicher sind voll. Du kannst verkaufen oder Vorräte für den Krieg anlegen.",
+			"text": "Ein guter Ertrag füllt die Abgabenkasse. Du kannst ihn verkaufen oder damit ein Aufgebot ausrüsten.",
 			"options": [
 				{"label": "Verkaufen  (+45 Gold)", "effects": {"gold": 45}},
-				{"label": "Einlagern  (+180 Truppen)", "effects": {"levy": 180}},
+				{"label": "Aufgebot ausrüsten  (+180 Truppen)", "effects": {"levy": 180}},
 				{"label": "Erntefest feiern  (−20 Gold, +12 Prestige)", "effects": {"gold": -20, "prestige": 12}},
 				{"label": "Saatgut kaufen  (−25 Gold, +1 Entwicklung)", "effects": {"gold": -25, "dev": 1}},
 			]},

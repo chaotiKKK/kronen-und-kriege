@@ -92,7 +92,7 @@ func _route(id: String, command: Dictionary) -> Dictionary:
 	var refresh: Array = FULL_REFRESH.duplicate()
 	# Modellaktionen melden aufgelöste Militärbefehle selbst. Navigation und
 	# reine Vorbedingungsfehler dürfen keine zweite dauerhafte Notiz erzeugen.
-	var log_result := id not in ["attack","siege","march","claim","army","fleet","blockade","select_army","transport_army","relieve","recover_army","disband_army","build","develop","road","province_focus","construction_cancel","construction_priority","material_trade_offer","material_trade_accept","material_trade_cancel"]
+	var log_result := id not in ["attack","siege","march","claim","army","fleet","blockade","select_army","transport_army","relieve","recover_army","disband_army","build","develop","road","province_focus","construction_cancel","construction_priority","province_rations","material_trade_offer","material_trade_accept","material_trade_cancel"]
 	match id:
 		"continue_sandbox":
 			raw = game.continue_sandbox()
@@ -159,6 +159,14 @@ func _route(id: String, command: Dictionary) -> Dictionary:
 			if selection == "":
 				return _blocked("invalid", "Keine Provinz gewählt.")
 			raw = game.set_province_focus(selection, str(command.get("focus", "")))
+		"province_rations":
+			var checked: Dictionary=load("res://scripts/LanProtocol.gd").validate_command(command)
+			if not bool(checked.ok): return checked
+			if selection.is_empty() or game.province(selection).is_empty():
+				return _blocked("invalid","Keine gültige Versorgungsregion gewählt.")
+			if command.has("selection") and str(checked.command.selection)!=selection:
+				return _blocked("invalid","Die Versorgungsregion ist nicht mehr ausgewählt.")
+			raw=game.set_province_rations(selection,str(checked.command.rations))
 		"construction_cancel":
 			if selection == "": return _blocked("invalid", "Keine Provinz gewählt.")
 			raw=game.cancel_construction(selection,int(command.get("project",-1)))

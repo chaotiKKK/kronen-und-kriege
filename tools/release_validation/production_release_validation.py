@@ -21,7 +21,8 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 VERSION, CODE, SCHEMA = "1.9.1", 20, 17
-SUPPORTED_SCHEMAS = frozenset((17, 18))
+SUPPORTED_SCHEMAS = frozenset((17, 18, 19))
+PROVISION_MODULES = {f"scripts/{name}.gd" for name in ("CivicProvision", "CivicProvisionReport", "CivicProvisionPanel")}
 CERT = "298739811808ab3c59ef84fd3a0db8bf44f574840c0166b35585079b1c3f6677"
 LOGO = "assets/ui/chaotiKKK_logo.png"
 LOGO_HASH = "980c3f40982e4872ed77d5dee3e068f2abae677d31020a901fddb04691db352c"
@@ -66,7 +67,7 @@ def android_code_argument(value):
 def require_schema(schema):
     require(type(schema) is int and 0 < schema <= 2147483647,
             "Expected save schema must be a positive 32-bit integer")
-    require(schema in SUPPORTED_SCHEMAS, "Expected save schema must be explicitly supported (17 or18)")
+    require(schema in SUPPORTED_SCHEMAS, "Expected save schema must be explicitly supported (17, 18, or 19)")
 
 
 def schema_argument(value):
@@ -126,8 +127,10 @@ def contract(files, android_code=CODE, schema=SCHEMA):
     require_schema(schema)
     scripts = sorted(name for name in files if name.startswith("scripts/") and name.endswith(".gd"))
     require(set(scripts) >= BASE_MODULES | NEW_MODULES, "Frozen source must include the original modules and every required production module")
-    if schema == 18:
-        require(set(scripts) >= TRADE_MODULES, "Frozen source must include every required material-trade module for schema18")
+    if schema >= 18:
+        require(set(scripts) >= TRADE_MODULES, "Frozen source must include every required material-trade module")
+    if schema >= 19:
+        require(set(scripts) >= PROVISION_MODULES, "Frozen source must include every required civilian provisioning module")
     require(scripts == sorted(path.relative_to(ROOT).as_posix() for path in (ROOT / "scripts").rglob("*.gd")), "Frozen runtime source inventory is incomplete")
     data = sorted(name for name in files if name.startswith("data/") and Path(name).suffix in (".json", ".bin"))
     require(len(data) == 24, "Expected the complete twenty-four shipping data files")

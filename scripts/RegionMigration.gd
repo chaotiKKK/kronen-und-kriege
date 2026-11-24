@@ -2,6 +2,7 @@ extends RefCounted
 ## Pure conversion. File backup and installation happen only after validation.
 const Legacy = preload("res://scripts/Data.gd")
 const Regions = preload("res://scripts/GameRegionData.gd")
+const Civic = preload("res://scripts/CivicProvision.gd")
 const KEYS := ["market", "barracks", "walls"]
 
 static func _failure(source: Dictionary, message: String) -> Dictionary:
@@ -123,11 +124,16 @@ static func migrate_state(source: Dictionary) -> Dictionary:
 		# avoid the Save→RegionMigration preload cycle, including direct callers.
 		var current_errors: Array = load("res://scripts/SaveGame.gd").validate(source)
 		if not current_errors.is_empty(): return _failure(source,"Ungültiger aktueller Ausgangsstand: "+"; ".join(current_errors))
+	var food_report = source.get("provisioning_report",{"month_index":-1,"regions":{}})
+	if not food_report is Dictionary or food_report!={"month_index":-1,"regions":{}}:
+		return _failure(source,"Eine vorhandene zivile Monatsabrechnung kann nicht vom alten Provinzlayout konvertiert werden.")
 	# Production is native to the final region layout. Historical zero additions
 	# may be rebuilt below; an active modern49-region economy cannot be discarded
 	# or replicated into every successor region.
 	for province in source.get("provinces",[]):
 		if not province is Dictionary: continue
+		if province.has("provisioning") and (not Civic.state_errors(province.provisioning,int(source.get("month_index",0))).is_empty() or province.provisioning!=Civic.initial_state(province)):
+			return _failure(source,"Fortgeschrittene zivile Vorräte können nicht verlustfrei vom alten Provinzlayout konvertiert werden.")
 		var production = province.get("production",{})
 		var project = province.get("regional_project",{})
 		var sites = province.get("logistics_sites",{})
@@ -184,6 +190,7 @@ static func migrate_state(source: Dictionary) -> Dictionary:
 		region.production = {"materials_u":0,"rate_carry":0}
 		region.regional_project = {}
 		region.logistics_sites = {"depot":0}
+		region.provisioning = Civic.initial_state(region)
 		var development := 0.0
 		var defense := 0.0
 		var owner_set := {}
@@ -222,6 +229,7 @@ static func migrate_state(source: Dictionary) -> Dictionary:
 		if int(old.get("siege", 0)) > 0 or int(old.get("blockade", 0)) > 0:
 			report.reset_sieges.append(id)
 	var out: Dictionary = source.duplicate(true)
+	out["provisioning_report"] = {"month_index":-1,"regions":{}}
 	if not out.has("project_serial"): out["project_serial"] = 0
 	out.provinces = []
 	for region in regions:

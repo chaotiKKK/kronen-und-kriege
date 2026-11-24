@@ -20,9 +20,11 @@ extends RefCounted
 ## Schema18 ergänzt rohe geprüfte Handelsverträge und deren globale Seriennummer.
 ## Vor18 entstehen ausschließlich leere Handelsfelder; bestehende Güter bleiben erhalten.
 
-const CURRENT_VERSION := 18
+const CURRENT_VERSION := 19
 const Production = preload("res://scripts/RegionalProduction.gd")
 const MaterialTrade = preload("res://scripts/MaterialTrade.gd")
+const Civic = preload("res://scripts/CivicProvision.gd")
+const ProvisionReport = preload("res://scripts/CivicProvisionReport.gd")
 const TRADE_INTEGER_FIELDS := ["id","seller","buyer","proposer","lot_u","lot_gold","created_month","expires_month","accepted_month","last_delivery_month","delivered_lots"]
 const MAX_PRODUCTION_UNITS := Production.MAX_UNITS
 const MAX_PROJECT_SERIAL := Production.MAX_SERIAL
@@ -68,9 +70,9 @@ const REQUIRED_TOP_LEVEL := [
 	"game_over", "log", "pending", "houses", "provinces", "opinion",
 	"cooldowns", "captive", "scandal", "custom", "victory",
 	"calendar_version", "month_index", "campaign_sandbox",
-	"roads", "project_serial", "material_trades", "trade_serial",
+	"roads", "project_serial", "material_trades", "trade_serial", "provisioning_report",
 ]
-const REQUIRED_PROVINCE := ["id", "name", "owner", "dev", "levy", "buildings", "defense", "siege", "siege_owner", "blockade", "blockade_owner", "economic_focus", "focus_changed_month", "production", "regional_project", "logistics_sites"]
+const REQUIRED_PROVINCE := ["id", "name", "owner", "dev", "levy", "buildings", "defense", "siege", "siege_owner", "blockade", "blockade_owner", "economic_focus", "focus_changed_month", "production", "regional_project", "logistics_sites", "provisioning"]
 const REQUIRED_HOUSE := [
 	"name", "color", "gold", "prestige", "legitimacy", "capital", "realm", "ruler",
 	"spouse", "children", "heir", "heir_age", "pregnant", "lover_house",
@@ -93,6 +95,7 @@ static func migrate(data: Dictionary) -> Dictionary:
 	errors.append_array(_army_bounds(out,from_version >= 16))
 	errors.append_array(_production_fields(out,from_version >= 17))
 	errors.append_array(_trade_fields(out,from_version >= 18))
+	errors.append_array(_provision_fields(out,from_version >= 19))
 	if not errors.is_empty():
 		return {"ok":false,"data":out,"from_version":from_version,"to_version":CURRENT_VERSION,"errors":errors}
 	if from_version < 1:
@@ -146,6 +149,10 @@ static func migrate(data: Dictionary) -> Dictionary:
 		for field in TRADE_INTEGER_FIELDS: contract[field] = int(contract[field])
 	out["houses"] = _migrate_houses(out.get("houses", []), errors)
 	out["provinces"] = _migrate_provinces(out.get("provinces", []), errors)
+	if not out.has("provisioning_report"): out["provisioning_report"] = ProvisionReport.empty()
+	var provision_report: Dictionary = ProvisionReport.validate(out["provisioning_report"],out)
+	if not provision_report.ok: errors.append("Ungültiger ziviler Monatsbericht: "+str(provision_report.reason))
+	else: out["provisioning_report"] = provision_report.data
 	for h in out["houses"]:
 		if not h.has("research"):
 			if from_version >= 12:
@@ -188,6 +195,7 @@ static func validate(data: Dictionary) -> Array:
 	errors.append_array(_army_bounds(data,true))
 	errors.append_array(_production_fields(data,true))
 	errors.append_array(_trade_fields(data,true))
+	errors.append_array(_provision_fields(data,true))
 	# Pflichtfelder am Rohstand prüfen, bevor migrate() Defaults ergänzt.
 	# Sonst würde validate() einen Feldverlust nie bemerken.
 	if int(data.get("schema_version", 0)) != CURRENT_VERSION:
@@ -747,6 +755,34 @@ static func _trade_fields(data: Dictionary, required: bool) -> Array:
 	errors.append_array(MaterialTrade.validate(contracts,serial,provinces,houses,adjacency,now))
 	return errors
 
+static func _provision_fields(data: Dictionary, required: bool) -> Array:
+	var errors: Array=[]
+	var provinces = data.get("provinces",[])
+	if not provinces is Array: return ["Zivile Versorgungsregionen müssen als Liste gespeichert sein."]
+	var year := int(data.get("year",-2000))
+	if int(data.get("calendar_version",0))==0 and year>=0: year+=1
+	var now := CalendarScript.to_index(year,int(data.get("month",1)))
+	for p in provinces:
+		if not p is Dictionary: continue
+		if not p.has("provisioning"):
+			if required: errors.append("Aktueller ziviler Vorratszustand fehlt.")
+			continue
+		var problems: Array=Civic.state_errors(p.provisioning,now)
+		errors.append_array(problems)
+		if problems.is_empty() and not required and not state_equal(p.provisioning,Civic.initial_state(p)):
+			errors.append("Historische Spielstände vor Schema19 können keine fortgeschrittenen zivilen Vorräte enthalten.")
+	if not data.has("provisioning_report"):
+		if required: errors.append("Aktueller ziviler Monatsbericht fehlt.")
+		return errors
+	var report_state: Dictionary=data.duplicate()
+	report_state["month_index"]=now
+	var report: Dictionary=ProvisionReport.validate(data.provisioning_report,report_state)
+	if not report.ok:
+		errors.append("Ungültiger roher ziviler Monatsbericht: "+str(report.reason))
+	elif not required and not state_equal(report.data,ProvisionReport.empty()):
+		errors.append("Historische Spielstände vor Schema19 können keine zivile Monatsabrechnung enthalten.")
+	return errors
+
 static func _production_fields(data: Dictionary, required: bool) -> Array:
 	var errors: Array = []
 	var serial = data.get("project_serial",0)
@@ -1141,6 +1177,9 @@ static func _migrate_provinces(raw, errors: Array) -> Array:
 		for field in ["materials_u","rate_carry"]:
 			p.production[field] = int(p.production[field])
 		p.logistics_sites.depot = int(p.logistics_sites.depot)
+		if not p.has("provisioning"): p["provisioning"] = Civic.initial_state(p)
+		for field in Civic.STATE_FIELDS:
+			if field!="rations": p.provisioning[field] = int(p.provisioning[field])
 		if not p.regional_project.is_empty():
 			for field in REGIONAL_PROJECT_FIELDS:
 				if field!="kind": p.regional_project[field] = int(p.regional_project[field])

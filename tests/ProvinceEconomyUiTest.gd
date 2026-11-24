@@ -1,4 +1,5 @@
 extends Node
+const ViewModel=preload("res://scripts/ViewModelBuilder.gd")
 var checks := 0
 var failures := 0
 var main
@@ -22,6 +23,14 @@ func _ready() -> void:
 	var gold: int = game.house().gold
 	var picker: OptionButton = inspector.focus_picker
 	check(picker.item_count == 4 and picker.get_item_metadata(3)=="workshops","Vier ausschließende Ausrichtungen einschließlich Werkstätten ohne zusätzlichen Hauptreiter")
+	picker.select(3)
+	picker.item_selected.emit(3)
+	await settle()
+	var workshop_preview: Dictionary=game.province_economy_preview(own_id,"workshops")
+	check(inspector.fields.focus_preview.text.contains("Baustoffpotenzial") and inspector.fields.focus_preview.text.contains("Produktionsarbeit"),"Werkstätten zeigen ihren positiven Baustoffnutzen und die nach Ernährung verbleibende Arbeit")
+	if workshop_preview.has("projected_material_potential_u"):
+		check(inspector.fields.focus_preview.text.contains(ViewModel.material_text(int(workshop_preview.projected_material_potential_u))),"Werkstattpotenzial entspricht der tatsächlichen Gamevorschau")
+	check(inspector.fields.focus_preview.text.contains("Baustellen") and inspector.fields.focus_preview.text.contains("Lager") and inspector.fields.focus_preview.text.contains("Blockaden") and inspector.fields.focus_preview.text.contains("keine garantierte Lieferung"),"Materialvorschau benennt reale Begrenzungen und verspricht keine garantierte Lieferung")
 	picker.select(1)
 	picker.item_selected.emit(1)
 	await settle()

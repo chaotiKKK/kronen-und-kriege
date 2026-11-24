@@ -5,7 +5,7 @@ const MAX_UNITS := 1000000000000
 const MAX_SERIAL := 1000000000
 const MAX_WEIGHT_U := 15625000000
 const RULES := {
-	"algorithm_version":1,"unit":UNIT,"max_units":MAX_UNITS,"max_serial":MAX_SERIAL,
+	"algorithm_version":2,"unit":UNIT,"max_units":MAX_UNITS,"max_serial":MAX_SERIAL,
 	"max_weight_u":MAX_WEIGHT_U,"max_tasks":256,"labor_per_weight":2,
 	"stock_per_weight":12,"yield_denominator":32,"normal_yield":8,
 	"normal_resource_terrain_yield":10,"workshops_yield":32,
@@ -20,6 +20,7 @@ const RULES := {
 	"develop_base":6,"develop_per_band":2,"develop_band":3,
 	"depot_material":8,"depot_work":6,
 	"quantity_helper_saturates_at_max_units":true,
+	"optional_available_labor_u":true,"full_labor_sentinel":-1,
 }
 
 static func weight_u(province: Dictionary) -> int:
@@ -89,7 +90,7 @@ static func road_requirements(a: Dictionary, b: Dictionary) -> Dictionary:
 		legs.append({"province":ids[index],"material_total_u":leg_material,"material_spent_u":0,"work_total_u":leg_work,"work_done_u":0})
 	return {"edge_weight_u":edge,"material_total_u":material,"work_total_u":work,"legs":legs}
 
-static func plan_local(province: Dictionary, tasks: Array, month_index: int, blocked: bool = false) -> Dictionary:
+static func plan_local(province: Dictionary, tasks: Array, month_index: int, blocked: bool = false, available_labor_u: int = -1) -> Dictionary:
 	var capacity := stock_capacity_u(province)
 	var production: Dictionary = province.get("production",{}) if province.get("production",{}) is Dictionary else {}
 	var state := {"materials_u":clampi(int(production.get("materials_u",0)),0,capacity),
@@ -99,6 +100,7 @@ static func plan_local(province: Dictionary, tasks: Array, month_index: int, blo
 	var working := _tasks(tasks)
 	if not blocked:
 		var remaining := labor_capacity_u(province)
+		if available_labor_u!=-1: remaining=clampi(available_labor_u,0,remaining)
 		for priority in [1,0]:
 			var group: Array=[]
 			for item in working:
