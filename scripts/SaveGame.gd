@@ -804,8 +804,8 @@ static func _production_fields(data: Dictionary, required: bool) -> Array:
 		if p is Dictionary: by_id[str(p.get("id",""))] = p
 	for p in provinces:
 		if not p is Dictionary: continue
-		if required and p.get("buildings") is Dictionary and p.buildings.has("depot"):
-			errors.append("Das Depot muss getrennt von den historischen Gebäudelinien gespeichert sein.")
+		if required and p.get("buildings") is Dictionary and (p.buildings.has("depot") or p.buildings.has("irrigation_works")):
+			errors.append("Örtliche Anlagen müssen getrennt von den historischen Gebäudelinien gespeichert sein.")
 		for field in ["production","regional_project","logistics_sites"]:
 			if (required or p.has(field)) and not p.get(field) is Dictionary:
 				errors.append("Ungültiges oder fehlendes Provinzfeld: "+field)
@@ -816,10 +816,18 @@ static func _production_fields(data: Dictionary, required: bool) -> Array:
 			elif int(production.materials_u)>Production.stock_capacity_u(p):
 				errors.append("Der Baustoffbestand überschreitet das örtliche Lager.")
 		var sites = p.get("logistics_sites")
-		if sites is Dictionary:
-			if not _exact_fields(sites,["depot"]) or not _bounded_integer(sites.get("depot"),0,1):
-				errors.append("Ungültiges örtliches Depot.")
 		var project = p.get("regional_project")
+		var irrigation: bool=sites is Dictionary and sites.has("irrigation_works")
+		if sites is Dictionary:
+			var site_fields := ["depot","irrigation_works"] if irrigation else ["depot"]
+			if not _exact_fields(sites,site_fields) or not _bounded_integer(sites.get("depot"),0,1):
+				errors.append("Ungültige örtliche Anlagen.")
+			if irrigation and not _bounded_integer(sites.irrigation_works,1,1):
+				errors.append("Ungültiges örtliches Bewässerungswerk.")
+		if irrigation or (project is Dictionary and project.get("kind")=="irrigation_works"):
+			var geometry = load("res://scripts/GameRegionData.gd") if str(data.get("world_layout",""))=="regions108" else InfrastructureScript.DataScript
+			if not InfrastructureScript.irrigation_terrain(geometry.terrain_for(str(p.get("id","")))):
+				errors.append("Ungeeignetes Gelände für das Bewässerungswerk.")
 		if not project is Dictionary or project.is_empty(): continue
 		if not _exact_fields(project,REGIONAL_PROJECT_FIELDS):
 			errors.append("Unvollständiger oder unbekannt erweiterter Regionalauftrag.")
@@ -832,6 +840,8 @@ static func _production_fields(data: Dictionary, required: bool) -> Array:
 			errors.append("Der Regionalauftrag gehört nicht dem Provinzbesitzer.")
 		if project.get("kind")=="depot" and not _builder_knows(houses,project.get("builder"),"logistics"):
 			errors.append("Dem Depotbauherrn fehlt das erforschte Versorgungswesen.")
+		if project.get("kind")=="irrigation_works" and not _builder_knows(houses,project.get("builder"),str(InfrastructureScript.IRRIGATION_WORKS.requires)):
+			errors.append("Dem Bauherrn fehlt die erforschte Bewässerung.")
 		if not _bounded_integer(project.get("paid_gold"),1,MAX_PRODUCTION_UNITS) or not _bounded_integer(project.get("priority"),0,1) or not _bounded_integer(project.get("started_month"),0,now):
 			errors.append("Ungültige Zahlung, Priorität oder Startzeit des Regionalauftrags.")
 		var kind = project.get("kind")
@@ -846,8 +856,8 @@ static func _production_fields(data: Dictionary, required: bool) -> Array:
 				# Development events may change the live level while work is paid.
 				# Its bounded start reference pins the recipe, not the current dev.
 				expected_target = int(project.target_level)
-			elif kind=="depot" and sites is Dictionary: expected_target = int(sites.get("depot",0))+1
-		if expected_target<1 or not _bounded_integer(project.get("target_level"),expected_target,expected_target) or (BUILDING_KEYS.has(kind) and expected_target>3) or (kind=="depot" and expected_target>1) or (kind=="develop" and expected_target>10):
+			elif kind in ["depot","irrigation_works"] and sites is Dictionary: expected_target = int(sites.get(kind,0))+1
+		if expected_target<1 or not _bounded_integer(project.get("target_level"),expected_target,expected_target) or (BUILDING_KEYS.has(kind) and expected_target>3) or (kind in ["depot","irrigation_works"] and expected_target>1) or (kind=="develop" and expected_target>10):
 			errors.append("Ungültiges oder nicht mehr passendes Bauziel.")
 		else:
 			var requirement_province: Dictionary = p.duplicate(true)
@@ -1179,6 +1189,7 @@ static func _migrate_provinces(raw, errors: Array) -> Array:
 		for field in ["materials_u","rate_carry"]:
 			p.production[field] = int(p.production[field])
 		p.logistics_sites.depot = int(p.logistics_sites.depot)
+		if p.logistics_sites.has("irrigation_works"): p.logistics_sites.irrigation_works = int(p.logistics_sites.irrigation_works)
 		if not p.has("provisioning"): p["provisioning"] = Civic.initial_state(p)
 		for field in Civic.STATE_FIELDS:
 			if field!="rations": p.provisioning[field] = int(p.provisioning[field])

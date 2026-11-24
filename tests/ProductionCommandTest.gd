@@ -63,7 +63,22 @@ func _ready() -> void:
 	before=exact_host()
 	check(await command({"id":"construction_cancel","selection":own,"project":id}) and not bool(replies[-1].ok),"Wiederholte Bestätigung kann keinen neuen Auftrag oder alten Vorrat treffen")
 	check(exact_host()==before and same_world(),"Wiederholter Abbruch hat auch keinen Log-/Historyeffekt")
+	await irrigation_command()
 	finish()
+
+func irrigation_command() -> void:
+	var id := "gallien__06"
+	var region: Dictionary=host.game.province(id)
+	if not check(int(region.owner)==1,"Gewählter Bewässerungsort gehört dem Gast"): return
+	var order := {"id":"build","selection":id,"key":"irrigation_works"}
+	check(await command(order) and not bool(replies[-1].ok),"Host lehnt ein Bewässerungswerk vor der Forschung ab")
+	host.game.houses[1].research.known=["surveying","crop_rotation","irrigation"]
+	var price: Dictionary=host.game.regional_project_preview(id,"irrigation_works",1)
+	if not check(price.ok,"Gast verfügt über Forschung, Land und normales Budget für das Werk: "+str(price.reason)): return
+	var gold: int=int(host.game.houses[1].gold)
+	check(await command(order) and bool(replies[-1].ok),"Gast kann das Werk über den echten Host finanzieren")
+	check(int(host.game.houses[1].gold)==gold-int(price.gold) and same_world(),"Bauauftrag wird genau einmal bezahlt und bei beiden Spielern synchronisiert")
+	check(guest.game.province(id).regional_project.get("kind","")=="irrigation_works","Gast sieht denselben neuen Auftrag")
 
 func exact_host() -> String:
 	var state: Dictionary=host.game.snapshot()

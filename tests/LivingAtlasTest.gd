@@ -61,6 +61,7 @@ func _ready() -> void:
 	ui.set_text_scale(1.0)
 	await _test_front_supply(main,proof)
 	await _test_civic_freight(main,proof)
+	await _test_irrigation(main,proof)
 	main._stop_audio()
 	print("LIVINGATLAS %s: %d Prüfungen, %d Fehler" % ["OK" if _failed == 0 else "FAIL", _checks, _failed])
 	get_tree().quit(0 if _failed == 0 else 1)
@@ -126,6 +127,48 @@ func _test_civic_freight(main, proof: String) -> void:
 	await _wait_frames()
 	_check(not motion.is_processing() and not motion.food_paths.is_empty(),"Reduzierte Bewegung hält den Wagen an seiner Route und erhält die Bilanz")
 	_check(get_viewport().get_texture().get_image().save_png(proof.path_join("economy-grain-cart.png")) == OK,"Echte Nahrungsfracht ist im gerenderten Kartenbild sichtbar")
+
+func _test_irrigation(main, proof: String) -> void:
+	var inspector = main.get_meta("modern_interface").province_inspector
+	if not inspector.action_buttons.has("build:irrigation_works") or not main.map_view.has_method("irrigation_markers"):
+		_check(false,"Ein fertiges Bewässerungswerk besitzt Kartenbild und Provinzbedienung")
+		return
+	var sample := OS.get_environment("BQ_IRRIGATION_CAMPAIGN_PROOF")
+	var site := "irrigation_works"
+	var id := ""
+	if FileAccess.file_exists(sample):
+		var saved: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(sample))
+		_check(main.game.restore(saved),"Die bezahlte Anlage lädt im echten Spiel")
+		for row in saved.provinces:
+			if int(row.logistics_sites.get(site,0))==1: id = str(row.id); break
+	else:
+		for p in main.game.provinces:
+			if not str(p.terrain) in ["plains","farmland","steppe"]: continue
+			main.game.select_player_context(int(p.owner))
+			main.game.house().research.known=["surveying","crop_rotation","irrigation"]
+			p.logistics_sites[site] = 1
+			id = str(p.id)
+			break
+	if id.is_empty(): _check(false,"Fertiges Werk trägt einen eindeutigen Standort"); return
+	main.game.speed=0
+	main._set_map_mode("economy")
+	main._on_province_selected(id)
+	main.map_view.center_on(main.map_view._label_point(main.game.province(id)))
+	main.map_view.set_map_motion_enabled(true)
+	await _wait_frames()
+	_check(inspector.fields.completed_buildings.text.contains("Bewässerungswerk"),"Fertiges Werk steht im Provinzbestand")
+	_check(not inspector.action_buttons["build:irrigation_works"].is_visible_in_tree(),"Fertiges Werk bietet keinen zweiten Bau")
+	var markers: Array = main.map_view.irrigation_markers()
+	_check(markers.any(func(marker): return marker.id==id and marker.rect.size.x>=30),"Fertige bewässerte Region besitzt genau am Standort einen Modellmarker")
+	_check(main.map_view._motion.is_processing() and main.map_view.irrigation_flow_active(),"Wasser am ausgewählten Werk ist animiert")
+	_check(ResourceLoader.exists("res://assets/map/irrigation/irrigation_works.glb"),"Eigenes Blender-Modell ist als Spielressource vorhanden")
+	_check(get_viewport().get_texture().get_image().save_png(proof.path_join("irrigation-economy.png"))==OK,"Karte mit Anlage und Provinzbestand ist aufgezeichnet")
+	main.map_view.set_map_motion_enabled(false)
+	await _wait_frames()
+	_check(not main.map_view._motion.is_processing() and not main.map_view.irrigation_markers().is_empty(),"Bei reduzierter Bewegung bleibt das Modell lesbar")
+	main._set_map_mode("terrain")
+	await _wait_frames()
+	_check(main.map_view.irrigation_markers().is_empty(),"Geländekarte bleibt frei von Wirtschaftsmodellen")
 
 func _wait_frames() -> void:
 	for i in 4:

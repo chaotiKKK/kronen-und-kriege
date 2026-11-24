@@ -104,6 +104,8 @@ func configure(host) -> void:
 	fields.develop = _text("",11,sections.buildings)
 	_action("build:depot","",{"id":"build","key":"depot"},sections.buildings)
 	fields["build:depot"] = _text("",11,sections.buildings)
+	_action("build:irrigation_works","",{"id":"build","key":"irrigation_works"},sections.buildings)
+	fields["build:irrigation_works"] = _text("",11,sections.buildings)
 	var roads_toggle: Button=main._button("Straßen ▸",_toggle_roads)
 	main.get_meta("modern_interface")._style_tool(roads_toggle)
 	roads_toggle.size_flags_horizontal=Control.SIZE_EXPAND_FILL
@@ -439,11 +441,23 @@ func _refresh_construction(vm: Dictionary, pending: bool) -> void:
 	var depot_effect:="Bis zu %d Mann Durchsatz aus vorhandenem Kornkammerüberschuss über das eigene Netz an landbenachbarte eigene Frontheere." % int(data.depot_throughput)
 	fields["build:depot"].text=_construction_option_text(depot)
 	action_buttons["build:depot"].tooltip_text=depot_effect
+	var irrigation: Dictionary=data.options.get("irrigation_works",{})
+	var irrigation_button: Button=action_buttons["build:irrigation_works"]
+	var show_irrigation: bool=bool(data.irrigation_visible) and not bool(data.irrigation_present) and can_choose_local
+	irrigation_button.visible=show_irrigation
+	irrigation_button.disabled=not bool(irrigation.get("ok",false)) or pending or main.game.game_over
+	irrigation_button.text="Bewässerungswerk · %d Gold" % int(irrigation.get("gold",0))
+	var harvest_bonus:int=int(main.game.InfrastructureScript.IRRIGATION_WORKS.harvest_percent)
+	var irrigation_effect:="+%d Prozentpunkte Ernte je Landarbeit." % harvest_bonus
+	irrigation_button.tooltip_text=irrigation_effect
+	fields["build:irrigation_works"].visible=show_irrigation
+	fields["build:irrigation_works"].text=_construction_option_text(irrigation) if show_irrigation else ""
 	var completed: Array[String]=[]
 	for building in vm.buildings:
 		if int(building.level)>=3: completed.append("%s 3/3" % str(building.name))
 	if int(vm.development)>=10: completed.append("Entwicklung 10/10")
 	if int(data.depot)>0: completed.append("Versorgungsdepot")
+	if bool(data.irrigation_present): completed.append("Bewässerungswerk · +%d Erntepunkte" % harvest_bonus)
 	fields.completed_buildings.text="Bestand: "+" · ".join(completed) if not completed.is_empty() else ""
 	fields.completed_buildings.visible=not completed.is_empty()
 	var audit: Array[String]=["Produktion und Bau", "Baustoffe %s / %s · frei +%s pro Monat\nGemeinsame Monatsarbeit %s" % [ViewModel.material_text(int(data.materials_u)),ViewModel.material_text(capacity),ViewModel.material_text(int(data.production_per_month_u)),ViewModel.material_text(int(data.labor_capacity_u))],fields.production_last.text,fields.delivery_details.text]
@@ -451,6 +465,9 @@ func _refresh_construction(vm: Dictionary, pending: bool) -> void:
 	for building in vm.buildings: audit.append("%s %d/3 · %s\n%s" % [str(building.name),int(building.level),str(building.effect),_construction_option_audit(building.preview)])
 	audit.append("Entwicklung +1\n"+_construction_option_audit(develop))
 	if show_depot: audit.append("Versorgungsdepot\n"+depot_effect+"\n"+_construction_option_audit(depot))
+	if not irrigation.is_empty() and not bool(data.irrigation_present):
+		audit.append("Bewässerungswerk\n"+irrigation_effect+"\n"+_construction_option_audit(irrigation))
+	elif bool(data.irrigation_present): audit.append("Bewässerungswerk fertig\n"+irrigation_effect)
 	audit.append("Produktion und alle Baustellen teilen die örtliche Arbeit. Fehlende Baustoffe werden örtlich erzeugt oder aus wirklichen Überschüssen über fertige eigene Straßen geliefert.")
 	fields.details.text=str(vm.details)+"\n\n"+"\n\n".join(audit)
 
@@ -634,7 +651,7 @@ func fit_tabs() -> void:
 	section_tabs.columns = 1 if main.get_meta("modern_interface").text_scale > 1.3 else maxi(1,visible_tabs)
 
 func _refresh_administration(own: bool) -> void:
-	for key in ["build:market","build:barracks","build:walls","build:depot","roads_toggle","province_focus","research_plan"]:
+	for key in ["build:market","build:barracks","build:walls","build:depot","build:irrigation_works","roads_toggle","province_focus","research_plan"]:
 		action_buttons[key].visible = own
 		if not own: action_buttons[key].disabled = true
 	action_buttons.research_plan.disabled = not own
@@ -643,7 +660,7 @@ func _refresh_administration(own: bool) -> void:
 	_clear_construction_cancel()
 	_clear_project_controls()
 	main.road_buttons.hide()
-	for key in ["production","production_last","production_delivery","construction_state","develop","build:depot","completed_buildings","completed_roads"]:
+	for key in ["production","production_last","production_delivery","construction_state","develop","build:depot","build:irrigation_works","completed_buildings","completed_roads"]:
 		if not fields.has(key): continue
 		fields[key].text=""; fields[key].hide()
 	_focus_province = ""

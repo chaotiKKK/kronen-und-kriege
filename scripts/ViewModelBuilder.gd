@@ -193,6 +193,11 @@ static func _construction(game, p: Dictionary, report: Dictionary) -> Dictionary
 		if id in [str(flow.from),str(flow.to)]: result.flows.append(flow.duplicate(true))
 	result["options"]={}
 	for kind in ["develop","depot"]: result.options[kind]=game.regional_project_preview(id,kind)
+	var irrigation: Dictionary=game.InfrastructureScript.IRRIGATION_WORKS
+	result["irrigation_present"]=int(p.logistics_sites.get(irrigation.kind,0))==1
+	result["irrigation_visible"]=game.InfrastructureScript.irrigation_terrain(str(p.terrain)) and game.house().research.known.has(irrigation.requires)
+	if result.irrigation_visible:
+		result.options[irrigation.kind]=game.regional_project_preview(id,irrigation.kind)
 	result["depot_throughput"]=int(game.ProductionScript.mul_div_floor(game.ProductionScript.weight_u(p),300,game.ProductionScript.UNIT))
 	result["depot_visible"]=game.house().research.known.has("logistics") and int(result.depot_throughput)>0
 	result["roads"]=[]

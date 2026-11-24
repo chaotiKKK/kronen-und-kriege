@@ -137,7 +137,7 @@ static func migrate_state(source: Dictionary) -> Dictionary:
 		var production = province.get("production",{})
 		var project = province.get("regional_project",{})
 		var sites = province.get("logistics_sites",{})
-		if (production is Dictionary and (int(production.get("materials_u",0))!=0 or int(production.get("rate_carry",0))!=0)) or (project is Dictionary and not project.is_empty()) or (sites is Dictionary and int(sites.get("depot",0))!=0):
+		if (production is Dictionary and (int(production.get("materials_u",0))!=0 or int(production.get("rate_carry",0))!=0)) or (project is Dictionary and not project.is_empty()) or (sites is Dictionary and (int(sites.get("depot",0))!=0 or int(sites.get("irrigation_works",0))!=0)):
 			return _failure(source,"Aktive Produktion kann nicht verlustfrei vom alten Provinzlayout konvertiert werden.")
 	for road in source.get("roads",[]):
 		if road is Dictionary and road.get("construction",{}) is Dictionary and not road.get("construction",{}).is_empty():

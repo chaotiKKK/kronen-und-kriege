@@ -18,7 +18,7 @@ const RULES := {
 		"barracks":{"material_base":4,"material_per_level":4,"work_base":3,"work_per_level":2},
 		"walls":{"material_base":6,"material_per_level":4,"work_base":4,"work_per_level":2}},
 	"develop_base":6,"develop_per_band":2,"develop_band":3,
-	"depot_material":8,"depot_work":6,
+	"depot_material":8,"depot_work":6,"irrigation_material":4,"irrigation_work":3,
 	"quantity_helper_saturates_at_max_units":true,
 	"optional_available_labor_u":true,"full_labor_sentinel":-1,
 }
@@ -50,6 +50,8 @@ static func requirements(province: Dictionary, kind: String, target_level: int) 
 			"work_total_u":(int(definition.work_base)+int(definition.work_per_level)*target_level)*weight}
 	if kind=="depot" and target_level==1:
 		return {"material_total_u":int(RULES.depot_material)*weight,"work_total_u":int(RULES.depot_work)*weight}
+	if kind=="irrigation_works" and target_level==1:
+		return {"material_total_u":int(RULES.irrigation_material)*weight,"work_total_u":int(RULES.irrigation_work)*weight}
 	if kind=="develop":
 		var development := clampi(int(province.get("dev",1)),0,10)
 		if target_level!=development+1 or target_level>10: return {}

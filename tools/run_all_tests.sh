@@ -40,6 +40,7 @@ HEADLESS=(
 	CivicProvisionTest
 	CivicProvisionGameTest
 	CivicFreightTest
+	IrrigationWorksTest
 	CivicProvisionReportTest
 	CivicProvisionSaveTest
 	MaterialTradeTest

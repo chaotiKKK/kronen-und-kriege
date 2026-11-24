@@ -64,6 +64,7 @@ var empire_banners_drawn: Array = []
 ## gefüllt und dient dem Fenstertest als Nachweis des realen Draw-Pfads.
 var fleet_markers_drawn: Array = []
 var economic_markers_drawn: Array = []
+var irrigation_markers_drawn: Array = []
 var army_markers_drawn: Array = []
 var construction_markers_drawn: Array = []
 var _production_snapshot: Dictionary = {}
@@ -601,6 +602,7 @@ func _draw_labels(s: float, off: Vector2) -> void:
 	var inner := map_rect.intersection(Rect2(Vector2.ZERO, size)).grow(-3)
 	atlas_obstacles.clear()
 	economic_markers_drawn.clear()
+	irrigation_markers_drawn.clear()
 	# Die Minimap ist ein Geschwister-Control; ihr Raum gehört nicht den Labels.
 	if get_parent() != null:
 		for sibling in get_parent().get_children():
@@ -621,6 +623,7 @@ func _draw_labels(s: float, off: Vector2) -> void:
 		if map_mode == "war":
 			_draw_war_markers(s, off, font)
 		elif map_mode == "economy":
+			_draw_irrigation_models(inner)
 			_draw_market_models(s, off, inner)
 			_draw_economic_markers(font)
 		_draw_construction_markers(font)
@@ -635,6 +638,7 @@ func _draw_labels(s: float, off: Vector2) -> void:
 	if map_mode in ["political", "titles"]:
 		_draw_3d_markers(s, off, occupied, inner)
 	elif map_mode == "economy":
+		_draw_irrigation_models(inner)
 		_draw_market_models(s, off, inner)
 		occupied.append_array(atlas_obstacles)
 		_draw_economic_markers(font)
@@ -1085,6 +1089,42 @@ func focus_markers() -> Array:
 		markers.append({"id":str(p.id),"focus":focus,"label":label,"rect":rect,"color":Color("97d4a2") if focus=="agriculture" else Color("edd18c")})
 	return markers
 
+func irrigation_markers() -> Array:
+	var markers: Array = []
+	if game==null or map_mode!="economy": return markers
+	var fit:=_fit()
+	# Keep an overview focused on the selected works. At regional zoom the
+	# other finished sites get the same durable icon.
+	var candidates: Array = game.provinces if zoom>=1.68 else [game.province(selected)]
+	for p in candidates:
+		if p.is_empty() or int(p.logistics_sites.get("irrigation_works",0))!=1: continue
+		var emphasized: bool = str(p.id)==selected
+		var extent := 42.0 if emphasized else 32.0
+		var pivot: Vector2 = _label_point(p)*float(fit[0])+fit[1]
+		var rect := Rect2(pivot+Vector2(-extent*.68,-extent-4),Vector2.ONE*extent)
+		if not Rect2(Vector2.ZERO,size).encloses(rect): continue
+		markers.append({"id":str(p.id),"rect":rect,"emphasized":emphasized})
+	markers.sort_custom(func(a,b): return a.emphasized and not b.emphasized)
+	return markers.slice(0,16)
+
+func irrigation_flow_active() -> bool:
+	if game==null or map_mode!="economy" or selected.is_empty(): return false
+	var p: Dictionary = game.province(selected)
+	if p.is_empty() or int(p.owner)!=game.player or int(p.logistics_sites.get("irrigation_works",0))!=1: return false
+	var report: Dictionary = _production_snapshot if _simulation_reports_set else {}
+	return report.get("regions",{}).get(selected,{}).get("blocked_reason","")==""
+
+func _draw_irrigation_models(inner: Rect2) -> void:
+	var texture = preload("res://assets/map/irrigation/irrigation_works.png")
+	for marker in irrigation_markers():
+		var rect: Rect2 = marker.rect
+		if not inner.encloses(rect): continue
+		if atlas_obstacles.any(func(obstacle: Rect2) -> bool: return obstacle.intersects(rect.grow(2.0))):
+			continue
+		draw_texture_rect(texture,rect,false)
+		irrigation_markers_drawn.append(marker)
+		atlas_obstacles.append(rect.grow(2))
+
 func _draw_market_models(scale: float, offset: Vector2, inner: Rect2) -> void:
 	var shown := 0
 	var candidates: Array = game.provinces.duplicate()
@@ -1287,7 +1327,7 @@ func _draw_legend(map_rect: Rect2, font: Font) -> void:
 		"political":["Flächen: aktueller Hausbesitz","Eroberungen verschieben diese Grenzen"],
 		"terrain":["Relief, Flüsse und Geländesymbole","Titelgrenzen bleiben bei Eroberung fest"],
 		"titles":["Rechtsebene oben umschalten","Titelgebiet und Besitz können abweichen"],
-		"economy":["Braun → Gold → Grün: Ertrag","Schilder: örtliche Schwerpunkte","Grün: nutzbare eigene Straße","Rot: Versorgung unterbrochen","Lichtpunkt: gebuchte Baustofflieferung","Wagen: Nahrungsfracht im letzten Monat"],
+		"economy":["Braun → Gold → Grün: Ertrag","Schilder: örtliche Schwerpunkte","Grün: nutzbare eigene Straße","Rot: Versorgung unterbrochen","Lichtpunkt: gebuchte Baustofflieferung","Wagen: Nahrungsfracht im letzten Monat","Kanalbau: fertiges Bewässerungswerk"],
 		"war":["Grün: eigene Spielregionen","Orange: aktuell angreifbare Gebiete","Grau: weitere Gebiete · Ringe: Belagerung","Gold: gewählter Seeweg","Mint: eigener Frontnachschub aus Depot","Gestrichelter Pfeil: geplanter Marsch","Rosafarbener Pfeil: Versorgungslücke"],
 	}[map_mode]
 	var w := minf(320.0*ui_scale,size.x-24)

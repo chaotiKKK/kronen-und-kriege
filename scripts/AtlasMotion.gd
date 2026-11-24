@@ -74,7 +74,7 @@ func _current_paths() -> Array[PackedVector2Array]:
 	return []
 
 func _has_routes() -> bool:
-	return not _current_paths().is_empty() or (host.map_mode=="economy" and not food_paths.is_empty()) or (host.map_mode=="war" and not march_overlay.is_empty())
+	return not _current_paths().is_empty() or (host.map_mode=="economy" and (not food_paths.is_empty() or host.irrigation_flow_active())) or (host.map_mode=="war" and not march_overlay.is_empty())
 
 func refresh_activity() -> void:
 	var moving: bool = is_visible_in_tree() and enabled and (_transition > 0 or _selection > 0 or _has_routes())
@@ -117,6 +117,8 @@ func _draw() -> void:
 		_draw_march(scale,offset,canvas)
 	if not enabled:
 		return
+	if host.irrigation_flow_active():
+		_draw_irrigation_flow()
 	if _selection > 0 and not host.selected.is_empty():
 		var province: Dictionary = host.game.province(host.selected)
 		if not province.is_empty():
@@ -128,6 +130,18 @@ func _draw() -> void:
 		var fraction := _transition / .30
 		draw_rect(canvas, Color(.045, .06, .075, .21 * fraction))
 
+
+func _draw_irrigation_flow() -> void:
+	for marker in host.irrigation_markers_drawn:
+		if not marker.emphasized: continue
+		var rect: Rect2 = marker.rect
+		var start := rect.position + rect.size*Vector2(.23,.58)
+		var end := rect.position + rect.size*Vector2(.47,.34)
+		var t := fposmod(_elapsed*.72,1.0)
+		var ripple := start.lerp(end,t)
+		draw_line(ripple,ripple+(end-start).normalized()*4,
+			Color(.70,1.0,.94,.85*sin(PI*t)),1.25,true)
+		break
 
 func _draw_march(scale: float, offset: Vector2, canvas: Rect2) -> void:
 	var points: PackedVector2Array = march_overlay.points

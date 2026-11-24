@@ -172,7 +172,8 @@ const MATERIAL_TRADE_RULES := {
 	"failed_commands_leave_log_unchanged":true,
 }
 const PRODUCTION_RULES := {
-	"algorithm_version":1,"project_kinds":["market","barracks","walls","develop","depot"],
+	"algorithm_version":2,"project_kinds":["market","barracks","walls","develop","depot","irrigation_works"],
+	"irrigation_works":InfrastructureScript.IRRIGATION_WORKS,
 	"one_regional_project":true,"depot_gold_per_weight":50,"depot_requires":"logistics",
 	"road_gold_per_edge_weight":30,"road_income_per_edge_weight":2,
 	"reserve_weights":2,"demand_work_months":2,"imports_work_next_month":true,
@@ -1450,7 +1451,10 @@ func province_economy_preview(id: String, focus: String = "", hi: int = -1) -> D
 
 func _provision_bonuses(p: Dictionary) -> Dictionary:
 	var hi:int=int(p.get("owner",-1))
-	return {"harvest_percent":roundi(research_bonus("food_harvest_percent",hi,p)),"storage_percent":roundi(research_bonus("food_storage_percent",hi,p))}
+	var harvest := roundi(research_bonus("food_harvest_percent",hi,p))
+	if int(p.get("logistics_sites",{}).get("irrigation_works",0))==1 and InfrastructureScript.irrigation_terrain(str(p.get("terrain",""))):
+		harvest += int(InfrastructureScript.IRRIGATION_WORKS.harvest_percent)
+	return {"harvest_percent":harvest,"storage_percent":roundi(research_bonus("food_storage_percent",hi,p))}
 
 func _provision_plan(p: Dictionary, month_index: int, rations: String="", blocked: bool=false, cargo_delta_u: int=0) -> Dictionary:
 	var shadow:Dictionary=p
@@ -1579,7 +1583,7 @@ func _production_blocked() -> Dictionary:
 	return result
 
 func _construction_name(kind: String) -> String:
-	return str({"market":"Markt","barracks":"Kaserne","walls":"Mauern","develop":"Entwicklung","depot":"Versorgungsdepot","road":"Straße"}.get(kind,kind))
+	return str({"market":"Markt","barracks":"Kaserne","walls":"Mauern","develop":"Entwicklung","depot":"Versorgungsdepot","irrigation_works":"Bewässerungswerk","road":"Straße"}.get(kind,kind))
 
 func _local_project_months(p: Dictionary, requirements: Dictionary) -> int:
 	var shadow: Dictionary = p.duplicate()
@@ -1606,7 +1610,7 @@ func regional_project_preview(id: String, kind: String, house_index: int = -1) -
 	var p := province(id)
 	if p.is_empty() or int(p.owner)!=hi: result.reason="Nur im eigenen Land möglich."; return result
 	if not PRODUCTION_RULES.project_kinds.has(kind): result.reason="Unbekanntes Bauvorhaben."; return result
-	var level: int = int(p.buildings.get(kind,0)) if BUILDING_KEYS.has(kind) else (int(p.dev) if kind=="develop" else int(p.logistics_sites.depot))
+	var level: int = int(p.buildings.get(kind,0)) if BUILDING_KEYS.has(kind) else (int(p.dev) if kind=="develop" else int(p.logistics_sites.get(kind,0)))
 	var maximum: int = 3 if BUILDING_KEYS.has(kind) else (10 if kind=="develop" else 1)
 	result.target_level=level+1
 	if level>=maximum: result.reason="Vollständig ausgebaut."; return result
@@ -1614,10 +1618,17 @@ func regional_project_preview(id: String, kind: String, house_index: int = -1) -
 		result.reason="Zuerst Versorgungswesen erforschen."; return result
 	if kind=="depot" and ProductionScript.mul_div_floor(ProductionScript.weight_u(p),300,ProductionScript.UNIT)==0:
 		result.reason="Region ohne nutzbaren Depotdurchsatz."; return result
+	if kind=="irrigation_works":
+		if not InfrastructureScript.irrigation_terrain(str(p.terrain)):
+			result.reason="Bewässerungswerke brauchen Ebene, Ackerland oder Steppe."; return result
+		if not houses[hi].research.known.has(InfrastructureScript.IRRIGATION_WORKS.requires):
+			result.reason="Zuerst Bewässerung erforschen."; return result
 	var requirements: Dictionary = ProductionScript.requirements(p,kind,int(result.target_level))
 	if requirements.is_empty(): result.reason="Keine gültige Zielstufe."; return result
 	result.merge(requirements,true)
 	result.gold = building_cost(kind,id) if BUILDING_KEYS.has(kind) else (int(region_capacity(p).develop_cost) if kind=="develop" else maxi(1,roundi(50.0*float(p.get("economic_share",1.0)))))
+	if kind=="irrigation_works":
+		result.gold=maxi(1,roundi(float(InfrastructureScript.IRRIGATION_WORKS.gold_per_weight)*float(p.get("economic_share",1.0))))
 	if not p.regional_project.is_empty(): result.reason="Hier läuft bereits ein Bauvorhaben."; return result
 	var blocked := _production_blocked()
 	if blocked.has(id): result.reason=str(blocked[id]); return result
@@ -2048,8 +2059,8 @@ func _finish_regional_project(p: Dictionary, project: Dictionary) -> void:
 		# Ereignisse dürfen die während des Baus erhaltene Entwicklung nicht verlieren.
 		if int(p.dev)<10: p.dev=int(p.dev)+1
 		p.levy=maxi(int(p.levy),mini(int(capacity.maximum),int(p.levy)+int(capacity.develop)))
-	elif kind=="depot":
-		p.logistics_sites.depot=1
+	elif kind in ["depot","irrigation_works"]:
+		p.logistics_sites[kind]=1
 	else:
 		var level: int=p.buildings.get(kind,0)
 		if level>=int(project.target_level): return

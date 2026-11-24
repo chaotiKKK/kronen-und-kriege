@@ -1,11 +1,12 @@
 extends RefCounted
 ## Reine Definitionen und Save-Prüfung; Zustandsänderungen bleiben in Game.
+const IRRIGATION_WORKS := {"kind":"irrigation_works","requires":"irrigation","harvest_percent":25,"gold_per_weight":40}
 const LEGACY_RESEARCH_DURATIONS := {"surveying":6,"road_building":12,"logistics":10}
 const INNOVATIONS := {
 	"surveying": {"name":"Vermessung", "branch":"Verwaltung", "months":4, "gold":20, "requires":"", "description":"Land, Entfernungen und Besitz werden verlässlich erfasst.", "effect_text":"Eröffnet Straßenbau und weitere Wissenszweige.", "effects":{}},
 	"road_building": {"name":"Straßenbau", "branch":"Logistik", "months":6, "gold":40, "requires":"surveying", "description":"Feste Verbindungen erschließen benachbarte eigene Gebiete.", "effect_text":"Schaltet örtliche Straßen frei: gewichteter Handel und begrenzte Baustofflieferung über eigene fertige Wege.", "effects":{}},
 	"crop_rotation": {"name":"Fruchtwechsel", "branch":"Wirtschaft", "months":8, "gold":32, "requires":"surveying", "description":"Wechselnde Feldfrüchte schonen fruchtbare Böden.", "effect_text":"+10 % regionaler Grundertrag und Ernte in Ebenen und Ackerland.", "terrains":["plains","farmland"], "effects":{"income_percent":10,"food_harvest_percent":10}},
-	"irrigation": {"name":"Bewässerung", "branch":"Wirtschaft", "months":10, "gold":45, "requires":"crop_rotation", "description":"Gezielte Wasserverteilung verbessert Anbauflächen.", "effect_text":"+8 % regionaler Grundertrag und Ernte in Ebenen, Ackerland und Steppe.", "terrains":["plains","farmland","steppe"], "effects":{"income_percent":8,"food_harvest_percent":8}},
+	"irrigation": {"name":"Bewässerung", "branch":"Wirtschaft", "months":10, "gold":45, "requires":"crop_rotation", "description":"Gezielte Wasserverteilung verbessert Anbauflächen.", "effect_text":"+8 % regionaler Grundertrag und Ernte in Ebenen, Ackerland und Steppe. Erlaubt örtliche Bewässerungswerke.", "terrains":["plains","farmland","steppe"], "effects":{"income_percent":8,"food_harvest_percent":8}},
 	"accounting": {"name":"Buchführung", "branch":"Verwaltung", "months":8, "gold":35, "requires":"surveying", "description":"Einheitliche Listen machen Abgaben nachvollziehbar.", "effect_text":"+5 % Grundertrag in allen eigenen Regionen.", "effects":{"income_percent":5}},
 	"masonry": {"name":"Steinbau", "branch":"Militär", "months":9, "gold":45, "requires":"surveying", "description":"Werkzeuge und Baupläne verringern den Materialverlust.", "effect_text":"−10 % Kosten für Markt, Kaserne und Mauern.", "effects":{"build_discount":10}},
 	"fortification": {"name":"Befestigungskunst", "branch":"Militär", "months":12, "gold":60, "requires":"masonry", "description":"Gestaffelte Befestigungen schützen eigene Gebiete.", "effect_text":"+8 Prozentpunkte Verteidigung bei Feldschlachten.", "effects":{"defense":8}},
@@ -20,6 +21,9 @@ const INNOVATIONS := {
 	"administration": {"name":"Landesverwaltung", "branch":"Verwaltung", "months":12, "gold":75, "requires":"accounting", "description":"Regionale Verwalter stimmen Abgaben und Besitzlisten aufeinander ab.", "effect_text":"Weitere +5 % regionaler Grundertrag.", "effects":{"income_percent":5}},
 }
 const DataScript = preload("res://scripts/Data.gd")
+
+static func irrigation_terrain(terrain: String) -> bool:
+	return INNOVATIONS.irrigation.terrains.has(terrain)
 
 static func initial_research() -> Dictionary:
 	return {"known": [], "active": "", "months": 0}
